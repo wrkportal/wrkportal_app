@@ -1,43 +1,44 @@
-import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export default auth((req) => {
-  const { nextUrl } = req
-  const isLoggedIn = !!req.auth
+// Simplified middleware without heavy dependencies
+export function middleware(request: NextRequest) {
+  // Public paths that don't require authentication
+  const publicPaths = [
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/landing',
+    '/api/auth',
+  ]
 
-  const isAuthPage =
-    nextUrl.pathname.startsWith('/login') ||
-    nextUrl.pathname.startsWith('/signup') ||
-    nextUrl.pathname.startsWith('/forgot-password') ||
-    nextUrl.pathname.startsWith('/reset-password')
+  const { pathname } = request.nextUrl
 
-  const isPublicPage =
-    nextUrl.pathname === '/' || 
-    nextUrl.pathname.startsWith('/api/auth') ||
-    nextUrl.pathname.startsWith('/landing')
-
-  if (isAuthPage && isLoggedIn) {
-    // Redirect logged-in users away from auth pages
-    return Response.redirect(new URL('/my-work', nextUrl))
+  // Allow public paths
+  if (publicPaths.some(path => pathname.startsWith(path))) {
+    return NextResponse.next()
   }
 
-  if (!isLoggedIn && !isAuthPage && !isPublicPage) {
-    // Redirect unauthenticated users to login
-    return Response.redirect(new URL('/login', nextUrl))
+  // Allow root path
+  if (pathname === '/') {
+    return NextResponse.next()
   }
 
+  // For all other paths, let the page handle authentication
+  // (Pages will check session and redirect if needed)
   return NextResponse.next()
-})
+}
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * Match all request paths except:
+     * - api routes (handled separately)
      * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * - _next/image (image optimization)
+     * - favicon.ico, robots.txt (public files)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt).*)',
   ],
 }
