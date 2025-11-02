@@ -39,6 +39,18 @@ import {
     Atom,
 } from "lucide-react"
 
+// Helper function to check if user has visited before
+const hasVisitedBefore = (): boolean => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('hasVisitedBefore') === 'true'
+}
+
+// Helper function to mark user as having visited
+const markAsVisited = () => {
+    if (typeof window === 'undefined') return
+    localStorage.setItem('hasVisitedBefore', 'true')
+}
+
 // Animated particle component
 const Particle = ({ delay = 0, duration = 3 }: { delay?: number; duration?: number }) => {
     const [position] = useState({
@@ -214,6 +226,21 @@ export default function LandingPage() {
     const [statsInView, setStatsInView] = useState(false)
     const statsRef = useRef<HTMLDivElement>(null)
 
+    // Mark that user has visited the landing page
+    useEffect(() => {
+        markAsVisited()
+    }, [])
+
+    // Smart routing handler: Signup for new visitors, Login for returning visitors
+    const handleCtaClick = () => {
+        const isReturningVisitor = hasVisitedBefore()
+        if (isReturningVisitor) {
+            router.push('/login')
+        } else {
+            router.push('/signup')
+        }
+    }
+
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             setMousePosition({ x: e.clientX, y: e.clientY })
@@ -353,8 +380,6 @@ export default function LandingPage() {
 
     const stats = [
         { value: "99.9%", label: "Uptime SLA", icon: Activity, count: 99.9 },
-        { value: "500K+", label: "Projects Managed", icon: Rocket, count: 500000 },
-        { value: "2.5M+", label: "Users Worldwide", icon: Users, count: 2500000 },
         { value: "45%", label: "Efficiency Gain", icon: TrendingUp, count: 45 },
     ]
 
@@ -426,9 +451,11 @@ export default function LandingPage() {
                         <div className="flex items-center gap-3">
                             <div className="relative flex h-10 w-10 items-center justify-center animate-glow-pulse">
                                 <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 opacity-100 blur-md"></div>
-                                <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 animate-gradient-shift">
-                                    <Rocket className="h-5 w-5 text-white" />
-                                </div>
+                                <img 
+                                    src="/logo.png" 
+                                    alt="ManagerBook" 
+                                    className="relative h-10 w-10 rounded-xl object-cover animate-gradient-shift"
+                                />
                             </div>
                             <div>
                                 <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
@@ -508,7 +535,7 @@ export default function LandingPage() {
                         </Badge>
                         
                         <h1 className="max-w-6xl text-5xl font-black tracking-tight sm:text-6xl md:text-7xl lg:text-8xl leading-tight mb-8">
-                            <span className="inline-block">Enterprise PM</span>
+                            <span className="inline-block">Enterprise Manager</span>
                             <br />
                             <span className="relative inline-block">
                                 <span className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 blur-3xl opacity-50 animate-pulse"></span>
@@ -528,7 +555,7 @@ export default function LandingPage() {
                         </div>
 
                         <p className="max-w-3xl text-xl text-muted-foreground mb-12 leading-relaxed">
-                            The first truly AI-native project management platform. Watch AI predict risks, optimize resources, 
+                            Truly AI-Powered project management platform. Watch AI predict risks, optimize resources, 
                             and make intelligent decisions in real-time.
                         </p>
 
@@ -547,7 +574,7 @@ export default function LandingPage() {
                             <Button
                                 size="lg"
                                 variant="outline"
-                                onClick={() => router.push('/ai-tools')}
+                                onClick={handleCtaClick}
                                 className="text-lg px-10 py-7 border-2 hover:bg-accent group backdrop-blur-sm"
                             >
                                 <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
@@ -557,7 +584,7 @@ export default function LandingPage() {
 
                         <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground mb-20">
                             {[
-                                { icon: CheckCircle2, text: "14-day free trial" },
+                                { icon: CheckCircle2, text: "30-day free trial" },
                                 { icon: CheckCircle2, text: "No credit card" },
                                 { icon: CheckCircle2, text: "Full AI access" },
                                 { icon: CheckCircle2, text: "Cancel anytime" },
@@ -570,7 +597,7 @@ export default function LandingPage() {
                         </div>
 
                         {/* Animated Stats Counter */}
-                        <div ref={statsRef} className="grid grid-cols-2 gap-6 sm:grid-cols-4 w-full max-w-5xl">
+                        <div ref={statsRef} className="grid grid-cols-2 gap-6 w-full max-w-4xl">
                             {stats.map((stat, index) => (
                                 <Card 
                                     key={index} 
@@ -616,7 +643,7 @@ export default function LandingPage() {
                                 In Real-Time
                             </span>
                         </h2>
-                        <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                        <p className="text-xl text-purple-600 dark:text-purple-400 max-w-3xl mx-auto font-semibold">
                             See how artificial intelligence transforms project management from reactive to predictive
                         </p>
                     </div>
@@ -793,7 +820,7 @@ export default function LandingPage() {
                                         <Button 
                                             variant="ghost" 
                                             size="sm" 
-                                            onClick={() => router.push('/ai-tools')}
+                                            onClick={handleCtaClick}
                                             className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
                                         >
                                             Try Now <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -907,7 +934,7 @@ export default function LandingPage() {
                                 <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
                             <p className="mt-6 text-white/80 text-sm">
-                                14 days free • No credit card • Full AI access
+                                30 days free • No credit card • Full AI access
                             </p>
                         </CardContent>
                     </Card>
@@ -915,28 +942,131 @@ export default function LandingPage() {
             </section>
 
             {/* Footer */}
-            <footer className="border-t py-12">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div 
-                            className="flex items-center gap-3 cursor-pointer" 
-                            onClick={() => router.push('/landing')}
-                        >
-                            <div className="relative flex h-8 w-8 items-center justify-center">
-                                <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 blur-sm"></div>
-                                <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 to-pink-600">
-                                    <Rocket className="h-4 w-4 text-white" />
+            <footer className="relative border-t py-16 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-background dark:from-purple-950/20 dark:via-pink-950/10 overflow-hidden">
+                {/* Decorative Elements */}
+                <div className="absolute inset-0 pointer-events-none">
+                    {[...Array(20)].map((_, i) => (
+                        <div
+                            key={i}
+                            className="absolute w-1 h-1 bg-purple-400/20 rounded-full animate-pulse"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: `${Math.random() * 100}%`,
+                                animationDelay: `${Math.random() * 3}s`,
+                                animationDuration: `${2 + Math.random() * 2}s`,
+                            }}
+                        />
+                    ))}
+                </div>
+
+                <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* Main Footer Content */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                        {/* Brand Section */}
+                        <div className="md:col-span-2">
+                            <div 
+                                className="flex items-center gap-3 mb-6 cursor-pointer group" 
+                                onClick={() => router.push('/landing')}
+                            >
+                                <div className="relative flex h-12 w-12 items-center justify-center">
+                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 blur-md opacity-70 group-hover:opacity-100 transition-opacity"></div>
+                                    <img 
+                                        src="/logo.png" 
+                                        alt="ManagerBook" 
+                                        className="relative h-12 w-12 rounded-xl object-cover"
+                                    />
+                                </div>
+                                <div>
+                                    <span className="font-black text-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+                                        ManagerBook
+                                    </span>
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <Brain className="h-3 w-3" />
+                                        AI-Powered Platform
+                                    </p>
                                 </div>
                             </div>
-                            <span className="font-bold">ManagerBook</span>
+                            <p className="text-sm text-muted-foreground max-w-md leading-relaxed mb-4">
+                                Transform your project management with artificial intelligence. Predict risks, optimize resources, and make smarter decisions in real-time.
+                            </p>
+                            <div className="flex gap-3">
+                                {[Globe, Shield, Award, Zap].map((Icon, idx) => (
+                                    <div 
+                                        key={idx}
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 transition-all cursor-pointer group"
+                                    >
+                                        <Icon className="h-4 w-4 text-purple-600 group-hover:scale-110 transition-transform" />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                            &copy; 2025 ManagerBook. Professional Project Management.
-                        </p>
-                        <div className="flex gap-6 text-sm text-muted-foreground">
-                            <button onClick={() => router.push('/login')} className="hover:text-purple-600 transition-colors">Privacy</button>
-                            <button onClick={() => router.push('/login')} className="hover:text-purple-600 transition-colors">Terms</button>
-                            <button onClick={() => router.push('/login')} className="hover:text-purple-600 transition-colors">Security</button>
+
+                        {/* Quick Links */}
+                        <div>
+                            <h4 className="font-bold mb-4 flex items-center gap-2">
+                                <Rocket className="h-4 w-4 text-purple-600" />
+                                Product
+                            </h4>
+                            <ul className="space-y-2 text-sm">
+                                {['Features', 'AI Tools', 'Integrations', 'Security', 'Roadmap'].map((item) => (
+                                    <li key={item}>
+                                        <button 
+                                            onClick={() => router.push('/login')}
+                                            className="text-muted-foreground hover:text-purple-600 transition-colors flex items-center gap-2 group"
+                                        >
+                                            <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                                            {item}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Resources */}
+                        <div>
+                            <h4 className="font-bold mb-4 flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-purple-600" />
+                                Resources
+                            </h4>
+                            <ul className="space-y-2 text-sm">
+                                {['Documentation', 'API Reference', 'Support', 'Community', 'Blog'].map((item) => (
+                                    <li key={item}>
+                                        <button 
+                                            onClick={() => router.push('/login')}
+                                            className="text-muted-foreground hover:text-purple-600 transition-colors flex items-center gap-2 group"
+                                        >
+                                            <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                                            {item}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Bottom Bar */}
+                    <div className="pt-8 border-t border-purple-200/50 dark:border-purple-800/50">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                                <button onClick={() => router.push('/login')} className="hover:text-purple-600 transition-colors flex items-center gap-1">
+                                    <Shield className="h-3 w-3" />
+                                    Privacy Policy
+                                </button>
+                                <button onClick={() => router.push('/login')} className="hover:text-purple-600 transition-colors flex items-center gap-1">
+                                    <FileText className="h-3 w-3" />
+                                    Terms of Service
+                                </button>
+                                <button onClick={() => router.push('/login')} className="hover:text-purple-600 transition-colors flex items-center gap-1">
+                                    <Lock className="h-3 w-3" />
+                                    Security
+                                </button>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <p>&copy; 2025 ManagerBook.</p>
+                                <span className="flex items-center gap-1">
+                                    Made with <span className="text-pink-500 animate-pulse">♥</span> for Project Managers
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
