@@ -432,7 +432,7 @@ export default function LandingPage() {
                             </div>
                             <div>
                                 <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-                                    ProjectHub
+                                    ManagerBook
                                 </span>
                                 <div className="text-[10px] text-muted-foreground -mt-1 flex items-center gap-1">
                                     <Sparkles className="h-2 w-2" />
@@ -447,14 +447,6 @@ export default function LandingPage() {
                             </a>
                             <a href="#ai-capabilities" className="text-sm font-medium hover:text-purple-600 transition-colors relative group">
                                 AI Features
-                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all"></span>
-                            </a>
-                            <a href="#testimonials" className="text-sm font-medium hover:text-purple-600 transition-colors relative group">
-                                Customers
-                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all"></span>
-                            </a>
-                            <a href="#pricing" className="text-sm font-medium hover:text-purple-600 transition-colors relative group">
-                                Pricing
                                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all"></span>
                             </a>
                         </div>
@@ -876,155 +868,6 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Testimonials */}
-            <section id="testimonials" className="py-32 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/10 dark:to-pink-950/10">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-20">
-                        <Badge variant="outline" className="mb-6 text-sm px-4 py-2 bg-background">
-                            <Award className="mr-2 h-4 w-4" />
-                            Customer Love
-                        </Badge>
-                        <h2 className="text-5xl font-black tracking-tight sm:text-6xl mb-6">
-                            Trusted Worldwide
-                        </h2>
-                    </div>
-
-                    <div className="grid gap-8 md:grid-cols-3">
-                        {[
-                            {
-                                quote: "ProjectHub's AI predicted a major risk 3 weeks before it would have derailed our $5M project. Incredible!",
-                                author: "Sarah Chen",
-                                role: "VP Engineering",
-                                company: "TechCorp",
-                                rating: 5,
-                            },
-                            {
-                                quote: "The AI task assignment alone saved us 15 hours per week. ROI in month one.",
-                                author: "Michael Ross",
-                                role: "COO",
-                                company: "Global Industries",
-                                rating: 5,
-                            },
-                            {
-                                quote: "We evaluated 15 tools. ProjectHub's AI capabilities are 2-3 years ahead of everyone else.",
-                                author: "Emily Watson",
-                                role: "PMO Director",
-                                company: "Fortune 500",
-                                rating: 5,
-                            },
-                        ].map((testimonial, index) => (
-                            <Card 
-                                key={index} 
-                                className="relative overflow-hidden border-2 hover:border-purple-500 transition-all duration-500 hover:shadow-2xl hover:scale-105 hover:-translate-y-2 group"
-                            >
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                <CardContent className="p-8 relative">
-                                    <div className="flex mb-4">
-                                        {[...Array(testimonial.rating)].map((_, i) => (
-                                            <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                                        ))}
-                                    </div>
-                                    <blockquote className="text-lg mb-6 leading-relaxed font-medium">
-                                        &quot;{testimonial.quote}&quot;
-                                    </blockquote>
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-110 transition-transform">
-                                            {testimonial.author.split(' ').map(n => n[0]).join('')}
-                                        </div>
-                                        <div>
-                                            <div className="font-bold">{testimonial.author}</div>
-                                            <div className="text-sm text-muted-foreground">{testimonial.role}</div>
-                                            <div className="text-xs text-muted-foreground">{testimonial.company}</div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Pricing */}
-            <section id="pricing" className="py-32">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-20">
-                        <Badge variant="outline" className="mb-6 text-sm px-4 py-2">
-                            <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
-                            Simple Pricing
-                        </Badge>
-                        <h2 className="text-5xl font-black tracking-tight sm:text-6xl mb-6">
-                            Start Free Today
-                        </h2>
-                    </div>
-
-                    <div className="grid gap-8 lg:grid-cols-3 max-w-6xl mx-auto">
-                        {[
-                            {
-                                name: "Professional",
-                                price: "$49",
-                                features: ["50 users", "Unlimited projects", "Basic AI", "Email support"],
-                            },
-                            {
-                                name: "Enterprise",
-                                price: "$149",
-                                features: ["Unlimited users", "Advanced AI", "Priority support", "SSO & SAML"],
-                                popular: true,
-                            },
-                            {
-                                name: "Platform",
-                                price: "Custom",
-                                features: ["Everything", "White-label", "24/7 support", "Custom dev"],
-                            },
-                        ].map((plan, index) => (
-                            <Card
-                                key={index}
-                                className={`relative overflow-hidden ${
-                                    plan.popular 
-                                        ? 'border-4 border-purple-500 shadow-2xl shadow-purple-500/30 scale-105 lg:scale-110 animate-glow-pulse' 
-                                        : 'border-2 hover:border-purple-300 hover:shadow-xl hover:scale-105 hover:-translate-y-2'
-                                } transition-all duration-500`}
-                            >
-                                {plan.popular && (
-                                    <div className="absolute -top-5 left-0 right-0 flex justify-center z-10">
-                                        <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2 shadow-lg animate-scale-pulse">
-                                            <Star className="mr-1 h-4 w-4 fill-white" />
-                                            Most Popular
-                                        </Badge>
-                                    </div>
-                                )}
-                                <CardContent className="p-10">
-                                    <h3 className="text-3xl font-black mb-6">{plan.name}</h3>
-                                    <div className="mb-8">
-                                        <span className="text-6xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                            {plan.price}
-                                        </span>
-                                        {plan.price !== "Custom" && <span className="text-xl text-muted-foreground">/mo</span>}
-                                    </div>
-                                    <ul className="space-y-4 mb-8">
-                                        {plan.features.map((feature, idx) => (
-                                            <li key={idx} className="flex items-center gap-3">
-                                                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                                <span>{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <Button
-                                        className={`w-full py-6 font-semibold ${
-                                            plan.popular ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg animate-gradient-shift' : ''
-                                        }`}
-                                        variant={plan.popular ? 'default' : 'outline'}
-                                        size="lg"
-                                        onClick={() => router.push('/signup')}
-                                    >
-                                        Get Started <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
             {/* Final CTA */}
             <section className="py-32">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -1085,10 +928,10 @@ export default function LandingPage() {
                                     <Rocket className="h-4 w-4 text-white" />
                                 </div>
                             </div>
-                            <span className="font-bold">ProjectHub</span>
+                            <span className="font-bold">ManagerBook</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                            &copy; 2025 ProjectHub. Powered by AI.
+                            &copy; 2025 ManagerBook. Professional Project Management.
                         </p>
                         <div className="flex gap-6 text-sm text-muted-foreground">
                             <button onClick={() => router.push('/login')} className="hover:text-purple-600 transition-colors">Privacy</button>

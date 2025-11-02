@@ -6,8 +6,11 @@ import { LayoutContent } from "@/components/layout/layout-content"
 import { AuthSessionProvider } from "@/components/providers/session-provider"
 
 export const metadata: Metadata = {
-    title: "ProjectHub - Enterprise Project Management",
-    description: "AI-powered enterprise project management platform",
+    title: "ManagerBook",
+    description: "Professional project management platform",
+    icons: {
+        icon: '/icon.png',
+    },
 }
 
 export default function RootLayout({
