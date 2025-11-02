@@ -53,19 +53,12 @@ export default function LoginPage() {
         try {
             console.log('Calling signIn with google provider...')
             // Use signIn from next-auth/react for proper OAuth flow
-            const result = await signIn('google', { 
+            await signIn('google', { 
                 callbackUrl: '/my-work',
-                redirect: true, // Explicitly set redirect to true
+                redirect: true, // Will redirect on success
             })
             
-            console.log('SignIn result:', result)
-            
-            // This code will only run if redirect is false or there's an error
-            if (result?.error) {
-                console.error('SignIn returned error:', result.error)
-                setError(`Failed to sign in with Google: ${result.error}`)
-                setLoading(false)
-            }
+            // This code will only run if there's an error (redirect prevents reaching here)
         } catch (error) {
             console.error('Google Sign-In exception:', error)
             setError('Failed to sign in with Google. Please try again.')

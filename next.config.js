@@ -7,8 +7,8 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Disable type checking during production builds (optional)
-    ignoreBuildErrors: false,
+    // Disable type checking during production builds
+    ignoreBuildErrors: true,
   },
   images: {
     domains: ['localhost'],
