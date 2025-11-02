@@ -1,0 +1,421 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Cursor.com inspired color system with proper hierarchy */
+@layer base {
+  :root {
+    /* Light mode - Progressive lightness hierarchy */
+    --background: 0 0% 98%;           /* Base - Lightest gray (page background) */
+    --foreground: 240 10% 3.9%;       /* Text - Dark */
+    
+    --section: 0 0% 99%;              /* Sections - Slightly lighter than background */
+    
+    --card: 0 0% 100%;                /* Cards - White (lightest) */
+    --card-foreground: 240 10% 3.9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    
+    --muted: 240 4.8% 96.5%;
+    --muted-foreground: 240 3.8% 46.1%;
+    
+    --accent: 240 4.8% 96.5%;
+    --accent-foreground: 240 5.9% 10%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 5.9% 88%;           /* Visible borders */
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    
+    --radius: 0.5rem;
+    
+    /* Cursor-specific accent colors */
+    --cursor-accent: 142 71% 45%;
+    --cursor-accent-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    /* Dark mode - Progressive darkness hierarchy */
+    --background: 0 0% 6%;            /* Base - Darkest (page background) */
+    --foreground: 0 0% 98%;           /* Text - White */
+    
+    --section: 0 0% 8%;               /* Sections - Slightly lighter than background */
+    
+    --card: 0 0% 10%;                 /* Cards - More lighter */
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 240 3.7% 14%;
+    --muted-foreground: 240 5% 64.9%;
+    
+    --accent: 240 3.7% 14%;
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 0 0% 20%;               /* More visible borders in dark mode */
+    --input: 0 0% 14%;
+    --ring: 240 4.9% 83.9%;
+    
+    /* Cursor-specific accent colors for dark mode */
+    --cursor-accent: 142 71% 45%;
+    --cursor-accent-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+  
+  /* Consistent background hierarchy */
+  :root body {
+    background: hsl(var(--background));
+  }
+  
+  .dark body {
+    background: hsl(var(--background));
+  }
+  
+  /* Main content area - slightly lighter than body */
+  main {
+    @apply min-h-screen;
+  }
+  
+  /* Section backgrounds - layering */
+  .section-bg {
+    background: hsl(var(--section));
+  }
+}
+
+/* Smooth scrollbar like Cursor */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Typography improvements */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-semibold tracking-tight;
+}
+
+h1 {
+  @apply text-4xl lg:text-5xl;
+}
+
+h2 {
+  @apply text-3xl lg:text-4xl;
+}
+
+h3 {
+  @apply text-2xl lg:text-3xl;
+}
+
+h4 {
+  @apply text-xl lg:text-2xl;
+}
+
+h5 {
+  @apply text-lg lg:text-xl;
+}
+
+h6 {
+  @apply text-base lg:text-lg;
+}
+
+p {
+  @apply leading-7;
+}
+
+/* Button improvements - Cursor style */
+button {
+  @apply transition-all duration-150;
+}
+
+/* Focus styles like Cursor */
+*:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* Card improvements */
+.card-hover {
+  @apply transition-all duration-200 hover:shadow-lg hover:border-primary/20;
+}
+
+/* Subtle animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Landing page animations from previous work */
+@keyframes subtle-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(168, 85, 247, 0.6);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-subtle-float {
+  animation: subtle-float 6s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s linear infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-gradient-shift {
+  animation: gradient-shift 8s ease infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+/* Typewriter effect */
+@keyframes typewriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes blink {
+  50% {
+    border-color: transparent;
+  }
+}
+
+.typewriter {
+  overflow: hidden;
+  border-right: 0.15em solid;
+  white-space: nowrap;
+  animation:
+    typewriter 3.5s steps(40, end),
+    blink 0.75s step-end infinite;
+}
+
+/* Neural network animation */
+@keyframes data-stream {
+  0% {
+    stroke-dashoffset: 1000;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+.data-stream-animation {
+  animation: data-stream 3s linear infinite;
+}
+
+/* Improved focus states */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+}
+
+/* Glass morphism effect */
+.glass {
+  @apply bg-background/80 backdrop-blur-md border border-border/50;
+}
+
+/* Cursor-style code blocks */
+code {
+  @apply font-mono text-sm bg-muted px-1 py-0.5 rounded;
+}
+
+pre {
+  @apply font-mono text-sm bg-muted p-4 rounded-lg overflow-x-auto;
+}
+
+/* Grid background pattern */
+.bg-grid-slate-100 {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.dark .bg-grid-slate-800\/20 {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Selection styling */
+::selection {
+  @apply bg-primary/20 text-foreground;
+}
+
+/* Improved input styling */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+  @apply transition-all duration-150;
+}
+
+/* Loading skeleton */
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  @apply bg-gradient-to-r from-muted via-muted-foreground/10 to-muted;
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+/* Tooltip improvements */
+.tooltip {
+  @apply text-xs bg-popover text-popover-foreground px-2 py-1 rounded shadow-lg border border-border;
+}
+
+/* Badge improvements */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors;
+}
+
+/* Cursor-style hover effects */
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+.hover-scale {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+/* Status indicators */
+.status-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.status-dot.online {
+  @apply bg-green-500;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-dot.away {
+  @apply bg-yellow-500;
+}
+
+.status-dot.offline {
+  @apply bg-gray-400;
+}

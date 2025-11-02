@@ -1,0 +1,1039 @@
+// Prisma Schema for Project Management System
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// AUTHENTICATION & USER MANAGEMENT
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // Hashed password for credentials login
+  
+  // Profile Information
+  firstName     String?
+  lastName      String?
+  avatar        String?
+  phone         String?
+  location      String?
+  department    String?
+  timezone      String    @default("UTC")
+  locale        String    @default("en")
+  
+  // Organization & Role
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  role          UserRole  @default(TEAM_MEMBER)
+  orgUnitId     String?
+  orgUnit       OrgUnit?  @relation(fields: [orgUnitId], references: [id])
+  
+  // Reporting Structure (Manager/Lead)
+  reportsToId   String?
+  reportsTo     User?     @relation("ReportsTo", fields: [reportsToId], references: [id], onDelete: SetNull)
+  directReports User[]    @relation("ReportsTo")
+  
+  // Landing Page Preference
+  landingPage   String?
+  
+  // Status
+  status        UserStatus @default(ACTIVE)
+  lastLogin     DateTime?
+  
+  // Password Reset
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  skills        UserSkill[]
+  managedProjects Project[] @relation("ProjectManager")
+  teamMemberships ProjectMember[]
+  assignedTasks Task[]   @relation("AssignedTasks")
+  createdTasks  Task[]   @relation("CreatedTasks")
+  taskComments  TaskComment[]
+  timesheets    Timesheet[]
+  timeTrackings TimeTracking[]
+  createdProjects Project[] @relation("CreatedBy")
+  createdPrograms Program[] @relation("CreatedBy")
+  
+  // Approval relations
+  requestedApprovals ApprovalApprover[]
+  createdApprovals   Approval[] @relation("ApprovalRequester")
+  finalApprovals     Approval[] @relation("ApprovalFinalApprover")
+  finalRejections    Approval[] @relation("ApprovalFinalRejecter")
+  
+  // Notifications
+  notifications      Notification[] @relation("UserNotifications")
+  
+  // Audit Logs
+  auditLogs          AuditLog[] @relation("UserAuditLogs")
+  
+  @@index([email])
+  @@index([tenantId])
+  @@index([orgUnitId])
+  @@index([reportsToId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================
+// MULTI-TENANCY
+// ============================================
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String
+  domain      String?  @unique
+  logo        String?
+  settings    Json?
+  
+  // Subscription
+  plan        String   @default("free") // free, professional, enterprise
+  maxUsers    Int      @default(10)
+  
+  // Status
+  status      String   @default("active") // active, suspended, trial
+  trialEndsAt DateTime?
+  
+  // SSO Configuration
+  ssoEnabled  Boolean  @default(false)
+  ssoProvider SSOProvider?
+  ssoConfig   Json?    // Provider-specific configuration (SAML cert, OIDC endpoints, etc.)
+  
+  // Data Retention Settings (in days, -1 = forever)
+  auditLogRetentionDays      Int @default(2555)  // 7 years for compliance
+  taskRetentionDays          Int @default(1825)  // 5 years
+  notificationRetentionDays  Int @default(90)    // 90 days
+  projectRetentionDays       Int @default(1825)  // 5 years
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  users       User[]
+  orgUnits    OrgUnit[]
+  programs    Program[]
+  projects    Project[]
+  tasks       Task[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  
+  @@index([domain])
+}
+
+model OrgUnit {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  parentId    String?
+  parent      OrgUnit? @relation("OrgUnitHierarchy", fields: [parentId], references: [id])
+  children    OrgUnit[] @relation("OrgUnitHierarchy")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  users       User[]
+  
+  @@index([tenantId])
+  @@index([parentId])
+}
+
+// ============================================
+// PROGRAMS & PROJECTS
+// ============================================
+
+model Program {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  code        String   @unique
+  description String?
+  
+  // Dates
+  startDate   DateTime
+  endDate     DateTime
+  
+  // Ownership
+  ownerId     String
+  owner       User     @relation("CreatedBy", fields: [ownerId], references: [id])
+  
+  // Budget
+  budget      Decimal  @db.Decimal(15, 2)
+  
+  // Status
+  status      ProgramStatus @default(PLANNED)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  projects    Project[]
+  
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([code])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  programId   String?
+  program     Program? @relation(fields: [programId], references: [id])
+  
+  name        String
+  code        String   @unique
+  description String?
+  
+  // Dates
+  startDate   DateTime
+  endDate     DateTime
+  
+  // Ownership
+  managerId   String
+  manager     User     @relation("ProjectManager", fields: [managerId], references: [id])
+  createdById String
+  createdBy   User     @relation("CreatedBy", fields: [createdById], references: [id])
+  
+  // Status
+  status      ProjectStatus @default(PLANNED)
+  ragStatus   RAGStatus     @default(GREEN)
+  progress    Int           @default(0)
+  
+  // Budget
+  budget      Json // Will store budget details as JSON
+  
+  // Initiate Phase Data
+  initiateData Json? // Stores checklist, stakeholders, objectives, charter
+  
+  // Planning Phase Data
+  planningData Json? // Stores milestones, tasks, deliverables
+  
+  // Execution Phase Data
+  executionData Json? // Stores actual values vs planned
+  
+  // Closure Phase Data
+  closureData Json? // Stores checklist, lessons learned
+  
+  // Soft Delete
+  deletedAt   DateTime?
+  deletedById String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  teamMembers ProjectMember[]
+  tasks       Task[]
+  risks       Risk[]
+  issues      Issue[]
+  changeRequests ChangeRequest[]
+  timesheets  Timesheet[]
+  
+  @@index([tenantId])
+  @@index([programId])
+  @@index([managerId])
+  @@index([code])
+  @@index([deletedAt])
+}
+
+model ProjectMember {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  role        String
+  allocation  Int      @default(100) // Percentage
+  
+  joinedAt    DateTime @default(now())
+  leftAt      DateTime?
+  
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+// ============================================
+// TASKS & WORK ITEMS
+// ============================================
+
+model Task {
+  id          String   @id @default(cuid())
+  
+  // Multi-tenancy
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Project (optional - for "Not a Project" tasks)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  
+  // Assignment
+  assigneeId  String?
+  assignee    User?    @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  
+  // Creator
+  createdById String
+  createdBy   User     @relation("CreatedTasks", fields: [createdById], references: [id])
+  
+  // Status & Priority
+  status      TaskStatus   @default(TODO)
+  priority    Priority     @default(MEDIUM)
+  
+  // Dates
+  dueDate     DateTime?
+  startDate   DateTime?
+  completedAt DateTime?
+  
+  // Time Tracking
+  estimatedHours Decimal? @db.Decimal(8, 2)
+  actualHours    Decimal? @db.Decimal(8, 2)
+  
+  // Tags (for storing frequency, reference point, etc.)
+  tags        String[]
+  
+  // Source tracking (for WBS sync)
+  sourceType  String?  // 'WBS', 'MANUAL', 'IMPORTED'
+  sourceId    String?  // Reference to WBS task ID in planningData
+  
+  // Hierarchy
+  parentId    String?
+  parent      Task?    @relation("TaskHierarchy", fields: [parentId], references: [id])
+  subtasks    Task[]   @relation("TaskHierarchy")
+  
+  // Comments
+  comments    TaskComment[]
+  
+  // Time Tracking
+  timeTrackings TimeTracking[]
+  
+  // Soft Delete
+  deletedAt   DateTime?
+  deletedById String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([createdById])
+  @@index([parentId])
+  @@index([deletedAt])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  content   String   @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([taskId])
+  @@index([userId])
+}
+
+model TimeTracking {
+  id          String   @id @default(cuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  // Time tracking
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?     // Duration in seconds (calculated when endTime is set)
+  
+  // Date for day-wise grouping
+  date        DateTime @default(now()) @db.Date
+  
+  // Optional notes about what was done
+  notes       String?  @db.Text
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([taskId])
+  @@index([userId])
+  @@index([date])
+}
+
+// ============================================
+// RISK & ISSUE MANAGEMENT (RAID)
+// ============================================
+
+model Risk {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String
+  category    String
+  
+  // Risk Assessment
+  probability RiskProbability
+  impact      RiskImpact
+  level       RiskLevel       // Calculated: probability × impact
+  
+  // Mitigation
+  mitigation  String?
+  contingency String?
+  
+  // Ownership
+  ownerId     String
+  
+  // Status
+  status      RiskStatus @default(IDENTIFIED)
+  
+  // Dates
+  identifiedDate DateTime @default(now())
+  reviewDate     DateTime?
+  closedDate     DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([projectId])
+}
+
+model Issue {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String
+  category    String
+  
+  // Priority & Severity
+  priority    Priority
+  severity    IssueSeverity
+  
+  // Resolution
+  resolution  String?
+  
+  // Status
+  status      IssueStatus @default(OPEN)
+  
+  // Dates
+  reportedDate  DateTime @default(now())
+  resolvedDate  DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([projectId])
+}
+
+// ============================================
+// CHANGE CONTROL
+// ============================================
+
+model ChangeRequest {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String
+  category    String
+  justification String
+  
+  // Impact Assessment
+  impact      Json // { cost?, schedule?, scope? }
+  
+  // Priority
+  priority    Priority
+  
+  // Workflow
+  status      ChangeRequestStatus @default(DRAFT)
+  requestedBy String
+  requestedDate DateTime @default(now())
+  approvedBy  String?
+  approvedDate DateTime?
+  implementedDate DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([projectId])
+}
+
+// ============================================
+// GOALS & OKRs
+// ============================================
+
+model Goal {
+  id          String   @id @default(cuid())
+  tenantId    String
+  
+  title       String
+  description String?
+  level       GoalLevel @default(TEAM) // Company, Department, Team, Individual
+  quarter     String
+  year        Int
+  
+  // Ownership
+  ownerId     String
+  
+  // Status
+  status      GoalStatus @default(ACTIVE)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  keyResults  KeyResult[]
+  
+  @@index([tenantId])
+  @@index([ownerId])
+}
+
+model KeyResult {
+  id          String   @id @default(cuid())
+  goalId      String
+  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  
+  // Measurement
+  startValue  Decimal  @db.Decimal(15, 2)
+  targetValue Decimal  @db.Decimal(15, 2)
+  currentValue Decimal @db.Decimal(15, 2)
+  unit        String
+  
+  // Weight and confidence
+  weight      Int      @default(25) // Percentage weight in the goal
+  confidence  Int      @default(5)  // 1-10 scale
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  checkIns    KRCheckIn[]
+  
+  @@index([goalId])
+}
+
+model KRCheckIn {
+  id            String   @id @default(cuid())
+  keyResultId   String
+  keyResult     KeyResult @relation(fields: [keyResultId], references: [id], onDelete: Cascade)
+  
+  value         Decimal  @db.Decimal(15, 2)
+  confidence    Int      // 1-10 scale
+  narrative     String?  @db.Text
+  
+  createdById   String
+  createdAt     DateTime @default(now())
+  
+  @@index([keyResultId])
+  @@index([createdAt])
+}
+
+// ============================================
+// TIME TRACKING
+// ============================================
+
+model Timesheet {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Time Entry
+  date        DateTime
+  hours       Decimal  @db.Decimal(5, 2)
+  description String?
+  
+  // Billing
+  billable    Boolean  @default(true)
+  
+  // Status
+  status      TimesheetStatus @default(DRAFT)
+  submittedAt DateTime?
+  approvedAt  DateTime?
+  approvedBy  String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([projectId])
+  @@index([date])
+}
+
+// ============================================
+// APPROVAL WORKFLOW
+// ============================================
+
+model Approval {
+  id          String   @id @default(cuid())
+  tenantId    String
+  
+  // What is being approved
+  type        ApprovalType
+  title       String
+  description String?  @db.Text
+  
+  // Reference to the entity being approved (optional)
+  entityId    String?  // Can be projectId, charterID, etc.
+  entityType  String?  // "project", "charter", "budget", etc.
+  
+  // Document/Data being approved
+  documentData Json?   // Store the actual data/document
+  
+  // Approval workflow
+  requestedById String
+  requestedBy   User     @relation("ApprovalRequester", fields: [requestedById], references: [id])
+  requestedAt   DateTime @default(now())
+  
+  // Approvers (many-to-many through ApprovalApprover)
+  approvers     ApprovalApprover[]
+  
+  // CC list (stored as JSON array of user IDs)
+  ccList        String[] // Array of user IDs
+  
+  // Message from requester
+  message       String?  @db.Text
+  
+  // Overall status
+  status        ApprovalStatus @default(PENDING)
+  
+  // Final decision
+  approvedAt    DateTime?
+  approvedById  String?
+  approvedBy    User?    @relation("ApprovalFinalApprover", fields: [approvedById], references: [id])
+  
+  rejectedAt    DateTime?
+  rejectedById  String?
+  rejectedBy    User?    @relation("ApprovalFinalRejecter", fields: [rejectedById], references: [id])
+  
+  // Audit
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([requestedById])
+  @@index([status])
+  @@index([entityId])
+}
+
+model ApprovalApprover {
+  id          String   @id @default(cuid())
+  approvalId  String
+  approval    Approval @relation(fields: [approvalId], references: [id], onDelete: Cascade)
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  // Individual approver status
+  status      ApprovalStatus @default(PENDING)
+  
+  // Response
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  comments    String?  @db.Text
+  
+  // Notifications
+  notifiedAt  DateTime?
+  viewedAt    DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([approvalId, userId])
+  @@index([approvalId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// SKILLS MANAGEMENT
+// ============================================
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userSkills  UserSkill[]
+}
+
+model UserSkill {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  skillId     String
+  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  
+  level       SkillLevel
+  yearsOfExperience Decimal? @db.Decimal(4, 1)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, skillId])
+  @@index([userId])
+  @@index([skillId])
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  TENANT_SUPER_ADMIN
+  ORG_ADMIN
+  PMO_LEAD
+  PROJECT_MANAGER
+  TEAM_MEMBER
+  RESOURCE_MANAGER
+  FINANCE_CONTROLLER
+  EXECUTIVE
+  CLIENT_STAKEHOLDER
+  COMPLIANCE_AUDITOR
+  INTEGRATION_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum ProgramStatus {
+  PLANNED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectStatus {
+  PLANNED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum RAGStatus {
+  RED
+  AMBER
+  GREEN
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum RiskProbability {
+  VERY_LOW
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+enum RiskImpact {
+  NEGLIGIBLE
+  MINOR
+  MODERATE
+  MAJOR
+  CRITICAL
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RiskStatus {
+  IDENTIFIED
+  ACTIVE
+  MITIGATED
+  CLOSED
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum IssueSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ChangeRequestStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  IMPLEMENTED
+}
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum GoalLevel {
+  COMPANY
+  DEPARTMENT
+  TEAM
+  INDIVIDUAL
+}
+
+enum GoalStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ApprovalType {
+  PROJECT_CHARTER
+  PROJECT_CLOSURE
+  BUDGET
+  CHANGE_REQUEST
+  TIMESHEET
+  OTHER
+}
+
+enum SSOProvider {
+  SAML
+  OIDC
+  AZURE_AD
+  GOOGLE_WORKSPACE
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  type        NotificationType
+  title       String
+  message     String
+  
+  // Reference to related entity (optional)
+  entityType  String?
+  entityId    String?
+  
+  read        Boolean  @default(false)
+  priority    NotificationPriority @default(MEDIUM)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, read])
+  @@index([tenantId])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  MENTION
+  ASSIGNMENT
+  APPROVAL
+  DEADLINE
+  STATUS_CHANGE
+  COMMENT
+  MESSAGE
+  TASK_COMPLETED
+  PROJECT_UPDATE
+  OVERDUE_TASK
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// ============================================
+// AUDIT LOGGING
+// ============================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  userId      String
+  action      AuditAction
+  entity      AuditEntity
+  entityId    String?
+  entityName  String?
+  changes     Json?    // Store before/after values
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?    // Additional context
+  createdAt   DateTime @default(now())
+  
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User     @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId, createdAt])
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([action])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  PERMISSION_CHANGE
+  SSO_CONFIG_CHANGE
+  RETENTION_CONFIG_CHANGE
+  DATA_CLEANUP
+  EXPORT
+  IMPORT
+}
+
+enum AuditEntity {
+  USER
+  PROJECT
+  TASK
+  PROGRAM
+  INITIATIVE
+  GOAL
+  OKR
+  RISK
+  ISSUE
+  APPROVAL
+  REPORT
+  NOTIFICATION
+  ORG_UNIT
+  TENANT
+  SSO_SETTINGS
+  RETENTION_SETTINGS
+}
+
