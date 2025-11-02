@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -32,7 +32,7 @@ type SearchResult = {
     metadata?: Record<string, any>
 }
 
-export default function SearchPage() {
+function SearchPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') || '')
@@ -463,6 +463,23 @@ export default function SearchPage() {
                 </Card>
             )}
         </div>
+    )
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={
+            <div className="container mx-auto p-6 max-w-6xl">
+                <Card>
+                    <CardContent className="p-12 text-center">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-muted-foreground">Loading search...</p>
+                    </CardContent>
+                </Card>
+            </div>
+        }>
+            <SearchPageContent />
+        </Suspense>
     )
 }
 
