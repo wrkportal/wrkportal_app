@@ -83,10 +83,10 @@ export function Header() {
 
                 <Link href="/" className="flex items-center space-x-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                        <span className="text-lg font-semibold">PH</span>
+                        <span className="text-lg font-semibold">MB</span>
                     </div>
                     <span className="hidden font-semibold text-lg sm:inline-block">
-                        ProjectHub
+                        ManagerBook
                     </span>
                 </Link>
 

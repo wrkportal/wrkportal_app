@@ -449,16 +449,15 @@ export default function LandingPage() {
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex h-20 items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="relative flex h-10 w-10 items-center justify-center animate-glow-pulse">
-                                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 opacity-100 blur-md"></div>
+                            <div className="relative flex h-10 w-10 items-center justify-center">
                                 <img 
                                     src="/logo.png" 
                                     alt="ManagerBook" 
-                                    className="relative h-10 w-10 rounded-xl object-cover animate-gradient-shift"
+                                    className="relative h-10 w-10 rounded-xl object-cover"
                                 />
                             </div>
                             <div>
-                                <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+                                <span className="text-2xl font-bold text-blue-900 dark:text-blue-300">
                                     ManagerBook
                                 </span>
                                 <div className="text-[10px] text-muted-foreground -mt-1 flex items-center gap-1">
@@ -969,7 +968,6 @@ export default function LandingPage() {
                                 onClick={() => router.push('/landing')}
                             >
                                 <div className="relative flex h-12 w-12 items-center justify-center">
-                                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 blur-md opacity-70 group-hover:opacity-100 transition-opacity"></div>
                                     <img 
                                         src="/logo.png" 
                                         alt="ManagerBook" 
@@ -977,7 +975,7 @@ export default function LandingPage() {
                                     />
                                 </div>
                                 <div>
-                                    <span className="font-black text-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+                                    <span className="font-black text-2xl text-blue-900 dark:text-blue-300">
                                         ManagerBook
                                     </span>
                                     <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -1063,9 +1061,6 @@ export default function LandingPage() {
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <p>&copy; 2025 ManagerBook.</p>
-                                <span className="flex items-center gap-1">
-                                    Made with <span className="text-pink-500 animate-pulse">♥</span> for Project Managers
-                                </span>
                             </div>
                         </div>
                     </div>
