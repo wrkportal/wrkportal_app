@@ -30,6 +30,11 @@ export async function generateChatCompletion(
   }
 ): Promise<OpenAI.Chat.ChatCompletion> {
   try {
+    // Validate API key exists
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set')
+    }
+
     const completion = await openai.chat.completions.create({
       model: AI_CONFIG.model,
       messages,
@@ -39,9 +44,15 @@ export async function generateChatCompletion(
     })
 
     return completion
-  } catch (error) {
+  } catch (error: any) {
     console.error('OpenAI API Error:', error)
-    throw new Error('Failed to generate AI response')
+    console.error('Error details:', {
+      message: error?.message,
+      status: error?.status,
+      type: error?.type,
+      code: error?.code,
+    })
+    throw error
   }
 }
 

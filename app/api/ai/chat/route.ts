@@ -180,10 +180,19 @@ export async function POST(request: NextRequest) {
     const result = await chatWithAssistant(messages, functionImplementations)
 
     return NextResponse.json(result)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Chat API error:', error)
+    
+    // Return more detailed error information
+    const errorMessage = error?.message || 'Failed to process chat request'
+    const errorDetails = error?.response?.data || error?.cause || null
+    
     return NextResponse.json(
-      { error: 'Failed to process chat request' },
+      { 
+        error: errorMessage,
+        details: errorDetails,
+        message: 'Sorry, I encountered an error. Please check your OpenAI API key configuration.'
+      },
       { status: 500 }
     )
   }
