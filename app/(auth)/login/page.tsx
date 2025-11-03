@@ -120,9 +120,14 @@ export default function LoginPage() {
             <div className="w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                        ManagerBook
-                    </h1>
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg">
+                            <span className="text-xl font-bold text-white">MB</span>
+                        </div>
+                        <h1 className="text-4xl font-bold text-blue-900 dark:text-blue-300">
+                            ManagerBook
+                        </h1>
+                    </div>
                     <p className="text-slate-600 mt-2">Enterprise Project Management</p>
                 </div>
 

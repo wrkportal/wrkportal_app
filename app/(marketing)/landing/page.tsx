@@ -782,7 +782,7 @@ export default function LandingPage() {
 
                 <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-20">
-                        <Badge variant="secondary" className="mb-6 text-sm px-4 py-2 bg-purple-500/20 border-purple-500/50">
+                        <Badge variant="secondary" className="mb-6 text-sm px-4 py-2 bg-purple-100 dark:bg-purple-500/20 border-purple-500/50 text-purple-900 dark:text-purple-100">
                             <Brain className="mr-2 h-4 w-4 animate-pulse" />
                             AI Superpowers
                         </Badge>
@@ -1000,47 +1000,6 @@ export default function LandingPage() {
                             </div>
                         </div>
 
-                        {/* Quick Links */}
-                        <div>
-                            <h4 className="font-bold mb-4 flex items-center gap-2">
-                                <Rocket className="h-4 w-4 text-purple-600" />
-                                Product
-                            </h4>
-                            <ul className="space-y-2 text-sm">
-                                {['Features', 'AI Tools', 'Integrations', 'Security', 'Roadmap'].map((item) => (
-                                    <li key={item}>
-                                        <button 
-                                            onClick={() => router.push('/login')}
-                                            className="text-muted-foreground hover:text-purple-600 transition-colors flex items-center gap-2 group"
-                                        >
-                                            <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-                                            {item}
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        {/* Resources */}
-                        <div>
-                            <h4 className="font-bold mb-4 flex items-center gap-2">
-                                <FileText className="h-4 w-4 text-purple-600" />
-                                Resources
-                            </h4>
-                            <ul className="space-y-2 text-sm">
-                                {['Documentation', 'API Reference', 'Support', 'Community', 'Blog'].map((item) => (
-                                    <li key={item}>
-                                        <button 
-                                            onClick={() => router.push('/login')}
-                                            className="text-muted-foreground hover:text-purple-600 transition-colors flex items-center gap-2 group"
-                                        >
-                                            <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-                                            {item}
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
                     </div>
 
                     {/* Bottom Bar */}
