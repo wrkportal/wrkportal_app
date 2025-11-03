@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -121,9 +122,13 @@ export default function LoginPage() {
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 shadow-lg">
-                            <span className="text-xl font-bold text-white">MB</span>
-                        </div>
+                        <Image 
+                            src="/logo.png" 
+                            alt="ManagerBook Logo" 
+                            width={48} 
+                            height={48}
+                            className="object-contain"
+                        />
                         <h1 className="text-4xl font-bold text-blue-900 dark:text-blue-300">
                             ManagerBook
                         </h1>
