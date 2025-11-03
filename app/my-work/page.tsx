@@ -60,12 +60,12 @@ const defaultWidgets: Widget[] = [
 
 const defaultLayouts: Layouts = {
     lg: [
-        { i: 'metrics', x: 0, y: 0, w: 12, h: 2, minW: 6, minH: 2 },
-        { i: 'overdueTasks', x: 0, y: 2, w: 6, h: 3, minW: 4, minH: 2 },
-        { i: 'recentProjects', x: 6, y: 2, w: 6, h: 3, minW: 4, minH: 3 },
-        { i: 'myTasks', x: 0, y: 5, w: 12, h: 4, minW: 6, minH: 3 },
-        { i: 'activeOKRs', x: 0, y: 9, w: 12, h: 3, minW: 6, minH: 2 },
-        { i: 'quickActions', x: 0, y: 12, w: 12, h: 2, minW: 6, minH: 2 },
+        { i: 'metrics', x: 0, y: 0, w: 6, h: 2, minW: 6, minH: 2 },
+        { i: 'recentProjects', x: 6, y: 0, w: 6, h: 11, minW: 4, minH: 3 },
+        { i: 'quickActions', x: 0, y: 2, w: 6, h: 2, minW: 6, minH: 2 },
+        { i: 'myTasks', x: 0, y: 4, w: 6, h: 7, minW: 6, minH: 3 },
+        { i: 'activeOKRs', x: 0, y: 11, w: 12, h: 5, minW: 6, minH: 2 },
+        { i: 'overdueTasks', x: 0, y: 16, w: 6, h: 3, minW: 4, minH: 2 },
     ],
     md: [
         { i: 'metrics', x: 0, y: 0, w: 10, h: 2, minW: 5, minH: 2 },
