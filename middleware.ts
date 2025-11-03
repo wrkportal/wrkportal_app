@@ -10,6 +10,9 @@ export function middleware(request: NextRequest) {
     '/forgot-password',
     '/reset-password',
     '/landing',
+    '/privacy',
+    '/terms',
+    '/security',
     '/api/auth',
   ]
 
