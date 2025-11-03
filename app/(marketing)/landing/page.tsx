@@ -1046,18 +1046,18 @@ export default function LandingPage() {
                     <div className="pt-8 border-t border-purple-200/50 dark:border-purple-800/50">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                                <button onClick={() => router.push('/login')} className="hover:text-purple-600 transition-colors flex items-center gap-1">
+                                <Link href="/privacy" className="hover:text-purple-600 transition-colors flex items-center gap-1">
                                     <Shield className="h-3 w-3" />
                                     Privacy Policy
-                                </button>
-                                <button onClick={() => router.push('/login')} className="hover:text-purple-600 transition-colors flex items-center gap-1">
+                                </Link>
+                                <Link href="/terms" className="hover:text-purple-600 transition-colors flex items-center gap-1">
                                     <FileText className="h-3 w-3" />
                                     Terms of Service
-                                </button>
-                                <button onClick={() => router.push('/login')} className="hover:text-purple-600 transition-colors flex items-center gap-1">
+                                </Link>
+                                <Link href="/security" className="hover:text-purple-600 transition-colors flex items-center gap-1">
                                     <Lock className="h-3 w-3" />
                                     Security
-                                </button>
+                                </Link>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <p>&copy; 2025 ManagerBook.</p>
