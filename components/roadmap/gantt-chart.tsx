@@ -107,6 +107,21 @@ export function GanttChart({ projects }: GanttChartProps) {
         current.setMonth(current.getMonth() + 1)
     }
 
+    // Generate days for each month
+    const getDaysInMonth = (monthDate: Date) => {
+        const year = monthDate.getFullYear()
+        const month = monthDate.getMonth()
+        const firstDay = new Date(year, month, 1)
+        const lastDay = new Date(year, month + 1, 0)
+        const days: Date[] = []
+        
+        for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+            days.push(new Date(d))
+        }
+        
+        return days
+    }
+
     // Calculate total days in timeline
     const totalDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24))
 
@@ -191,22 +206,46 @@ export function GanttChart({ projects }: GanttChartProps) {
                 <div className="flex">
                     {/* Project Names Column */}
                     <div className="w-64 flex-shrink-0 pr-4">
-                        <div className="h-12 flex items-center font-semibold text-sm text-slate-600 dark:text-slate-300">
+                        <div className="h-20 flex items-center font-semibold text-sm text-slate-600 dark:text-slate-300">
                             Project
                         </div>
                     </div>
 
                     {/* Timeline Grid */}
                     <div className="flex-1 relative">
-                        <div className="h-12 flex border-b border-slate-200 dark:border-slate-700">
-                            {months.map((month, index) => (
-                                <div
-                                    key={index}
-                                    className="flex-1 text-xs font-medium text-slate-600 dark:text-slate-400 px-2 flex items-center justify-center border-l border-slate-200 dark:border-slate-700"
-                                >
-                                    {formatMonth(month)}
-                                </div>
-                            ))}
+                        {/* Month Headers */}
+                        <div className="h-10 flex border-b border-slate-200 dark:border-slate-700">
+                            {months.map((month, index) => {
+                                const daysInMonth = getDaysInMonth(month).length
+                                return (
+                                    <div
+                                        key={index}
+                                        style={{ flex: `0 0 ${(daysInMonth / totalDays) * 100}%` }}
+                                        className="text-xs font-semibold text-slate-700 dark:text-slate-300 px-2 flex items-center justify-center border-l border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"
+                                    >
+                                        {formatMonth(month)}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        
+                        {/* Date Headers (Days) */}
+                        <div className="h-10 flex border-b-2 border-slate-300 dark:border-slate-600">
+                            {months.map((month, monthIndex) => {
+                                const days = getDaysInMonth(month)
+                                return days.map((day, dayIndex) => (
+                                    <div
+                                        key={`${monthIndex}-${dayIndex}`}
+                                        style={{ flex: `0 0 ${(1 / totalDays) * 100}%` }}
+                                        className={cn(
+                                            "text-[10px] font-medium text-slate-600 dark:text-slate-400 flex items-center justify-center border-l border-slate-100 dark:border-slate-800",
+                                            day.getDay() === 0 || day.getDay() === 6 ? "bg-slate-100 dark:bg-slate-800/30" : ""
+                                        )}
+                                    >
+                                        {day.getDate()}
+                                    </div>
+                                ))
+                            })}
                         </div>
                     </div>
                 </div>

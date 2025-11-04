@@ -83,6 +83,9 @@ model User {
   // Audit Logs
   auditLogs          AuditLog[] @relation("UserAuditLogs")
   
+  // Tutorials
+  createdTutorials   Tutorial[] @relation("TutorialCreator")
+  
   @@index([email])
   @@index([tenantId])
   @@index([orgUnitId])
@@ -168,6 +171,7 @@ model Tenant {
   tasks       Task[]
   notifications Notification[]
   auditLogs     AuditLog[]
+  tutorials     Tutorial[]
   
   @@index([domain])
 }
@@ -1035,5 +1039,68 @@ enum AuditEntity {
   TENANT
   SSO_SETTINGS
   RETENTION_SETTINGS
+  TUTORIAL
+}
+
+// ============================================
+// ACADEMY TUTORIALS
+// ============================================
+
+model Tutorial {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String   @db.Text
+  type        TutorialType
+  duration    String   // e.g., "10 min"
+  level       TutorialLevel
+  category    String   // e.g., "Getting Started", "Planning & Execution"
+  section     TutorialSection  // project-management or tools-workings
+  
+  // Video/Content URL
+  videoUrl    String?  @db.Text
+  contentText String?  @db.Text
+  
+  // File attachment (if uploaded)
+  fileUrl     String?  @db.Text
+  fileName    String?
+  fileSize    Int?
+  
+  // Metadata
+  thumbnail   String?  @db.Text
+  order       Int      @default(0)  // Display order within category
+  isPublished Boolean  @default(true)
+  viewCount   Int      @default(0)
+  
+  // Creator
+  createdById String
+  createdBy   User     @relation("TutorialCreator", fields: [createdById], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([section, category])
+  @@index([isPublished])
+  @@index([order])
+}
+
+enum TutorialType {
+  VIDEO
+  TEXT
+  INTERACTIVE
+}
+
+enum TutorialLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum TutorialSection {
+  PROJECT_MANAGEMENT
+  TOOLS_WORKINGS
 }
 

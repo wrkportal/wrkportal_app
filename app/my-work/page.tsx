@@ -31,7 +31,10 @@ import {
     Pause,
     History,
     Filter,
-    X
+    X,
+    List,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react"
 import { Responsive, WidthProvider, Layout, Layouts } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
@@ -107,6 +110,8 @@ export default function HomePage() {
     const [priorityFilter, setPriorityFilter] = useState<string>('ALL')
     const [dueDateFilter, setDueDateFilter] = useState<string>('ALL')
     const [showFilters, setShowFilters] = useState(false)
+    const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar'>('list')
+    const [calendarDate, setCalendarDate] = useState(new Date())
 
     // Mobile detection
     const [isMobile, setIsMobile] = useState(false)
@@ -613,6 +618,24 @@ export default function HomePage() {
                                     <Button
                                         variant="outline"
                                         size="sm"
+                                        onClick={() => setTaskViewMode(taskViewMode === 'list' ? 'calendar' : 'list')}
+                                        className="text-xs"
+                                    >
+                                        {taskViewMode === 'list' ? (
+                                            <>
+                                                <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                                                <span>Calendar</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <List className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                                                <span>List</span>
+                                            </>
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
                                         onClick={() => {
                                             setTimeTrackingTaskId(undefined)
                                             setTimeTrackingDialogOpen(true)
@@ -719,124 +742,331 @@ export default function HomePage() {
                             )}
                         </CardHeader>
                         <CardContent className="flex-1 overflow-auto">
-                            <div className="space-y-3">
-                                {filteredTasks.length > 0 ? (
-                                    filteredTasks.map((task) => {
-                                        const isTimerActive = activeTimer?.taskId === task.id
-                                        const timerDisplay = isTimerActive && timerSeconds[task.id]
-                                            ? formatDuration(timerSeconds[task.id])
-                                            : '0s'
+                            {taskViewMode === 'list' ? (
+                                <div className="space-y-3">
+                                    {filteredTasks.length > 0 ? (
+                                        filteredTasks.map((task) => {
+                                            const isTimerActive = activeTimer?.taskId === task.id
+                                            const timerDisplay = isTimerActive && timerSeconds[task.id]
+                                                ? formatDuration(timerSeconds[task.id])
+                                                : '0s'
 
-                                        return (
-                                            <div
-                                                key={task.id}
-                                                className="flex items-start gap-3 p-2 border rounded-lg hover:bg-accent transition-colors"
-                                            >
+                                            return (
                                                 <div
-                                                    className="flex-1 space-y-1 cursor-pointer"
-                                                    onClick={() => {
-                                                        setSelectedTaskId(task.id)
-                                                        setTaskDetailDialogOpen(true)
-                                                    }}
+                                                    key={task.id}
+                                                    className="flex items-start gap-3 p-2 border rounded-lg hover:bg-accent transition-colors"
                                                 >
-                                                    <p className="text-sm font-medium">{task.title}</p>
-                                                    {task.project && (
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {task.project.name}
-                                                        </p>
-                                                    )}
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                                            {task.status}
-                                                        </Badge>
-                                                        <Badge variant={task.priority === 'HIGH' || task.priority === 'CRITICAL' ? 'destructive' : task.priority === 'MEDIUM' ? 'secondary' : 'default'} className="text-[10px] px-1.5 py-0">
-                                                            {task.priority}
-                                                        </Badge>
-                                                        {task.dueDate && (
-                                                            <span className="text-xs text-muted-foreground">
-                                                                Due: {new Date(task.dueDate).toLocaleDateString()}
-                                                            </span>
+                                                    <div
+                                                        className="flex-1 space-y-1 cursor-pointer"
+                                                        onClick={() => {
+                                                            setSelectedTaskId(task.id)
+                                                            setTaskDetailDialogOpen(true)
+                                                        }}
+                                                    >
+                                                        <p className="text-sm font-medium">{task.title}</p>
+                                                        {task.project && (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {task.project.name}
+                                                            </p>
                                                         )}
-                                                    </div>
-                                                </div>
-
-                                                {/* Timer Controls */}
-                                                <div className="flex flex-col gap-1 items-end">
-                                                    {isTimerActive ? (
-                                                        <>
-                                                            <Badge variant="secondary" className="text-xs animate-pulse">
-                                                                <Clock className="h-3 w-3 mr-1" />
-                                                                {timerDisplay}
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                                                {task.status}
                                                             </Badge>
+                                                            <Badge variant={task.priority === 'HIGH' || task.priority === 'CRITICAL' ? 'destructive' : task.priority === 'MEDIUM' ? 'secondary' : 'default'} className="text-[10px] px-1.5 py-0">
+                                                                {task.priority}
+                                                            </Badge>
+                                                            {task.dueDate && (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    Due: {new Date(task.dueDate).toLocaleDateString()}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Timer Controls */}
+                                                    <div className="flex flex-col gap-1 items-end">
+                                                        {isTimerActive ? (
+                                                            <>
+                                                                <Badge variant="secondary" className="text-xs animate-pulse">
+                                                                    <Clock className="h-3 w-3 mr-1" />
+                                                                    {timerDisplay}
+                                                                </Badge>
+                                                                <Button
+                                                                    variant="destructive"
+                                                                    size="sm"
+                                                                    className="h-7 px-2"
+                                                                    onClick={stopTimer}
+                                                                >
+                                                                    <Pause className="h-3 w-3 mr-1" />
+                                                                    Stop
+                                                                </Button>
+                                                            </>
+                                                        ) : (
                                                             <Button
-                                                                variant="destructive"
+                                                                variant="outline"
                                                                 size="sm"
                                                                 className="h-7 px-2"
-                                                                onClick={stopTimer}
+                                                                onClick={(e) => showTimerNotesDialog(task.id, task.title, e)}
+                                                                disabled={!!activeTimer}
                                                             >
-                                                                <Pause className="h-3 w-3 mr-1" />
-                                                                Stop
+                                                                <Play className="h-3 w-3 mr-1" />
+                                                                Start
                                                             </Button>
-                                                        </>
-                                                    ) : (
+                                                        )}
                                                         <Button
-                                                            variant="outline"
+                                                            variant="ghost"
                                                             size="sm"
-                                                            className="h-7 px-2"
-                                                            onClick={(e) => showTimerNotesDialog(task.id, task.title, e)}
-                                                            disabled={!!activeTimer}
+                                                            className="h-6 px-2"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                setTimeTrackingTaskId(task.id)
+                                                                setTimeTrackingDialogOpen(true)
+                                                            }}
                                                         >
-                                                            <Play className="h-3 w-3 mr-1" />
-                                                            Start
+                                                            <History className="h-3 w-3" />
                                                         </Button>
-                                                    )}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })
+                                    ) : userTasks.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                                            <CheckCircle2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                                            <p className="text-sm text-muted-foreground mb-2">No tasks yet</p>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setTaskDialogOpen(true)}
+                                            >
+                                                <Plus className="h-4 w-4 mr-1" />
+                                                Create Your First Task
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                                            <Filter className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                                            <p className="text-sm text-muted-foreground mb-2">No tasks match your filters</p>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setStatusFilter('ALL')
+                                                    setPriorityFilter('ALL')
+                                                    setDueDateFilter('ALL')
+                                                }}
+                                            >
+                                                Clear Filters
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                /* Calendar View */
+                                <div className="h-full">
+                                    {(() => {
+                                        // Group tasks by due date
+                                        const tasksByDate: { [key: string]: any[] } = {}
+                                        
+                                        filteredTasks.forEach(task => {
+                                            if (task.dueDate) {
+                                                const dateKey = new Date(task.dueDate).toISOString().split('T')[0]
+                                                if (!tasksByDate[dateKey]) {
+                                                    tasksByDate[dateKey] = []
+                                                }
+                                                tasksByDate[dateKey].push(task)
+                                            }
+                                        })
+
+                                        // Get current month and year from calendarDate state
+                                        const currentMonth = calendarDate.getMonth()
+                                        const currentYear = calendarDate.getFullYear()
+                                        
+                                        // Get first day of month and number of days
+                                        const firstDay = new Date(currentYear, currentMonth, 1)
+                                        const lastDay = new Date(currentYear, currentMonth + 1, 0)
+                                        const daysInMonth = lastDay.getDate()
+                                        const startingDayOfWeek = firstDay.getDay() // 0 = Sunday
+                                        
+                                        // Create calendar grid
+                                        const calendarDays = []
+                                        const now = new Date()
+                                        const today = now.getDate()
+                                        const isCurrentMonth = now.getMonth() === currentMonth && now.getFullYear() === currentYear
+                                        
+                                        // Add empty cells for days before month starts
+                                        for (let i = 0; i < startingDayOfWeek; i++) {
+                                            calendarDays.push(null)
+                                        }
+                                        
+                                        // Add days of month
+                                        for (let day = 1; day <= daysInMonth; day++) {
+                                            calendarDays.push(day)
+                                        }
+
+                                        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                                            'July', 'August', 'September', 'October', 'November', 'December']
+                                        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+                                        // Navigation functions
+                                        const goToPreviousMonth = () => {
+                                            setCalendarDate(new Date(currentYear, currentMonth - 1, 1))
+                                        }
+
+                                        const goToNextMonth = () => {
+                                            setCalendarDate(new Date(currentYear, currentMonth + 1, 1))
+                                        }
+
+                                        const goToToday = () => {
+                                            setCalendarDate(new Date())
+                                        }
+
+                                        return (
+                                            <div className="flex flex-col h-full">
+                                                {/* Calendar Header with Navigation */}
+                                                <div className="mb-3 pb-2 border-b flex items-center justify-between">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="h-6 px-2"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            setTimeTrackingTaskId(task.id)
-                                                            setTimeTrackingDialogOpen(true)
-                                                        }}
+                                                        onClick={goToPreviousMonth}
+                                                        className="h-7 px-2"
                                                     >
-                                                        <History className="h-3 w-3" />
+                                                        <ChevronLeft className="h-4 w-4" />
+                                                    </Button>
+                                                    
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-sm font-semibold">
+                                                            {monthNames[currentMonth]} {currentYear}
+                                                        </h3>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={goToToday}
+                                                            className="h-6 px-2 text-xs"
+                                                        >
+                                                            Today
+                                                        </Button>
+                                                    </div>
+
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={goToNextMonth}
+                                                        className="h-7 px-2"
+                                                    >
+                                                        <ChevronRight className="h-4 w-4" />
                                                     </Button>
                                                 </div>
+
+                                                {/* Day Names */}
+                                                <div className="grid grid-cols-7 gap-1 mb-2">
+                                                    {dayNames.map(day => (
+                                                        <div key={day} className="text-center text-xs font-semibold text-muted-foreground py-1">
+                                                            {day}
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Calendar Grid */}
+                                                <div className="grid grid-cols-7 gap-1 flex-1 overflow-auto">
+                                                    {calendarDays.map((day, index) => {
+                                                        if (day === null) {
+                                                            return <div key={`empty-${index}`} className="bg-muted/20 rounded-lg" />
+                                                        }
+
+                                                        const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                                                        const tasksForDay = tasksByDate[dateKey] || []
+                                                        const isToday = isCurrentMonth && day === today
+                                                        const isPast = new Date(dateKey) < new Date(now.toISOString().split('T')[0])
+
+                                                        return (
+                                                            <div
+                                                                key={day}
+                                                                className={cn(
+                                                                    "border rounded-lg p-2 min-h-[80px] flex flex-col",
+                                                                    isToday && "border-primary bg-primary/5 border-2",
+                                                                    isPast && tasksForDay.length > 0 && "bg-destructive/5",
+                                                                    !isToday && !isPast && "hover:bg-accent"
+                                                                )}
+                                                            >
+                                                                {/* Date number */}
+                                                                <div className={cn(
+                                                                    "text-sm font-semibold mb-1",
+                                                                    isToday && "text-primary",
+                                                                    isPast && "text-muted-foreground"
+                                                                )}>
+                                                                    {day}
+                                                                </div>
+
+                                                                {/* Tasks for this day */}
+                                                                <div className="space-y-1 flex-1 overflow-y-auto">
+                                                                    {tasksForDay.map(task => (
+                                                                        <div
+                                                                            key={task.id}
+                                                                            className={cn(
+                                                                                "text-[10px] px-1.5 py-1 rounded cursor-pointer truncate",
+                                                                                task.priority === 'CRITICAL' && "bg-red-500 text-white",
+                                                                                task.priority === 'HIGH' && "bg-orange-500 text-white",
+                                                                                task.priority === 'MEDIUM' && "bg-yellow-500 text-white",
+                                                                                task.priority === 'LOW' && "bg-blue-500 text-white",
+                                                                                "hover:opacity-80 transition-opacity"
+                                                                            )}
+                                                                            onClick={() => {
+                                                                                setSelectedTaskId(task.id)
+                                                                                setTaskDetailDialogOpen(true)
+                                                                            }}
+                                                                            title={task.title}
+                                                                        >
+                                                                            {task.title}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+
+                                                                {/* Task count badge */}
+                                                                {tasksForDay.length > 0 && (
+                                                                    <div className="text-[10px] text-muted-foreground text-center mt-1">
+                                                                        {tasksForDay.length} task{tasksForDay.length !== 1 ? 's' : ''}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+
+                                                {/* Tasks without due date */}
+                                                {filteredTasks.some(t => !t.dueDate) && (
+                                                    <div className="mt-3 pt-3 border-t">
+                                                        <div className="text-xs font-semibold text-muted-foreground mb-2">
+                                                            No Due Date ({filteredTasks.filter(t => !t.dueDate).length})
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {filteredTasks.filter(t => !t.dueDate).map(task => (
+                                                                <div
+                                                                    key={task.id}
+                                                                    className={cn(
+                                                                        "text-[10px] px-2 py-1 rounded cursor-pointer",
+                                                                        task.priority === 'CRITICAL' && "bg-red-500 text-white",
+                                                                        task.priority === 'HIGH' && "bg-orange-500 text-white",
+                                                                        task.priority === 'MEDIUM' && "bg-yellow-500 text-white",
+                                                                        task.priority === 'LOW' && "bg-blue-500 text-white",
+                                                                        "hover:opacity-80"
+                                                                    )}
+                                                                    onClick={() => {
+                                                                        setSelectedTaskId(task.id)
+                                                                        setTaskDetailDialogOpen(true)
+                                                                    }}
+                                                                >
+                                                                    {task.title}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )
-                                    })
-                                ) : userTasks.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                                        <CheckCircle2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                                        <p className="text-sm text-muted-foreground mb-2">No tasks yet</p>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setTaskDialogOpen(true)}
-                                        >
-                                            <Plus className="h-4 w-4 mr-1" />
-                                            Create Your First Task
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                                        <Filter className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                                        <p className="text-sm text-muted-foreground mb-2">No tasks match your filters</p>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                setStatusFilter('ALL')
-                                                setPriorityFilter('ALL')
-                                                setDueDateFilter('ALL')
-                                            }}
-                                        >
-                                            Clear Filters
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
+                                    })()}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 )

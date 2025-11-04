@@ -49,10 +49,15 @@ export default function NewProjectPage() {
 
     const fetchUsers = async () => {
         try {
+            console.log('Fetching users...')
             const response = await fetch('/api/users/onboarded')
+            console.log('Users response status:', response.status)
             if (response.ok) {
                 const data = await response.json()
+                console.log('Users data:', data)
                 setUsers(data.users || [])
+            } else {
+                console.error('Failed to fetch users:', response.status)
             }
         } catch (error) {
             console.error('Error fetching users:', error)
@@ -196,13 +201,26 @@ export default function NewProjectPage() {
                                             <SelectValue placeholder="Select project manager" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {users.map((user) => (
-                                                <SelectItem key={user.id} value={user.id}>
-                                                    {user.firstName} {user.lastName}
+                                            {users.length === 0 ? (
+                                                <SelectItem value="no-users" disabled>
+                                                    No users available
                                                 </SelectItem>
-                                            ))}
+                                            ) : (
+                                                users.map((user) => (
+                                                    <SelectItem key={user.id} value={user.id}>
+                                                        {user.firstName && user.lastName 
+                                                            ? `${user.firstName} ${user.lastName}` 
+                                                            : user.name || user.email}
+                                                    </SelectItem>
+                                                ))
+                                            )}
                                         </SelectContent>
                                     </Select>
+                                    {users.length === 0 && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Loading users... If this persists, please check browser console for errors.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

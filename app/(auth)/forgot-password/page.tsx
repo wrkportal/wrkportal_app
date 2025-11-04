@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,9 +48,15 @@ export default function ForgotPasswordPage() {
             <div className="w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                        ManagerBook
-                    </h1>
+                    <div className="flex items-center justify-center mb-3">
+                        <Image 
+                            src="/logo.png" 
+                            alt="ManagerBook Logo" 
+                            width={160} 
+                            height={48}
+                            className="h-10 w-auto object-contain"
+                        />
+                    </div>
                     <p className="text-slate-600 mt-2">Enterprise Project Management</p>
                 </div>
 

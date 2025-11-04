@@ -30,6 +30,7 @@ import {
     Sparkles,
     Bot,
     Map,
+    GraduationCap,
 } from "lucide-react"
 import { useUIStore } from "@/stores/uiStore"
 import { Button } from "@/components/ui/button"
@@ -109,6 +110,13 @@ const aiAssistantNavItem: NavItem = {
     roles: Object.values(UserRole),
 }
 
+const academyNavItem: NavItem = {
+    title: "Academy",
+    href: "/academy",
+    icon: GraduationCap,
+    roles: Object.values(UserRole),
+}
+
 const adminNavItem: NavItem = {
     title: "Admin",
     href: "/admin",
@@ -120,6 +128,12 @@ const adminNavItem: NavItem = {
             href: "/admin/organization",
             icon: Users,
             roles: [UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+        },
+        {
+            title: "Tutorials",
+            href: "/admin/tutorials",
+            icon: GraduationCap,
+            roles: [UserRole.TENANT_SUPER_ADMIN],
         },
         {
             title: "SSO Settings",
@@ -197,10 +211,10 @@ export function Sidebar() {
     if (!isMounted || !user || !sidebarOpen) return null
 
     // Be robust if user.role isn't hydrated yet or not properly set
-    const effectiveRole = (user.role && Object.values(UserRole).includes(user.role as UserRole)) 
-        ? (user.role as UserRole) 
+    const effectiveRole = (user.role && Object.values(UserRole).includes(user.role as UserRole))
+        ? (user.role as UserRole)
         : UserRole.TEAM_MEMBER
-    
+
     const filteredItems = navigationItems.filter((item) => {
         // Ensure roles array exists and contains the user's role
         return item.roles && Array.isArray(item.roles) && item.roles.includes(effectiveRole)
@@ -430,6 +444,25 @@ export function Sidebar() {
                         </div>
                     )}
 
+                    {/* Academy Tab - Between AI Assistant and Admin */}
+                    {!sidebarCollapsed && user && academyNavItem.roles.includes(effectiveRole) && (
+                        <div className="pt-2 border-t border-border">
+                            <Link
+                                href={academyNavItem.href}
+                                onClick={handleLinkClick}
+                                className={cn(
+                                    "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight -mx-2 px-6",
+                                    pathname === academyNavItem.href || pathname.startsWith(academyNavItem.href + "/")
+                                        ? "bg-primary text-primary-foreground"
+                                        : "text-foreground hover:bg-accent"
+                                )}
+                            >
+                                <GraduationCap className="h-5 w-5" />
+                                <span>{academyNavItem.title}</span>
+                            </Link>
+                        </div>
+                    )}
+
                     {/* Admin Tab - Sticky at the bottom */}
                     {!sidebarCollapsed && user && adminNavItem.roles.includes(user.role) && (
                         <div className="pt-2 border-t border-border">
@@ -458,7 +491,7 @@ export function Sidebar() {
                             {expandedAdmin && (
                                 <div className="space-y-1">
                                     {adminNavItem.children
-                                        .filter((child) => child.roles.includes(user.role))
+                                        ?.filter((child) => child.roles.includes(user.role))
                                         .map((child) => {
                                             const ChildIcon = child.icon
                                             const isChildActive =

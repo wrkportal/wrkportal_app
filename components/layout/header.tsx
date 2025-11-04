@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
@@ -81,13 +82,15 @@ export function Header() {
                     <Menu className="h-5 w-5" />
                 </Button>
 
-                <Link href="/" className="flex items-center space-x-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                        <span className="text-lg font-semibold">MB</span>
-                    </div>
-                    <span className="hidden font-semibold text-lg sm:inline-block">
-                        ManagerBook
-                    </span>
+                <Link href="/" className="flex items-center space-x-2">
+                    <Image 
+                        src="/logo.png" 
+                        alt="ManagerBook" 
+                        width={140} 
+                        height={40}
+                        className="h-8 w-auto"
+                        priority
+                    />
                 </Link>
 
                 <div className="flex flex-1 items-center justify-between space-x-2 md:space-x-4 md:justify-end">

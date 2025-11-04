@@ -126,13 +126,10 @@ export default function SignupPage() {
                         <Image 
                             src="/logo.png" 
                             alt="ManagerBook Logo" 
-                            width={48} 
+                            width={160} 
                             height={48}
-                            className="object-contain"
+                            className="h-10 w-auto object-contain"
                         />
-                        <h1 className="text-4xl font-bold text-blue-900 dark:text-blue-300">
-                            ManagerBook
-                        </h1>
                     </div>
                     <p className="text-slate-600 mt-2">Create your account</p>
                 </div>

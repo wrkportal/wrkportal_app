@@ -18,8 +18,9 @@ interface TaskDialogProps {
 
 interface OnboardedUser {
     id: string
-    firstName: string
-    lastName: string
+    name?: string
+    firstName?: string
+    lastName?: string
     email: string
     role: string
 }
@@ -75,12 +76,15 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
 
             // Auto-assign to themselves if no assignee set
             if (!formData.assigneeId && currentUser) {
+                const displayName = currentUser.firstName && currentUser.lastName 
+                    ? `${currentUser.firstName} ${currentUser.lastName}`
+                    : currentUser.name || currentUser.email
                 setFormData(prev => ({
                     ...prev,
                     assigneeId: currentUser.id,
-                    assigneeName: `${currentUser.firstName} ${currentUser.lastName}`
+                    assigneeName: displayName
                 }))
-                setAssigneeInput(`${currentUser.firstName} ${currentUser.lastName}`)
+                setAssigneeInput(displayName)
             }
         }
     }, [currentUser, onboardedUsers])
@@ -134,12 +138,15 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
     }
 
     const selectUser = (user: OnboardedUser) => {
+        const displayName = user.firstName && user.lastName 
+            ? `${user.firstName} ${user.lastName}`
+            : user.name || user.email
         setFormData({
             ...formData,
             assigneeId: user.id,
-            assigneeName: `${user.firstName} ${user.lastName}`
+            assigneeName: displayName
         })
-        setAssigneeInput(`${user.firstName} ${user.lastName}`)
+        setAssigneeInput(displayName)
         setShowUserSuggestions(false)
     }
 
@@ -282,7 +289,9 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
                                             >
                                                 <div>
                                                     <p className="text-sm font-medium">
-                                                        {user.firstName} {user.lastName}
+                                                        {user.firstName && user.lastName 
+                                                            ? `${user.firstName} ${user.lastName}` 
+                                                            : user.name || user.email}
                                                     </p>
                                                     <p className="text-xs text-muted-foreground">{user.email}</p>
                                                 </div>
