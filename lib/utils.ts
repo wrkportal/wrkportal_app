@@ -43,7 +43,16 @@ export function formatPercentage(value: number): string {
   return `${Math.round(value)}%`
 }
 
-export function getInitials(firstName: string, lastName: string): string {
+export function getInitials(firstName: string, lastName?: string): string {
+  if (!firstName) return '??'
+  if (!lastName) {
+    // Single string provided (full name or email)
+    const parts = firstName.trim().split(/\s+/)
+    if (parts.length >= 2) {
+      return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase()
+    }
+    return firstName.substring(0, 2).toUpperCase()
+  }
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
 }
 

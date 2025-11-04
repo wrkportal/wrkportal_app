@@ -31,6 +31,7 @@ import {
     Bot,
     Map,
     GraduationCap,
+    MessageSquare,
 } from "lucide-react"
 import { useUIStore } from "@/stores/uiStore"
 import { Button } from "@/components/ui/button"
@@ -57,16 +58,11 @@ const navigationItems: NavItem[] = [
         roles: Object.values(UserRole),
     },
     {
-        title: "AI Tools",
-        href: "/ai-tools",
-        icon: Sparkles,
-        roles: Object.values(UserRole),
-    },
-    {
         title: "Goals & OKRs",
         href: "/okrs",
         icon: Target,
         roles: [
+            UserRole.PLATFORM_OWNER,
             UserRole.TENANT_SUPER_ADMIN,
             UserRole.ORG_ADMIN,
             UserRole.PMO_LEAD,
@@ -76,10 +72,23 @@ const navigationItems: NavItem[] = [
         ],
     },
     {
+        title: "Collaborate",
+        href: "/collaborate",
+        icon: MessageSquare,
+        roles: Object.values(UserRole),
+    },
+    {
+        title: "AI Tools",
+        href: "/ai-tools",
+        icon: Sparkles,
+        roles: Object.values(UserRole),
+    },
+    {
         title: "Reports",
         href: "/reports",
         icon: BarChart3,
         roles: [
+            UserRole.PLATFORM_OWNER,
             UserRole.TENANT_SUPER_ADMIN,
             UserRole.ORG_ADMIN,
             UserRole.PMO_LEAD,
@@ -94,6 +103,7 @@ const navigationItems: NavItem[] = [
         href: "/approvals",
         icon: CheckSquare,
         roles: [
+            UserRole.PLATFORM_OWNER,
             UserRole.TENANT_SUPER_ADMIN,
             UserRole.ORG_ADMIN,
             UserRole.PMO_LEAD,
@@ -117,47 +127,68 @@ const academyNavItem: NavItem = {
     roles: Object.values(UserRole),
 }
 
+const collaborateNavItem: NavItem = {
+    title: "Collaborate",
+    href: "/collaborate",
+    icon: MessageSquare,
+    roles: Object.values(UserRole),
+}
+
 const adminNavItem: NavItem = {
     title: "Admin",
     href: "/admin",
     icon: Settings,
-    roles: [UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.INTEGRATION_ADMIN],
+    roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.INTEGRATION_ADMIN],
     children: [
         {
             title: "Organization",
             href: "/admin/organization",
             icon: Users,
-            roles: [UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+        },
+        {
+            title: "Domain Verification",
+            href: "/admin/domain-verification",
+            icon: Shield,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN],
         },
         {
             title: "Tutorials",
             href: "/admin/tutorials",
             icon: GraduationCap,
-            roles: [UserRole.TENANT_SUPER_ADMIN],
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN],
         },
         {
             title: "SSO Settings",
             href: "/admin/sso-settings",
             icon: Shield,
-            roles: [UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
         },
         {
             title: "Security",
             href: "/admin/security",
             icon: Shield,
-            roles: [UserRole.TENANT_SUPER_ADMIN],
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN],
         },
         {
             title: "Audit Log",
             href: "/admin/audit",
             icon: FileText,
             roles: [
+                UserRole.PLATFORM_OWNER,
                 UserRole.TENANT_SUPER_ADMIN,
                 UserRole.COMPLIANCE_AUDITOR,
                 UserRole.INTEGRATION_ADMIN,
             ],
         },
     ],
+}
+
+const platformAdminNavItem: NavItem = {
+    title: "Platform Admin",
+    href: "/platform-admin",
+    icon: Shield,
+    roles: [UserRole.PLATFORM_OWNER],
 }
 
 export function Sidebar() {
@@ -515,6 +546,25 @@ export function Sidebar() {
                                         })}
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Platform Admin Tab - Last tab (god-mode) */}
+                    {!sidebarCollapsed && user && platformAdminNavItem.roles.includes(user.role) && (
+                        <div className="pt-2 border-t border-border">
+                            <Link
+                                href={platformAdminNavItem.href}
+                                onClick={handleLinkClick}
+                                className={cn(
+                                    "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight -mx-2 px-6",
+                                    pathname === platformAdminNavItem.href || pathname.startsWith(platformAdminNavItem.href + "/")
+                                        ? "bg-primary text-primary-foreground"
+                                        : "text-foreground hover:bg-accent"
+                                )}
+                            >
+                                <Shield className="h-5 w-5" />
+                                <span>{platformAdminNavItem.title}</span>
+                            </Link>
                         </div>
                     )}
                 </div>

@@ -6,6 +6,7 @@
 // ============================================================================
 
 export enum UserRole {
+  PLATFORM_OWNER = 'PLATFORM_OWNER',         // Platform-level super admin
   TENANT_SUPER_ADMIN = 'TENANT_SUPER_ADMIN',
   ORG_ADMIN = 'ORG_ADMIN',
   PMO_LEAD = 'PMO_LEAD',
@@ -89,6 +90,50 @@ export enum TimesheetStatus {
 export enum BudgetType {
   CAPEX = 'CAPEX',
   OPEX = 'OPEX',
+}
+
+export enum CollaborationType {
+  PROJECT = 'PROJECT',
+  TASK = 'TASK',
+  GENERAL = 'GENERAL',
+  BRAINSTORM = 'BRAINSTORM',
+  REVIEW = 'REVIEW',
+  PLANNING = 'PLANNING',
+}
+
+export enum CollaborationStatus {
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  ON_HOLD = 'ON_HOLD',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum CollaborationRole {
+  OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
+  MEMBER = 'MEMBER',
+  VIEWER = 'VIEWER',
+}
+
+export enum SuggestionType {
+  CHANGE = 'CHANGE',
+  ADDITION = 'ADDITION',
+  REMOVAL = 'REMOVAL',
+  GENERAL = 'GENERAL',
+}
+
+export enum SuggestionStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  IMPLEMENTED = 'IMPLEMENTED',
+}
+
+export enum InvitationStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  EXPIRED = 'EXPIRED',
+  REVOKED = 'REVOKED',
 }
 
 // Core Entity Types

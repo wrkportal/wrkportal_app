@@ -86,6 +86,17 @@ model User {
   // Tutorials
   createdTutorials   Tutorial[] @relation("TutorialCreator")
   
+  // Collaborations
+  createdCollaborations     Collaboration[] @relation("CollaborationCreator")
+  collaborationMemberships  CollaborationMember[]
+  collaborationMessages     CollaborationMessage[]
+  collaborationFiles        CollaborationFile[]
+  collaborationSuggestions  CollaborationSuggestion[]
+  respondedSuggestions      CollaborationSuggestion[] @relation("SuggestionResponder")
+  
+  // Invitations
+  sentInvitations           TenantInvitation[] @relation("InvitedBy")
+  
   @@index([email])
   @@index([tenantId])
   @@index([orgUnitId])
@@ -141,6 +152,15 @@ model Tenant {
   logo        String?
   settings    Json?
   
+  // Domain Verification
+  domainVerified      Boolean   @default(false)
+  verificationCode    String?   @unique
+  verificationMethod  String?   // 'DNS', 'EMAIL', 'MANUAL'
+  verifiedAt          DateTime?
+  verifiedById        String?
+  codeExpiresAt       DateTime?
+  autoJoinEnabled     Boolean   @default(false) // Allow domain users to auto-join after verification
+  
   // Subscription
   plan        String   @default("free") // free, professional, enterprise
   maxUsers    Int      @default(10)
@@ -172,8 +192,11 @@ model Tenant {
   notifications Notification[]
   auditLogs     AuditLog[]
   tutorials     Tutorial[]
+  collaborations Collaboration[]
+  invitations   TenantInvitation[]
   
   @@index([domain])
+  @@index([verificationCode])
 }
 
 model OrgUnit {
@@ -195,6 +218,40 @@ model OrgUnit {
   
   @@index([tenantId])
   @@index([parentId])
+}
+
+// Tenant Invitation System
+model TenantInvitation {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  email       String
+  token       String   @unique
+  role        UserRole @default(TEAM_MEMBER)
+  
+  invitedById String
+  invitedBy   User     @relation("InvitedBy", fields: [invitedById], references: [id])
+  
+  status      InvitationStatus @default(PENDING)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
 }
 
 // ============================================
@@ -291,6 +348,7 @@ model Project {
   issues      Issue[]
   changeRequests ChangeRequest[]
   timesheets  Timesheet[]
+  collaborations Collaboration[]
   
   @@index([tenantId])
   @@index([programId])
@@ -374,6 +432,9 @@ model Task {
   
   // Time Tracking
   timeTrackings TimeTracking[]
+  
+  // Collaborations
+  collaborations Collaboration[]
   
   // Soft Delete
   deletedAt   DateTime?
@@ -768,6 +829,7 @@ model UserSkill {
 // ============================================
 
 enum UserRole {
+  PLATFORM_OWNER        // Platform-level super admin (cross-tenant access)
   TENANT_SUPER_ADMIN
   ORG_ADMIN
   PMO_LEAD
@@ -1040,6 +1102,7 @@ enum AuditEntity {
   SSO_SETTINGS
   RETENTION_SETTINGS
   TUTORIAL
+  COLLABORATION
 }
 
 // ============================================
@@ -1102,5 +1165,188 @@ enum TutorialLevel {
 enum TutorialSection {
   PROJECT_MANAGEMENT
   TOOLS_WORKINGS
+}
+
+// ============================================
+// COLLABORATION SYSTEM
+// ============================================
+
+model Collaboration {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?  @db.Text
+  type        CollaborationType  // PROJECT, TASK, GENERAL, etc.
+  
+  // Optional links to entities
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId      String?
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  // Creator
+  createdById String
+  createdBy   User     @relation("CollaborationCreator", fields: [createdById], references: [id])
+  
+  // Status
+  status      CollaborationStatus @default(ACTIVE)
+  isArchived  Boolean  @default(false)
+  
+  // Relations
+  members     CollaborationMember[]
+  messages    CollaborationMessage[]
+  files       CollaborationFile[]
+  suggestions CollaborationSuggestion[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([taskId])
+  @@index([createdById])
+  @@index([status])
+}
+
+model CollaborationMember {
+  id              String   @id @default(cuid())
+  collaborationId String
+  collaboration   Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  role            CollaborationRole @default(MEMBER)
+  canEdit         Boolean  @default(false)
+  canInvite       Boolean  @default(false)
+  canDelete       Boolean  @default(false)
+  
+  joinedAt        DateTime @default(now())
+  lastSeenAt      DateTime?
+  
+  @@unique([collaborationId, userId])
+  @@index([collaborationId])
+  @@index([userId])
+}
+
+model CollaborationMessage {
+  id              String   @id @default(cuid())
+  collaborationId String
+  collaboration   Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  content         String   @db.Text
+  mentions        String[] // Array of user IDs mentioned in message
+  
+  // Optional reply
+  parentId        String?
+  parent          CollaborationMessage? @relation("MessageReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies         CollaborationMessage[] @relation("MessageReplies")
+  
+  isEdited        Boolean  @default(false)
+  isDeleted       Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([collaborationId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model CollaborationFile {
+  id              String   @id @default(cuid())
+  collaborationId String
+  collaboration   Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  fileName        String
+  fileUrl         String   @db.Text
+  fileSize        Int
+  fileType        String   // mime type
+  
+  description     String?  @db.Text
+  
+  uploadedAt      DateTime @default(now())
+  
+  @@index([collaborationId])
+  @@index([userId])
+}
+
+model CollaborationSuggestion {
+  id              String   @id @default(cuid())
+  collaborationId String
+  collaboration   Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title           String
+  description     String   @db.Text
+  suggestionType  SuggestionType  // CHANGE, ADDITION, REMOVAL, GENERAL
+  
+  // Optional file/content reference
+  targetType      String?  // 'file', 'text', 'task', etc.
+  targetId        String?
+  originalContent String?  @db.Text
+  suggestedContent String? @db.Text
+  
+  status          SuggestionStatus @default(PENDING)
+  
+  // Response
+  respondedById   String?
+  respondedBy     User?    @relation("SuggestionResponder", fields: [respondedById], references: [id])
+  responseNote    String?  @db.Text
+  respondedAt     DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([collaborationId])
+  @@index([userId])
+  @@index([status])
+}
+
+enum CollaborationType {
+  PROJECT
+  TASK
+  GENERAL
+  BRAINSTORM
+  REVIEW
+  PLANNING
+}
+
+enum CollaborationStatus {
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+enum CollaborationRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum SuggestionType {
+  CHANGE
+  ADDITION
+  REMOVAL
+  GENERAL
+}
+
+enum SuggestionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  IMPLEMENTED
 }
 

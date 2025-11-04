@@ -34,7 +34,8 @@ import {
     X,
     List,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    MessageSquare
 } from "lucide-react"
 import { Responsive, WidthProvider, Layout, Layouts } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
@@ -43,6 +44,7 @@ import { TaskDialog } from "@/components/dialogs/task-dialog"
 import { TaskDetailDialog } from "@/components/dialogs/task-detail-dialog"
 import { TimeTrackingDialog } from "@/components/dialogs/time-tracking-dialog"
 import { TimerNotesDialog } from "@/components/dialogs/timer-notes-dialog"
+import { CollaborationDialog } from "@/components/dialogs/collaboration-dialog"
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -98,6 +100,7 @@ export default function HomePage() {
     const [taskDialogOpen, setTaskDialogOpen] = useState(false)
     const [taskDetailDialogOpen, setTaskDetailDialogOpen] = useState(false)
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+    const [collaborationDialogOpen, setCollaborationDialogOpen] = useState(false)
     const [timeTrackingDialogOpen, setTimeTrackingDialogOpen] = useState(false)
     const [timeTrackingTaskId, setTimeTrackingTaskId] = useState<string | undefined>(undefined)
     const [activeTimer, setActiveTimer] = useState<any>(null)
@@ -867,7 +870,7 @@ export default function HomePage() {
                                     {(() => {
                                         // Group tasks by due date
                                         const tasksByDate: { [key: string]: any[] } = {}
-                                        
+
                                         filteredTasks.forEach(task => {
                                             if (task.dueDate) {
                                                 const dateKey = new Date(task.dueDate).toISOString().split('T')[0]
@@ -881,24 +884,24 @@ export default function HomePage() {
                                         // Get current month and year from calendarDate state
                                         const currentMonth = calendarDate.getMonth()
                                         const currentYear = calendarDate.getFullYear()
-                                        
+
                                         // Get first day of month and number of days
                                         const firstDay = new Date(currentYear, currentMonth, 1)
                                         const lastDay = new Date(currentYear, currentMonth + 1, 0)
                                         const daysInMonth = lastDay.getDate()
                                         const startingDayOfWeek = firstDay.getDay() // 0 = Sunday
-                                        
+
                                         // Create calendar grid
                                         const calendarDays = []
                                         const now = new Date()
                                         const today = now.getDate()
                                         const isCurrentMonth = now.getMonth() === currentMonth && now.getFullYear() === currentYear
-                                        
+
                                         // Add empty cells for days before month starts
                                         for (let i = 0; i < startingDayOfWeek; i++) {
                                             calendarDays.push(null)
                                         }
-                                        
+
                                         // Add days of month
                                         for (let day = 1; day <= daysInMonth; day++) {
                                             calendarDays.push(day)
@@ -933,7 +936,7 @@ export default function HomePage() {
                                                     >
                                                         <ChevronLeft className="h-4 w-4" />
                                                     </Button>
-                                                    
+
                                                     <div className="flex items-center gap-2">
                                                         <h3 className="text-sm font-semibold">
                                                             {monthNames[currentMonth]} {currentYear}
@@ -1171,7 +1174,7 @@ export default function HomePage() {
                             <CardDescription className="text-xs">Fast access to common tasks</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1">
-                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                                 <Button variant="outline" className="h-auto flex-col gap-1 sm:gap-1.5 py-2 sm:py-3 transition-all min-w-0" onClick={() => router.push('/projects/new')}>
                                     <Plus className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
                                     <span className="text-[10px] sm:text-xs font-medium truncate w-full">New Project</span>
@@ -1179,6 +1182,10 @@ export default function HomePage() {
                                 <Button variant="outline" className="h-auto flex-col gap-1 sm:gap-1.5 py-2 sm:py-3 transition-all min-w-0" onClick={() => setTaskDialogOpen(true)}>
                                     <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
                                     <span className="text-[10px] sm:text-xs font-medium truncate w-full">New Task</span>
+                                </Button>
+                                <Button variant="outline" className="h-auto flex-col gap-1 sm:gap-1.5 py-2 sm:py-3 transition-all min-w-0" onClick={() => setCollaborationDialogOpen(true)}>
+                                    <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                                    <span className="text-[10px] sm:text-xs font-medium truncate w-full">Collaborate</span>
                                 </Button>
                                 <Button variant="outline" className="h-auto flex-col gap-1 sm:gap-1.5 py-2 sm:py-3 transition-all min-w-0" onClick={() => router.push('/reports')}>
                                     <FileText className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
@@ -1386,6 +1393,16 @@ export default function HomePage() {
                 }}
                 onSubmit={startTimer}
                 taskTitle={pendingTimerTask?.title}
+            />
+
+            {/* Collaboration Dialog */}
+            <CollaborationDialog
+                open={collaborationDialogOpen}
+                onOpenChange={setCollaborationDialogOpen}
+                onSuccess={() => {
+                    // Optionally navigate to collaborations page
+                    router.push('/collaborate')
+                }}
             />
         </div>
     )
