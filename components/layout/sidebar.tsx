@@ -87,16 +87,7 @@ const navigationItems: NavItem[] = [
         title: "Reports",
         href: "/reports",
         icon: BarChart3,
-        roles: [
-            UserRole.PLATFORM_OWNER,
-            UserRole.TENANT_SUPER_ADMIN,
-            UserRole.ORG_ADMIN,
-            UserRole.PMO_LEAD,
-            UserRole.PROJECT_MANAGER,
-            UserRole.EXECUTIVE,
-            UserRole.RESOURCE_MANAGER,
-            UserRole.FINANCE_CONTROLLER,
-        ],
+        roles: Object.values(UserRole), // All users can view reports
     },
     {
         title: "Approvals",
@@ -327,12 +318,12 @@ export function Sidebar() {
                                         onClick={handleLinkClick}
                                         className={cn(
                                             "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight relative",
-                                            sidebarCollapsed ? "justify-center px-2 rounded-md hover:bg-accent" : "-mx-2 px-6 hover:bg-accent",
+                                            sidebarCollapsed ? "justify-center px-2 rounded-md" : "-mx-2 px-6",
                                             isActive
                                                 ? sidebarCollapsed
-                                                    ? "bg-primary text-primary-foreground rounded-md"
-                                                    : "bg-primary text-primary-foreground"
-                                                : "text-foreground"
+                                                    ? "bg-primary text-primary-foreground rounded-md hover:bg-primary"
+                                                    : "bg-primary text-primary-foreground hover:bg-primary"
+                                                : "text-foreground hover:bg-accent"
                                         )}
                                         title={sidebarCollapsed ? item.title : undefined}
                                     >
@@ -367,7 +358,7 @@ export function Sidebar() {
                                                 className={cn(
                                                     "flex items-center justify-between py-2.5 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10",
                                                     isProgramActive && !pathname.includes('/projects/')
-                                                        ? "bg-primary text-primary-foreground"
+                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
                                                         : "text-muted-foreground hover:text-foreground hover:bg-accent"
                                                 )}
                                                 onClick={() => toggleProgram(program.id)}
@@ -397,7 +388,7 @@ export function Sidebar() {
                                                                 className={cn(
                                                                     "flex items-center gap-2 py-2 text-xs font-medium transition-all tracking-tight -mx-2 px-8",
                                                                     isProjectActive
-                                                                        ? "bg-primary text-primary-foreground border-l-4 border-primary/50"
+                                                                        ? "bg-primary text-primary-foreground border-l-4 border-primary/50 hover:bg-primary"
                                                                         : "text-muted-foreground hover:text-foreground hover:bg-accent"
                                                                 )}
                                                             >
@@ -441,7 +432,7 @@ export function Sidebar() {
                                                     className={cn(
                                                         "flex items-center gap-2 py-2 text-xs font-medium transition-all tracking-tight -mx-2 px-14",
                                                         isProjectActive
-                                                            ? "bg-primary text-primary-foreground border-l-4 border-primary/50"
+                                                            ? "bg-primary text-primary-foreground border-l-4 border-primary/50 hover:bg-primary"
                                                             : "text-muted-foreground hover:text-foreground hover:bg-accent"
                                                     )}
                                                 >
@@ -465,7 +456,7 @@ export function Sidebar() {
                                 className={cn(
                                     "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight -mx-2 px-6",
                                     pathname === aiAssistantNavItem.href || pathname.startsWith(aiAssistantNavItem.href + "/")
-                                        ? "bg-primary text-primary-foreground"
+                                        ? "bg-primary text-primary-foreground hover:bg-primary"
                                         : "text-foreground hover:bg-accent"
                                 )}
                             >
@@ -484,7 +475,7 @@ export function Sidebar() {
                                 className={cn(
                                     "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight -mx-2 px-6",
                                     pathname === academyNavItem.href || pathname.startsWith(academyNavItem.href + "/")
-                                        ? "bg-primary text-primary-foreground"
+                                        ? "bg-primary text-primary-foreground hover:bg-primary"
                                         : "text-foreground hover:bg-accent"
                                 )}
                             >
@@ -501,7 +492,7 @@ export function Sidebar() {
                                 className={cn(
                                     "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
                                     pathname.includes(adminNavItem.href) && !pathname.includes(adminNavItem.href + "/")
-                                        ? "bg-primary text-primary-foreground"
+                                        ? "bg-primary text-primary-foreground hover:bg-primary"
                                         : "text-foreground hover:bg-accent"
                                 )}
                                 onClick={() => setExpandedAdmin(!expandedAdmin)}
@@ -535,7 +526,7 @@ export function Sidebar() {
                                                     className={cn(
                                                         "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
                                                         isChildActive
-                                                            ? "bg-primary text-primary-foreground"
+                                                            ? "bg-primary text-primary-foreground hover:bg-primary"
                                                             : "text-muted-foreground hover:text-foreground hover:bg-accent"
                                                     )}
                                                 >
@@ -558,7 +549,7 @@ export function Sidebar() {
                                 className={cn(
                                     "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight -mx-2 px-6",
                                     pathname === platformAdminNavItem.href || pathname.startsWith(platformAdminNavItem.href + "/")
-                                        ? "bg-primary text-primary-foreground"
+                                        ? "bg-primary text-primary-foreground hover:bg-primary"
                                         : "text-foreground hover:bg-accent"
                                 )}
                             >

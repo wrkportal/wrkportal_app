@@ -187,8 +187,8 @@ export function ProgramDialog({ open, onClose }: ProgramDialogProps) {
                                     type="date"
                                     value={formData.startDate}
                                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                    className="text-left [color-scheme:light] dark:[color-scheme:dark]"
                                     required
-                                    className="[color-scheme:light] dark:[color-scheme:dark]"
                                 />
                             </div>
 
@@ -199,8 +199,8 @@ export function ProgramDialog({ open, onClose }: ProgramDialogProps) {
                                     type="date"
                                     value={formData.endDate}
                                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                    className="text-left [color-scheme:light] dark:[color-scheme:dark]"
                                     required
-                                    className="[color-scheme:light] dark:[color-scheme:dark]"
                                 />
                             </div>
                         </div>

@@ -95,6 +95,8 @@ model User {
   createdReminders          Reminder[] @relation("CreatedReminders")
   reminders                 Reminder[] @relation("UserReminders")
   respondedSuggestions      CollaborationSuggestion[] @relation("SuggestionResponder")
+  defaultLayouts            DefaultLayout[]
+
   
   // Invitations
   sentInvitations           TenantInvitation[] @relation("InvitedBy")
@@ -197,6 +199,7 @@ model Tenant {
   collaborations Collaboration[]
   invitations   TenantInvitation[]
   reminders     Reminder[]
+  defaultLayouts DefaultLayout[]
   
   @@index([domain])
   @@index([verificationCode])
@@ -1391,5 +1394,37 @@ enum SuggestionStatus {
   ACCEPTED
   REJECTED
   IMPLEMENTED
+}
+
+// ============================================
+// DEFAULT LAYOUTS (Platform Owner Configuration)
+// ============================================
+
+model DefaultLayout {
+  id          String   @id @default(cuid())
+  
+  // Scope
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Page identifier (e.g., "my-work", "roadmap", "collaborate")
+  pageKey     String
+  
+  // Target role (null = applies to all roles)
+  targetRole  UserRole?
+  
+  // Layout configuration (JSON)
+  layoutData  Json     // Stores widgets, positions, sizes, etc.
+  
+  // Metadata
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([tenantId, pageKey, targetRole])
+  @@index([tenantId, pageKey])
+  @@index([createdById])
 }
 

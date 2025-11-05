@@ -381,7 +381,7 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
                                     type="date"
                                     value={formData.dueDate}
                                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                                    className="[color-scheme:light] dark:[color-scheme:dark]"
+                                    className="[color-scheme:light] dark:[color-scheme:dark] text-left"
                                 />
                             </div>
 

@@ -419,3 +419,32 @@ select {
 .status-dot.offline {
   @apply bg-gray-400;
 }
+
+/* AI Assistant Grid Styles */
+.ai-assistant-grid {
+  @apply w-full;
+}
+
+.ai-assistant-grid .layout {
+  @apply min-h-screen;
+}
+
+.ai-assistant-grid .grid-item {
+  @apply relative;
+}
+
+.ai-assistant-grid .react-grid-item {
+  @apply transition-all duration-200;
+}
+
+.ai-assistant-grid .react-grid-item.react-grid-placeholder {
+  @apply bg-primary/10 rounded-lg border-2 border-dashed border-primary/30;
+}
+
+.ai-assistant-grid .react-resizable-handle {
+  @apply opacity-0 transition-opacity;
+}
+
+.ai-assistant-grid .react-grid-item:hover .react-resizable-handle {
+  @apply opacity-100;
+}

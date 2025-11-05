@@ -283,6 +283,7 @@ export function CreateTaskFromMessageDialog({
                                 onChange={(e) =>
                                     setFormData({ ...formData, dueDate: e.target.value })
                                 }
+                                className="text-left"
                             />
                         </div>
 

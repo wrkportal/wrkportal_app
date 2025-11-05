@@ -144,6 +144,7 @@ export function ResourceDialog({ open, onClose, onSubmit }: ResourceDialogProps)
                                     type="date"
                                     value={formData.startDate}
                                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                    className="text-left"
                                     required
                                 />
                             </div>
@@ -155,6 +156,7 @@ export function ResourceDialog({ open, onClose, onSubmit }: ResourceDialogProps)
                                     type="date"
                                     value={formData.endDate}
                                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                    className="text-left"
                                     required
                                 />
                             </div>

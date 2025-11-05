@@ -121,8 +121,8 @@ export function TimesheetDialog({ open, onClose, onSubmit }: TimesheetDialogProp
                                             type="date"
                                             value={entry.date}
                                             onChange={(e) => updateEntry(entry.id, 'date', e.target.value)}
+                                            className="text-left [color-scheme:light] dark:[color-scheme:dark]"
                                             required
-                                            className="[color-scheme:light] dark:[color-scheme:dark]"
                                         />
                                     </div>
 

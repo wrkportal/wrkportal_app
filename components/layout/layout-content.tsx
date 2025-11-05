@@ -40,11 +40,14 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex flex-1">
                 <Sidebar />
                 <main
-                    className={`flex-1 overflow-y-auto p-4 md:p-8 mt-16 transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
+                    className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
                         }`}
+                    style={{ height: 'calc(100vh - 4rem)', marginTop: '4rem' }}
                 >
-                    <div className="max-w-7xl mx-auto">
-                        {children}
+                    <div className="h-full p-6 md:p-8">
+                        <div className="max-w-7xl mx-auto h-full">
+                            {children}
+                        </div>
                     </div>
                 </main>
             </div>

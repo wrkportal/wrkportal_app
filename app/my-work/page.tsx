@@ -45,6 +45,8 @@ import { TaskDetailDialog } from "@/components/dialogs/task-detail-dialog"
 import { TimeTrackingDialog } from "@/components/dialogs/time-tracking-dialog"
 import { TimerNotesDialog } from "@/components/dialogs/timer-notes-dialog"
 import { CollaborationDialog } from "@/components/dialogs/collaboration-dialog"
+import { SaveDefaultLayoutButton } from "@/components/ui/save-default-layout-button"
+import { useDefaultLayout } from "@/hooks/useDefaultLayout"
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -65,28 +67,28 @@ const defaultWidgets: Widget[] = [
 
 const defaultLayouts: Layouts = {
     lg: [
-        { i: 'metrics', x: 0, y: 0, w: 6, h: 2, minW: 6, minH: 2 },
-        { i: 'recentProjects', x: 6, y: 0, w: 6, h: 11, minW: 4, minH: 3 },
-        { i: 'quickActions', x: 0, y: 2, w: 6, h: 2, minW: 6, minH: 2 },
-        { i: 'myTasks', x: 0, y: 4, w: 6, h: 7, minW: 6, minH: 3 },
-        { i: 'activeOKRs', x: 0, y: 11, w: 12, h: 5, minW: 6, minH: 2 },
-        { i: 'overdueTasks', x: 0, y: 16, w: 6, h: 3, minW: 4, minH: 2 },
+        { i: 'metrics', x: 0, y: 0, w: 5, h: 2, minW: 3, minH: 2 },
+        { i: 'quickActions', x: 0, y: 2, w: 5, h: 4, minW: 3, minH: 4 },
+        { i: 'recentProjects', x: 0, y: 6, w: 5, h: 6, minW: 3, minH: 4 },
+        { i: 'myTasks', x: 5, y: 0, w: 7, h: 8, minW: 6, minH: 6 },
+        { i: 'activeOKRs', x: 5, y: 8, w: 7, h: 4, minW: 4, minH: 3 },
+        { i: 'overdueTasks', x: 0, y: 12, w: 5, h: 4, minW: 3, minH: 3 },
     ],
     md: [
-        { i: 'metrics', x: 0, y: 0, w: 10, h: 2, minW: 5, minH: 2 },
-        { i: 'overdueTasks', x: 0, y: 2, w: 5, h: 3, minW: 4, minH: 2 },
-        { i: 'recentProjects', x: 5, y: 2, w: 5, h: 3, minW: 4, minH: 3 },
-        { i: 'myTasks', x: 0, y: 5, w: 10, h: 4, minW: 5, minH: 3 },
-        { i: 'activeOKRs', x: 0, y: 9, w: 10, h: 3, minW: 5, minH: 2 },
-        { i: 'quickActions', x: 0, y: 12, w: 10, h: 2, minW: 5, minH: 2 },
+        { i: 'metrics', x: 0, y: 0, w: 4, h: 2, minW: 3, minH: 2 },
+        { i: 'quickActions', x: 0, y: 2, w: 4, h: 4, minW: 3, minH: 4 },
+        { i: 'recentProjects', x: 0, y: 6, w: 4, h: 6, minW: 3, minH: 4 },
+        { i: 'myTasks', x: 4, y: 0, w: 6, h: 8, minW: 5, minH: 6 },
+        { i: 'activeOKRs', x: 4, y: 8, w: 6, h: 4, minW: 4, minH: 3 },
+        { i: 'overdueTasks', x: 0, y: 12, w: 4, h: 4, minW: 3, minH: 3 },
     ],
     sm: [
         { i: 'metrics', x: 0, y: 0, w: 6, h: 2, minW: 6, minH: 2 },
-        { i: 'overdueTasks', x: 0, y: 2, w: 6, h: 3, minW: 6, minH: 2 },
-        { i: 'recentProjects', x: 0, y: 5, w: 6, h: 3, minW: 6, minH: 3 },
-        { i: 'myTasks', x: 0, y: 8, w: 6, h: 4, minW: 6, minH: 3 },
-        { i: 'activeOKRs', x: 0, y: 12, w: 6, h: 3, minW: 6, minH: 2 },
-        { i: 'quickActions', x: 0, y: 15, w: 6, h: 2, minW: 6, minH: 2 },
+        { i: 'quickActions', x: 0, y: 2, w: 6, h: 4, minW: 6, minH: 4 },
+        { i: 'myTasks', x: 0, y: 6, w: 6, h: 8, minW: 6, minH: 6 },
+        { i: 'recentProjects', x: 0, y: 14, w: 6, h: 5, minW: 6, minH: 4 },
+        { i: 'activeOKRs', x: 0, y: 19, w: 6, h: 4, minW: 6, minH: 3 },
+        { i: 'overdueTasks', x: 0, y: 23, w: 6, h: 4, minW: 6, minH: 3 },
     ],
 }
 
@@ -97,6 +99,9 @@ export default function HomePage() {
     const [isLoading, setIsLoading] = useState(true)
     const [widgets, setWidgets] = useState<Widget[]>(defaultWidgets)
     const [layouts, setLayouts] = useState<Layouts>(defaultLayouts)
+    const [defaultReferenceLayouts, setDefaultReferenceLayouts] = useState<Layouts>(defaultLayouts)
+    const [useDefaultFromDB, setUseDefaultFromDB] = useState(false)
+    const { loadDefaultLayout } = useDefaultLayout()
     const [taskDialogOpen, setTaskDialogOpen] = useState(false)
     const [taskDetailDialogOpen, setTaskDetailDialogOpen] = useState(false)
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
@@ -113,7 +118,7 @@ export default function HomePage() {
     const [priorityFilter, setPriorityFilter] = useState<string>('ALL')
     const [dueDateFilter, setDueDateFilter] = useState<string>('ALL')
     const [showFilters, setShowFilters] = useState(false)
-    const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar'>('list')
+    const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar'>('calendar')
     const [calendarDate, setCalendarDate] = useState(new Date())
 
     // Mobile detection
@@ -142,37 +147,141 @@ export default function HomePage() {
         loadUser()
     }, [setUser])
 
-    // Load saved widgets and layouts from localStorage
+    // Load saved widgets and layouts from localStorage or default from DB
     useEffect(() => {
-        const savedWidgets = localStorage.getItem('home-widgets')
-        const savedLayouts = localStorage.getItem('home-layouts')
+        const loadLayouts = async () => {
+            const savedWidgets = localStorage.getItem('home-widgets')
+            const savedLayouts = localStorage.getItem('home-layouts')
+            const useDBDefault = localStorage.getItem('home-use-db-default') === 'true'
 
-        if (savedWidgets) {
-            setWidgets(JSON.parse(savedWidgets))
+            // First, try to load default layout from DB to use as reference
+            const defaultLayoutData = await loadDefaultLayout('my-work')
+
+            if (defaultLayoutData) {
+                // Store the default layouts as reference
+                if (defaultLayoutData.layouts) {
+                    setDefaultReferenceLayouts(defaultLayoutData.layouts)
+                }
+
+                // If flag is set to use DB default, always use it
+                if (useDBDefault) {
+                    setUseDefaultFromDB(true)
+                    if (defaultLayoutData.widgets) {
+                        setWidgets(defaultLayoutData.widgets)
+                    }
+                    if (defaultLayoutData.layouts) {
+                        setLayouts(defaultLayoutData.layouts)
+                    }
+                } else if (savedWidgets && savedLayouts) {
+                    // Use user's personal layout
+                    setWidgets(JSON.parse(savedWidgets))
+                    setLayouts(JSON.parse(savedLayouts))
+                } else {
+                    // Use default layout for first-time users
+                    if (defaultLayoutData.widgets) {
+                        setWidgets(defaultLayoutData.widgets)
+                    }
+                    if (defaultLayoutData.layouts) {
+                        setLayouts(defaultLayoutData.layouts)
+                    }
+                }
+            } else {
+                // No default in DB, use hardcoded defaults
+                setDefaultReferenceLayouts(defaultLayouts)
+
+                if (savedWidgets && savedLayouts) {
+                    setWidgets(JSON.parse(savedWidgets))
+                    setLayouts(JSON.parse(savedLayouts))
+                }
+            }
         }
-        if (savedLayouts) {
-            setLayouts(JSON.parse(savedLayouts))
-        }
+
+        loadLayouts()
     }, [])
 
     const handleLayoutChange = (currentLayout: Layout[], allLayouts: Layouts) => {
         setLayouts(allLayouts)
-        localStorage.setItem('home-layouts', JSON.stringify(allLayouts))
+        // Don't save to localStorage if using DB default
+        if (!useDefaultFromDB) {
+            localStorage.setItem('home-layouts', JSON.stringify(allLayouts))
+        }
     }
 
     const toggleWidget = (widgetId: string) => {
+        const widget = widgets.find(w => w.id === widgetId)
+        const isBeingEnabled = widget && !widget.visible
+
         const updatedWidgets = widgets.map(w =>
             w.id === widgetId ? { ...w, visible: !w.visible } : w
         )
         setWidgets(updatedWidgets)
-        localStorage.setItem('home-widgets', JSON.stringify(updatedWidgets))
+
+        // Don't save to localStorage if using DB default
+        if (!useDefaultFromDB) {
+            localStorage.setItem('home-widgets', JSON.stringify(updatedWidgets))
+        }
+
+        // If widget is being re-enabled, restore its default layout dimensions
+        if (isBeingEnabled) {
+            const updatedLayouts = { ...layouts }
+
+            // For each breakpoint, restore the default dimensions for this widget
+            Object.keys(defaultReferenceLayouts).forEach(breakpoint => {
+                const defaultLayout = defaultReferenceLayouts[breakpoint as keyof Layouts]
+                const currentLayout = updatedLayouts[breakpoint as keyof Layouts]
+
+                if (defaultLayout && currentLayout) {
+                    const defaultWidgetLayout = defaultLayout.find((l: Layout) => l.i === widgetId)
+                    const currentLayoutIndex = currentLayout.findIndex((l: Layout) => l.i === widgetId)
+
+                    if (defaultWidgetLayout && currentLayoutIndex !== -1) {
+                        // Restore default dimensions (w, h, minW, minH) but keep current position
+                        currentLayout[currentLayoutIndex] = {
+                            ...currentLayout[currentLayoutIndex],
+                            w: defaultWidgetLayout.w,
+                            h: defaultWidgetLayout.h,
+                            minW: defaultWidgetLayout.minW,
+                            minH: defaultWidgetLayout.minH,
+                        }
+                    }
+                }
+            })
+
+            setLayouts(updatedLayouts)
+
+            // Don't save to localStorage if using DB default
+            if (!useDefaultFromDB) {
+                localStorage.setItem('home-layouts', JSON.stringify(updatedLayouts))
+            }
+        }
     }
 
-    const resetLayout = () => {
-        setWidgets(defaultWidgets)
-        setLayouts(defaultLayouts)
+    const resetLayout = async () => {
+        // Clear user's personal layout
         localStorage.removeItem('home-widgets')
         localStorage.removeItem('home-layouts')
+
+        // Try to load default layout from DB
+        const defaultLayoutData = await loadDefaultLayout('my-work')
+        if (defaultLayoutData) {
+            if (defaultLayoutData.widgets) {
+                setWidgets(defaultLayoutData.widgets)
+            } else {
+                setWidgets(defaultWidgets)
+            }
+            if (defaultLayoutData.layouts) {
+                setLayouts(defaultLayoutData.layouts)
+                setDefaultReferenceLayouts(defaultLayoutData.layouts)
+            } else {
+                setLayouts(defaultLayouts)
+                setDefaultReferenceLayouts(defaultLayouts)
+            }
+        } else {
+            // Fall back to hardcoded defaults
+            setWidgets(defaultWidgets)
+            setLayouts(defaultLayouts)
+            setDefaultReferenceLayouts(defaultLayouts)
+        }
     }
 
     // State for real data
@@ -1174,26 +1283,26 @@ export default function HomePage() {
                             <CardDescription className="text-xs">Fast access to common tasks</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1">
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                                <Button variant="outline" className="h-auto flex-col gap-1 sm:gap-1.5 py-2 sm:py-3 transition-all min-w-0" onClick={() => router.push('/projects/new')}>
-                                    <Plus className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-                                    <span className="text-[10px] sm:text-xs font-medium truncate w-full">New Project</span>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/projects/new')}>
+                                    <Plus className="h-5 w-5 shrink-0" />
+                                    <span className="text-xs font-medium text-center">New Project</span>
                                 </Button>
-                                <Button variant="outline" className="h-auto flex-col gap-1 sm:gap-1.5 py-2 sm:py-3 transition-all min-w-0" onClick={() => setTaskDialogOpen(true)}>
-                                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-                                    <span className="text-[10px] sm:text-xs font-medium truncate w-full">New Task</span>
+                                <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => setTaskDialogOpen(true)}>
+                                    <CheckCircle2 className="h-5 w-5 shrink-0" />
+                                    <span className="text-xs font-medium text-center">New Task</span>
                                 </Button>
-                                <Button variant="outline" className="h-auto flex-col gap-1 sm:gap-1.5 py-2 sm:py-3 transition-all min-w-0" onClick={() => setCollaborationDialogOpen(true)}>
-                                    <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-                                    <span className="text-[10px] sm:text-xs font-medium truncate w-full">Collaborate</span>
+                                <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => setCollaborationDialogOpen(true)}>
+                                    <MessageSquare className="h-5 w-5 shrink-0" />
+                                    <span className="text-xs font-medium text-center">Collaborate</span>
                                 </Button>
-                                <Button variant="outline" className="h-auto flex-col gap-1 sm:gap-1.5 py-2 sm:py-3 transition-all min-w-0" onClick={() => router.push('/reports')}>
-                                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-                                    <span className="text-[10px] sm:text-xs font-medium truncate w-full">View Reports</span>
+                                <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/reports')}>
+                                    <FileText className="h-5 w-5 shrink-0" />
+                                    <span className="text-xs font-medium text-center">View Reports</span>
                                 </Button>
-                                <Button variant="outline" className="h-auto flex-col gap-1 sm:gap-1.5 py-2 sm:py-3 transition-all min-w-0" onClick={() => router.push('/okrs')}>
-                                    <Target className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-                                    <span className="text-[10px] sm:text-xs font-medium truncate w-full">Goals & OKRs</span>
+                                <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/okrs')}>
+                                    <Target className="h-5 w-5 shrink-0" />
+                                    <span className="text-xs font-medium text-center">Goals & OKRs</span>
                                 </Button>
                             </div>
                         </CardContent>
@@ -1220,9 +1329,9 @@ export default function HomePage() {
     const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening'
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-2">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                         {greeting}, {user?.firstName || 'there'}!
@@ -1232,41 +1341,46 @@ export default function HomePage() {
                     </p>
                 </div>
 
-                {/* 3-Dot Menu */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                        <div className="px-2 py-1.5 text-sm font-semibold">Widget Visibility</div>
-                        <DropdownMenuSeparator />
-                        {widgets.map((widget) => (
-                            <DropdownMenuCheckboxItem
-                                key={widget.id}
-                                checked={widget.visible}
-                                onCheckedChange={() => toggleWidget(widget.id)}
-                            >
-                                {widget.type === 'metrics' && 'Overview'}
-                                {widget.type === 'overdueTasks' && 'Overdue Tasks'}
-                                {widget.type === 'recentProjects' && 'Recent Projects'}
-                                {widget.type === 'myTasks' && 'My Tasks'}
-                                {widget.type === 'activeOKRs' && 'Active OKRs'}
-                                {widget.type === 'quickActions' && 'Quick Actions'}
-                            </DropdownMenuCheckboxItem>
-                        ))}
-                        {!isMobile && (
-                            <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={resetLayout}>
-                                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                                    Reset Layout
-                                </DropdownMenuItem>
-                            </>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-2">
+                    {/* Save as Default Button (Platform Owner only) */}
+                    <SaveDefaultLayoutButton
+                        pageKey="my-work"
+                        getCurrentLayout={() => ({ widgets, layouts })}
+                        onSaveSuccess={() => {
+                            // Clear localStorage and set flag to use DB default
+                            localStorage.removeItem('home-widgets')
+                            localStorage.removeItem('home-layouts')
+                            localStorage.setItem('home-use-db-default', 'true')
+                            setUseDefaultFromDB(true)
+                        }}
+                    />
+
+                    {/* 3-Dot Menu */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <div className="px-2 py-1.5 text-sm font-semibold">Widget Visibility</div>
+                            <DropdownMenuSeparator />
+                            {widgets.filter(w => w.type !== 'overdueTasks').map((widget) => (
+                                <DropdownMenuCheckboxItem
+                                    key={widget.id}
+                                    checked={widget.visible}
+                                    onCheckedChange={() => toggleWidget(widget.id)}
+                                >
+                                    {widget.type === 'metrics' && 'Overview'}
+                                    {widget.type === 'recentProjects' && 'Recent Projects'}
+                                    {widget.type === 'myTasks' && 'My Tasks'}
+                                    {widget.type === 'activeOKRs' && 'Active OKRs'}
+                                    {widget.type === 'quickActions' && 'Quick Actions'}
+                                </DropdownMenuCheckboxItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
 
             {/* Conditional Layout: Simple stacked on mobile, Draggable grid on desktop */}

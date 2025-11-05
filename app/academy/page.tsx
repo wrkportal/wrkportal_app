@@ -127,8 +127,8 @@ export default function AcademyPage() {
   return (
     <div className="flex h-full">
       {/* Academy Sidebar */}
-      <aside className="w-64 border-r bg-card flex-shrink-0 h-full">
-        <div className="p-4 overflow-y-auto h-full">
+      <aside className="w-64 border-r bg-card flex-shrink-0 max-h-[calc(100vh-200px)]">
+        <div className="p-4 overflow-y-auto max-h-full">
           {/* All Tutorials Option */}
           <div
             className={cn(
@@ -253,7 +253,7 @@ export default function AcademyPage() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 h-full overflow-y-auto">
+      <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)]">
         <div className="p-6 md:p-8">
           {/* Header */}
           <div className="mb-8">
