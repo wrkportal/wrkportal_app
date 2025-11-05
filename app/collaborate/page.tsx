@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
@@ -138,7 +138,7 @@ interface CollaborationFile {
     }
 }
 
-export default function CollaboratePage() {
+function CollaboratePageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const user = useAuthStore((state) => state.user)
@@ -1510,5 +1510,14 @@ export default function CollaboratePage() {
                 />
             )}
         </div>
+    )
+}
+
+// Wrap the main component with Suspense to handle useSearchParams
+export default function CollaboratePage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+            <CollaboratePageContent />
+        </Suspense>
     )
 }
