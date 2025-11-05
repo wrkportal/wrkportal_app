@@ -90,8 +90,8 @@ export default function TutorialsAdminPage() {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
-  // Check if user is super admin
-  if (user?.role !== UserRole.TENANT_SUPER_ADMIN) {
+  // Check if user is super admin or platform owner
+  if (user?.role !== UserRole.TENANT_SUPER_ADMIN && user?.role !== UserRole.PLATFORM_OWNER) {
     return (
       <div className="flex items-center justify-center h-full">
         <Card className="p-6 max-w-md">
@@ -271,7 +271,9 @@ export default function TutorialsAdminPage() {
               <GraduationCap className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Tutorial Management</h1>
+              <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Tutorial Management
+              </h1>
               <p className="text-muted-foreground">Create and manage academy tutorials</p>
             </div>
           </div>

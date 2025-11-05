@@ -92,6 +92,8 @@ model User {
   collaborationMessages     CollaborationMessage[]
   collaborationFiles        CollaborationFile[]
   collaborationSuggestions  CollaborationSuggestion[]
+  createdReminders          Reminder[] @relation("CreatedReminders")
+  reminders                 Reminder[] @relation("UserReminders")
   respondedSuggestions      CollaborationSuggestion[] @relation("SuggestionResponder")
   
   // Invitations
@@ -194,6 +196,7 @@ model Tenant {
   tutorials     Tutorial[]
   collaborations Collaboration[]
   invitations   TenantInvitation[]
+  reminders     Reminder[]
   
   @@index([domain])
   @@index([verificationCode])
@@ -1040,6 +1043,46 @@ enum NotificationPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+// ============================================
+// REMINDERS
+// ============================================
+
+model Reminder {
+  id          String   @id @default(cuid())
+  
+  // Multi-tenancy
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Who created the reminder
+  createdById String
+  createdBy   User     @relation("CreatedReminders", fields: [createdById], references: [id])
+  
+  // Who the reminder is for
+  userId      String
+  user        User     @relation("UserReminders", fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?  @db.Text
+  remindAt    DateTime
+  
+  // Source reference (optional - can link to message, task, etc.)
+  sourceType  String?  // 'MESSAGE', 'TASK', 'MANUAL'
+  sourceId    String?
+  
+  // Status
+  completed   Boolean  @default(false)
+  dismissed   Boolean  @default(false)
+  notified    Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId, remindAt, completed])
+  @@index([tenantId])
+  @@index([createdById])
 }
 
 // ============================================

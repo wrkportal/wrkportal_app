@@ -3,6 +3,16 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useState, useEffect, useRef } from "react"
@@ -38,6 +48,7 @@ import {
     Cpu,
     Network,
     Atom,
+    Send,
 } from "lucide-react"
 
 // Helper function to check if user has visited before
@@ -216,6 +227,159 @@ const DataStream = ({ delay = 0 }: { delay?: number }) => {
                 animationDelay: `${delay}s`,
             }}
         />
+    )
+}
+
+// Contact Form Component
+const ContactForm = () => {
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        type: '',
+        subject: '',
+        message: ''
+    })
+    const [submitting, setSubmitting] = useState(false)
+    const [success, setSuccess] = useState(false)
+    const [error, setError] = useState('')
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setSubmitting(true)
+        setError('')
+        setSuccess(false)
+
+        try {
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                setSuccess(true)
+                setFormData({
+                    name: '',
+                    email: '',
+                    type: '',
+                    subject: '',
+                    message: ''
+                })
+                setTimeout(() => setSuccess(false), 5000)
+            } else {
+                setError(data.error || 'Failed to send message')
+            }
+        } catch (err) {
+            setError('Failed to send message. Please try again.')
+        } finally {
+            setSubmitting(false)
+        }
+    }
+
+    return (
+        <Card className="border-2 shadow-xl">
+            <CardContent className="p-8">
+                {success && (
+                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800">
+                        <CheckCircle2 className="h-5 w-5" />
+                        <p>Thank you! We'll get back to you soon.</p>
+                    </div>
+                )}
+                
+                {error && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-800">
+                        <AlertTriangle className="h-5 w-5" />
+                        <p>{error}</p>
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Name *</Label>
+                            <Input
+                                id="name"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="Your name"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email *</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                placeholder="your.email@company.com"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="type">Inquiry Type *</Label>
+                            <Select
+                                value={formData.type}
+                                onValueChange={(value) => setFormData({ ...formData, type: value })}
+                                required
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="query">General Query</SelectItem>
+                                    <SelectItem value="suggestion">Suggestion</SelectItem>
+                                    <SelectItem value="pricing">Pricing Request</SelectItem>
+                                    <SelectItem value="demo">Request Demo</SelectItem>
+                                    <SelectItem value="support">Technical Support</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="subject">Subject</Label>
+                            <Input
+                                id="subject"
+                                value={formData.subject}
+                                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                placeholder="Brief subject"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="message">Message *</Label>
+                        <Textarea
+                            id="message"
+                            value={formData.message}
+                            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                            placeholder="Tell us more about your inquiry..."
+                            rows={6}
+                            required
+                        />
+                    </div>
+
+                    <Button 
+                        type="submit" 
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                        disabled={submitting}
+                    >
+                        {submitting ? (
+                            <>Processing...</>
+                        ) : (
+                            <>
+                                <Send className="mr-2 h-4 w-4" />
+                                Send Message
+                            </>
+                        )}
+                    </Button>
+                </form>
+            </CardContent>
+        </Card>
     )
 }
 
@@ -938,6 +1102,30 @@ export default function LandingPage() {
                             </p>
                         </CardContent>
                     </Card>
+                </div>
+            </section>
+
+            {/* Contact Us Section */}
+            <section className="relative py-24 overflow-hidden bg-gradient-to-br from-purple-50 via-background to-pink-50 dark:from-purple-950/20 dark:via-background dark:to-pink-950/20">
+                <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-4xl mx-auto">
+                        {/* Section Header */}
+                        <div className="text-center mb-12">
+                            <Badge className="mb-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0">
+                                <MessageSquare className="mr-1 h-3 w-3" />
+                                Get In Touch
+                            </Badge>
+                            <h2 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                Contact Us
+                            </h2>
+                            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                                Have a question, suggestion, or want to discuss pricing? We'd love to hear from you!
+                            </p>
+                        </div>
+
+                        {/* Contact Form */}
+                        <ContactForm />
+                    </div>
                 </div>
             </section>
 

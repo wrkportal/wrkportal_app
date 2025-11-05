@@ -6,6 +6,56 @@ import path from 'path'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
+// GET /api/collaborations/[id]/files - Get all files
+export async function GET(
+    req: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const session = await auth()
+        if (!session || !session.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        // Verify user is a member
+        const member = await prisma.collaborationMember.findFirst({
+            where: {
+                collaborationId: params.id,
+                userId: session.user.id
+            }
+        })
+
+        if (!member) {
+            return NextResponse.json({ error: 'Not a member of this collaboration' }, { status: 403 })
+        }
+
+        const files = await prisma.collaborationFile.findMany({
+            where: {
+                collaborationId: params.id
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true
+                    }
+                }
+            },
+            orderBy: {
+                uploadedAt: 'desc'
+            }
+        })
+
+        return NextResponse.json({ files })
+    } catch (error) {
+        console.error('Error fetching files:', error)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+}
+
 // POST /api/collaborations/[id]/files - Upload a file
 export async function POST(
     req: NextRequest,

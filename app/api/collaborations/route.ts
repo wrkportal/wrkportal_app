@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
         const collaborations = await prisma.collaboration.findMany({
             where: {
                 tenantId: session.user.tenantId,
-                isArchived: false,
                 ...(status && { status: status as any }),
                 ...(type && { type: type as any }),
                 OR: [

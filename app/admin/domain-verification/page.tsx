@@ -149,7 +149,9 @@ export default function DomainVerificationPage() {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Domain Verification</h1>
+          <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Domain Verification
+          </h1>
           <p className="text-muted-foreground">
             Manage your organization's domain verification
           </p>

@@ -6,7 +6,7 @@ import { z } from 'zod'
 const createTaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  projectId: z.string(),
+  projectId: z.string().optional(),
   assigneeId: z.string().optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
   status: z.enum([
@@ -21,6 +21,8 @@ const createTaskSchema = z.object({
   estimatedHours: z.number().optional(),
   frequency: z.string().optional(),
   referencePoint: z.string().optional(),
+  sourceType: z.string().optional(),
+  sourceId: z.string().optional(),
 })
 
 // GET - Fetch tasks (org-wide for admins, or user's tasks)
@@ -189,8 +191,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const validatedData = createTaskSchema.parse(body)
 
-    // Handle "Not a Project" tasks
+    // Handle "Not a Project" tasks or no project
     const isNotAProject = validatedData.projectId === 'NOT_A_PROJECT'
+    const hasNoProject = !validatedData.projectId || validatedData.projectId.trim() === ''
 
     // Determine assignee - default to creator if not specified or empty
     const assigneeId = validatedData.assigneeId && validatedData.assigneeId.trim() !== '' 
@@ -222,7 +225,7 @@ export async function POST(req: NextRequest) {
       data: {
         title: validatedData.title,
         description: validatedData.description || '',
-        projectId: isNotAProject ? null : validatedData.projectId,
+        projectId: (isNotAProject || hasNoProject) ? null : validatedData.projectId,
         assigneeId: assigneeId,
         priority: validatedData.priority,
         status: validatedData.status,
@@ -230,6 +233,8 @@ export async function POST(req: NextRequest) {
         estimatedHours: validatedData.estimatedHours,
         tenantId: session.user.tenantId,
         createdById: session.user.id,
+        sourceType: validatedData.sourceType,
+        sourceId: validatedData.sourceId,
         // Store frequency and reference point in tags or custom field
         // For now, we'll add them to description if "Not a Project"
         tags:

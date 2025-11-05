@@ -132,7 +132,9 @@ export default function PlatformAdminPage() {
         <div>
           <div className="flex items-center gap-2">
             <Shield className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Platform Administration</h1>
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Platform Administration
+            </h1>
           </div>
           <p className="text-muted-foreground mt-1">
             God-mode access to all tenants and platform settings
