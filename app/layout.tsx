@@ -10,8 +10,29 @@ export const metadata: Metadata = {
         default: "ManagerBook - Professional Project Management Platform",
         template: "%s | ManagerBook"
     },
-    description: "ManagerBook is a comprehensive project management platform with AI-powered features, OKR tracking, Gantt charts, task management, and team collaboration tools. Perfect for teams of all sizes.",
-    keywords: ["project management", "task management", "OKR tracking", "team collaboration", "Gantt chart", "AI assistant", "productivity", "workflow management"],
+    description: "ManagerBook is a comprehensive project management platform with AI-powered features, OKR tracking, Gantt charts, reporting tools, business intelligence, and team collaboration. Perfect for teams of all sizes.",
+    keywords: [
+        "project management",
+        "task management",
+        "OKR tracking",
+        "team collaboration",
+        "Gantt chart",
+        "AI assistant",
+        "productivity",
+        "workflow management",
+        "reporting tool",
+        "business reporting software",
+        "project reporting",
+        "analytics dashboard",
+        "data visualization",
+        "business intelligence tool",
+        "custom reports",
+        "project analytics",
+        "reporting solution",
+        "dashboard software",
+        "KPI tracking",
+        "performance reporting"
+    ],
     authors: [{ name: "ManagerBook Team" }],
     creator: "ManagerBook",
     publisher: "ManagerBook",
@@ -21,7 +42,7 @@ export const metadata: Metadata = {
         locale: 'en_US',
         url: 'https://www.managerbook.in',
         title: 'ManagerBook - Professional Project Management Platform',
-        description: 'Comprehensive project management with AI-powered features, OKR tracking, and team collaboration tools.',
+        description: 'Comprehensive project management with AI-powered features, OKR tracking, advanced reporting tools, business intelligence, and team collaboration.',
         siteName: 'ManagerBook',
         images: [
             {
@@ -35,7 +56,7 @@ export const metadata: Metadata = {
     twitter: {
         card: 'summary_large_image',
         title: 'ManagerBook - Professional Project Management Platform',
-        description: 'Comprehensive project management with AI-powered features, OKR tracking, and team collaboration tools.',
+        description: 'Comprehensive project management with AI-powered features, OKR tracking, advanced reporting tools, business intelligence, and team collaboration.',
         images: ['/logo.png'],
     },
     robots: {
