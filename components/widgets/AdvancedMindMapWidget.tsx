@@ -659,8 +659,8 @@ export function AdvancedMindMapWidget() {
             </CardContent>
 
             {/* Edit Node Dialog */}
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent>
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen} modal={isFullscreen ? false : true}>
+                <DialogContent className={isFullscreen ? "z-[9999]" : ""} container={isFullscreen ? cardRef.current : undefined}>
                     <DialogHeader>
                         <DialogTitle>Edit Node</DialogTitle>
                         <DialogDescription>
@@ -690,8 +690,8 @@ export function AdvancedMindMapWidget() {
             </Dialog>
 
             {/* Export Format Dialog */}
-            <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
-                <DialogContent>
+            <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} modal={isFullscreen ? false : true}>
+                <DialogContent className={isFullscreen ? "z-[9999]" : ""} container={isFullscreen ? cardRef.current : undefined}>
                     <DialogHeader>
                         <DialogTitle>Export Mind Map</DialogTitle>
                         <DialogDescription>
