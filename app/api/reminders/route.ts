@@ -10,12 +10,22 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Get user with tenantId from database
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { id: true, tenantId: true }
+        });
+
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
         const { searchParams } = new URL(req.url);
         const includeCompleted = searchParams.get('includeCompleted') === 'true';
 
         const where: any = {
             userId: session.user.id,
-            tenantId: session.user.tenantId,
+            tenantId: user.tenantId,
         };
 
         if (!includeCompleted) {
@@ -70,6 +80,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Get user with tenantId from database
+        const currentUser = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { id: true, tenantId: true }
+        });
+
+        if (!currentUser) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
         const body = await req.json();
         const { title, description, remindAt, userId, sourceType, sourceId } = body;
 
@@ -85,7 +105,7 @@ export async function POST(req: NextRequest) {
             const targetUser = await prisma.user.findFirst({
                 where: {
                     id: userId,
-                    tenantId: session.user.tenantId,
+                    tenantId: currentUser.tenantId,
                 },
             });
 
@@ -104,7 +124,7 @@ export async function POST(req: NextRequest) {
                 remindAt: new Date(remindAt),
                 userId: userId || session.user.id,
                 createdById: session.user.id,
-                tenantId: session.user.tenantId,
+                tenantId: currentUser.tenantId,
                 sourceType,
                 sourceId,
             },
@@ -136,7 +156,7 @@ export async function POST(req: NextRequest) {
         await prisma.notification.create({
             data: {
                 userId: userId || session.user.id,
-                tenantId: session.user.tenantId,
+                tenantId: currentUser.tenantId,
                 type: 'DEADLINE',
                 title: `Reminder: ${title}`,
                 message: description || 'You have a new reminder',
