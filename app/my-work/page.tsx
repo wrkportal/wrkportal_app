@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -35,7 +35,29 @@ import {
     List,
     ChevronLeft,
     ChevronRight,
-    MessageSquare
+    MessageSquare,
+    Link,
+    Palette,
+    Activity,
+    ClipboardList,
+    Network,
+    Square,
+    Circle,
+    Minus,
+    ArrowUpRight,
+    Type,
+    Image,
+    Download,
+    Upload,
+    Trash2,
+    Edit2,
+    Save,
+    Eye,
+    Send,
+    Undo,
+    Redo,
+    Maximize,
+    Minimize
 } from "lucide-react"
 import { Responsive, WidthProvider, Layout, Layouts } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
@@ -47,6 +69,9 @@ import { TimerNotesDialog } from "@/components/dialogs/timer-notes-dialog"
 import { CollaborationDialog } from "@/components/dialogs/collaboration-dialog"
 import { SaveDefaultLayoutButton } from "@/components/ui/save-default-layout-button"
 import { useDefaultLayout } from "@/hooks/useDefaultLayout"
+import { AdvancedFormsWidget } from "@/components/widgets/AdvancedFormsWidget"
+import { AdvancedMindMapWidget } from "@/components/widgets/AdvancedMindMapWidget"
+import { AdvancedCanvasWidget } from "@/components/widgets/AdvancedCanvasWidget"
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -63,32 +88,48 @@ const defaultWidgets: Widget[] = [
     { id: 'myTasks', type: 'myTasks', visible: true },
     { id: 'activeOKRs', type: 'activeOKRs', visible: true },
     { id: 'quickActions', type: 'quickActions', visible: true },
+    { id: 'usefulLinks', type: 'usefulLinks', visible: false },
+    { id: 'canvas', type: 'canvas', visible: false },
+    { id: 'forms', type: 'forms', visible: true },
+    { id: 'mindMap', type: 'mindMap', visible: true },
 ]
 
 const defaultLayouts: Layouts = {
     lg: [
-        { i: 'metrics', x: 0, y: 0, w: 5, h: 2, minW: 3, minH: 2 },
-        { i: 'quickActions', x: 0, y: 2, w: 5, h: 4, minW: 3, minH: 4 },
-        { i: 'recentProjects', x: 0, y: 6, w: 5, h: 6, minW: 3, minH: 4 },
-        { i: 'myTasks', x: 5, y: 0, w: 7, h: 8, minW: 6, minH: 6 },
-        { i: 'activeOKRs', x: 5, y: 8, w: 7, h: 4, minW: 4, minH: 3 },
-        { i: 'overdueTasks', x: 0, y: 12, w: 5, h: 4, minW: 3, minH: 3 },
+        { i: 'metrics', x: 0, y: 0, w: 6, h: 8, minW: 3, minH: 2 },
+        { i: 'quickActions', x: 6, y: 0, w: 6, h: 8, minW: 3, minH: 4 },
+        { i: 'recentProjects', x: 0, y: 8, w: 6, h: 8, minW: 3, minH: 4 },
+        { i: 'myTasks', x: 6, y: 8, w: 6, h: 8, minW: 3, minH: 6 },
+        { i: 'activeOKRs', x: 0, y: 16, w: 6, h: 8, minW: 3, minH: 3 },
+        { i: 'overdueTasks', x: 6, y: 16, w: 6, h: 8, minW: 3, minH: 3 },
+        { i: 'usefulLinks', x: 0, y: 24, w: 6, h: 8, minW: 3, minH: 4 },
+        { i: 'canvas', x: 6, y: 24, w: 6, h: 8, minW: 3, minH: 8 },
+        { i: 'forms', x: 0, y: 32, w: 6, h: 8, minW: 3, minH: 4 },
+        { i: 'mindMap', x: 6, y: 32, w: 6, h: 8, minW: 3, minH: 6 },
     ],
     md: [
-        { i: 'metrics', x: 0, y: 0, w: 4, h: 2, minW: 3, minH: 2 },
-        { i: 'quickActions', x: 0, y: 2, w: 4, h: 4, minW: 3, minH: 4 },
-        { i: 'recentProjects', x: 0, y: 6, w: 4, h: 6, minW: 3, minH: 4 },
-        { i: 'myTasks', x: 4, y: 0, w: 6, h: 8, minW: 5, minH: 6 },
-        { i: 'activeOKRs', x: 4, y: 8, w: 6, h: 4, minW: 4, minH: 3 },
-        { i: 'overdueTasks', x: 0, y: 12, w: 4, h: 4, minW: 3, minH: 3 },
+        { i: 'metrics', x: 0, y: 0, w: 5, h: 8, minW: 3, minH: 2 },
+        { i: 'quickActions', x: 5, y: 0, w: 5, h: 8, minW: 3, minH: 4 },
+        { i: 'recentProjects', x: 0, y: 8, w: 5, h: 8, minW: 3, minH: 4 },
+        { i: 'myTasks', x: 5, y: 8, w: 5, h: 8, minW: 3, minH: 6 },
+        { i: 'activeOKRs', x: 0, y: 16, w: 5, h: 8, minW: 3, minH: 3 },
+        { i: 'overdueTasks', x: 5, y: 16, w: 5, h: 8, minW: 3, minH: 3 },
+        { i: 'usefulLinks', x: 0, y: 24, w: 5, h: 8, minW: 3, minH: 4 },
+        { i: 'canvas', x: 5, y: 24, w: 5, h: 8, minW: 3, minH: 8 },
+        { i: 'forms', x: 0, y: 32, w: 5, h: 8, minW: 3, minH: 4 },
+        { i: 'mindMap', x: 5, y: 32, w: 5, h: 8, minW: 3, minH: 6 },
     ],
     sm: [
-        { i: 'metrics', x: 0, y: 0, w: 6, h: 2, minW: 6, minH: 2 },
-        { i: 'quickActions', x: 0, y: 2, w: 6, h: 4, minW: 6, minH: 4 },
-        { i: 'myTasks', x: 0, y: 6, w: 6, h: 8, minW: 6, minH: 6 },
-        { i: 'recentProjects', x: 0, y: 14, w: 6, h: 5, minW: 6, minH: 4 },
-        { i: 'activeOKRs', x: 0, y: 19, w: 6, h: 4, minW: 6, minH: 3 },
-        { i: 'overdueTasks', x: 0, y: 23, w: 6, h: 4, minW: 6, minH: 3 },
+        { i: 'metrics', x: 0, y: 0, w: 3, h: 8, minW: 2, minH: 2 },
+        { i: 'quickActions', x: 3, y: 0, w: 3, h: 8, minW: 2, minH: 4 },
+        { i: 'myTasks', x: 0, y: 8, w: 3, h: 8, minW: 2, minH: 6 },
+        { i: 'recentProjects', x: 3, y: 8, w: 3, h: 8, minW: 2, minH: 4 },
+        { i: 'activeOKRs', x: 0, y: 16, w: 3, h: 8, minW: 2, minH: 3 },
+        { i: 'overdueTasks', x: 3, y: 16, w: 3, h: 8, minW: 2, minH: 3 },
+        { i: 'usefulLinks', x: 0, y: 24, w: 3, h: 8, minW: 2, minH: 4 },
+        { i: 'canvas', x: 3, y: 24, w: 3, h: 8, minW: 2, minH: 8 },
+        { i: 'forms', x: 0, y: 32, w: 3, h: 8, minW: 2, minH: 4 },
+        { i: 'mindMap', x: 3, y: 32, w: 3, h: 8, minW: 2, minH: 6 },
     ],
 }
 
@@ -120,6 +161,40 @@ export default function HomePage() {
     const [showFilters, setShowFilters] = useState(false)
     const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar'>('calendar')
     const [calendarDate, setCalendarDate] = useState(new Date())
+
+    // Useful Links state
+    const [usefulLinks, setUsefulLinks] = useState<Array<{ id: string; title: string; url: string }>>([])
+    const [newLinkTitle, setNewLinkTitle] = useState('')
+    const [newLinkUrl, setNewLinkUrl] = useState('')
+
+    // Canvas state
+    const [canvasDrawing, setCanvasDrawing] = useState<boolean>(false)
+    const [canvasMode, setCanvasMode] = useState<'draw' | 'shape' | 'text' | 'image'>('draw')
+    const [canvasColor, setCanvasColor] = useState('#000000')
+    const [canvasLineWidth, setCanvasLineWidth] = useState(2)
+    const [canvasShapeType, setCanvasShapeType] = useState<'rectangle' | 'circle' | 'line' | 'arrow'>('rectangle')
+
+    // Fullscreen state and refs for each widget
+    const widgetRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
+    const [fullscreenWidget, setFullscreenWidget] = useState<string | null>(null)
+    const [canvasElements, setCanvasElements] = useState<any[]>([])
+    const [canvasHistory, setCanvasHistory] = useState<any[]>([])
+
+    // Forms state
+    const [forms, setForms] = useState<Array<{ id: string; name: string; fields: any[]; submissions: any[] }>>([])
+    const [currentFormId, setCurrentFormId] = useState<string | null>(null)
+    const [formBuilderOpen, setFormBuilderOpen] = useState(false)
+    const [formFields, setFormFields] = useState<Array<{ id: string; type: string; label: string; required: boolean; options?: string[] }>>([])
+    
+    // Mind Map state
+    const [mindMapNodes, setMindMapNodes] = useState<Array<{ id: string; x: number; y: number; label: string; color: string }>>([
+        { id: 'root', x: 250, y: 200, label: 'Central Idea', color: '#3b82f6' }
+    ])
+    const [mindMapConnections, setMindMapConnections] = useState<Array<{ from: string; to: string }>>([])
+    const [selectedNode, setSelectedNode] = useState<string | null>(null)
+    const [draggingNode, setDraggingNode] = useState<string | null>(null)
+    const [connectingFrom, setConnectingFrom] = useState<string | null>(null)
+
 
     // Mobile detection
     const [isMobile, setIsMobile] = useState(false)
@@ -154,45 +229,23 @@ export default function HomePage() {
             const savedLayouts = localStorage.getItem('home-layouts')
             const useDBDefault = localStorage.getItem('home-use-db-default') === 'true'
 
-            // First, try to load default layout from DB to use as reference
-            const defaultLayoutData = await loadDefaultLayout('my-work')
+            // Always use hardcoded defaultLayouts as reference for widget dimensions
+            setDefaultReferenceLayouts(defaultLayouts)
 
-            if (defaultLayoutData) {
-                // Store the default layouts as reference
-                if (defaultLayoutData.layouts) {
-                    setDefaultReferenceLayouts(defaultLayoutData.layouts)
-                }
-
-                // If flag is set to use DB default, always use it
-                if (useDBDefault) {
-                    setUseDefaultFromDB(true)
-                    if (defaultLayoutData.widgets) {
-                        setWidgets(defaultLayoutData.widgets)
-                    }
-                    if (defaultLayoutData.layouts) {
-                        setLayouts(defaultLayoutData.layouts)
-                    }
-                } else if (savedWidgets && savedLayouts) {
-                    // Use user's personal layout
-                    setWidgets(JSON.parse(savedWidgets))
-                    setLayouts(JSON.parse(savedLayouts))
-                } else {
-                    // Use default layout for first-time users
-                    if (defaultLayoutData.widgets) {
-                        setWidgets(defaultLayoutData.widgets)
-                    }
-                    if (defaultLayoutData.layouts) {
-                        setLayouts(defaultLayoutData.layouts)
-                    }
-                }
+            // Load saved widgets visibility, or use defaults
+            if (savedWidgets) {
+                setWidgets(JSON.parse(savedWidgets))
             } else {
-                // No default in DB, use hardcoded defaults
-                setDefaultReferenceLayouts(defaultLayouts)
+                setWidgets(defaultWidgets)
+            }
 
-                if (savedWidgets && savedLayouts) {
-                    setWidgets(JSON.parse(savedWidgets))
-                    setLayouts(JSON.parse(savedLayouts))
-                }
+            // Load layouts - preserve user customizations!
+            if (savedLayouts) {
+                const parsedLayouts = JSON.parse(savedLayouts)
+                setLayouts(parsedLayouts)
+            } else {
+                setLayouts(defaultLayouts)
+                localStorage.setItem('home-layouts', JSON.stringify(defaultLayouts))
             }
         }
 
@@ -234,14 +287,19 @@ export default function HomePage() {
                     const defaultWidgetLayout = defaultLayout.find((l: Layout) => l.i === widgetId)
                     const currentLayoutIndex = currentLayout.findIndex((l: Layout) => l.i === widgetId)
 
-                    if (defaultWidgetLayout && currentLayoutIndex !== -1) {
-                        // Restore default dimensions (w, h, minW, minH) but keep current position
-                        currentLayout[currentLayoutIndex] = {
-                            ...currentLayout[currentLayoutIndex],
-                            w: defaultWidgetLayout.w,
-                            h: defaultWidgetLayout.h,
-                            minW: defaultWidgetLayout.minW,
-                            minH: defaultWidgetLayout.minH,
+                    if (defaultWidgetLayout) {
+                        if (currentLayoutIndex !== -1) {
+                            // Widget exists, update it with default size
+                            currentLayout[currentLayoutIndex] = {
+                                ...currentLayout[currentLayoutIndex],
+                                w: defaultWidgetLayout.w,
+                                h: defaultWidgetLayout.h,
+                                minW: defaultWidgetLayout.minW,
+                                minH: defaultWidgetLayout.minH,
+                            }
+                        } else {
+                            // Widget doesn't exist, add it with default size
+                            currentLayout.push({ ...defaultWidgetLayout })
                         }
                     }
                 }
@@ -260,28 +318,12 @@ export default function HomePage() {
         // Clear user's personal layout
         localStorage.removeItem('home-widgets')
         localStorage.removeItem('home-layouts')
+        localStorage.removeItem('home-use-db-default')
 
-        // Try to load default layout from DB
-        const defaultLayoutData = await loadDefaultLayout('my-work')
-        if (defaultLayoutData) {
-            if (defaultLayoutData.widgets) {
-                setWidgets(defaultLayoutData.widgets)
-            } else {
-                setWidgets(defaultWidgets)
-            }
-            if (defaultLayoutData.layouts) {
-                setLayouts(defaultLayoutData.layouts)
-                setDefaultReferenceLayouts(defaultLayoutData.layouts)
-            } else {
-                setLayouts(defaultLayouts)
-                setDefaultReferenceLayouts(defaultLayouts)
-            }
-        } else {
-            // Fall back to hardcoded defaults
-            setWidgets(defaultWidgets)
-            setLayouts(defaultLayouts)
-            setDefaultReferenceLayouts(defaultLayouts)
-        }
+        // Use hardcoded defaults with large sizes
+        setWidgets(defaultWidgets)
+        setLayouts(defaultLayouts)
+        setDefaultReferenceLayouts(defaultLayouts)
     }
 
     // State for real data
@@ -337,6 +379,16 @@ export default function HomePage() {
             fetchProjects()
             fetchGoals()
             checkActiveTimer()
+            
+            // Load useful links from localStorage
+            const savedLinks = localStorage.getItem('useful-links')
+            if (savedLinks) {
+                try {
+                    setUsefulLinks(JSON.parse(savedLinks))
+                } catch (e) {
+                    console.error('Error loading useful links:', e)
+                }
+            }
         }
     }, [user])
 
@@ -514,16 +566,59 @@ export default function HomePage() {
         }).length
     }
 
+    // Fullscreen toggle function
+    const toggleFullscreen = async (widgetId: string) => {
+        const card = widgetRefs.current[widgetId]
+        if (!card) return
+
+        try {
+            if (!document.fullscreenElement) {
+                await card.requestFullscreen()
+                setFullscreenWidget(widgetId)
+            } else {
+                await document.exitFullscreen()
+                setFullscreenWidget(null)
+            }
+        } catch (err) {
+            console.error('Error toggling fullscreen:', err)
+        }
+    }
+
+    // Listen for fullscreen changes (e.g., user pressing ESC)
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            if (!document.fullscreenElement) {
+                setFullscreenWidget(null)
+            }
+        }
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange)
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }, [])
+
     const renderWidget = (widget: Widget) => {
         switch (widget.type) {
             case 'metrics':
                 return (
-                    <Card className="h-full flex flex-col">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Overview</CardTitle>
-                            <CardDescription className="text-xs">Your workspace at a glance</CardDescription>
+                    <Card ref={(el) => widgetRefs.current['metrics'] = el} className="h-full flex flex-col overflow-hidden">
+                        <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <CardTitle className="text-base">Overview</CardTitle>
+                                    <CardDescription className="text-xs">Your workspace at a glance</CardDescription>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleFullscreen('metrics')}
+                                    title={fullscreenWidget === 'metrics' ? "Exit Fullscreen" : "Enter Fullscreen"}
+                                    className="h-7 w-7 p-0"
+                                >
+                                    {fullscreenWidget === 'metrics' ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                                </Button>
+                            </div>
                         </CardHeader>
-                        <CardContent className="flex-1">
+                        <CardContent className="flex-1 pt-4 pb-4">
                             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                                 <div className="space-y-1 p-2 md:p-2.5 rounded-lg border min-w-0">
                                     <p className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate">Active Projects</p>
@@ -553,26 +648,36 @@ export default function HomePage() {
                     .slice(0, 5)
 
                 return (
-                    <Card className="h-full flex flex-col">
-                        <CardHeader className="pb-3">
+                    <Card ref={(el) => widgetRefs.current['recentProjects'] = el} className="h-full flex flex-col overflow-hidden">
+                        <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="min-w-0 flex-1">
                                     <CardTitle className="text-base truncate">Recent Projects</CardTitle>
                                     <CardDescription className="text-xs truncate">Your latest projects</CardDescription>
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => router.push('/projects/new')}
-                                    className="shrink-0"
-                                >
-                                    <Plus className="h-4 w-4 mr-1" />
-                                    <span className="hidden sm:inline">New</span>
-                                    <Plus className="h-4 w-4 sm:hidden" />
-                                </Button>
+                                <div className="flex gap-2 shrink-0">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => router.push('/projects/new')}
+                                    >
+                                        <Plus className="h-4 w-4 mr-1" />
+                                        <span className="hidden sm:inline">New</span>
+                                        <Plus className="h-4 w-4 sm:hidden" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleFullscreen('recentProjects')}
+                                        title={fullscreenWidget === 'recentProjects' ? "Exit Fullscreen" : "Enter Fullscreen"}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        {fullscreenWidget === 'recentProjects' ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                                    </Button>
+                                </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="flex-1 overflow-auto">
+                        <CardContent className="flex-1 overflow-auto pt-4">
                             {recentProjects.length > 0 ? (
                                 <div className="space-y-3">
                                     {recentProjects.map((project) => (
@@ -656,21 +761,32 @@ export default function HomePage() {
                 })
 
                 return (
-                    <Card className="h-full flex flex-col border-l-4 border-l-red-500">
-                        <CardHeader className="pb-3">
+                    <Card ref={(el) => widgetRefs.current['overdueTasks'] = el} className="h-full flex flex-col overflow-hidden border-l-4 border-l-red-500">
+                        <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex items-center justify-between">
-                                <div>
+                                <div className="flex-1">
                                     <CardTitle className="text-base text-red-600 dark:text-red-400">
                                         Overdue Tasks
                                     </CardTitle>
                                     <CardDescription className="text-xs">Tasks past their due date</CardDescription>
                                 </div>
-                                <Badge variant="destructive" className="text-lg font-bold">
-                                    {overdueTasks.length}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="destructive" className="text-lg font-bold">
+                                        {overdueTasks.length}
+                                    </Badge>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleFullscreen('overdueTasks')}
+                                        title={fullscreenWidget === 'overdueTasks' ? "Exit Fullscreen" : "Enter Fullscreen"}
+                                        className="h-7 w-7 p-0"
+                                    >
+                                        {fullscreenWidget === 'overdueTasks' ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                                    </Button>
+                                </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="flex-1 overflow-auto">
+                        <CardContent className="flex-1 overflow-auto pt-4">
                             <div className="space-y-3">
                                 {overdueTasks.length > 0 ? (
                                     overdueTasks.map((task) => (
@@ -719,8 +835,8 @@ export default function HomePage() {
                 const filteredTasks = getFilteredTasks()
 
                 return (
-                    <Card className="h-full flex flex-col">
-                        <CardHeader className="pb-3">
+                    <Card ref={(el) => widgetRefs.current['myTasks'] = el} className="h-full flex flex-col overflow-hidden">
+                        <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex flex-wrap items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
                                     <CardTitle className="text-base truncate">My Tasks</CardTitle>
@@ -776,6 +892,15 @@ export default function HomePage() {
                                         <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                                         <span className="hidden sm:inline">Add Task</span>
                                         <span className="sm:hidden">Add</span>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleFullscreen('myTasks')}
+                                        title={fullscreenWidget === 'myTasks' ? "Exit Fullscreen" : "Enter Fullscreen"}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        {fullscreenWidget === 'myTasks' ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
                                     </Button>
                                 </div>
                             </div>
@@ -853,7 +978,7 @@ export default function HomePage() {
                                 </div>
                             )}
                         </CardHeader>
-                        <CardContent className="flex-1 overflow-auto">
+                        <CardContent className="flex-1 overflow-auto pt-4">
                             {taskViewMode === 'list' ? (
                                 <div className="space-y-3">
                                     {filteredTasks.length > 0 ? (
@@ -1185,26 +1310,36 @@ export default function HomePage() {
 
             case 'activeOKRs':
                 return (
-                    <Card className="h-full flex flex-col">
-                        <CardHeader className="pb-3">
+                    <Card ref={(el) => widgetRefs.current['activeOKRs'] = el} className="h-full flex flex-col overflow-hidden">
+                        <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="min-w-0 flex-1">
                                     <CardTitle className="text-base truncate">Active OKRs</CardTitle>
                                     <CardDescription className="text-xs truncate">Your objectives and key results</CardDescription>
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => router.push('/okrs')}
-                                    className="shrink-0"
-                                >
-                                    <Plus className="h-4 w-4 mr-1" />
-                                    <span className="hidden sm:inline">New</span>
-                                    <Plus className="h-4 w-4 sm:hidden" />
-                                </Button>
+                                <div className="flex gap-2 shrink-0">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => router.push('/okrs')}
+                                    >
+                                        <Plus className="h-4 w-4 mr-1" />
+                                        <span className="hidden sm:inline">New</span>
+                                        <Plus className="h-4 w-4 sm:hidden" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleFullscreen('activeOKRs')}
+                                        title={fullscreenWidget === 'activeOKRs' ? "Exit Fullscreen" : "Enter Fullscreen"}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        {fullscreenWidget === 'activeOKRs' ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                                    </Button>
+                                </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="flex-1 overflow-auto">
+                        <CardContent className="flex-1 overflow-auto pt-4">
                             {userGoals.length > 0 ? (
                                 <div className="space-y-4">
                                     {userGoals.slice(0, 3).map((goal) => (
@@ -1277,12 +1412,25 @@ export default function HomePage() {
 
             case 'quickActions':
                 return (
-                    <Card className="h-full flex flex-col">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base">Quick Actions</CardTitle>
-                            <CardDescription className="text-xs">Fast access to common tasks</CardDescription>
+                    <Card ref={(el) => widgetRefs.current['quickActions'] = el} className="h-full flex flex-col overflow-hidden">
+                        <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <CardTitle className="text-base">Quick Actions</CardTitle>
+                                    <CardDescription className="text-xs">Fast access to common tasks</CardDescription>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleFullscreen('quickActions')}
+                                    title={fullscreenWidget === 'quickActions' ? "Exit Fullscreen" : "Enter Fullscreen"}
+                                    className="h-7 w-7 p-0"
+                                >
+                                    {fullscreenWidget === 'quickActions' ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                                </Button>
+                            </div>
                         </CardHeader>
-                        <CardContent className="flex-1">
+                        <CardContent className="flex-1 pt-4">
                             <div className="grid grid-cols-2 gap-2">
                                 <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/projects/new')}>
                                     <Plus className="h-5 w-5 shrink-0" />
@@ -1309,6 +1457,122 @@ export default function HomePage() {
                     </Card>
                 )
 
+            case 'usefulLinks':
+                return (
+                    <Card ref={(el) => widgetRefs.current['usefulLinks'] = el} className="h-full flex flex-col overflow-hidden">
+                        <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <Link className="h-4 w-4" />
+                                        Useful Links
+                                    </CardTitle>
+                                    <CardDescription className="text-xs">Your frequently visited links</CardDescription>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleFullscreen('usefulLinks')}
+                                    title={fullscreenWidget === 'usefulLinks' ? "Exit Fullscreen" : "Enter Fullscreen"}
+                                    className="h-7 w-7 p-0"
+                                >
+                                    {fullscreenWidget === 'usefulLinks' ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex-1 flex flex-col gap-3 pt-4">
+                            {/* Add Link Form */}
+                            <div className="space-y-2">
+                                <Input
+                                    placeholder="Link title..."
+                                    value={newLinkTitle}
+                                    onChange={(e) => setNewLinkTitle(e.target.value)}
+                                    className="h-8 text-xs"
+                                />
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="https://..."
+                                        value={newLinkUrl}
+                                        onChange={(e) => setNewLinkUrl(e.target.value)}
+                                        className="h-8 text-xs flex-1"
+                                    />
+                                    <Button
+                                        size="sm"
+                                        className="h-8"
+                                        onClick={() => {
+                                            if (newLinkTitle && newLinkUrl) {
+                                                const newLink = {
+                                                    id: Date.now().toString(),
+                                                    title: newLinkTitle,
+                                                    url: newLinkUrl.startsWith('http') ? newLinkUrl : `https://${newLinkUrl}`
+                                                }
+                                                setUsefulLinks([...usefulLinks, newLink])
+                                                setNewLinkTitle('')
+                                                setNewLinkUrl('')
+                                                // Save to localStorage
+                                                localStorage.setItem('useful-links', JSON.stringify([...usefulLinks, newLink]))
+                                            }
+                                        }}
+                                    >
+                                        <Plus className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Links List */}
+                            <div className="flex-1 overflow-auto space-y-2">
+                                {usefulLinks.length > 0 ? (
+                                    usefulLinks.map((link) => (
+                                        <div
+                                            key={link.id}
+                                            className="flex items-center gap-2 p-2 border rounded-lg hover:bg-accent cursor-pointer transition-colors group"
+                                        >
+                                            <Link className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                            <a
+                                                href={link.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex-1 text-sm hover:underline"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <div className="font-medium truncate">{link.title}</div>
+                                                <div className="text-xs text-muted-foreground truncate">{link.url}</div>
+                                            </a>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                                                onClick={() => {
+                                                    const updated = usefulLinks.filter(l => l.id !== link.id)
+                                                    setUsefulLinks(updated)
+                                                    localStorage.setItem('useful-links', JSON.stringify(updated))
+                                                }}
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                                        <Link className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                                        <p className="text-sm text-muted-foreground">No links saved yet</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Add your frequently visited links above</p>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
+
+            case 'forms':
+                return <AdvancedFormsWidget />
+
+            case 'mindMap':
+                return <AdvancedMindMapWidget />
+
+            case 'canvas':
+                return <AdvancedCanvasWidget />
+
             default:
                 return null
         }
@@ -1330,56 +1594,109 @@ export default function HomePage() {
 
     return (
         <div className="space-y-2">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-2">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        {greeting}, {user?.firstName || 'there'}!
-                    </h1>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                        Welcome back to your workspace
-                    </p>
-                </div>
+            {/* Header - Sticky */}
+            <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 mb-2">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            {greeting}, {user?.firstName || 'there'}!
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                            Welcome back to your workspace
+                        </p>
+                    </div>
 
-                <div className="flex items-center gap-2">
-                    {/* Save as Default Button (Platform Owner only) */}
-                    <SaveDefaultLayoutButton
-                        pageKey="my-work"
-                        getCurrentLayout={() => ({ widgets, layouts })}
-                        onSaveSuccess={() => {
-                            // Clear localStorage and set flag to use DB default
-                            localStorage.removeItem('home-widgets')
-                            localStorage.removeItem('home-layouts')
-                            localStorage.setItem('home-use-db-default', 'true')
-                            setUseDefaultFromDB(true)
-                        }}
-                    />
+                    <div className="flex items-center gap-2">
+                        {/* Save as Default Button (Platform Owner only) */}
+                        <SaveDefaultLayoutButton
+                            pageKey="my-work"
+                            getCurrentLayout={() => ({ widgets, layouts })}
+                            onSaveSuccess={() => {
+                                // Clear localStorage and set flag to use DB default
+                                localStorage.removeItem('home-widgets')
+                                localStorage.removeItem('home-layouts')
+                                localStorage.setItem('home-use-db-default', 'true')
+                                setUseDefaultFromDB(true)
+                            }}
+                        />
 
-                    {/* 3-Dot Menu */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                            <div className="px-2 py-1.5 text-sm font-semibold">Widget Visibility</div>
-                            <DropdownMenuSeparator />
-                            {widgets.filter(w => w.type !== 'overdueTasks').map((widget) => (
-                                <DropdownMenuCheckboxItem
-                                    key={widget.id}
-                                    checked={widget.visible}
-                                    onCheckedChange={() => toggleWidget(widget.id)}
-                                >
-                                    {widget.type === 'metrics' && 'Overview'}
-                                    {widget.type === 'recentProjects' && 'Recent Projects'}
-                                    {widget.type === 'myTasks' && 'My Tasks'}
-                                    {widget.type === 'activeOKRs' && 'Active OKRs'}
-                                    {widget.type === 'quickActions' && 'Quick Actions'}
-                                </DropdownMenuCheckboxItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        {/* 3-Dot Menu */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="icon">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <div className="px-2 py-1.5 text-sm font-semibold">Widget Visibility</div>
+                                <DropdownMenuSeparator />
+                                {widgets.filter(w => w.type !== 'overdueTasks').map((widget) => (
+                                    <DropdownMenuCheckboxItem
+                                        key={widget.id}
+                                        checked={widget.visible}
+                                        onCheckedChange={() => toggleWidget(widget.id)}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {widget.type === 'metrics' && (
+                                                <>
+                                                    <Activity className="h-4 w-4" />
+                                                    <span>Overview</span>
+                                                </>
+                                            )}
+                                            {widget.type === 'recentProjects' && (
+                                                <>
+                                                    <Briefcase className="h-4 w-4" />
+                                                    <span>Recent Projects</span>
+                                                </>
+                                            )}
+                                            {widget.type === 'myTasks' && (
+                                                <>
+                                                    <CheckCircle2 className="h-4 w-4" />
+                                                    <span>My Tasks</span>
+                                                </>
+                                            )}
+                                            {widget.type === 'activeOKRs' && (
+                                                <>
+                                                    <Target className="h-4 w-4" />
+                                                    <span>Active OKRs</span>
+                                                </>
+                                            )}
+                                            {widget.type === 'quickActions' && (
+                                                <>
+                                                    <TrendingUp className="h-4 w-4" />
+                                                    <span>Quick Actions</span>
+                                                </>
+                                            )}
+                                            {widget.type === 'usefulLinks' && (
+                                                <>
+                                                    <Link className="h-4 w-4" />
+                                                    <span>Useful Links</span>
+                                                </>
+                                            )}
+                                            {widget.type === 'canvas' && (
+                                                <>
+                                                    <Palette className="h-4 w-4" />
+                                                    <span>Canvas</span>
+                                                </>
+                                            )}
+                                            {widget.type === 'forms' && (
+                                                <>
+                                                    <ClipboardList className="h-4 w-4" />
+                                                    <span>Forms</span>
+                                                </>
+                                            )}
+                                            {widget.type === 'mindMap' && (
+                                                <>
+                                                    <Network className="h-4 w-4" />
+                                                    <span>Mind Map</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </DropdownMenuCheckboxItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
             </div>
 
@@ -1399,6 +1716,7 @@ export default function HomePage() {
                 /* Desktop: Draggable Grid Layout */
                 <div className="home-grid">
                     <ResponsiveGridLayout
+                        key={JSON.stringify(layouts.lg?.map(l => l.i))} // Force re-render when widgets change
                         className="layout"
                         layouts={layouts}
                         breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
@@ -1429,22 +1747,29 @@ export default function HomePage() {
                     transition: all 200ms ease;
                 }
                 .home-grid .react-grid-item.react-grid-placeholder {
-                    background: rgb(168 85 247 / 0.2);
-                    border: 2px dashed rgb(168 85 247);
+                    background: rgb(59 130 246 / 0.2);
+                    border: 2px dashed rgb(59 130 246);
                     border-radius: 0.5rem;
                 }
                 .home-grid .react-resizable-handle {
                     background-image: none !important;
+                    opacity: 1 !important;
+                    z-index: 10;
                 }
                 .home-grid .react-resizable-handle::after {
                     content: "";
                     position: absolute;
                     right: 3px;
                     bottom: 3px;
-                    width: 8px;
-                    height: 8px;
-                    border-right: 2px solid rgb(168 85 247);
-                    border-bottom: 2px solid rgb(168 85 247);
+                    width: 12px;
+                    height: 12px;
+                    border-right: 3px solid rgb(59 130 246);
+                    border-bottom: 3px solid rgb(59 130 246);
+                    border-radius: 0 0 4px 0;
+                }
+                .home-grid .react-grid-item:hover .react-resizable-handle::after {
+                    border-right-color: rgb(37 99 235);
+                    border-bottom-color: rgb(37 99 235);
                 }
             `}</style>
 
