@@ -56,42 +56,24 @@ const navigationItems: NavItem[] = [
         roles: Object.values(UserRole),
     },
     {
-        title: "Roadmap",
-        href: "/roadmap",
-        icon: Map,
+        title: "Programs & Projects",
+        href: "/projects",
+        icon: Briefcase,
         roles: Object.values(UserRole),
-    },
-    {
-        title: "Goals & OKRs",
-        href: "/okrs",
-        icon: Target,
-        roles: [
-            UserRole.PLATFORM_OWNER,
-            UserRole.TENANT_SUPER_ADMIN,
-            UserRole.ORG_ADMIN,
-            UserRole.PMO_LEAD,
-            UserRole.PROJECT_MANAGER,
-            UserRole.TEAM_MEMBER,
-            UserRole.EXECUTIVE,
+        children: [
+            {
+                title: "Programs",
+                href: "/programs",
+                icon: Briefcase,
+                roles: Object.values(UserRole),
+            },
+            {
+                title: "Roadmap",
+                href: "/roadmap",
+                icon: Map,
+                roles: Object.values(UserRole),
+            },
         ],
-    },
-    {
-        title: "Collaborate",
-        href: "/collaborate",
-        icon: MessageSquare,
-        roles: Object.values(UserRole),
-    },
-    {
-        title: "AI Tools",
-        href: "/ai-tools",
-        icon: Sparkles,
-        roles: Object.values(UserRole),
-    },
-    {
-        title: "Reports",
-        href: "/reports",
-        icon: BarChart3,
-        roles: Object.values(UserRole), // All users can view reports
     },
     {
         title: "Reporting Studio",
@@ -125,14 +107,63 @@ const navigationItems: NavItem[] = [
             },
         ],
     },
+    {
+        title: "Performance",
+        href: "/performance",
+        icon: TrendingUp,
+        roles: Object.values(UserRole),
+        children: [
+            {
+                title: "Goals & OKRs",
+                href: "/okrs",
+                icon: Target,
+                roles: [
+                    UserRole.PLATFORM_OWNER,
+                    UserRole.TENANT_SUPER_ADMIN,
+                    UserRole.ORG_ADMIN,
+                    UserRole.PMO_LEAD,
+                    UserRole.PROJECT_MANAGER,
+                    UserRole.TEAM_MEMBER,
+                    UserRole.EXECUTIVE,
+                ],
+            },
+        ],
+    },
+    {
+        title: "Communication",
+        href: "/communication",
+        icon: MessageSquare,
+        roles: Object.values(UserRole),
+        children: [
+            {
+                title: "Chat box",
+                href: "/collaborate",
+                icon: MessageSquare,
+                roles: Object.values(UserRole),
+            },
+        ],
+    },
+    {
+        title: "Planet AI",
+        href: "/planet-ai",
+        icon: Bot,
+        roles: Object.values(UserRole),
+        children: [
+            {
+                title: "AI Assistant",
+                href: "/ai-assistant",
+                icon: Bot,
+                roles: Object.values(UserRole),
+            },
+            {
+                title: "AI Tools",
+                href: "/ai-tools",
+                icon: Sparkles,
+                roles: Object.values(UserRole),
+            },
+        ],
+    },
 ]
-
-const aiAssistantNavItem: NavItem = {
-    title: "AI Assistant",
-    href: "/ai-assistant",
-    icon: Bot,
-    roles: Object.values(UserRole),
-}
 
 const academyNavItem: NavItem = {
     title: "Academy",
@@ -216,6 +247,12 @@ export function Sidebar() {
     const [expandedAdmin, setExpandedAdmin] = useState(false)
     const [expandedOtherProjects, setExpandedOtherProjects] = useState(false)
     const [expandedReportingStudio, setExpandedReportingStudio] = useState(false)
+    const [expandedPerformance, setExpandedPerformance] = useState(false)
+    const [expandedCommunication, setExpandedCommunication] = useState(false)
+    const [expandedPlanetAI, setExpandedPlanetAI] = useState(false)
+    const [expandedProgramsProjects, setExpandedProgramsProjects] = useState(false)
+    const [expandedProgramsSection, setExpandedProgramsSection] = useState(false)
+    const [expandedProjectsSection, setExpandedProjectsSection] = useState(false)
     const [programs, setPrograms] = useState<any[]>([])
     const [projects, setProjects] = useState<any[]>([])
     const [isMounted, setIsMounted] = useState(false)
@@ -331,6 +368,273 @@ export function Sidebar() {
                             const Icon = item.icon
                             const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
 
+                            // Handle Programs & Projects with children
+                            if (item.children && item.title === "Programs & Projects" && !sidebarCollapsed) {
+                                return (
+                                    <div key={item.href}>
+                                        {/* Separator line between tabs */}
+                                        {index > 0 && (
+                                            <div className="my-2 border-t border-border"></div>
+                                        )}
+                                        <div
+                                            className={cn(
+                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                                pathname.includes(item.href) || pathname.includes("/roadmap") || pathname.includes("/programs/") || pathname.includes("/projects/")
+                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                    : "text-foreground hover:bg-accent"
+                                            )}
+                                            onClick={() => setExpandedProgramsProjects(!expandedProgramsProjects)}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Icon className="h-5 w-5" />
+                                                <span>{item.title}</span>
+                                            </div>
+                                            <ChevronDown
+                                                className={cn(
+                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                    expandedProgramsProjects && "rotate-180"
+                                                )}
+                                            />
+                                        </div>
+
+                                        {/* Programs & Projects children */}
+                                        {expandedProgramsProjects && (
+                                            <div className="space-y-1">
+                                                {/* Static children - render Programs first, then Projects, then Roadmap */}
+                                                {item.children
+                                                    ?.filter((child) => child.roles.includes(effectiveRole))
+                                                    .map((child) => {
+                                                        const ChildIcon = child.icon
+                                                        const isChildActive =
+                                                            pathname === child.href || pathname.startsWith(child.href + "/")
+
+                                                        // Special handling for Programs - make it expandable
+                                                        if (child.title === "Programs") {
+                                                            return (
+                                                                <div key={child.href}>
+                                                                    <div
+                                                                        className={cn(
+                                                                            "flex items-center justify-between py-2.5 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10",
+                                                                            isChildActive
+                                                                                ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                        )}
+                                                                        onClick={() => setExpandedProgramsSection(!expandedProgramsSection)}
+                                                                    >
+                                                                        <div className="flex items-center gap-3">
+                                                                            <ChildIcon className="h-4 w-4" />
+                                                                            {child.title}
+                                                                        </div>
+                                                                        <ChevronDown
+                                                                            className={cn(
+                                                                                "h-4 w-4 transition-transform flex-shrink-0",
+                                                                                expandedProgramsSection && "rotate-180"
+                                                                            )}
+                                                                        />
+                                                                    </div>
+
+                                                                    {/* Programs dropdown */}
+                                                                    {expandedProgramsSection && programs.length > 0 && (
+                                                                        <div className="space-y-1 ml-4">
+                                                                            {programs.map((program) => {
+                                                                                const isProgramActive = pathname.includes(`/programs/${program.id}`)
+                                                                                return (
+                                                                                    <Link
+                                                                                        key={program.id}
+                                                                                        href={`/programs/${program.id}`}
+                                                                                        onClick={handleLinkClick}
+                                                                                        className={cn(
+                                                                                            "flex items-center gap-2 py-2 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                                            isProgramActive
+                                                                                                ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                                        )}
+                                                                                    >
+                                                                                        <Briefcase className="h-3 w-3" />
+                                                                                        <span className="truncate">{program.name}</span>
+                                                                                    </Link>
+                                                                                )
+                                                                            })}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {expandedProgramsSection && programs.length === 0 && (
+                                                                        <div className="px-10 py-2 text-xs text-muted-foreground italic">
+                                                                            No programs yet
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )
+                                                        }
+
+                                                        // Don't render Roadmap yet, we'll render it after Projects
+                                                        if (child.title === "Roadmap") {
+                                                            return null
+                                                        }
+
+                                                        // Regular static children
+                                                        return (
+                                                            <Link
+                                                                key={child.href}
+                                                                href={child.href}
+                                                                onClick={handleLinkClick}
+                                                                className={cn(
+                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    isChildActive
+                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                )}
+                                                            >
+                                                                <ChildIcon className="h-4 w-4" />
+                                                                {child.title}
+                                                            </Link>
+                                                        )
+                                                    })}
+
+                                                {/* Projects (standalone) - appears after Programs */}
+                                                {standaloneProjects.length > 0 && (
+                                                    <div className="space-y-1">
+                                                        <div
+                                                            className={cn(
+                                                                "flex items-center justify-between py-2.5 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10",
+                                                                "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                            )}
+                                                            onClick={() => setExpandedProjectsSection(!expandedProjectsSection)}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <FolderKanban className="h-4 w-4" />
+                                                                <span>Projects</span>
+                                                            </div>
+                                                            <ChevronDown
+                                                                className={cn(
+                                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                                    expandedProjectsSection && "rotate-180"
+                                                                )}
+                                                            />
+                                                        </div>
+                                                        
+                                                        {/* Projects dropdown */}
+                                                        {expandedProjectsSection && (
+                                                            <div className="space-y-1 ml-4">
+                                                                {standaloneProjects.map((project) => {
+                                                                    const isProjectActive = pathname.includes(`/projects/${project.id}`)
+                                                                    return (
+                                                                        <Link
+                                                                            key={project.id}
+                                                                            href={`/projects/${project.id}`}
+                                                                            onClick={handleLinkClick}
+                                                                            className={cn(
+                                                                                "flex items-center gap-2 py-2 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                                isProjectActive
+                                                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                            )}
+                                                                        >
+                                                                            <span className="truncate">{project.name}</span>
+                                                                        </Link>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Roadmap - appears last */}
+                                                {item.children
+                                                    ?.filter((child) => child.roles.includes(effectiveRole) && child.title === "Roadmap")
+                                                    .map((child) => {
+                                                        const ChildIcon = child.icon
+                                                        const isChildActive =
+                                                            pathname === child.href || pathname.startsWith(child.href + "/")
+
+                                                        return (
+                                                            <Link
+                                                                key={child.href}
+                                                                href={child.href}
+                                                                onClick={handleLinkClick}
+                                                                className={cn(
+                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    isChildActive
+                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                )}
+                                                            >
+                                                                <ChildIcon className="h-4 w-4" />
+                                                                {child.title}
+                                                            </Link>
+                                                        )
+                                                    })}
+
+                                                {/* Dynamic Programs with nested Projects */}
+                                                {programs.length > 0 && (
+                                                    <div className="mt-2 pt-2 border-t border-border space-y-1">
+                                                        <div className="px-10 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                            Programs
+                                                        </div>
+                                                        {programs.map((program) => {
+                                                            const programProjects = getProjectsForProgram(program.id)
+                                                            const isExpanded = expandedPrograms[program.id]
+                                                            const isProgramActive = pathname.includes(`/programs/${program.id}`)
+
+                                                            return (
+                                                                <div key={program.id} className="space-y-1">
+                                                                    <div
+                                                                        className={cn(
+                                                                            "flex items-center justify-between py-2.5 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10",
+                                                                            isProgramActive && !pathname.includes('/projects/')
+                                                                                ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                        )}
+                                                                        onClick={() => toggleProgram(program.id)}
+                                                                    >
+                                                                        <div className="flex items-center gap-2 flex-1">
+                                                                            <Briefcase className="h-4 w-4" />
+                                                                            <span className="truncate">{program.name}</span>
+                                                                        </div>
+                                                                        <ChevronDown
+                                                                            className={cn(
+                                                                                "h-4 w-4 transition-transform flex-shrink-0",
+                                                                                isExpanded && "rotate-180",
+                                                                                programProjects.length === 0 && "opacity-30"
+                                                                            )}
+                                                                        />
+                                                                    </div>
+
+                                                                    {/* Projects under program */}
+                                                                    {isExpanded && programProjects.length > 0 && (
+                                                                        <div className="ml-6 space-y-1 border-l-2 border-border pl-2">
+                                                                            {programProjects.map((project) => {
+                                                                                const isProjectActive = pathname.includes(`/projects/${project.id}`)
+                                                                                return (
+                                                                                    <Link
+                                                                                        key={project.id}
+                                                                                        href={`/projects/${project.id}`}
+                                                                                        onClick={handleLinkClick}
+                                                                                        className={cn(
+                                                                                            "flex items-center gap-2 py-2 text-xs font-medium transition-all tracking-tight -mx-2 px-8",
+                                                                                            isProjectActive
+                                                                                                ? "bg-primary text-primary-foreground border-l-4 border-primary/50 hover:bg-primary"
+                                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                                        )}
+                                                                                    >
+                                                                                        <FolderKanban className="h-3 w-3" />
+                                                                                        <span className="truncate">{project.name}</span>
+                                                                                    </Link>
+                                                                                )
+                                                                            })}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            }
+
                             // Handle Reporting Studio with children
                             if (item.children && item.title === "Reporting Studio" && !sidebarCollapsed) {
                                 return (
@@ -393,6 +697,192 @@ export function Sidebar() {
                                 )
                             }
 
+                            // Handle Performance with children
+                            if (item.children && item.title === "Performance" && !sidebarCollapsed) {
+                                return (
+                                    <div key={item.href}>
+                                        {/* Separator line between tabs */}
+                                        {index > 0 && (
+                                            <div className="my-2 border-t border-border"></div>
+                                        )}
+                                        <div
+                                            className={cn(
+                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                                pathname.includes(item.href)
+                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                    : "text-foreground hover:bg-accent"
+                                            )}
+                                            onClick={() => setExpandedPerformance(!expandedPerformance)}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Icon className="h-5 w-5" />
+                                                <span>{item.title}</span>
+                                            </div>
+                                            <ChevronDown
+                                                className={cn(
+                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                    expandedPerformance && "rotate-180"
+                                                )}
+                                            />
+                                        </div>
+
+                                        {/* Performance children */}
+                                        {expandedPerformance && (
+                                            <div className="space-y-1">
+                                                {item.children
+                                                    ?.filter((child) => child.roles.includes(effectiveRole))
+                                                    .map((child) => {
+                                                        const ChildIcon = child.icon
+                                                        const isChildActive =
+                                                            pathname === child.href || pathname.startsWith(child.href + "/")
+
+                                                        return (
+                                                            <Link
+                                                                key={child.href}
+                                                                href={child.href}
+                                                                onClick={handleLinkClick}
+                                                                className={cn(
+                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    isChildActive
+                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                )}
+                                                            >
+                                                                <ChildIcon className="h-4 w-4" />
+                                                                {child.title}
+                                                            </Link>
+                                                        )
+                                                    })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            }
+
+                            // Handle Communication with children
+                            if (item.children && item.title === "Communication" && !sidebarCollapsed) {
+                                return (
+                                    <div key={item.href}>
+                                        {/* Separator line between tabs */}
+                                        {index > 0 && (
+                                            <div className="my-2 border-t border-border"></div>
+                                        )}
+                                        <div
+                                            className={cn(
+                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                                pathname.includes(item.href)
+                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                    : "text-foreground hover:bg-accent"
+                                            )}
+                                            onClick={() => setExpandedCommunication(!expandedCommunication)}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Icon className="h-5 w-5" />
+                                                <span>{item.title}</span>
+                                            </div>
+                                            <ChevronDown
+                                                className={cn(
+                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                    expandedCommunication && "rotate-180"
+                                                )}
+                                            />
+                                        </div>
+
+                                        {/* Communication children */}
+                                        {expandedCommunication && (
+                                            <div className="space-y-1">
+                                                {item.children
+                                                    ?.filter((child) => child.roles.includes(effectiveRole))
+                                                    .map((child) => {
+                                                        const ChildIcon = child.icon
+                                                        const isChildActive =
+                                                            pathname === child.href || pathname.startsWith(child.href + "/")
+
+                                                        return (
+                                                            <Link
+                                                                key={child.href}
+                                                                href={child.href}
+                                                                onClick={handleLinkClick}
+                                                                className={cn(
+                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    isChildActive
+                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                )}
+                                                            >
+                                                                <ChildIcon className="h-4 w-4" />
+                                                                {child.title}
+                                                            </Link>
+                                                        )
+                                                    })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            }
+
+                            // Handle Planet AI with children
+                            if (item.children && item.title === "Planet AI" && !sidebarCollapsed) {
+                                return (
+                                    <div key={item.href}>
+                                        {/* Separator line between tabs */}
+                                        {index > 0 && (
+                                            <div className="my-2 border-t border-border"></div>
+                                        )}
+                                        <div
+                                            className={cn(
+                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                                pathname.includes(item.href)
+                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                    : "text-foreground hover:bg-accent"
+                                            )}
+                                            onClick={() => setExpandedPlanetAI(!expandedPlanetAI)}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Icon className="h-5 w-5" />
+                                                <span>{item.title}</span>
+                                            </div>
+                                            <ChevronDown
+                                                className={cn(
+                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                    expandedPlanetAI && "rotate-180"
+                                                )}
+                                            />
+                                        </div>
+
+                                        {/* Planet AI children */}
+                                        {expandedPlanetAI && (
+                                            <div className="space-y-1">
+                                                {item.children
+                                                    ?.filter((child) => child.roles.includes(effectiveRole))
+                                                    .map((child) => {
+                                                        const ChildIcon = child.icon
+                                                        const isChildActive =
+                                                            pathname === child.href || pathname.startsWith(child.href + "/")
+
+                                                        return (
+                                                            <Link
+                                                                key={child.href}
+                                                                href={child.href}
+                                                                onClick={handleLinkClick}
+                                                                className={cn(
+                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    isChildActive
+                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                )}
+                                                            >
+                                                                <ChildIcon className="h-4 w-4" />
+                                                                {child.title}
+                                                            </Link>
+                                                        )
+                                                    })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            }
+
                             return (
                                 <div key={item.href}>
                                     {/* Separator line between tabs */}
@@ -419,142 +909,11 @@ export function Sidebar() {
                                 </div>
                             )
                         })}
-
-                        {/* Programs with nested Projects */}
-                        {!sidebarCollapsed && (
-                            <div className="space-y-1 pt-2">
-                                {/* Separator line before Programs */}
-                                <div className="my-2 border-t border-border"></div>
-
-                                <div className="flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6 text-foreground hover:bg-accent">
-                                    <div className="flex items-center gap-3">
-                                        <Briefcase className="h-5 w-5" />
-                                        <span>Programs & Projects</span>
-                                    </div>
-                                </div>
-
-                                {programs.map((program) => {
-                                    const programProjects = getProjectsForProgram(program.id)
-                                    const isExpanded = expandedPrograms[program.id]
-                                    const isProgramActive = pathname.includes(`/programs/${program.id}`)
-
-                                    return (
-                                        <div key={program.id} className="space-y-1">
-                                            <div
-                                                className={cn(
-                                                    "flex items-center justify-between py-2.5 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10",
-                                                    isProgramActive && !pathname.includes('/projects/')
-                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                                                )}
-                                                onClick={() => toggleProgram(program.id)}
-                                            >
-                                                <div className="flex items-center gap-2 flex-1">
-                                                    <Briefcase className="h-4 w-4" />
-                                                    <span className="truncate">{program.name}</span>
-                                                </div>
-                                                <ChevronDown
-                                                    className={cn(
-                                                        "h-4 w-4 transition-transform flex-shrink-0",
-                                                        isExpanded && "rotate-180",
-                                                        programProjects.length === 0 && "opacity-30"
-                                                    )}
-                                                />
-                                            </div>
-
-                                            {/* Projects under program */}
-                                            {isExpanded && programProjects.length > 0 && (
-                                                <div className="ml-6 space-y-1 border-l-2 border-border pl-2">
-                                                    {programProjects.map((project) => {
-                                                        const isProjectActive = pathname.includes(`/projects/${project.id}`)
-                                                        return (
-                                                            <Link
-                                                                key={project.id}
-                                                                href={`/projects/${project.id}`}
-                                                                className={cn(
-                                                                    "flex items-center gap-2 py-2 text-xs font-medium transition-all tracking-tight -mx-2 px-8",
-                                                                    isProjectActive
-                                                                        ? "bg-primary text-primary-foreground border-l-4 border-primary/50 hover:bg-primary"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                                                                )}
-                                                            >
-                                                                <FolderKanban className="h-3 w-3" />
-                                                                <span className="truncate">{project.name}</span>
-                                                            </Link>
-                                                        )
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )
-                                })}
-
-                                {/* Standalone Projects (no program) with dropdown */}
-                                {standaloneProjects.length > 0 && (
-                                    <div className="space-y-1 mt-2 border-t border-border pt-2">
-                                        <div
-                                            className={cn(
-                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10 text-foreground hover:bg-accent"
-                                            )}
-                                            onClick={() => setExpandedOtherProjects(!expandedOtherProjects)}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <FolderKanban className="h-5 w-5" />
-                                                <span>Other Projects</span>
-                                            </div>
-                                            <ChevronDown
-                                                className={cn(
-                                                    "h-4 w-4 transition-transform flex-shrink-0",
-                                                    expandedOtherProjects && "rotate-180"
-                                                )}
-                                            />
-                                        </div>
-                                        {expandedOtherProjects && standaloneProjects.map((project) => {
-                                            const isProjectActive = pathname.includes(`/projects/${project.id}`)
-                                            return (
-                                                <Link
-                                                    key={project.id}
-                                                    href={`/projects/${project.id}`}
-                                                    className={cn(
-                                                        "flex items-center gap-2 py-2 text-xs font-medium transition-all tracking-tight -mx-2 px-14",
-                                                        isProjectActive
-                                                            ? "bg-primary text-primary-foreground border-l-4 border-primary/50 hover:bg-primary"
-                                                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                                                    )}
-                                                >
-                                                    <FolderKanban className="h-3 w-3" />
-                                                    <span className="truncate">{project.name}</span>
-                                                </Link>
-                                            )
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </nav>
-
-                    {/* AI Assistant Tab - Above Admin */}
-                    {!sidebarCollapsed && user && aiAssistantNavItem.roles.includes(effectiveRole) && (
-                        <div className="mt-auto pt-2 border-t border-border">
-                            <Link
-                                href={aiAssistantNavItem.href}
-                                onClick={handleLinkClick}
-                                className={cn(
-                                    "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight -mx-2 px-6",
-                                    pathname === aiAssistantNavItem.href || pathname.startsWith(aiAssistantNavItem.href + "/")
-                                        ? "bg-primary text-primary-foreground hover:bg-primary"
-                                        : "text-foreground hover:bg-accent"
-                                )}
-                            >
-                                <Bot className="h-5 w-5" />
-                                <span>{aiAssistantNavItem.title}</span>
-                            </Link>
-                        </div>
-                    )}
 
                     {/* Academy Tab - Between AI Assistant and Admin */}
                     {!sidebarCollapsed && user && academyNavItem.roles.includes(effectiveRole) && (
-                        <div className="pt-2 border-t border-border">
+                        <div className="mt-auto pt-2 border-t border-border">{/* Added mt-auto back */}
                             <Link
                                 href={academyNavItem.href}
                                 onClick={handleLinkClick}
