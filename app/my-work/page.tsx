@@ -848,16 +848,17 @@ export default function HomePage() {
                                         size="sm"
                                         onClick={() => setTaskViewMode(taskViewMode === 'list' ? 'calendar' : 'list')}
                                         className="text-xs"
+                                        title={taskViewMode === 'list' ? 'Switch to Calendar View' : 'Switch to List View'}
                                     >
                                         {taskViewMode === 'list' ? (
                                             <>
-                                                <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                                                <span>Calendar</span>
+                                                <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                                                <span className="hidden lg:inline ml-1">Calendar</span>
                                             </>
                                         ) : (
                                             <>
-                                                <List className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                                                <span>List</span>
+                                                <List className="h-3 w-3 md:h-4 md:w-4" />
+                                                <span className="hidden lg:inline ml-1">List</span>
                                             </>
                                         )}
                                     </Button>
@@ -869,29 +870,30 @@ export default function HomePage() {
                                             setTimeTrackingDialogOpen(true)
                                         }}
                                         className="text-xs"
+                                        title="View Time Tracking History"
                                     >
-                                        <History className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                                        <span className="hidden sm:inline">History</span>
-                                        <span className="sm:hidden">Time</span>
+                                        <History className="h-3 w-3 md:h-4 md:w-4" />
+                                        <span className="hidden lg:inline ml-1">History</span>
                                     </Button>
                                     <Button
                                         variant={showFilters ? "secondary" : "outline"}
                                         size="sm"
                                         onClick={() => setShowFilters(!showFilters)}
                                         className="text-xs"
+                                        title="Toggle Filters"
                                     >
-                                        <Filter className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                                        Filters
+                                        <Filter className="h-3 w-3 md:h-4 md:w-4" />
+                                        <span className="hidden lg:inline ml-1">Filters</span>
                                     </Button>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setTaskDialogOpen(true)}
                                         className="text-xs"
+                                        title="Add New Task"
                                     >
-                                        <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                                        <span className="hidden sm:inline">Add Task</span>
-                                        <span className="sm:hidden">Add</span>
+                                        <Plus className="h-3 w-3 md:h-4 md:w-4" />
+                                        <span className="hidden lg:inline ml-1">Add Task</span>
                                     </Button>
                                     <Button
                                         variant="ghost"
