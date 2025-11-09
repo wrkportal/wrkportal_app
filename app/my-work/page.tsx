@@ -239,7 +239,15 @@ export default function HomePage() {
 
             // Load saved widgets visibility, or use defaults
             if (savedWidgets) {
-                setWidgets(JSON.parse(savedWidgets))
+                const parsed = JSON.parse(savedWidgets)
+                // Merge with defaultWidgets to add any new widgets that were added after user last saved
+                const mergedWidgets = defaultWidgets.map(defaultWidget => {
+                    const savedWidget = parsed.find((w: Widget) => w.id === defaultWidget.id)
+                    return savedWidget || defaultWidget
+                })
+                setWidgets(mergedWidgets)
+                // Update localStorage with merged list
+                localStorage.setItem('home-widgets', JSON.stringify(mergedWidgets))
             } else {
                 setWidgets(defaultWidgets)
             }
