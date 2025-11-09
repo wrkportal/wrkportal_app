@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://managerbook.vercel.app'
+    const baseUrl = 'https://www.managerbook.in'
     
     // Define your main pages
     const routes = [

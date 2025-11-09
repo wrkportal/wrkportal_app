@@ -7,5 +7,5 @@ Disallow: /api/
 Disallow: /admin/
 
 # Sitemap location
-Sitemap: https://managerbook.vercel.app/sitemap.xml
+Sitemap: https://www.managerbook.in/sitemap.xml
 

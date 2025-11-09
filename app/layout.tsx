@@ -15,11 +15,11 @@ export const metadata: Metadata = {
     authors: [{ name: "ManagerBook Team" }],
     creator: "ManagerBook",
     publisher: "ManagerBook",
-    metadataBase: new URL('https://managerbook.vercel.app'),
+    metadataBase: new URL('https://www.managerbook.in'),
     openGraph: {
         type: 'website',
         locale: 'en_US',
-        url: 'https://managerbook.vercel.app',
+        url: 'https://www.managerbook.in',
         title: 'ManagerBook - Professional Project Management Platform',
         description: 'Comprehensive project management with AI-powered features, OKR tracking, and team collaboration tools.',
         siteName: 'ManagerBook',
