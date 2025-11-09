@@ -5,11 +5,14 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import * as XLSX from 'xlsx'
 import { parse } from 'csv-parse/sync'
+import { put } from '@vercel/blob'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads', 'reporting-studio')
+const isDevelopment = process.env.NODE_ENV === 'development'
 
-// Ensure upload directory exists
+// Ensure upload directory exists (development only)
 async function ensureUploadDir() {
+  if (!isDevelopment) return // Skip in production
   try {
     await mkdir(UPLOAD_DIR, { recursive: true })
   } catch (error) {
@@ -48,14 +51,28 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const timestamp = Date.now()
     const uniqueName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
-    const filePath = join(UPLOAD_DIR, uniqueName)
 
     // Read file content
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Save file
-    await writeFile(filePath, buffer)
+    let filePath: string
+    let blobUrl: string | null = null
+
+    // Save file based on environment
+    if (isDevelopment) {
+      // Development: Save to local filesystem
+      filePath = join(UPLOAD_DIR, uniqueName)
+      await writeFile(filePath, buffer)
+    } else {
+      // Production: Save to Vercel Blob Storage
+      const blob = await put(uniqueName, buffer, {
+        access: 'public',
+        contentType: file.type || 'application/octet-stream',
+      })
+      blobUrl = blob.url
+      filePath = blob.url // Store the blob URL as filePath
+    }
 
     // Parse file to get metadata
     let rowCount = 0

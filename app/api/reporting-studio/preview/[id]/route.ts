@@ -6,6 +6,23 @@ import * as XLSX from 'xlsx'
 import { parse } from 'csv-parse/sync'
 
 const MAX_PREVIEW_ROWS = 100
+const isDevelopment = process.env.NODE_ENV === 'development'
+
+// Helper function to fetch file content
+async function fetchFileContent(filePath: string): Promise<Buffer> {
+  if (isDevelopment || !filePath.startsWith('http')) {
+    // Development: Read from filesystem
+    return await readFile(filePath)
+  } else {
+    // Production: Fetch from Vercel Blob Storage
+    const response = await fetch(filePath)
+    if (!response.ok) {
+      throw new Error('Failed to fetch file from blob storage')
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    return Buffer.from(arrayBuffer)
+  }
+}
 
 export async function GET(
   request: NextRequest,
@@ -33,7 +50,7 @@ export async function GET(
     }
 
     // Read and parse the file
-    const buffer = await readFile(file.filePath)
+    const buffer = await fetchFileContent(file.filePath)
     const fileExt = file.originalName.substring(file.originalName.lastIndexOf('.')).toLowerCase()
 
     let columns: string[] = []
