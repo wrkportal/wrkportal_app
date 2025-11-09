@@ -912,94 +912,120 @@ export function Sidebar() {
                     </nav>
 
                     {/* Academy Tab - Between AI Assistant and Admin */}
-                    {!sidebarCollapsed && user && academyNavItem.roles.includes(effectiveRole) && (
-                        <div className="mt-auto pt-2 border-t border-border">{/* Added mt-auto back */}
+                    {user && academyNavItem.roles.includes(effectiveRole) && (
+                        <div className={cn("pt-2 border-t border-border", !sidebarCollapsed && "mt-auto")}>
                             <Link
                                 href={academyNavItem.href}
                                 onClick={handleLinkClick}
                                 className={cn(
-                                    "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight -mx-2 px-6",
+                                    "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight relative",
+                                    sidebarCollapsed ? "justify-center px-2 rounded-md" : "-mx-2 px-6",
                                     pathname === academyNavItem.href || pathname.startsWith(academyNavItem.href + "/")
-                                        ? "bg-primary text-primary-foreground hover:bg-primary"
+                                        ? sidebarCollapsed
+                                            ? "bg-primary text-primary-foreground rounded-md hover:bg-primary"
+                                            : "bg-primary text-primary-foreground hover:bg-primary"
                                         : "text-foreground hover:bg-accent"
                                 )}
+                                title={sidebarCollapsed ? academyNavItem.title : undefined}
                             >
                                 <GraduationCap className="h-5 w-5" />
-                                <span>{academyNavItem.title}</span>
+                                {!sidebarCollapsed && <span>{academyNavItem.title}</span>}
                             </Link>
                         </div>
                     )}
 
                     {/* Admin Tab - Sticky at the bottom */}
-                    {!sidebarCollapsed && user && adminNavItem.roles.includes(user.role) && (
+                    {user && adminNavItem.roles.includes(user.role) && (
                         <div className="pt-2 border-t border-border">
-                            <div
-                                className={cn(
-                                    "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
-                                    pathname.includes(adminNavItem.href) && !pathname.includes(adminNavItem.href + "/")
-                                        ? "bg-primary text-primary-foreground hover:bg-primary"
-                                        : "text-foreground hover:bg-accent"
-                                )}
-                                onClick={() => setExpandedAdmin(!expandedAdmin)}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Settings className="h-5 w-5" />
-                                    <span>{adminNavItem.title}</span>
-                                </div>
-                                <ChevronDown
+                            {sidebarCollapsed ? (
+                                <Link
+                                    href={adminNavItem.href}
+                                    onClick={handleLinkClick}
                                     className={cn(
-                                        "h-4 w-4 transition-transform flex-shrink-0",
-                                        expandedAdmin && "rotate-180"
+                                        "flex items-center justify-center py-3 text-sm font-medium transition-all tracking-tight relative px-2 rounded-md",
+                                        pathname.includes(adminNavItem.href)
+                                            ? "bg-primary text-primary-foreground hover:bg-primary"
+                                            : "text-foreground hover:bg-accent"
                                     )}
-                                />
-                            </div>
+                                    title={adminNavItem.title}
+                                >
+                                    <Settings className="h-5 w-5" />
+                                </Link>
+                            ) : (
+                                <>
+                                    <div
+                                        className={cn(
+                                            "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                            pathname.includes(adminNavItem.href) && !pathname.includes(adminNavItem.href + "/")
+                                                ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                : "text-foreground hover:bg-accent"
+                                        )}
+                                        onClick={() => setExpandedAdmin(!expandedAdmin)}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Settings className="h-5 w-5" />
+                                            <span>{adminNavItem.title}</span>
+                                        </div>
+                                        <ChevronDown
+                                            className={cn(
+                                                "h-4 w-4 transition-transform flex-shrink-0",
+                                                expandedAdmin && "rotate-180"
+                                            )}
+                                        />
+                                    </div>
 
-                            {/* Admin children */}
-                            {expandedAdmin && (
-                                <div className="space-y-1">
-                                    {adminNavItem.children
-                                        ?.filter((child) => child.roles.includes(user.role))
-                                        .map((child) => {
-                                            const ChildIcon = child.icon
-                                            const isChildActive =
-                                                pathname === child.href || pathname.startsWith(child.href + "/")
+                                    {/* Admin children */}
+                                    {expandedAdmin && (
+                                        <div className="space-y-1">
+                                            {adminNavItem.children
+                                                ?.filter((child) => child.roles.includes(user.role))
+                                                .map((child) => {
+                                                    const ChildIcon = child.icon
+                                                    const isChildActive =
+                                                        pathname === child.href || pathname.startsWith(child.href + "/")
 
-                                            return (
-                                                <Link
-                                                    key={child.href}
-                                                    href={child.href}
-                                                    className={cn(
-                                                        "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
-                                                        isChildActive
-                                                            ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                                                    )}
-                                                >
-                                                    <ChildIcon className="h-4 w-4" />
-                                                    {child.title}
-                                                </Link>
-                                            )
-                                        })}
-                                </div>
+                                                    return (
+                                                        <Link
+                                                            key={child.href}
+                                                            href={child.href}
+                                                            className={cn(
+                                                                "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                isChildActive
+                                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                            )}
+                                                        >
+                                                            <ChildIcon className="h-4 w-4" />
+                                                            {child.title}
+                                                        </Link>
+                                                    )
+                                                })}
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}
 
                     {/* Platform Admin Tab - Last tab (god-mode) */}
-                    {!sidebarCollapsed && user && platformAdminNavItem.roles.includes(user.role) && (
+                    {user && platformAdminNavItem.roles.includes(user.role) && (
                         <div className="pt-2 border-t border-border">
                             <Link
                                 href={platformAdminNavItem.href}
                                 onClick={handleLinkClick}
                                 className={cn(
-                                    "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight -mx-2 px-6",
+                                    "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight relative",
+                                    sidebarCollapsed ? "justify-center px-2 rounded-md" : "-mx-2 px-6",
                                     pathname === platformAdminNavItem.href || pathname.startsWith(platformAdminNavItem.href + "/")
-                                        ? "bg-primary text-primary-foreground hover:bg-primary"
+                                        ? sidebarCollapsed
+                                            ? "bg-primary text-primary-foreground rounded-md hover:bg-primary"
+                                            : "bg-primary text-primary-foreground hover:bg-primary"
                                         : "text-foreground hover:bg-accent"
                                 )}
+                                title={sidebarCollapsed ? platformAdminNavItem.title : undefined}
                             >
                                 <Shield className="h-5 w-5" />
-                                <span>{platformAdminNavItem.title}</span>
+                                {!sidebarCollapsed && <span>{platformAdminNavItem.title}</span>}
                             </Link>
                         </div>
                     )}
