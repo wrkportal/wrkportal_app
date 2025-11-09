@@ -636,77 +636,81 @@ export function InitiateTab({ project }: InitiateTabProps) {
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Initiation Checklist */}
-                <Card>
-                    <CardHeader>
+                <Card className="border-border/50 shadow-sm">
+                    <CardHeader className="pb-4">
                         <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                            <span className="text-base md:text-lg">Initiation Checklist</span>
+                            <span className="text-base font-semibold">Initiation Checklist</span>
                             <Button
                                 type="button"
                                 size="sm"
-                                variant="outline"
+                                variant="ghost"
                                 onClick={saveInitiateData}
                                 disabled={isSaving}
-                                className="w-full sm:w-auto text-xs"
+                                className="text-xs h-8"
                             >
-                                <Save className="h-3 w-3 mr-1 md:mr-2" />
+                                <Save className="h-3 w-3 mr-1.5" />
                                 {isSaving ? 'Saving...' : 'Save'}
                             </Button>
                         </CardTitle>
-                        <CardDescription className="text-xs md:text-sm">
-                            Create and track your initiation tasks
+                        <CardDescription className="text-xs">
+                            Track your initiation tasks
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            {checklist.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors group"
+                    <CardContent className="space-y-2">
+                        {checklist.map((item) => (
+                            <div
+                                key={item.id}
+                                className="flex items-center gap-3 p-2.5 rounded-md border border-border/40 bg-card hover:bg-accent/30 transition-all group"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => toggleChecklistItem(item.id)}
+                                    className="focus:outline-none flex-shrink-0"
                                 >
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleChecklistItem(item.id)}
-                                        className="focus:outline-none"
-                                    >
-                                        {item.completed ? (
-                                            <CheckCircle className="h-5 w-5 text-green-600 cursor-pointer" />
-                                        ) : (
-                                            <Circle className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-green-600" />
-                                        )}
-                                    </button>
-                                    <span className={`flex-1 ${item.completed ? 'text-muted-foreground line-through' : ''}`}>
-                                        {item.item}
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => deleteChecklistItem(item.id)}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                </div>
-                            ))}
-
-                            {checklist.length === 0 && (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    <Target className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                                    <p>No checklist items yet</p>
-                                </div>
-                            )}
-
-                            <div className="flex gap-2 pt-2">
-                                <Input
-                                    placeholder="Add new checklist item..."
-                                    value={newChecklistItem}
-                                    onChange={(e) => setNewChecklistItem(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && addChecklistItem()}
-                                />
-                                <Button type="button" onClick={addChecklistItem}>
-                                    <Plus className="h-4 w-4" />
+                                    {item.completed ? (
+                                        <CheckCircle className="h-4 w-4 text-green-600 cursor-pointer" />
+                                    ) : (
+                                        <Circle className="h-4 w-4 text-muted-foreground/60 cursor-pointer hover:text-green-600 transition-colors" />
+                                    )}
+                                </button>
+                                <span className={`flex-1 text-sm ${item.completed ? 'text-muted-foreground/70 line-through' : 'text-foreground'}`}>
+                                    {item.item}
+                                </span>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteChecklistItem(item.id)}
+                                    className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                    <Trash2 className="h-3.5 w-3.5 text-destructive/70" />
                                 </Button>
                             </div>
+                        ))}
+
+                        {checklist.length === 0 && (
+                            <div className="text-center py-6 text-muted-foreground">
+                                <Target className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                                <p className="text-sm">No checklist items yet</p>
+                            </div>
+                        )}
+
+                        <div className="flex gap-2 pt-2">
+                            <Input
+                                placeholder="Add new item..."
+                                value={newChecklistItem}
+                                onChange={(e) => setNewChecklistItem(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && addChecklistItem()}
+                                className="text-sm h-9"
+                            />
+                            <Button 
+                                type="button" 
+                                onClick={addChecklistItem}
+                                size="sm"
+                                className="h-9 w-9 p-0"
+                            >
+                                <Plus className="h-4 w-4" />
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
