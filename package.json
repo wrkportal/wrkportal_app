@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "db:cleanup": "tsx scripts/cleanup-database.ts"
+    "db:cleanup": "tsx scripts/cleanup-database.ts",
+    "db:delete-notifications": "tsx scripts/delete-notifications.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.58",

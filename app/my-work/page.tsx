@@ -57,7 +57,8 @@ import {
     Undo,
     Redo,
     Maximize,
-    Minimize
+    Minimize,
+    UserCheck
 } from "lucide-react"
 import { Responsive, WidthProvider, Layout, Layouts } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
@@ -86,6 +87,7 @@ const defaultWidgets: Widget[] = [
     { id: 'overdueTasks', type: 'overdueTasks', visible: false },
     { id: 'recentProjects', type: 'recentProjects', visible: true },
     { id: 'myTasks', type: 'myTasks', visible: true },
+    { id: 'assignedToOthers', type: 'assignedToOthers', visible: false },
     { id: 'activeOKRs', type: 'activeOKRs', visible: true },
     { id: 'quickActions', type: 'quickActions', visible: true },
     { id: 'usefulLinks', type: 'usefulLinks', visible: false },
@@ -102,10 +104,11 @@ const defaultLayouts: Layouts = {
         { i: 'myTasks', x: 6, y: 8, w: 6, h: 8, minW: 3, minH: 6 },
         { i: 'activeOKRs', x: 0, y: 16, w: 6, h: 8, minW: 3, minH: 3 },
         { i: 'overdueTasks', x: 6, y: 16, w: 6, h: 8, minW: 3, minH: 3 },
-        { i: 'usefulLinks', x: 0, y: 24, w: 6, h: 8, minW: 3, minH: 4 },
-        { i: 'canvas', x: 6, y: 24, w: 6, h: 8, minW: 3, minH: 8 },
-        { i: 'forms', x: 0, y: 32, w: 6, h: 8, minW: 3, minH: 4 },
-        { i: 'mindMap', x: 6, y: 32, w: 6, h: 8, minW: 3, minH: 6 },
+        { i: 'assignedToOthers', x: 0, y: 24, w: 6, h: 8, minW: 3, minH: 6 },
+        { i: 'usefulLinks', x: 6, y: 24, w: 6, h: 8, minW: 3, minH: 4 },
+        { i: 'canvas', x: 0, y: 32, w: 6, h: 8, minW: 3, minH: 8 },
+        { i: 'forms', x: 6, y: 32, w: 6, h: 8, minW: 3, minH: 4 },
+        { i: 'mindMap', x: 0, y: 40, w: 6, h: 8, minW: 3, minH: 6 },
     ],
     md: [
         { i: 'metrics', x: 0, y: 0, w: 5, h: 8, minW: 3, minH: 2 },
@@ -114,10 +117,11 @@ const defaultLayouts: Layouts = {
         { i: 'myTasks', x: 5, y: 8, w: 5, h: 8, minW: 3, minH: 6 },
         { i: 'activeOKRs', x: 0, y: 16, w: 5, h: 8, minW: 3, minH: 3 },
         { i: 'overdueTasks', x: 5, y: 16, w: 5, h: 8, minW: 3, minH: 3 },
-        { i: 'usefulLinks', x: 0, y: 24, w: 5, h: 8, minW: 3, minH: 4 },
-        { i: 'canvas', x: 5, y: 24, w: 5, h: 8, minW: 3, minH: 8 },
-        { i: 'forms', x: 0, y: 32, w: 5, h: 8, minW: 3, minH: 4 },
-        { i: 'mindMap', x: 5, y: 32, w: 5, h: 8, minW: 3, minH: 6 },
+        { i: 'assignedToOthers', x: 0, y: 24, w: 5, h: 8, minW: 3, minH: 6 },
+        { i: 'usefulLinks', x: 5, y: 24, w: 5, h: 8, minW: 3, minH: 4 },
+        { i: 'canvas', x: 0, y: 32, w: 5, h: 8, minW: 3, minH: 8 },
+        { i: 'forms', x: 5, y: 32, w: 5, h: 8, minW: 3, minH: 4 },
+        { i: 'mindMap', x: 0, y: 40, w: 5, h: 8, minW: 3, minH: 6 },
     ],
     sm: [
         { i: 'metrics', x: 0, y: 0, w: 3, h: 8, minW: 2, minH: 2 },
@@ -126,10 +130,11 @@ const defaultLayouts: Layouts = {
         { i: 'recentProjects', x: 3, y: 8, w: 3, h: 8, minW: 2, minH: 4 },
         { i: 'activeOKRs', x: 0, y: 16, w: 3, h: 8, minW: 2, minH: 3 },
         { i: 'overdueTasks', x: 3, y: 16, w: 3, h: 8, minW: 2, minH: 3 },
-        { i: 'usefulLinks', x: 0, y: 24, w: 3, h: 8, minW: 2, minH: 4 },
-        { i: 'canvas', x: 3, y: 24, w: 3, h: 8, minW: 2, minH: 8 },
-        { i: 'forms', x: 0, y: 32, w: 3, h: 8, minW: 2, minH: 4 },
-        { i: 'mindMap', x: 3, y: 32, w: 3, h: 8, minW: 2, minH: 6 },
+        { i: 'assignedToOthers', x: 0, y: 24, w: 3, h: 8, minW: 2, minH: 6 },
+        { i: 'usefulLinks', x: 3, y: 24, w: 3, h: 8, minW: 2, minH: 4 },
+        { i: 'canvas', x: 0, y: 32, w: 3, h: 8, minW: 2, minH: 8 },
+        { i: 'forms', x: 3, y: 32, w: 3, h: 8, minW: 2, minH: 4 },
+        { i: 'mindMap', x: 0, y: 40, w: 3, h: 8, minW: 2, minH: 6 },
     ],
 }
 
@@ -334,7 +339,7 @@ export default function HomePage() {
     // Fetch user's tasks
     const fetchTasks = async () => {
         try {
-            const response = await fetch('/api/tasks')
+            const response = await fetch('/api/tasks?includeCreated=true')
             if (response.ok) {
                 const data = await response.json()
                 setUserTasks(data.tasks || [])
@@ -1310,6 +1315,96 @@ export default function HomePage() {
                     </Card>
                 )
 
+            case 'assignedToOthers':
+                const assignedToOthersTasks = userTasks.filter(
+                    (task) => task.createdById === user?.id && task.assigneeId !== user?.id && task.assigneeId
+                )
+
+                return (
+                    <Card ref={(el) => widgetRefs.current['assignedToOthers'] = el} className="h-full flex flex-col overflow-hidden">
+                        <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                    <CardTitle className="text-base truncate">Assigned to Others</CardTitle>
+                                    <CardDescription className="text-xs truncate">Tasks you assigned to team members</CardDescription>
+                                </div>
+                                <div className="flex gap-2 shrink-0">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleFullscreen('assignedToOthers')}
+                                        title={fullscreenWidget === 'assignedToOthers' ? "Exit Fullscreen" : "Enter Fullscreen"}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        {fullscreenWidget === 'assignedToOthers' ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex-1 overflow-auto pt-4">
+                            {assignedToOthersTasks.length > 0 ? (
+                                <div className="space-y-3">
+                                    {assignedToOthersTasks.map((task) => (
+                                        <div
+                                            key={task.id}
+                                            className="flex items-start gap-3 p-2 border rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                                            onClick={() => {
+                                                setSelectedTaskId(task.id)
+                                                setTaskDetailDialogOpen(true)
+                                            }}
+                                        >
+                                            <div className="flex-1 space-y-1">
+                                                <p className="text-sm font-medium">{task.title}</p>
+                                                {task.project && (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {task.project.name}
+                                                    </p>
+                                                )}
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                                        {task.status}
+                                                    </Badge>
+                                                    <Badge variant={task.priority === 'HIGH' || task.priority === 'CRITICAL' ? 'destructive' : task.priority === 'MEDIUM' ? 'secondary' : 'default'} className="text-[10px] px-1.5 py-0">
+                                                        {task.priority}
+                                                    </Badge>
+                                                    {task.dueDate && (
+                                                        <span className="text-xs text-muted-foreground">
+                                                            Due: {new Date(task.dueDate).toLocaleDateString()}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {task.assignee && (
+                                                    <div className="flex items-center gap-1">
+                                                        <Avatar className="h-6 w-6">
+                                                            <AvatarImage src={task.assignee.image || undefined} />
+                                                            <AvatarFallback className="text-[10px]">
+                                                                {getInitials(task.assignee.name || task.assignee.firstName || 'U')}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="text-xs text-muted-foreground hidden sm:inline">
+                                                            {task.assignee.name || `${task.assignee.firstName || ''} ${task.assignee.lastName || ''}`.trim()}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                                    <UserCheck className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                                    <p className="text-sm text-muted-foreground mb-2">No tasks assigned to others</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Tasks you create and assign to team members will appear here
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )
+
             case 'activeOKRs':
                 return (
                     <Card ref={(el) => widgetRefs.current['activeOKRs'] = el} className="h-full flex flex-col overflow-hidden">
@@ -1655,6 +1750,12 @@ export default function HomePage() {
                                                 <>
                                                     <CheckCircle2 className="h-4 w-4" />
                                                     <span>My Tasks</span>
+                                                </>
+                                            )}
+                                            {widget.type === 'assignedToOthers' && (
+                                                <>
+                                                    <UserCheck className="h-4 w-4" />
+                                                    <span>Assigned to Others</span>
                                                 </>
                                             )}
                                             {widget.type === 'activeOKRs' && (

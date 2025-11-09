@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status')
     const overdue = searchParams.get('overdue') === 'true'
     const assigneeId = searchParams.get('assigneeId')
+    const includeCreated = searchParams.get('includeCreated') === 'true' // New parameter
 
     // Build where clause
     const whereClause: any = {
@@ -50,8 +51,15 @@ export async function GET(req: NextRequest) {
     const isAdmin = ['TENANT_SUPER_ADMIN', 'ORG_ADMIN', 'PMO_LEAD', 'PROJECT_MANAGER'].includes(session.user.role)
     
     if (!isAdmin) {
-      // Non-admins only see their own tasks
-      whereClause.assigneeId = session.user.id
+      // Non-admins see tasks assigned to them, or tasks they created if includeCreated is true
+      if (includeCreated) {
+        whereClause.OR = [
+          { assigneeId: session.user.id },
+          { createdById: session.user.id }
+        ]
+      } else {
+        whereClause.assigneeId = session.user.id
+      }
     } else if (assigneeId) {
       // Admins can filter by specific assignee
       whereClause.assigneeId = assigneeId
@@ -90,7 +98,9 @@ export async function GET(req: NextRequest) {
             id: true,
             firstName: true,
             lastName: true,
+            name: true,
             email: true,
+            image: true,
           },
         },
       },
