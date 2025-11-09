@@ -22,7 +22,8 @@ import {
     Users,
     Building2,
     User,
-    Activity
+    Activity,
+    Trash2
 } from "lucide-react"
 import { GoalDialog } from "@/components/dialogs/goal-dialog"
 import { KRUpdateDialog } from "@/components/dialogs/kr-update-dialog"
@@ -120,6 +121,29 @@ export default function OKRsPage() {
         } catch (error) {
             console.error('Error updating progress:', error)
             alert('Failed to update progress. Please try again.')
+        }
+    }
+
+    const handleDeleteGoal = async (goalId: string, goalTitle: string) => {
+        if (!confirm(`Are you sure you want to delete "${goalTitle}"? This action cannot be undone.`)) {
+            return
+        }
+
+        try {
+            const response = await fetch(`/api/okrs/${goalId}`, {
+                method: 'DELETE',
+            })
+
+            if (response.ok) {
+                fetchGoals()
+                alert('Goal deleted successfully!')
+            } else {
+                const error = await response.json()
+                alert(error.error || 'Failed to delete goal. Please try again.')
+            }
+        } catch (error) {
+            console.error('Error deleting goal:', error)
+            alert('Failed to delete goal. Please try again.')
         }
     }
 
@@ -386,6 +410,7 @@ export default function OKRsPage() {
                     <GoalsList
                         goals={filteredGoals}
                         onUpdateProgress={handleUpdateProgress}
+                        onDeleteGoal={handleDeleteGoal}
                         getGoalHealth={getGoalHealth}
                     />
                 </TabsContent>
@@ -394,6 +419,7 @@ export default function OKRsPage() {
                     <GoalsList
                         goals={filteredGoals.filter(g => g.level === 'COMPANY')}
                         onUpdateProgress={handleUpdateProgress}
+                        onDeleteGoal={handleDeleteGoal}
                         getGoalHealth={getGoalHealth}
                     />
                 </TabsContent>
@@ -402,6 +428,7 @@ export default function OKRsPage() {
                     <GoalsList
                         goals={filteredGoals.filter(g => g.level === 'DEPARTMENT')}
                         onUpdateProgress={handleUpdateProgress}
+                        onDeleteGoal={handleDeleteGoal}
                         getGoalHealth={getGoalHealth}
                     />
                 </TabsContent>
@@ -410,6 +437,7 @@ export default function OKRsPage() {
                     <GoalsList
                         goals={filteredGoals.filter(g => g.level === 'TEAM')}
                         onUpdateProgress={handleUpdateProgress}
+                        onDeleteGoal={handleDeleteGoal}
                         getGoalHealth={getGoalHealth}
                     />
                 </TabsContent>
@@ -454,10 +482,12 @@ export default function OKRsPage() {
 function GoalsList({
     goals,
     onUpdateProgress,
+    onDeleteGoal,
     getGoalHealth
 }: {
     goals: any[],
     onUpdateProgress: (goalId: string, krId: string) => void,
+    onDeleteGoal: (goalId: string, goalTitle: string) => void,
     getGoalHealth: (goal: any) => string
 }) {
     const getHealthIcon = (health: string) => {
@@ -516,11 +546,25 @@ function GoalsList({
                                         <CardTitle className="text-xl">{goal.title}</CardTitle>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-3xl font-bold text-purple-600">
-                                        {avgProgress.toFixed(0)}%
+                                <div className="flex items-center gap-4">
+                                    <div className="text-right">
+                                        <div className="text-3xl font-bold text-purple-600">
+                                            {avgProgress.toFixed(0)}%
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">Overall Progress</p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">Overall Progress</p>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            onDeleteGoal(goal.id, goal.title)
+                                        }}
+                                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                        title="Delete Goal"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
                                 </div>
                             </div>
                         </CardHeader>

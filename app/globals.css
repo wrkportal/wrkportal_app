@@ -443,6 +443,10 @@ select {
 
 .ai-assistant-grid .react-resizable-handle {
   @apply opacity-0 transition-opacity;
+  width: 20px !important;
+  height: 20px !important;
+  bottom: 0 !important;
+  right: 0 !important;
 }
 
 .ai-assistant-grid .react-grid-item:hover .react-resizable-handle {

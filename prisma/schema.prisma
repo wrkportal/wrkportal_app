@@ -96,6 +96,9 @@ model User {
   reminders                 Reminder[] @relation("UserReminders")
   respondedSuggestions      CollaborationSuggestion[] @relation("SuggestionResponder")
   defaultLayouts            DefaultLayout[]
+  reportingFiles            ReportingFile[]
+  dashboardsCreated         ReportingDashboard[] @relation("DashboardCreatedBy")
+  dashboardsUpdated         ReportingDashboard[] @relation("DashboardUpdatedBy")
 
   
   // Invitations
@@ -200,6 +203,7 @@ model Tenant {
   invitations   TenantInvitation[]
   reminders     Reminder[]
   defaultLayouts DefaultLayout[]
+  reportingFiles ReportingFile[]
   
   @@index([domain])
   @@index([verificationCode])
@@ -1426,5 +1430,74 @@ model DefaultLayout {
   @@unique([tenantId, pageKey, targetRole])
   @@index([tenantId, pageKey])
   @@index([createdById])
+}
+
+// ============================================
+// REPORTING STUDIO
+// ============================================
+
+model ReportingFile {
+  id            String   @id @default(cuid())
+  
+  // File information
+  name          String   // Unique filename stored on server
+  originalName  String   // Original filename from user
+  filePath      String   // Full path to file on server
+  size          Int      // File size in bytes
+  type          String   // MIME type
+  
+  // Data metadata
+  rowCount      Int?
+  columnCount   Int?
+  
+  // Merge tracking
+  isMerged      Boolean  @default(false) // Is this a merged file?
+  mergeConfig   Json?    // Store the merge configuration (joins, source files)
+  sourceFiles   String[] @default([]) // IDs of source files used in merge
+  
+  // Ownership
+  uploadedBy    String
+  uploader      User     @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  uploadedAt    DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([tenantId])
+  @@index([uploadedBy])
+  @@index([uploadedAt])
+}
+
+model ReportingDashboard {
+  id            String   @id @default(cuid())
+  
+  // Dashboard information
+  name          String   // Dashboard name/title
+  description   String?  // Optional description
+  
+  // Configuration (stored as JSON)
+  configuration Json     // Contains: charts, layout, pageBackgroundColor, activeFilters
+  
+  // Ownership & Tracking
+  createdBy     String
+  createdByUser User     @relation("DashboardCreatedBy", fields: [createdBy], references: [id], onDelete: Cascade)
+  
+  updatedBy     String
+  updatedByUser User     @relation("DashboardUpdatedBy", fields: [updatedBy], references: [id], onDelete: Cascade)
+  
+  // Soft delete
+  deletedAt     DateTime?
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([createdBy])
+  @@index([updatedBy])
+  @@index([createdAt])
+  @@index([deletedAt])
 }
 

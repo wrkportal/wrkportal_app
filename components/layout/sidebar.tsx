@@ -32,6 +32,10 @@ import {
     Map,
     GraduationCap,
     MessageSquare,
+    Database,
+    Beaker,
+    LayoutGrid,
+    FileStack,
 } from "lucide-react"
 import { useUIStore } from "@/stores/uiStore"
 import { Button } from "@/components/ui/button"
@@ -88,6 +92,38 @@ const navigationItems: NavItem[] = [
         href: "/reports",
         icon: BarChart3,
         roles: Object.values(UserRole), // All users can view reports
+    },
+    {
+        title: "Reporting Studio",
+        href: "/reporting-studio",
+        icon: Sparkles,
+        roles: Object.values(UserRole),
+        children: [
+            {
+                title: "Database",
+                href: "/reporting-studio/database",
+                icon: Database,
+                roles: Object.values(UserRole),
+            },
+            {
+                title: "Data Lab",
+                href: "/reporting-studio/data-lab",
+                icon: Beaker,
+                roles: Object.values(UserRole),
+            },
+            {
+                title: "Dashboards",
+                href: "/reporting-studio/dashboards",
+                icon: LayoutGrid,
+                roles: Object.values(UserRole),
+            },
+            {
+                title: "Templates",
+                href: "/reporting-studio/templates",
+                icon: FileStack,
+                roles: Object.values(UserRole),
+            },
+        ],
     },
     {
         title: "Approvals",
@@ -192,6 +228,7 @@ export function Sidebar() {
     const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
     const [expandedAdmin, setExpandedAdmin] = useState(false)
     const [expandedOtherProjects, setExpandedOtherProjects] = useState(false)
+    const [expandedReportingStudio, setExpandedReportingStudio] = useState(false)
     const [programs, setPrograms] = useState<any[]>([])
     const [projects, setProjects] = useState<any[]>([])
     const [isMounted, setIsMounted] = useState(false)
@@ -306,6 +343,68 @@ export function Sidebar() {
                         {filteredItems.map((item, index) => {
                             const Icon = item.icon
                             const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+
+                            // Handle Reporting Studio with children
+                            if (item.children && item.title === "Reporting Studio" && !sidebarCollapsed) {
+                                return (
+                                    <div key={item.href}>
+                                        {/* Separator line between tabs */}
+                                        {index > 0 && (
+                                            <div className="my-2 border-t border-border"></div>
+                                        )}
+                                        <div
+                                            className={cn(
+                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                                pathname.includes(item.href)
+                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                    : "text-foreground hover:bg-accent"
+                                            )}
+                                            onClick={() => setExpandedReportingStudio(!expandedReportingStudio)}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Icon className="h-5 w-5" />
+                                                <span>{item.title}</span>
+                                            </div>
+                                            <ChevronDown
+                                                className={cn(
+                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                    expandedReportingStudio && "rotate-180"
+                                                )}
+                                            />
+                                        </div>
+
+                                        {/* Reporting Studio children */}
+                                        {expandedReportingStudio && (
+                                            <div className="space-y-1">
+                                                {item.children
+                                                    ?.filter((child) => child.roles.includes(effectiveRole))
+                                                    .map((child) => {
+                                                        const ChildIcon = child.icon
+                                                        const isChildActive =
+                                                            pathname === child.href || pathname.startsWith(child.href + "/")
+
+                                                        return (
+                                                            <Link
+                                                                key={child.href}
+                                                                href={child.href}
+                                                                onClick={handleLinkClick}
+                                                                className={cn(
+                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    isChildActive
+                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                )}
+                                                            >
+                                                                <ChildIcon className="h-4 w-4" />
+                                                                {child.title}
+                                                            </Link>
+                                                        )
+                                                    })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            }
 
                             return (
                                 <div key={item.href}>
