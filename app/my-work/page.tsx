@@ -1557,6 +1557,10 @@ export default function HomePage() {
                                     <Target className="h-5 w-5 shrink-0" />
                                     <span className="text-xs font-medium text-center">Goals & OKRs</span>
                                 </Button>
+                                <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/approvals')}>
+                                    <CheckCircle2 className="h-5 w-5 shrink-0" />
+                                    <span className="text-xs font-medium text-center">Approvals</span>
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>

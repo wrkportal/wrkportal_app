@@ -125,19 +125,6 @@ const navigationItems: NavItem[] = [
             },
         ],
     },
-    {
-        title: "Approvals",
-        href: "/approvals",
-        icon: CheckSquare,
-        roles: [
-            UserRole.PLATFORM_OWNER,
-            UserRole.TENANT_SUPER_ADMIN,
-            UserRole.ORG_ADMIN,
-            UserRole.PMO_LEAD,
-            UserRole.PROJECT_MANAGER,
-            UserRole.EXECUTIVE,
-        ],
-    },
 ]
 
 const aiAssistantNavItem: NavItem = {
