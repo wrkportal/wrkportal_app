@@ -392,6 +392,7 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
                                     type="number"
                                     min="0"
                                     step="0.5"
+                                    placeholder="0"
                                     value={formData.estimatedHours}
                                     onChange={(e) => setFormData({ ...formData, estimatedHours: parseFloat(e.target.value) || 0 })}
                                 />

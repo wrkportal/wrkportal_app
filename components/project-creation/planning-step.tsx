@@ -377,6 +377,7 @@ export function PlanningStep({ milestones, onChange }: PlanningStepProps) {
                                                                                 <Label className="text-xs">Estimated Hours</Label>
                                                                                 <Input
                                                                                     type="number"
+                                                                                    placeholder="0"
                                                                                     value={task.estimatedHours}
                                                                                     onChange={(e) => updateTask(milestone.id, task.id, 'estimatedHours', parseFloat(e.target.value))}
                                                                                     className="text-sm"
@@ -415,7 +416,7 @@ export function PlanningStep({ milestones, onChange }: PlanningStepProps) {
                                                                                             />
                                                                                             <Input
                                                                                                 type="number"
-                                                                                                placeholder="Hours"
+                                                                                                placeholder="0"
                                                                                                 value={subtask.estimatedHours}
                                                                                                 onChange={(e) => updateSubtask(milestone.id, task.id, subtask.id, 'estimatedHours', parseFloat(e.target.value))}
                                                                                                 className="text-sm w-24"
