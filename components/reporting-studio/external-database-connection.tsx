@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Database, Plus, Trash2, TestTube, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Database, Plus, Trash2, TestTube, CheckCircle, XCircle, Loader2, PlayCircle, Save, FileDown, Code } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DatabaseConnection {
@@ -25,11 +27,26 @@ interface DatabaseConnection {
     lastTested?: string
 }
 
+interface QueryResult {
+    columns: string[]
+    rows: any[][]
+    rowCount: number
+    executionTime: number
+}
+
 export function ExternalDatabaseConnection() {
     const [connections, setConnections] = useState<DatabaseConnection[]>([])
     const [showAddDialog, setShowAddDialog] = useState(false)
     const [isTestingConnection, setIsTestingConnection] = useState(false)
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+    
+    // SQL Query state
+    const [selectedConnection, setSelectedConnection] = useState<DatabaseConnection | null>(null)
+    const [sqlQuery, setSqlQuery] = useState('')
+    const [isExecutingQuery, setIsExecutingQuery] = useState(false)
+    const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
+    const [queryError, setQueryError] = useState<string | null>(null)
+    const [activeTab, setActiveTab] = useState<'connections' | 'query'>('connections')
     
     // Form state
     const [formData, setFormData] = useState({
@@ -41,6 +58,23 @@ export function ExternalDatabaseConnection() {
         username: '',
         password: '',
     })
+
+    // Load connections on mount
+    useEffect(() => {
+        fetchConnections()
+    }, [])
+
+    const fetchConnections = async () => {
+        try {
+            const response = await fetch('/api/reporting-studio/external-connections')
+            if (response.ok) {
+                const data = await response.json()
+                setConnections(data.connections || [])
+            }
+        } catch (error) {
+            console.error('Error fetching connections:', error)
+        }
+    }
 
     const handleInputChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -93,6 +127,7 @@ export function ExternalDatabaseConnection() {
                     password: '',
                 })
                 setTestResult(null)
+                fetchConnections()
             } else {
                 alert('Failed to save connection')
             }
@@ -111,9 +146,75 @@ export function ExternalDatabaseConnection() {
 
             if (response.ok) {
                 setConnections(prev => prev.filter(c => c.id !== id))
+                if (selectedConnection?.id === id) {
+                    setSelectedConnection(null)
+                }
             }
         } catch (error) {
             alert('Error deleting connection')
+        }
+    }
+
+    const handleExecuteQuery = async () => {
+        if (!selectedConnection || !sqlQuery.trim()) {
+            alert('Please select a connection and enter a SQL query')
+            return
+        }
+
+        setIsExecutingQuery(true)
+        setQueryResult(null)
+        setQueryError(null)
+
+        try {
+            const response = await fetch('/api/reporting-studio/execute-query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    connectionId: selectedConnection.id,
+                    query: sqlQuery,
+                }),
+            })
+
+            const result = await response.json()
+
+            if (response.ok) {
+                setQueryResult(result)
+            } else {
+                setQueryError(result.error || 'Query execution failed')
+            }
+        } catch (error) {
+            setQueryError('Failed to execute query')
+        } finally {
+            setIsExecutingQuery(false)
+        }
+    }
+
+    const handleSaveAsDataset = async () => {
+        if (!queryResult) return
+
+        const datasetName = prompt('Enter a name for this dataset:')
+        if (!datasetName) return
+
+        try {
+            const response = await fetch('/api/reporting-studio/save-query-result', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: datasetName,
+                    connectionId: selectedConnection?.id,
+                    query: sqlQuery,
+                    columns: queryResult.columns,
+                    rows: queryResult.rows,
+                }),
+            })
+
+            if (response.ok) {
+                alert('Dataset saved successfully! You can now find it in the Uploads tab.')
+            } else {
+                alert('Failed to save dataset')
+            }
+        } catch (error) {
+            alert('Error saving dataset')
         }
     }
 
@@ -148,7 +249,19 @@ export function ExternalDatabaseConnection() {
     }
 
     return (
-        <div className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="space-y-4">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="connections">
+                    <Database className="h-4 w-4 mr-2" />
+                    Connections
+                </TabsTrigger>
+                <TabsTrigger value="query">
+                    <Code className="h-4 w-4 mr-2" />
+                    SQL Query
+                </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="connections" className="space-y-6">
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">
@@ -383,7 +496,230 @@ export function ExternalDatabaseConnection() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+            </TabsContent>
+
+            {/* SQL Query Tab */}
+            <TabsContent value="query" className="space-y-4">
+                <div className="grid gap-4 lg:grid-cols-3">
+                    {/* Left Panel - Query Editor */}
+                    <div className="lg:col-span-2 space-y-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center justify-between">
+                                    <span className="flex items-center gap-2">
+                                        <Code className="h-5 w-5" />
+                                        SQL Query Editor
+                                    </span>
+                                    {selectedConnection && getStatusBadge(selectedConnection.status)}
+                                </CardTitle>
+                                <CardDescription>
+                                    Write and execute SQL queries against your connected database
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {/* Connection Selector */}
+                                <div className="space-y-2">
+                                    <Label>Select Database Connection</Label>
+                                    <Select 
+                                        value={selectedConnection?.id || ''} 
+                                        onValueChange={(id) => setSelectedConnection(connections.find(c => c.id === id) || null)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Choose a connection..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {connections.map((conn) => (
+                                                <SelectItem key={conn.id} value={conn.id}>
+                                                    <div className="flex items-center gap-2">
+                                                        <Database className="h-4 w-4" />
+                                                        {conn.name} ({conn.database})
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {connections.length === 0 && (
+                                        <p className="text-xs text-muted-foreground">
+                                            No connections available. Add a connection in the Connections tab first.
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* SQL Query Input */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="sql-query">SQL Query</Label>
+                                    <Textarea
+                                        id="sql-query"
+                                        placeholder="SELECT * FROM your_table WHERE condition = 'value' LIMIT 100"
+                                        value={sqlQuery}
+                                        onChange={(e) => setSqlQuery(e.target.value)}
+                                        rows={10}
+                                        className="font-mono text-sm"
+                                        disabled={!selectedConnection}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Tip: Use LIMIT clause to control the number of rows returned
+                                    </p>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={handleExecuteQuery}
+                                        disabled={!selectedConnection || !sqlQuery.trim() || isExecutingQuery}
+                                        className="flex-1"
+                                    >
+                                        {isExecutingQuery ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Executing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <PlayCircle className="mr-2 h-4 w-4" />
+                                                Execute Query
+                                            </>
+                                        )}
+                                    </Button>
+                                    {queryResult && (
+                                        <Button
+                                            variant="outline"
+                                            onClick={handleSaveAsDataset}
+                                        >
+                                            <Save className="mr-2 h-4 w-4" />
+                                            Save as Dataset
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {/* Query Error */}
+                                {queryError && (
+                                    <div className="flex items-start gap-2 p-3 rounded-md text-sm bg-red-50 text-red-700 border border-red-200">
+                                        <XCircle className="h-4 w-4 mt-0.5" />
+                                        <div>
+                                            <p className="font-medium">Query Error</p>
+                                            <p className="text-xs mt-1">{queryError}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Query Results */}
+                        {queryResult && (
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="flex items-center gap-2">
+                                            <CheckCircle className="h-5 w-5 text-green-500" />
+                                            Query Results
+                                        </CardTitle>
+                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                            <span>{queryResult.rowCount} rows</span>
+                                            <span>•</span>
+                                            <span>{queryResult.executionTime}ms</span>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <ScrollArea className="h-[400px] w-full rounded-md border">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-muted sticky top-0">
+                                                <tr>
+                                                    {queryResult.columns.map((col, idx) => (
+                                                        <th key={idx} className="px-4 py-2 text-left font-medium border-b">
+                                                            {col}
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {queryResult.rows.map((row, rowIdx) => (
+                                                    <tr key={rowIdx} className="border-b hover:bg-accent/50">
+                                                        {row.map((cell, cellIdx) => (
+                                                            <td key={cellIdx} className="px-4 py-2">
+                                                                {cell === null ? <span className="text-muted-foreground italic">NULL</span> : String(cell)}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </ScrollArea>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+
+                    {/* Right Panel - Quick Reference */}
+                    <div className="space-y-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-base">SQL Quick Reference</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div>
+                                    <p className="text-sm font-medium mb-1">Select Data</p>
+                                    <code className="text-xs bg-muted px-2 py-1 rounded block">
+                                        SELECT * FROM table_name LIMIT 100
+                                    </code>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium mb-1">Filter Data</p>
+                                    <code className="text-xs bg-muted px-2 py-1 rounded block">
+                                        WHERE column = 'value' AND date > '2024-01-01'
+                                    </code>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium mb-1">Join Tables</p>
+                                    <code className="text-xs bg-muted px-2 py-1 rounded block">
+                                        JOIN other_table ON table.id = other_table.fk_id
+                                    </code>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium mb-1">Aggregate</p>
+                                    <code className="text-xs bg-muted px-2 py-1 rounded block">
+                                        SELECT COUNT(*), SUM(amount) FROM table GROUP BY category
+                                    </code>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium mb-1">Order Results</p>
+                                    <code className="text-xs bg-muted px-2 py-1 rounded block">
+                                        ORDER BY column DESC
+                                    </code>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {selectedConnection && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-base">Connection Info</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2 text-sm">
+                                    <div>
+                                        <span className="font-medium">Name:</span>
+                                        <p className="text-muted-foreground">{selectedConnection.name}</p>
+                                    </div>
+                                    <div>
+                                        <span className="font-medium">Type:</span>
+                                        <p className="text-muted-foreground">{selectedConnection.type.toUpperCase()}</p>
+                                    </div>
+                                    <div>
+                                        <span className="font-medium">Database:</span>
+                                        <p className="text-muted-foreground">{selectedConnection.database}</p>
+                                    </div>
+                                    <div>
+                                        <span className="font-medium">Host:</span>
+                                        <p className="text-muted-foreground">{selectedConnection.host}:{selectedConnection.port}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                </div>
+            </TabsContent>
+        </Tabs>
     )
 }
 
