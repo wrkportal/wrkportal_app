@@ -3,12 +3,12 @@ import type { Transporter } from 'nodemailer'
 
 // Email configuration
 const EMAIL_CONFIG = {
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '587'),
+  host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587'),
   secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
+    user: process.env.EMAIL_USER || process.env.SMTP_USER,
+    pass: process.env.EMAIL_PASSWORD || process.env.SMTP_PASS,
   },
 }
 
@@ -234,15 +234,19 @@ export interface SendEmailOptions {
 export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
   try {
     // Validate environment variables
-    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.error('Email configuration missing. Please set EMAIL_HOST, EMAIL_USER, and EMAIL_PASSWORD environment variables.')
+    const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER
+    const emailPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS
+    const emailHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com'
+    
+    if (!emailHost || !emailUser || !emailPass) {
+      console.error('Email configuration missing. Please set SMTP_USER and SMTP_PASS (or EMAIL_USER and EMAIL_PASSWORD) environment variables.')
       throw new Error('Email service is not configured properly.')
     }
 
     const transporter = getTransporter()
     
     const info = await transporter.sendMail({
-      from: `"ManagerBook" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+      from: `"ManagerBook" <${process.env.EMAIL_FROM || emailUser}>`,
       to,
       subject,
       text,
