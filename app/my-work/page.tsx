@@ -190,7 +190,7 @@ export default function HomePage() {
     const [currentFormId, setCurrentFormId] = useState<string | null>(null)
     const [formBuilderOpen, setFormBuilderOpen] = useState(false)
     const [formFields, setFormFields] = useState<Array<{ id: string; type: string; label: string; required: boolean; options?: string[] }>>([])
-    
+
     // Mind Map state
     const [mindMapNodes, setMindMapNodes] = useState<Array<{ id: string; x: number; y: number; label: string; color: string }>>([
         { id: 'root', x: 250, y: 200, label: 'Central Idea', color: '#3b82f6' }
@@ -392,7 +392,7 @@ export default function HomePage() {
             fetchProjects()
             fetchGoals()
             checkActiveTimer()
-            
+
             // Load useful links from localStorage
             const savedLinks = localStorage.getItem('useful-links')
             if (savedLinks) {
@@ -613,7 +613,7 @@ export default function HomePage() {
         switch (widget.type) {
             case 'metrics':
                 return (
-                    <Card ref={(el) => widgetRefs.current['metrics'] = el} className="h-full flex flex-col overflow-hidden">
+                    <Card ref={(el) => { widgetRefs.current['metrics'] = el }} className="h-full flex flex-col overflow-hidden">
                         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
@@ -661,7 +661,7 @@ export default function HomePage() {
                     .slice(0, 5)
 
                 return (
-                    <Card ref={(el) => widgetRefs.current['recentProjects'] = el} className="h-full flex flex-col overflow-hidden">
+                    <Card ref={(el) => { widgetRefs.current['recentProjects'] = el }} className="h-full flex flex-col overflow-hidden">
                         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="min-w-0 flex-1">
@@ -774,7 +774,7 @@ export default function HomePage() {
                 })
 
                 return (
-                    <Card ref={(el) => widgetRefs.current['overdueTasks'] = el} className="h-full flex flex-col overflow-hidden border-l-4 border-l-red-500">
+                    <Card ref={(el) => { widgetRefs.current['overdueTasks'] = el }} className="h-full flex flex-col overflow-hidden border-l-4 border-l-red-500">
                         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
@@ -848,7 +848,7 @@ export default function HomePage() {
                 const filteredTasks = getFilteredTasks()
 
                 return (
-                    <Card ref={(el) => widgetRefs.current['myTasks'] = el} className="h-full flex flex-col overflow-hidden">
+                    <Card ref={(el) => { widgetRefs.current['myTasks'] = el }} className="h-full flex flex-col overflow-hidden">
                         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex flex-wrap items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
@@ -1329,7 +1329,7 @@ export default function HomePage() {
                 )
 
                 return (
-                    <Card ref={(el) => widgetRefs.current['assignedToOthers'] = el} className="h-full flex flex-col overflow-hidden">
+                    <Card ref={(el) => { widgetRefs.current['assignedToOthers'] = el }} className="h-full flex flex-col overflow-hidden">
                         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex flex-wrap items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
@@ -1415,7 +1415,7 @@ export default function HomePage() {
 
             case 'activeOKRs':
                 return (
-                    <Card ref={(el) => widgetRefs.current['activeOKRs'] = el} className="h-full flex flex-col overflow-hidden">
+                    <Card ref={(el) => { widgetRefs.current['activeOKRs'] = el }} className="h-full flex flex-col overflow-hidden">
                         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="min-w-0 flex-1">
@@ -1517,7 +1517,7 @@ export default function HomePage() {
 
             case 'quickActions':
                 return (
-                    <Card ref={(el) => widgetRefs.current['quickActions'] = el} className="h-full flex flex-col overflow-hidden">
+                    <Card ref={(el) => { widgetRefs.current['quickActions'] = el }} className="h-full flex flex-col overflow-hidden">
                         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
@@ -1568,7 +1568,7 @@ export default function HomePage() {
 
             case 'usefulLinks':
                 return (
-                    <Card ref={(el) => widgetRefs.current['usefulLinks'] = el} className="h-full flex flex-col overflow-hidden">
+                    <Card ref={(el) => { widgetRefs.current['usefulLinks'] = el }} className="h-full flex flex-col overflow-hidden">
                         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
