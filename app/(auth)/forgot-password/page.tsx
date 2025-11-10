@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Mail, ArrowLeft, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { Mail, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Info } from 'lucide-react'
 
 export default function ForgotPasswordPage() {
     const router = useRouter()
@@ -112,6 +112,18 @@ export default function ForgotPasswordPage() {
                         ) : (
                             // Form State
                             <>
+                                {/* Info Message for OAuth Users */}
+                                <div className="flex items-start gap-2 text-sm text-blue-700 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="font-medium">Note for Google Sign-In Users</p>
+                                        <p className="text-xs text-blue-600">
+                                            If you signed up using "Continue with Google", you don't need to reset your password. 
+                                            Just click "Continue with Google" on the login page.
+                                        </p>
+                                    </div>
+                                </div>
+
                                 {/* Error Message */}
                                 {error && (
                                     <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
