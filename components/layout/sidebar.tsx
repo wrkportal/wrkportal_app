@@ -416,7 +416,7 @@ export function Sidebar() {
                                                                         className={cn(
                                                                             "flex items-center justify-between py-1.5 px-3 text-xs font-medium transition-all cursor-pointer rounded-md ml-2",
                                                                             isChildActive
-                                                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                                                 : "text-muted-foreground hover:text-foreground hover:bg-accent/50/50"
                                                                         )}
                                                                         onClick={() => setExpandedProgramsSection(!expandedProgramsSection)}
@@ -446,7 +446,7 @@ export function Sidebar() {
                                                                                         className={cn(
                                                                                             "flex items-center gap-2 py-2 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
                                                                                             isProgramActive
-                                                                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                                                                 : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                                         )}
                                                                                     >
@@ -481,7 +481,7 @@ export function Sidebar() {
                                                                 className={cn(
                                                                     "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                                         : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
@@ -498,7 +498,7 @@ export function Sidebar() {
                                                     className={cn(
                                                         "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                         pathname === "/projects"
-                                                            ? "bg-primary text-primary-foreground shadow-sm"
+                                                            ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                             : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                     )}
                                                 >
@@ -522,7 +522,7 @@ export function Sidebar() {
                                                                 className={cn(
                                                                     "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                                         : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
@@ -549,7 +549,7 @@ export function Sidebar() {
                                                                         className={cn(
                                                                             "flex items-center justify-between py-2.5 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10",
                                                                             isProgramActive && !pathname.includes('/projects/')
-                                                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                                                 : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                         )}
                                                                         onClick={() => toggleProgram(program.id)}
@@ -580,7 +580,7 @@ export function Sidebar() {
                                                                                         className={cn(
                                                                                             "flex items-center gap-2 py-2 text-xs font-medium transition-all tracking-tight -mx-2 px-8",
                                                                                             isProjectActive
-                                                                                                ? "bg-primary text-primary-foreground border-l-4 border-primary/50 hover:bg-primary"
+                                                                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-l-4 border-purple-400"
                                                                                                 : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                                         )}
                                                                                     >
@@ -649,7 +649,7 @@ export function Sidebar() {
                                                                 className={cn(
                                                                     "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                                         : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
@@ -711,7 +711,7 @@ export function Sidebar() {
                                                                 className={cn(
                                                                     "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                                         : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
@@ -773,7 +773,7 @@ export function Sidebar() {
                                                                 className={cn(
                                                                     "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                                         : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
@@ -835,7 +835,7 @@ export function Sidebar() {
                                                                 className={cn(
                                                                     "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                                         : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
@@ -952,10 +952,10 @@ export function Sidebar() {
                                                             key={child.href}
                                                             href={child.href}
                                                             className={cn(
-                                                                "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
-                                                                isChildActive
-                                                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                                                                            "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
+                                                                            isChildActive
+                                                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                             )}
                                                         >
                                                             <ChildIcon className="h-3.5 w-3.5" />
