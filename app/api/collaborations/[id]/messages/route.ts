@@ -69,7 +69,48 @@ export async function GET(
       }
     })
 
-    return NextResponse.json({ messages })
+    // Process reactions to include user details
+    const allUserIds = new Set<string>()
+    messages.forEach((msg: any) => {
+      if (msg.reactions) {
+        Object.values(msg.reactions).forEach((userIds: any) => {
+          if (Array.isArray(userIds)) {
+            userIds.forEach((id: string) => allUserIds.add(id))
+          }
+        })
+      }
+    })
+
+    const users = await prisma.user.findMany({
+      where: {
+        id: { in: Array.from(allUserIds) },
+      },
+      select: {
+        id: true,
+        name: true,
+        firstName: true,
+        lastName: true,
+      },
+    })
+
+    const userMap = new Map(users.map((u) => [u.id, u]))
+
+    // Format messages with reactions
+    const formattedMessages = messages.map((msg: any) => {
+      if (msg.reactions && typeof msg.reactions === 'object') {
+        const formattedReactions = Object.entries(msg.reactions).map(([emoji, userIds]) => ({
+          emoji,
+          users: (userIds as string[]).map((id) => userMap.get(id)!).filter(Boolean),
+        }))
+        return {
+          ...msg,
+          reactions: formattedReactions,
+        }
+      }
+      return msg
+    })
+
+    return NextResponse.json({ messages: formattedMessages })
   } catch (error) {
     console.error('Error fetching messages:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

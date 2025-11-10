@@ -121,6 +121,15 @@ interface Message {
         email: string
         avatar: string | null
     }
+    reactions?: Array<{
+        emoji: string
+        users: Array<{
+            id: string
+            name: string | null
+            firstName: string | null
+            lastName: string | null
+        }>
+    }>
 }
 
 interface CollaborationFile {
@@ -988,6 +997,71 @@ function CollaboratePageContent() {
                                                                             </p>
                                                                         </div>
                                                                         
+                                                                        {/* Reactions Display */}
+                                                                        {message.reactions && message.reactions.length > 0 && (
+                                                                            <div className="flex flex-wrap gap-1 mt-2">
+                                                                                {message.reactions.map((reaction, idx) => {
+                                                                                    const hasUserReacted = reaction.users.some(u => u.id === user?.id)
+                                                                                    return (
+                                                                                        <TooltipProvider key={idx}>
+                                                                                            <Tooltip>
+                                                                                                <TooltipTrigger asChild>
+                                                                                                    <Button
+                                                                                                        variant="outline"
+                                                                                                        size="sm"
+                                                                                                        className={cn(
+                                                                                                            "h-7 px-2 py-1 gap-1 text-xs rounded-full hover:scale-105 transition-transform",
+                                                                                                            hasUserReacted && "bg-purple-100 border-purple-300 hover:bg-purple-200"
+                                                                                                        )}
+                                                                                                        onClick={async () => {
+                                                                                                            if (!selectedCollaboration) return
+                                                                                                            try {
+                                                                                                                const response = await fetch(
+                                                                                                                    `/api/collaborations/${selectedCollaboration.id}/messages/${message.id}/react`,
+                                                                                                                    {
+                                                                                                                        method: 'POST',
+                                                                                                                        headers: {
+                                                                                                                            'Content-Type': 'application/json',
+                                                                                                                        },
+                                                                                                                        body: JSON.stringify({ emoji: reaction.emoji }),
+                                                                                                                    }
+                                                                                                                )
+
+                                                                                                                if (response.ok) {
+                                                                                                                    const data = await response.json()
+                                                                                                                    setMessages((prevMessages) =>
+                                                                                                                        prevMessages.map((msg) =>
+                                                                                                                            msg.id === message.id
+                                                                                                                                ? { ...msg, reactions: data.message.reactions }
+                                                                                                                                : msg
+                                                                                                                        )
+                                                                                                                    )
+                                                                                                                }
+                                                                                                            } catch (error) {
+                                                                                                                console.error('Failed to toggle reaction:', error)
+                                                                                                            }
+                                                                                                        }}
+                                                                                                    >
+                                                                                                        <span className="text-base">{reaction.emoji}</span>
+                                                                                                        <span className="font-medium">{reaction.users.length}</span>
+                                                                                                    </Button>
+                                                                                                </TooltipTrigger>
+                                                                                                <TooltipContent>
+                                                                                                    <div className="text-xs">
+                                                                                                        {reaction.users.map(u => 
+                                                                                                            u.firstName && u.lastName 
+                                                                                                                ? `${u.firstName} ${u.lastName}` 
+                                                                                                                : u.name || 'Unknown'
+                                                                                                        ).join(', ')}
+                                                                                                    </div>
+                                                                                                </TooltipContent>
+                                                                                            </Tooltip>
+                                                                                        </TooltipProvider>
+                                                                                    )
+                                                                                })}
+                                                                            </div>
+                                                                        )}
+                                                                        
                                                                         {/* Action Menu on Hover - Vertical */}
                                                                         <div className={cn(
                                                                             "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity z-10",
@@ -1564,26 +1638,49 @@ function CollaboratePageContent() {
                                     '💫', '💦', '💨', '🕳️', '💬', '👁️', '🗨️', '🗯️',
                                     '💭', '💤', '✅', '❌', '🔥', '⭐', '🎉', '🎊'
                                 ].map((emoji, index) => (
-                                    <Button
-                                        key={index}
-                                        variant="ghost"
-                                        className="h-12 w-12 text-2xl hover:bg-purple-50 hover:scale-110 transition-transform"
-                                        onClick={async () => {
-                                            if (!selectedMessage || !selectedCollaboration) return
-                                            
-                                            try {
-                                                // Here you would typically send the reaction to your API
-                                                // For now, we'll just show an alert
-                                                alert(`Reacted with ${emoji}`)
-                                                setEmojiPickerOpen(false)
-                                                setSelectedMessage(null)
-                                            } catch (error) {
-                                                console.error('Failed to add reaction:', error)
-                                            }
-                                        }}
-                                    >
-                                        {emoji}
-                                    </Button>
+                                                    <Button
+                                                        key={index}
+                                                        variant="ghost"
+                                                        className="h-12 w-12 text-2xl hover:bg-purple-50 hover:scale-110 transition-transform"
+                                                        onClick={async () => {
+                                                            if (!selectedMessage || !selectedCollaboration) return
+                                                            
+                                                            try {
+                                                                // Call the reaction API
+                                                                const response = await fetch(
+                                                                    `/api/collaborations/${selectedCollaboration.id}/messages/${selectedMessage.id}/react`,
+                                                                    {
+                                                                        method: 'POST',
+                                                                        headers: {
+                                                                            'Content-Type': 'application/json',
+                                                                        },
+                                                                        body: JSON.stringify({ emoji }),
+                                                                    }
+                                                                )
+
+                                                                if (response.ok) {
+                                                                    const data = await response.json()
+                                                                    // Update the messages state with the new reaction
+                                                                    setMessages((prevMessages) =>
+                                                                        prevMessages.map((msg) =>
+                                                                            msg.id === selectedMessage.id
+                                                                                ? { ...msg, reactions: data.message.reactions }
+                                                                                : msg
+                                                                        )
+                                                                    )
+                                                                    setEmojiPickerOpen(false)
+                                                                    setSelectedMessage(null)
+                                                                } else {
+                                                                    alert('Failed to add reaction')
+                                                                }
+                                                            } catch (error) {
+                                                                console.error('Failed to add reaction:', error)
+                                                                alert('Failed to add reaction')
+                                                            }
+                                                        }}
+                                                    >
+                                                        {emoji}
+                                                    </Button>
                                 ))}
                             </div>
                         </TabsContent>
