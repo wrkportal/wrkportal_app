@@ -237,13 +237,32 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
     const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER
     const emailPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS
     const emailHost = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com'
+    const emailPort = process.env.EMAIL_PORT || process.env.SMTP_PORT || '587'
+    
+    console.log('📧 Email Configuration Check:', {
+      hasHost: !!emailHost,
+      hasUser: !!emailUser,
+      hasPass: !!emailPass,
+      host: emailHost,
+      port: emailPort,
+      user: emailUser,
+      to,
+    })
     
     if (!emailHost || !emailUser || !emailPass) {
-      console.error('Email configuration missing. Please set SMTP_USER and SMTP_PASS (or EMAIL_USER and EMAIL_PASSWORD) environment variables.')
-      throw new Error('Email service is not configured properly.')
+      const missingVars = []
+      if (!emailHost) missingVars.push('EMAIL_HOST/SMTP_HOST')
+      if (!emailUser) missingVars.push('EMAIL_USER/SMTP_USER')
+      if (!emailPass) missingVars.push('EMAIL_PASSWORD/SMTP_PASS')
+      
+      const errorMsg = `Email configuration missing: ${missingVars.join(', ')}`
+      console.error('❌', errorMsg)
+      throw new Error(errorMsg)
     }
 
     const transporter = getTransporter()
+    
+    console.log('📤 Attempting to send email...')
     
     const info = await transporter.sendMail({
       from: `"ManagerBook" <${process.env.EMAIL_FROM || emailUser}>`,
@@ -260,8 +279,14 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
     })
 
     return { success: true, messageId: info.messageId }
-  } catch (error) {
-    console.error('❌ Error sending email:', error)
+  } catch (error: any) {
+    console.error('❌ Error sending email:', {
+      error: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      stack: error.stack,
+    })
     throw error
   }
 }
