@@ -118,30 +118,45 @@ export default function SignupPage() {
     const strength = passwordStrength()
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 p-3 sm:p-4 py-6 sm:py-8">
-            <div className="w-full max-w-md">
-                {/* Logo/Brand */}
-                <div className="text-center mb-4 sm:mb-6 md:mb-8">
-                    <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
-                        <Image 
-                            src="/logo.png" 
-                            alt="ManagerBook Logo" 
-                            width={140} 
-                            height={42}
-                            className="h-8 sm:h-9 md:h-10 w-auto object-contain"
-                        />
+        <div className="min-h-screen flex items-center relative">
+            {/* Background Image */}
+            <div 
+                className="hidden lg:block absolute inset-0 lg:left-1/2 bg-cover bg-center"
+                style={{
+                    backgroundImage: "url('/auth-background.png')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            />
+            
+            {/* Gradient Overlay for better text readability on mobile */}
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 lg:bg-gradient-to-r lg:from-white lg:via-white/95 lg:to-transparent" />
+            
+            {/* Form Container - Left Side */}
+            <div className="relative z-10 w-full lg:w-1/2 flex items-center justify-center p-3 sm:p-4 lg:p-8 py-6 sm:py-8">
+                <div className="w-full max-w-md">
+                    {/* Logo/Brand */}
+                    <div className="text-center mb-4 sm:mb-6 md:mb-8">
+                        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+                            <Image 
+                                src="/logo.png" 
+                                alt="ManagerBook Logo" 
+                                width={140} 
+                                height={42}
+                                className="h-8 sm:h-9 md:h-10 w-auto object-contain"
+                            />
+                        </div>
+                        <p className="text-slate-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">Create your account</p>
                     </div>
-                    <p className="text-slate-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">Create your account</p>
-                </div>
 
-                <Card className="shadow-xl sm:shadow-2xl border-0">
-                    <CardHeader className="space-y-1 pb-4 sm:pb-6 px-4 sm:px-6">
-                        <CardTitle className="text-xl sm:text-2xl font-bold">Get started</CardTitle>
-                        <CardDescription className="text-xs sm:text-sm">
-                            Create your account and start managing projects
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
+                    <Card className="shadow-xl sm:shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                        <CardHeader className="space-y-1 pb-4 sm:pb-6 px-4 sm:px-6">
+                            <CardTitle className="text-xl sm:text-2xl font-bold">Get started</CardTitle>
+                            <CardDescription className="text-xs sm:text-sm">
+                                Create your account and start managing projects
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
                         {/* Google Sign In */}
                         <Button
                             variant="outline"
@@ -349,6 +364,7 @@ export default function SignupPage() {
                         Privacy Policy
                     </Link>
                 </p>
+                </div>
             </div>
         </div>
     )
