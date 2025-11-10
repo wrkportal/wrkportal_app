@@ -10,6 +10,13 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Restrict access to PLATFORM_OWNER only
+        if (session.user.role !== 'PLATFORM_OWNER') {
+            return NextResponse.json({ 
+                error: 'Access denied. Only platform owners can access system database tables.' 
+            }, { status: 403 })
+        }
+
         const tenantId = session.user.tenantId
 
         // Get all table names from Prisma models

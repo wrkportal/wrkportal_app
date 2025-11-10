@@ -35,6 +35,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { MergeTablesDialog } from "@/components/reporting-studio/merge-tables-dialog"
+import { ExternalDatabaseConnection } from "@/components/reporting-studio/external-database-connection"
+import { useAuthStore } from "@/stores/authStore"
 
 interface UploadedFile {
     id: string
@@ -194,6 +196,9 @@ const FORMULA_FUNCTIONS = [
 ]
 
 export default function DatabasePage() {
+    const user = useAuthStore((state) => state.user)
+    const isPlatformOwner = user?.role === 'PLATFORM_OWNER'
+    
     const [files, setFiles] = useState<UploadedFile[]>([])
     const [databaseTables, setDatabaseTables] = useState<UploadedFile[]>([])
     const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null)
@@ -202,7 +207,7 @@ export default function DatabasePage() {
     const [isUploading, setIsUploading] = useState(false)
     const [isLoadingData, setIsLoadingData] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
-    const [activeTab, setActiveTab] = useState<'uploads' | 'database'>('uploads')
+    const [activeTab, setActiveTab] = useState<'uploads' | 'database' | 'external'>('uploads')
     const [zoomLevel, setZoomLevel] = useState(100) // Zoom percentage
     const [columnWidths, setColumnWidths] = useState<Record<number, number>>({}) // Column index -> width
     const [fileToUpdate, setFileToUpdate] = useState<string | null>(null) // File ID being updated
@@ -1030,18 +1035,35 @@ export default function DatabasePage() {
                             <Upload className="h-3 w-3 inline mr-1" />
                             Uploads ({files.length})
                         </button>
+                        
                         <button
-                            onClick={() => setActiveTab('database')}
+                            onClick={() => setActiveTab('external')}
                             className={cn(
                                 "flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors",
-                                activeTab === 'database' 
+                                activeTab === 'external' 
                                     ? "bg-background text-foreground shadow-sm" 
                                     : "text-muted-foreground hover:text-foreground"
                             )}
                         >
-                            <Table2 className="h-3 w-3 inline mr-1" />
-                            Tables ({databaseTables.length})
+                            <Database className="h-3 w-3 inline mr-1" />
+                            Connections
                         </button>
+                        
+                        {/* Only show Tables tab for Platform Owners */}
+                        {isPlatformOwner && (
+                            <button
+                                onClick={() => setActiveTab('database')}
+                                className={cn(
+                                    "flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors",
+                                    activeTab === 'database' 
+                                        ? "bg-background text-foreground shadow-sm" 
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <Table2 className="h-3 w-3 inline mr-1" />
+                                Tables ({databaseTables.length})
+                            </button>
+                        )}
                     </div>
 
                     {/* Upload Button - Only show for uploads tab */}
@@ -1088,7 +1110,11 @@ export default function DatabasePage() {
                 {/* File/Table List */}
                 <ScrollArea className="flex-1 overflow-hidden">
                     <div className="p-2 space-y-3">
-                        {activeTab === 'uploads' ? (
+                        {activeTab === 'external' ? (
+                            <div className="px-2">
+                                <ExternalDatabaseConnection />
+                            </div>
+                        ) : activeTab === 'uploads' ? (
                             <>
                                 {/* Excel Database Dropdown */}
                                 <div className="space-y-2">
