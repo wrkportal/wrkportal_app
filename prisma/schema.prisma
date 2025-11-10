@@ -1308,6 +1308,9 @@ model CollaborationMessage {
   content         String   @db.Text
   mentions        String[] // Array of user IDs mentioned in message
   
+  // Reactions stored as JSON: { "👍": ["userId1", "userId2"], "❤️": ["userId3"] }
+  reactions       Json?
+  
   // Optional reply
   parentId        String?
   parent          CollaborationMessage? @relation("MessageReplies", fields: [parentId], references: [id], onDelete: SetNull)
