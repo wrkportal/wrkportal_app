@@ -120,7 +120,7 @@ export default function SignupPage() {
         <div className="min-h-screen flex relative bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
             {/* Form Container - Left Side */}
             <div className="relative z-10 w-full lg:w-1/2 min-h-screen flex items-center justify-center p-3 sm:p-4 lg:p-8 py-6 sm:py-8">
-                <div className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-sm">
+                <div className="w-full max-w-[260px] sm:max-w-[300px] md:max-w-[340px]">
                     {/* Logo/Brand */}
                     <div className="text-center mb-3 sm:mb-4">
                         <div className="flex items-center justify-center gap-2 mb-1.5">
@@ -408,7 +408,7 @@ export default function SignupPage() {
 
                     <div className="pt-6 border-t border-white/20">
                         <p className="text-purple-200 italic">
-                            "Join 10,000+ teams already managing their projects smarter, faster, and better."
+                            "Join teams already managing their projects smarter, faster, and better."
                         </p>
                     </div>
                 </div>
