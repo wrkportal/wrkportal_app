@@ -343,7 +343,7 @@ export function Sidebar() {
                 // Mobile: slide in from left, Desktop: always visible
                 "md:translate-x-0",
                 sidebarOpen ? "translate-x-0" : "-translate-x-full",
-                sidebarCollapsed ? "w-14" : "w-56"
+                sidebarCollapsed ? "w-14" : "w-52"
             )}
             >
                 <div className="flex h-full flex-col px-2 py-4">
