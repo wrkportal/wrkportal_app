@@ -35,16 +35,22 @@ export default function DashboardsPage() {
         try {
             setLoading(true)
             setError(null)
+            console.log('Fetching dashboards from API...')
             const response = await fetch('/api/reporting-studio/dashboard')
+            console.log('Response status:', response.status)
+            
             if (response.ok) {
                 const data = await response.json()
+                console.log('Dashboards data:', data)
                 setDashboards(data.dashboards || [])
             } else {
-                setError('Failed to load dashboards')
+                const errorData = await response.json().catch(() => ({}))
+                console.error('Failed to load dashboards:', errorData)
+                setError(errorData.details || errorData.error || 'Failed to load dashboards')
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error fetching dashboards:', err)
-            setError('Error loading dashboards')
+            setError(err.message || 'Error loading dashboards')
         } finally {
             setLoading(false)
         }

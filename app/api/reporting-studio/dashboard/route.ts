@@ -49,13 +49,18 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
+        console.log('📊 Fetching dashboards...')
         const session = await auth()
         
         if (!session?.user?.id) {
+            console.log('❌ Unauthorized: No session or user ID')
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        console.log('✅ User authenticated:', session.user.id)
+
         // Get all dashboards
+        console.log('🔍 Querying database for dashboards...')
         const dashboards = await prisma.reportingDashboard.findMany({
             where: {
                 deletedAt: null
@@ -78,10 +83,18 @@ export async function GET(request: NextRequest) {
             }
         })
 
+        console.log(`✅ Found ${dashboards.length} dashboards`)
         return NextResponse.json({ dashboards })
-    } catch (error) {
-        console.error('Error fetching dashboards:', error)
-        return NextResponse.json({ error: 'Failed to fetch dashboards' }, { status: 500 })
+    } catch (error: any) {
+        console.error('❌ Error fetching dashboards:', {
+            message: error.message,
+            code: error.code,
+            stack: error.stack
+        })
+        return NextResponse.json({ 
+            error: 'Failed to fetch dashboards',
+            details: error.message 
+        }, { status: 500 })
     }
 }
 
