@@ -1111,8 +1111,11 @@ export default function DatabasePage() {
                 <ScrollArea className="flex-1 overflow-hidden">
                     <div className="p-2 space-y-3">
                         {activeTab === 'external' ? (
-                            <div className="px-2">
-                                <ExternalDatabaseConnection />
+                            <div className="text-center py-8 px-4">
+                                <Database className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                                <p className="text-sm text-muted-foreground">
+                                    Manage your external database connections in the main panel
+                                </p>
                             </div>
                         ) : activeTab === 'uploads' ? (
                             <>
@@ -1295,7 +1298,14 @@ export default function DatabasePage() {
             <div className="flex-1 h-full flex flex-col min-w-0">
                 {/* Header */}
                 <div className="p-4 border-b bg-card flex-shrink-0">
-                    {selectedFile ? (
+                    {activeTab === 'external' ? (
+                        <div>
+                            <h1 className="text-2xl font-bold">External Database Connections</h1>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Connect your own SQL databases to import and analyze data
+                            </p>
+                        </div>
+                    ) : selectedFile ? (
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <h1 className="text-2xl font-bold">{selectedFile.originalName}</h1>
@@ -1351,8 +1361,12 @@ export default function DatabasePage() {
                 </div>
 
                 {/* Content - Fixed Height Container with Scrolling */}
-                <div className="flex-1 overflow-auto bg-white min-h-0">
-                    {!selectedFile ? (
+                <div className="flex-1 overflow-auto bg-background min-h-0">
+                    {activeTab === 'external' ? (
+                        <div className="p-6">
+                            <ExternalDatabaseConnection />
+                        </div>
+                    ) : !selectedFile ? (
                         <div className="flex items-center justify-center h-full bg-background">
                             <div className="text-center">
                                 <Database className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
