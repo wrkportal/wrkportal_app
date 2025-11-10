@@ -118,10 +118,10 @@ export default function SignupPage() {
     const strength = passwordStrength()
 
     return (
-        <div className="min-h-screen flex items-center relative">
-            {/* Background Image */}
+        <div className="min-h-screen flex items-center relative bg-slate-950">
+            {/* Background Image - Right side only on desktop */}
             <div 
-                className="hidden lg:block absolute inset-0 lg:left-1/2 bg-cover bg-center"
+                className="hidden lg:block absolute inset-0 lg:left-1/2 bg-cover bg-center opacity-40"
                 style={{
                     backgroundImage: "url('/auth-background.png')",
                     backgroundSize: 'cover',
@@ -129,38 +129,35 @@ export default function SignupPage() {
                 }}
             />
             
-            {/* Gradient Overlay for better text readability on mobile */}
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 lg:bg-gradient-to-r lg:from-white lg:via-white/95 lg:to-transparent" />
-            
             {/* Form Container - Left Side */}
             <div className="relative z-10 w-full lg:w-1/2 flex items-center justify-center p-3 sm:p-4 lg:p-8 py-6 sm:py-8">
-                <div className="w-full max-w-md">
+                <div className="w-full max-w-[320px] sm:max-w-sm md:max-w-md">
                     {/* Logo/Brand */}
-                    <div className="text-center mb-4 sm:mb-6 md:mb-8">
-                        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+                    <div className="text-center mb-3 sm:mb-4 md:mb-6">
+                        <div className="flex items-center justify-center gap-2 mb-1.5 sm:mb-2">
                             <Image 
                                 src="/logo.png" 
                                 alt="ManagerBook Logo" 
-                                width={140} 
-                                height={42}
-                                className="h-8 sm:h-9 md:h-10 w-auto object-contain"
+                                width={120} 
+                                height={36}
+                                className="h-7 sm:h-8 md:h-9 w-auto object-contain"
                             />
                         </div>
-                        <p className="text-slate-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">Create your account</p>
+                        <p className="text-slate-400 text-xs sm:text-sm">Create your account</p>
                     </div>
 
-                    <Card className="shadow-xl sm:shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-                        <CardHeader className="space-y-1 pb-4 sm:pb-6 px-4 sm:px-6">
-                            <CardTitle className="text-xl sm:text-2xl font-bold">Get started</CardTitle>
-                            <CardDescription className="text-xs sm:text-sm">
+                    <Card className="border border-slate-800 bg-slate-900/50 backdrop-blur-sm shadow-2xl">
+                        <CardHeader className="space-y-1 pb-3 sm:pb-4 md:pb-5 px-3 sm:px-4 md:px-6">
+                            <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-slate-100">Get started</CardTitle>
+                            <CardDescription className="text-xs sm:text-sm text-slate-400">
                                 Create your account and start managing projects
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
+                        <CardContent className="space-y-2.5 sm:space-y-3 md:space-y-4 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
                         {/* Google Sign In */}
                         <Button
                             variant="outline"
-                            className="w-full text-xs sm:text-sm h-9 sm:h-10"
+                            className="w-full border border-slate-700 bg-slate-800/50 hover:bg-slate-700 hover:border-slate-600 text-slate-200 text-xs sm:text-sm h-8 sm:h-9 md:h-10"
                             onClick={handleGoogleSignIn}
                             disabled={loading}
                         >
@@ -170,10 +167,10 @@ export default function SignupPage() {
 
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
-                                <Separator />
+                                <Separator className="bg-slate-800" />
                             </div>
                             <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
-                                <span className="bg-white px-2 text-muted-foreground">
+                                <span className="bg-slate-900/50 px-2 text-slate-500">
                                     Or sign up with email
                                 </span>
                             </div>
@@ -181,17 +178,17 @@ export default function SignupPage() {
 
                         {/* Error Message */}
                         {error && (
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-destructive bg-destructive/10 p-2.5 sm:p-3 rounded-lg">
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-red-400 bg-red-950/30 border border-red-900/50 p-2.5 sm:p-3 rounded-lg">
                                 <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                                 {error}
                             </div>
                         )}
 
                         {/* Signup Form */}
-                        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-                            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                        <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3 md:space-y-4">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
                                 <div className="space-y-1.5 sm:space-y-2">
-                                    <Label htmlFor="firstName" className="text-xs sm:text-sm">First Name</Label>
+                                    <Label htmlFor="firstName" className="text-xs sm:text-sm text-slate-300">First Name</Label>
                                     <Input
                                         id="firstName"
                                         name="firstName"
@@ -202,11 +199,11 @@ export default function SignupPage() {
                                         required
                                         disabled={loading}
                                         autoComplete="given-name"
-                                        className="text-sm h-9 sm:h-10"
+                                        className="bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500 text-sm h-8 sm:h-9 md:h-10"
                                     />
                                 </div>
                                 <div className="space-y-1.5 sm:space-y-2">
-                                    <Label htmlFor="lastName" className="text-xs sm:text-sm">Last Name</Label>
+                                    <Label htmlFor="lastName" className="text-xs sm:text-sm text-slate-300">Last Name</Label>
                                     <Input
                                         id="lastName"
                                         name="lastName"
@@ -217,15 +214,15 @@ export default function SignupPage() {
                                         required
                                         disabled={loading}
                                         autoComplete="family-name"
-                                        className="text-sm h-9 sm:h-10"
+                                        className="bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500 text-sm h-8 sm:h-9 md:h-10"
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-1.5 sm:space-y-2">
-                                <Label htmlFor="organizationName" className="text-xs sm:text-sm">Organization Name</Label>
+                                <Label htmlFor="organizationName" className="text-xs sm:text-sm text-slate-300">Organization Name</Label>
                                 <div className="relative">
-                                    <Building2 className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                    <Building2 className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-500" />
                                     <Input
                                         id="organizationName"
                                         name="organizationName"
@@ -233,7 +230,7 @@ export default function SignupPage() {
                                         placeholder="Acme Inc"
                                         value={formData.organizationName}
                                         onChange={handleChange}
-                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
+                                        className="pl-8 sm:pl-10 bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500 text-sm h-8 sm:h-9 md:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="organization"
@@ -242,9 +239,9 @@ export default function SignupPage() {
                             </div>
 
                             <div className="space-y-1.5 sm:space-y-2">
-                                <Label htmlFor="email" className="text-xs sm:text-sm">Email</Label>
+                                <Label htmlFor="email" className="text-xs sm:text-sm text-slate-300">Email</Label>
                                 <div className="relative">
-                                    <Mail className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                    <Mail className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-500" />
                                     <Input
                                         id="email"
                                         name="email"
@@ -252,7 +249,7 @@ export default function SignupPage() {
                                         placeholder="name@company.com"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
+                                        className="pl-8 sm:pl-10 bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500 text-sm h-8 sm:h-9 md:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="email"
@@ -261,9 +258,9 @@ export default function SignupPage() {
                             </div>
 
                             <div className="space-y-1.5 sm:space-y-2">
-                                <Label htmlFor="password" className="text-xs sm:text-sm">Password</Label>
+                                <Label htmlFor="password" className="text-xs sm:text-sm text-slate-300">Password</Label>
                                 <div className="relative">
-                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-500" />
                                     <Input
                                         id="password"
                                         name="password"
@@ -271,7 +268,7 @@ export default function SignupPage() {
                                         placeholder="••••••••"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
+                                        className="pl-8 sm:pl-10 bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500 text-sm h-8 sm:h-9 md:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="new-password"
@@ -289,21 +286,21 @@ export default function SignupPage() {
                                                             : strength.strength === 3
                                                                 ? 'bg-amber-500'
                                                                 : 'bg-green-500'
-                                                        : 'bg-slate-200'
+                                                        : 'bg-slate-700'
                                                         }`}
                                                 />
                                             ))}
                                         </div>
-                                        <div className="space-y-0.5 sm:space-y-1 text-muted-foreground">
+                                        <div className="space-y-0.5 sm:space-y-1 text-slate-400">
                                             <div
-                                                className={`flex items-center gap-1 text-[10px] sm:text-xs ${strength.hasLength ? 'text-green-600' : ''
+                                                className={`flex items-center gap-1 text-[10px] sm:text-xs ${strength.hasLength ? 'text-green-400' : ''
                                                     }`}
                                             >
                                                 <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                                 At least 8 characters
                                             </div>
                                             <div
-                                                className={`flex items-center gap-1 text-[10px] sm:text-xs ${strength.hasNumber ? 'text-green-600' : ''
+                                                className={`flex items-center gap-1 text-[10px] sm:text-xs ${strength.hasNumber ? 'text-green-400' : ''
                                                     }`}
                                             >
                                                 <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -315,9 +312,9 @@ export default function SignupPage() {
                             </div>
 
                             <div className="space-y-1.5 sm:space-y-2">
-                                <Label htmlFor="confirmPassword" className="text-xs sm:text-sm">Confirm Password</Label>
+                                <Label htmlFor="confirmPassword" className="text-xs sm:text-sm text-slate-300">Confirm Password</Label>
                                 <div className="relative">
-                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-500" />
                                     <Input
                                         id="confirmPassword"
                                         name="confirmPassword"
@@ -325,7 +322,7 @@ export default function SignupPage() {
                                         placeholder="••••••••"
                                         value={formData.confirmPassword}
                                         onChange={handleChange}
-                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
+                                        className="pl-8 sm:pl-10 bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500 text-sm h-8 sm:h-9 md:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="new-password"
@@ -333,19 +330,19 @@ export default function SignupPage() {
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full text-xs sm:text-sm h-9 sm:h-10" disabled={loading}>
+                            <Button type="submit" className="w-full text-xs sm:text-sm h-8 sm:h-9 md:h-10" disabled={loading}>
                                 {loading ? 'Creating account...' : 'Create account'}
                             </Button>
                         </form>
 
                         {/* Sign In Link */}
                         <div className="text-center text-xs sm:text-sm">
-                            <span className="text-muted-foreground">
+                            <span className="text-slate-400">
                                 Already have an account?{' '}
                             </span>
                             <Link
                                 href="/login"
-                                className="text-purple-600 hover:text-purple-700 font-medium hover:underline"
+                                className="text-purple-400 hover:text-purple-300 font-medium hover:underline"
                             >
                                 Sign in
                             </Link>
@@ -354,13 +351,13 @@ export default function SignupPage() {
                 </Card>
 
                 {/* Footer */}
-                <p className="text-center text-[10px] sm:text-xs text-muted-foreground mt-4 sm:mt-6 md:mt-8">
+                <p className="text-center text-[10px] sm:text-xs text-slate-500 mt-3 sm:mt-4 md:mt-6">
                     By creating an account, you agree to our{' '}
-                    <Link href="/terms" className="underline hover:text-slate-900">
+                    <Link href="/terms" className="underline hover:text-slate-400">
                         Terms of Service
                     </Link>{' '}
                     and{' '}
-                    <Link href="/privacy" className="underline hover:text-slate-900">
+                    <Link href="/privacy" className="underline hover:text-slate-400">
                         Privacy Policy
                     </Link>
                 </p>

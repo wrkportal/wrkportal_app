@@ -117,10 +117,10 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center relative">
-            {/* Background Image */}
+        <div className="min-h-screen flex items-center relative bg-slate-950">
+            {/* Background Image - Right side only on desktop */}
             <div 
-                className="hidden lg:block absolute inset-0 lg:left-1/2 bg-cover bg-center"
+                className="hidden lg:block absolute inset-0 lg:left-1/2 bg-cover bg-center opacity-40"
                 style={{
                     backgroundImage: "url('/auth-background.png')",
                     backgroundSize: 'cover',
@@ -128,36 +128,33 @@ export default function LoginPage() {
                 }}
             />
             
-            {/* Gradient Overlay for better text readability on mobile */}
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 lg:bg-gradient-to-r lg:from-white lg:via-white/95 lg:to-transparent" />
-            
             {/* Form Container - Left Side */}
             <div className="relative z-10 w-full lg:w-1/2 flex items-center justify-center p-3 sm:p-4 lg:p-8">
-                <div className="w-full max-w-md">
+                <div className="w-full max-w-[320px] sm:max-w-sm md:max-w-md">
                     {/* Logo/Brand */}
-                    <div className="text-center mb-4 sm:mb-6 md:mb-8">
-                        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+                    <div className="text-center mb-3 sm:mb-4 md:mb-6">
+                        <div className="flex items-center justify-center gap-2 mb-1.5 sm:mb-2">
                             <Image 
                                 src="/logo.png" 
                                 alt="ManagerBook Logo" 
-                                width={140} 
-                                height={42}
-                                className="h-8 sm:h-9 md:h-10 w-auto object-contain"
+                                width={120} 
+                                height={36}
+                                className="h-7 sm:h-8 md:h-9 w-auto object-contain"
                             />
                         </div>
-                        <p className="text-slate-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">Enterprise Project Management</p>
+                        <p className="text-slate-400 text-xs sm:text-sm">Enterprise Project Management</p>
                     </div>
 
-                    <Card className="shadow-xl sm:shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-                        <CardHeader className="space-y-1 pb-4 sm:pb-6 px-4 sm:px-6">
-                            <CardTitle className="text-xl sm:text-2xl font-bold">Welcome back</CardTitle>
-                            <CardDescription className="text-xs sm:text-sm">Sign in to your account to continue</CardDescription>
+                    <Card className="border border-slate-800 bg-slate-900/50 backdrop-blur-sm shadow-2xl">
+                        <CardHeader className="space-y-1 pb-3 sm:pb-4 md:pb-5 px-3 sm:px-4 md:px-6">
+                            <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-slate-100">Welcome back</CardTitle>
+                            <CardDescription className="text-xs sm:text-sm text-slate-400">Sign in to your account to continue</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
+                        <CardContent className="space-y-2.5 sm:space-y-3 md:space-y-4 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
                         {/* SSO Login Button */}
                         <Button
                             variant="outline"
-                            className="w-full border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 text-xs sm:text-sm h-9 sm:h-10"
+                            className="w-full border border-slate-700 bg-slate-800/50 hover:bg-slate-700 hover:border-slate-600 text-slate-200 text-xs sm:text-sm h-8 sm:h-9 md:h-10"
                             onClick={() => setShowSSO(!showSSO)}
                             disabled={loading}
                         >
@@ -167,9 +164,9 @@ export default function LoginPage() {
 
                         {/* SSO Form (expandable) */}
                         {showSSO && (
-                            <form onSubmit={handleSSOLogin} className="space-y-2 sm:space-y-3 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+                            <form onSubmit={handleSSOLogin} className="space-y-2 sm:space-y-2.5 p-2.5 sm:p-3 md:p-4 bg-slate-800/30 rounded-lg border border-slate-700">
                                 <div className="space-y-1.5 sm:space-y-2">
-                                    <Label htmlFor="ssoIdentifier" className="text-xs sm:text-sm font-medium">
+                                    <Label htmlFor="ssoIdentifier" className="text-xs sm:text-sm font-medium text-slate-300">
                                         Organization Domain or ID
                                     </Label>
                                     <Input
@@ -180,13 +177,13 @@ export default function LoginPage() {
                                         onChange={(e) => setSsoIdentifier(e.target.value)}
                                         required
                                         disabled={loading}
-                                        className="bg-white text-sm h-9 sm:h-10"
+                                        className="bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500 text-sm h-8 sm:h-9 md:h-10"
                                     />
-                                    <p className="text-[10px] sm:text-xs text-muted-foreground">
+                                    <p className="text-[10px] sm:text-xs text-slate-500">
                                         Enter your organization&apos;s domain (e.g., acme.com) or organization ID
                                     </p>
                                 </div>
-                                <Button type="submit" className="w-full text-xs sm:text-sm h-9 sm:h-10" disabled={loading || !ssoIdentifier}>
+                                <Button type="submit" className="w-full text-xs sm:text-sm h-8 sm:h-9 md:h-10" disabled={loading || !ssoIdentifier}>
                                     {loading ? 'Verifying...' : 'Continue with SSO'}
                                 </Button>
                             </form>
@@ -194,17 +191,17 @@ export default function LoginPage() {
 
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
-                                <Separator />
+                                <Separator className="bg-slate-800" />
                             </div>
                             <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
-                                <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+                                <span className="bg-slate-900/50 px-2 text-slate-500">Or continue with</span>
                             </div>
                         </div>
 
                         {/* Google Sign In */}
                         <Button
                             variant="outline"
-                            className="w-full text-xs sm:text-sm h-9 sm:h-10"
+                            className="w-full border border-slate-700 bg-slate-800/50 hover:bg-slate-700 hover:border-slate-600 text-slate-200 text-xs sm:text-sm h-8 sm:h-9 md:h-10"
                             onClick={handleGoogleSignIn}
                             disabled={loading}
                         >
@@ -214,34 +211,34 @@ export default function LoginPage() {
 
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
-                                <Separator />
+                                <Separator className="bg-slate-800" />
                             </div>
                             <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
-                                <span className="bg-white px-2 text-muted-foreground">Or use email</span>
+                                <span className="bg-slate-900/50 px-2 text-slate-500">Or use email</span>
                             </div>
                         </div>
 
                         {/* Error Message */}
                         {error && (
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-destructive bg-destructive/10 p-2.5 sm:p-3 rounded-lg">
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-red-400 bg-red-950/30 border border-red-900/50 p-2.5 sm:p-3 rounded-lg">
                                 <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                                 {error}
                             </div>
                         )}
 
                         {/* Email/Password Form */}
-                        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3 md:space-y-4">
                             <div className="space-y-1.5 sm:space-y-2">
-                                <Label htmlFor="email" className="text-xs sm:text-sm">Email</Label>
+                                <Label htmlFor="email" className="text-xs sm:text-sm text-slate-300">Email</Label>
                                 <div className="relative">
-                                    <Mail className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                    <Mail className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-500" />
                                     <Input
                                         id="email"
                                         type="email"
                                         placeholder="name@company.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
+                                        className="pl-8 sm:pl-10 bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500 text-sm h-8 sm:h-9 md:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="email"
@@ -251,23 +248,23 @@ export default function LoginPage() {
 
                             <div className="space-y-1.5 sm:space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password" className="text-xs sm:text-sm">Password</Label>
+                                    <Label htmlFor="password" className="text-xs sm:text-sm text-slate-300">Password</Label>
                                     <Link
                                         href="/forgot-password"
-                                        className="text-[10px] sm:text-xs text-purple-600 hover:text-purple-700 hover:underline"
+                                        className="text-[10px] sm:text-xs text-purple-400 hover:text-purple-300 hover:underline"
                                     >
                                         Forgot password?
                                     </Link>
                                 </div>
                                 <div className="relative">
-                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-500" />
                                     <Input
                                         id="password"
                                         type="password"
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
+                                        className="pl-8 sm:pl-10 bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-500 text-sm h-8 sm:h-9 md:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="current-password"
@@ -275,17 +272,17 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full text-xs sm:text-sm h-9 sm:h-10" disabled={loading}>
+                            <Button type="submit" className="w-full text-xs sm:text-sm h-8 sm:h-9 md:h-10" disabled={loading}>
                                 {loading ? 'Signing in...' : 'Sign in'}
                             </Button>
                         </form>
 
                         {/* Sign Up Link */}
                         <div className="text-center text-xs sm:text-sm">
-                            <span className="text-muted-foreground">Don&apos;t have an account? </span>
+                            <span className="text-slate-400">Don&apos;t have an account? </span>
                             <Link
                                 href="/signup"
-                                className="text-purple-600 hover:text-purple-700 font-medium hover:underline"
+                                className="text-purple-400 hover:text-purple-300 font-medium hover:underline"
                             >
                                 Sign up
                             </Link>
@@ -294,13 +291,13 @@ export default function LoginPage() {
                 </Card>
 
                 {/* Footer */}
-                <p className="text-center text-[10px] sm:text-xs text-muted-foreground mt-4 sm:mt-6 md:mt-8">
+                <p className="text-center text-[10px] sm:text-xs text-slate-500 mt-3 sm:mt-4 md:mt-6">
                     By signing in, you agree to our{' '}
-                    <Link href="/terms" className="underline hover:text-slate-900">
+                    <Link href="/terms" className="underline hover:text-slate-400">
                         Terms of Service
                     </Link>{' '}
                     and{' '}
-                    <Link href="/privacy" className="underline hover:text-slate-900">
+                    <Link href="/privacy" className="underline hover:text-slate-400">
                         Privacy Policy
                     </Link>
                 </p>
