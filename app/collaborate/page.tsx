@@ -61,6 +61,7 @@ import {
     Edit2,
     Download,
     Clock,
+    Smile,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { CollaborationDialog } from '@/components/dialogs/collaboration-dialog'
@@ -176,6 +177,7 @@ function CollaboratePageContent() {
     // Message action dialogs
     const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false)
     const [reminderDialogOpen, setReminderDialogOpen] = useState(false)
+    const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
     const [replyingTo, setReplyingTo] = useState<Message | null>(null)
     const [replyInput, setReplyInput] = useState('')
@@ -1042,6 +1044,23 @@ function CollaboratePageContent() {
                                                                                         </TooltipTrigger>
                                                                                         <TooltipContent side="left">Remind</TooltipContent>
                                                                                     </Tooltip>
+                                                                                    
+                                                                                    <Tooltip>
+                                                                                        <TooltipTrigger asChild>
+                                                                                            <Button
+                                                                                                variant="ghost"
+                                                                                                size="sm"
+                                                                                                className="h-10 w-14 rounded-none justify-center"
+                                                                                                onClick={() => {
+                                                                                                    setSelectedMessage(message)
+                                                                                                    setEmojiPickerOpen(true)
+                                                                                                }}
+                                                                                            >
+                                                                                                <Smile className="h-4 w-4" />
+                                                                                            </Button>
+                                                                                        </TooltipTrigger>
+                                                                                        <TooltipContent side="left">React</TooltipContent>
+                                                                                    </Tooltip>
                                                                                 </TooltipProvider>
                                                                             </div>
                                                                         </div>
@@ -1509,6 +1528,97 @@ function CollaboratePageContent() {
                     }}
                 />
             )}
+
+            {/* Emoji & GIF Reaction Picker Dialog */}
+            <Dialog open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Add Reaction</DialogTitle>
+                        <DialogDescription>
+                            Choose an emoji or GIF to react to this message
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <Tabs defaultValue="emoji" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="emoji">Emoji</TabsTrigger>
+                            <TabsTrigger value="gif">GIF</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="emoji" className="space-y-4">
+                            <div className="grid grid-cols-8 gap-2 p-4 max-h-[300px] overflow-y-auto">
+                                {[
+                                    '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
+                                    '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩',
+                                    '😘', '😗', '☺️', '😚', '😙', '🥲', '😋', '😛',
+                                    '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔',
+                                    '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄',
+                                    '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷',
+                                    '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '😎',
+                                    '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯',
+                                    '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥',
+                                    '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩',
+                                    '😫', '🥱', '😤', '😡', '😠', '🤬', '👍', '👎',
+                                    '👏', '🙌', '🤝', '🙏', '❤️', '🧡', '💛', '💚',
+                                    '💙', '💜', '🤎', '🖤', '🤍', '💯', '💢', '💥',
+                                    '💫', '💦', '💨', '🕳️', '💬', '👁️', '🗨️', '🗯️',
+                                    '💭', '💤', '✅', '❌', '🔥', '⭐', '🎉', '🎊'
+                                ].map((emoji, index) => (
+                                    <Button
+                                        key={index}
+                                        variant="ghost"
+                                        className="h-12 w-12 text-2xl hover:bg-purple-50 hover:scale-110 transition-transform"
+                                        onClick={async () => {
+                                            if (!selectedMessage || !selectedCollaboration) return
+                                            
+                                            try {
+                                                // Here you would typically send the reaction to your API
+                                                // For now, we'll just show an alert
+                                                alert(`Reacted with ${emoji}`)
+                                                setEmojiPickerOpen(false)
+                                                setSelectedMessage(null)
+                                            } catch (error) {
+                                                console.error('Failed to add reaction:', error)
+                                            }
+                                        }}
+                                    >
+                                        {emoji}
+                                    </Button>
+                                ))}
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="gif" className="space-y-4">
+                            <div className="p-4">
+                                <Input
+                                    placeholder="Search for GIFs..."
+                                    className="mb-4"
+                                />
+                                <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto">
+                                    {/* Placeholder for GIF search results */}
+                                    <div className="col-span-2 text-center text-muted-foreground py-8">
+                                        <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                                        <p className="text-sm">GIF search coming soon!</p>
+                                        <p className="text-xs mt-1">Integrate with Giphy or Tenor API</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setEmojiPickerOpen(false)
+                                setSelectedMessage(null)
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
