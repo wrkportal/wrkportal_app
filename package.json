@@ -5,12 +5,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && prisma db push && next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "db:cleanup": "tsx scripts/cleanup-database.ts",
-    "db:delete-notifications": "tsx scripts/delete-notifications.ts"
+    "db:delete-notifications": "tsx scripts/delete-notifications.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.58",
