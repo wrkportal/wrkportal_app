@@ -118,38 +118,38 @@ export default function SignupPage() {
     const strength = passwordStrength()
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 p-3 sm:p-4 py-6 sm:py-8">
             <div className="w-full max-w-md">
                 {/* Logo/Brand */}
-                <div className="text-center mb-8">
-                    <div className="flex items-center justify-center gap-3 mb-3">
+                <div className="text-center mb-4 sm:mb-6 md:mb-8">
+                    <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
                         <Image 
                             src="/logo.png" 
                             alt="ManagerBook Logo" 
-                            width={160} 
-                            height={48}
-                            className="h-10 w-auto object-contain"
+                            width={140} 
+                            height={42}
+                            className="h-8 sm:h-9 md:h-10 w-auto object-contain"
                         />
                     </div>
-                    <p className="text-slate-600 mt-2">Create your account</p>
+                    <p className="text-slate-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">Create your account</p>
                 </div>
 
-                <Card className="shadow-2xl border-0">
-                    <CardHeader className="space-y-1">
-                        <CardTitle className="text-2xl font-bold">Get started</CardTitle>
-                        <CardDescription>
+                <Card className="shadow-xl sm:shadow-2xl border-0">
+                    <CardHeader className="space-y-1 pb-4 sm:pb-6 px-4 sm:px-6">
+                        <CardTitle className="text-xl sm:text-2xl font-bold">Get started</CardTitle>
+                        <CardDescription className="text-xs sm:text-sm">
                             Create your account and start managing projects
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
                         {/* Google Sign In */}
                         <Button
                             variant="outline"
-                            className="w-full"
+                            className="w-full text-xs sm:text-sm h-9 sm:h-10"
                             onClick={handleGoogleSignIn}
                             disabled={loading}
                         >
-                            <Chrome className="mr-2 h-4 w-4" />
+                            <Chrome className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                             Continue with Google
                         </Button>
 
@@ -157,7 +157,7 @@ export default function SignupPage() {
                             <div className="absolute inset-0 flex items-center">
                                 <Separator />
                             </div>
-                            <div className="relative flex justify-center text-xs uppercase">
+                            <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
                                 <span className="bg-white px-2 text-muted-foreground">
                                     Or sign up with email
                                 </span>
@@ -166,17 +166,17 @@ export default function SignupPage() {
 
                         {/* Error Message */}
                         {error && (
-                            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
-                                <AlertCircle className="h-4 w-4" />
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-destructive bg-destructive/10 p-2.5 sm:p-3 rounded-lg">
+                                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                                 {error}
                             </div>
                         )}
 
                         {/* Signup Form */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="firstName">First Name</Label>
+                        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                                <div className="space-y-1.5 sm:space-y-2">
+                                    <Label htmlFor="firstName" className="text-xs sm:text-sm">First Name</Label>
                                     <Input
                                         id="firstName"
                                         name="firstName"
@@ -187,10 +187,11 @@ export default function SignupPage() {
                                         required
                                         disabled={loading}
                                         autoComplete="given-name"
+                                        className="text-sm h-9 sm:h-10"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="lastName">Last Name</Label>
+                                <div className="space-y-1.5 sm:space-y-2">
+                                    <Label htmlFor="lastName" className="text-xs sm:text-sm">Last Name</Label>
                                     <Input
                                         id="lastName"
                                         name="lastName"
@@ -201,14 +202,15 @@ export default function SignupPage() {
                                         required
                                         disabled={loading}
                                         autoComplete="family-name"
+                                        className="text-sm h-9 sm:h-10"
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="organizationName">Organization Name</Label>
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <Label htmlFor="organizationName" className="text-xs sm:text-sm">Organization Name</Label>
                                 <div className="relative">
-                                    <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Building2 className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                                     <Input
                                         id="organizationName"
                                         name="organizationName"
@@ -216,7 +218,7 @@ export default function SignupPage() {
                                         placeholder="Acme Inc"
                                         value={formData.organizationName}
                                         onChange={handleChange}
-                                        className="pl-10"
+                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="organization"
@@ -224,10 +226,10 @@ export default function SignupPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <Label htmlFor="email" className="text-xs sm:text-sm">Email</Label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Mail className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                                     <Input
                                         id="email"
                                         name="email"
@@ -235,7 +237,7 @@ export default function SignupPage() {
                                         placeholder="name@company.com"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        className="pl-10"
+                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="email"
@@ -243,10 +245,10 @@ export default function SignupPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <Label htmlFor="password" className="text-xs sm:text-sm">Password</Label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                                     <Input
                                         id="password"
                                         name="password"
@@ -254,14 +256,14 @@ export default function SignupPage() {
                                         placeholder="••••••••"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className="pl-10"
+                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="new-password"
                                     />
                                 </div>
                                 {strength && formData.password && (
-                                    <div className="space-y-2 text-xs">
+                                    <div className="space-y-1.5 sm:space-y-2 text-xs">
                                         <div className="flex gap-1">
                                             {[1, 2, 3, 4].map((level) => (
                                                 <div
@@ -277,19 +279,19 @@ export default function SignupPage() {
                                                 />
                                             ))}
                                         </div>
-                                        <div className="space-y-1 text-muted-foreground">
+                                        <div className="space-y-0.5 sm:space-y-1 text-muted-foreground">
                                             <div
-                                                className={`flex items-center gap-1 ${strength.hasLength ? 'text-green-600' : ''
+                                                className={`flex items-center gap-1 text-[10px] sm:text-xs ${strength.hasLength ? 'text-green-600' : ''
                                                     }`}
                                             >
-                                                <CheckCircle2 className="h-3 w-3" />
+                                                <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                                 At least 8 characters
                                             </div>
                                             <div
-                                                className={`flex items-center gap-1 ${strength.hasNumber ? 'text-green-600' : ''
+                                                className={`flex items-center gap-1 text-[10px] sm:text-xs ${strength.hasNumber ? 'text-green-600' : ''
                                                     }`}
                                             >
-                                                <CheckCircle2 className="h-3 w-3" />
+                                                <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                                 Contains a number
                                             </div>
                                         </div>
@@ -297,10 +299,10 @@ export default function SignupPage() {
                                 )}
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <Label htmlFor="confirmPassword" className="text-xs sm:text-sm">Confirm Password</Label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                                     <Input
                                         id="confirmPassword"
                                         name="confirmPassword"
@@ -308,7 +310,7 @@ export default function SignupPage() {
                                         placeholder="••••••••"
                                         value={formData.confirmPassword}
                                         onChange={handleChange}
-                                        className="pl-10"
+                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="new-password"
@@ -316,13 +318,13 @@ export default function SignupPage() {
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full" disabled={loading}>
+                            <Button type="submit" className="w-full text-xs sm:text-sm h-9 sm:h-10" disabled={loading}>
                                 {loading ? 'Creating account...' : 'Create account'}
                             </Button>
                         </form>
 
                         {/* Sign In Link */}
-                        <div className="text-center text-sm">
+                        <div className="text-center text-xs sm:text-sm">
                             <span className="text-muted-foreground">
                                 Already have an account?{' '}
                             </span>
@@ -337,7 +339,7 @@ export default function SignupPage() {
                 </Card>
 
                 {/* Footer */}
-                <p className="text-center text-xs text-muted-foreground mt-8">
+                <p className="text-center text-[10px] sm:text-xs text-muted-foreground mt-4 sm:mt-6 md:mt-8">
                     By creating an account, you agree to our{' '}
                     <Link href="/terms" className="underline hover:text-slate-900">
                         Terms of Service

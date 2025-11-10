@@ -117,44 +117,44 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 p-3 sm:p-4">
             <div className="w-full max-w-md">
                 {/* Logo/Brand */}
-                <div className="text-center mb-8">
-                    <div className="flex items-center justify-center gap-3 mb-3">
+                <div className="text-center mb-4 sm:mb-6 md:mb-8">
+                    <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
                         <Image 
                             src="/logo.png" 
                             alt="ManagerBook Logo" 
-                            width={160} 
-                            height={48}
-                            className="h-10 w-auto object-contain"
+                            width={140} 
+                            height={42}
+                            className="h-8 sm:h-9 md:h-10 w-auto object-contain"
                         />
                     </div>
-                    <p className="text-slate-600 mt-2">Enterprise Project Management</p>
+                    <p className="text-slate-600 text-xs sm:text-sm md:text-base mt-1 sm:mt-2">Enterprise Project Management</p>
                 </div>
 
-                <Card className="shadow-2xl border-0">
-                    <CardHeader className="space-y-1">
-                        <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-                        <CardDescription>Sign in to your account to continue</CardDescription>
+                <Card className="shadow-xl sm:shadow-2xl border-0">
+                    <CardHeader className="space-y-1 pb-4 sm:pb-6 px-4 sm:px-6">
+                        <CardTitle className="text-xl sm:text-2xl font-bold">Welcome back</CardTitle>
+                        <CardDescription className="text-xs sm:text-sm">Sign in to your account to continue</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 pb-4 sm:pb-6">
                         {/* SSO Login Button */}
                         <Button
                             variant="outline"
-                            className="w-full border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50"
+                            className="w-full border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50 text-xs sm:text-sm h-9 sm:h-10"
                             onClick={() => setShowSSO(!showSSO)}
                             disabled={loading}
                         >
-                            <Building2 className="mr-2 h-4 w-4" />
+                            <Building2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                             Log in with your organization SSO
                         </Button>
 
                         {/* SSO Form (expandable) */}
                         {showSSO && (
-                            <form onSubmit={handleSSOLogin} className="space-y-3 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                                <div className="space-y-2">
-                                    <Label htmlFor="ssoIdentifier" className="text-sm font-medium">
+                            <form onSubmit={handleSSOLogin} className="space-y-2 sm:space-y-3 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                <div className="space-y-1.5 sm:space-y-2">
+                                    <Label htmlFor="ssoIdentifier" className="text-xs sm:text-sm font-medium">
                                         Organization Domain or ID
                                     </Label>
                                     <Input
@@ -165,13 +165,13 @@ export default function LoginPage() {
                                         onChange={(e) => setSsoIdentifier(e.target.value)}
                                         required
                                         disabled={loading}
-                                        className="bg-white"
+                                        className="bg-white text-sm h-9 sm:h-10"
                                     />
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-[10px] sm:text-xs text-muted-foreground">
                                         Enter your organization&apos;s domain (e.g., acme.com) or organization ID
                                     </p>
                                 </div>
-                                <Button type="submit" className="w-full" disabled={loading || !ssoIdentifier}>
+                                <Button type="submit" className="w-full text-xs sm:text-sm h-9 sm:h-10" disabled={loading || !ssoIdentifier}>
                                     {loading ? 'Verifying...' : 'Continue with SSO'}
                                 </Button>
                             </form>
@@ -181,7 +181,7 @@ export default function LoginPage() {
                             <div className="absolute inset-0 flex items-center">
                                 <Separator />
                             </div>
-                            <div className="relative flex justify-center text-xs uppercase">
+                            <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
                                 <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
                             </div>
                         </div>
@@ -189,11 +189,11 @@ export default function LoginPage() {
                         {/* Google Sign In */}
                         <Button
                             variant="outline"
-                            className="w-full"
+                            className="w-full text-xs sm:text-sm h-9 sm:h-10"
                             onClick={handleGoogleSignIn}
                             disabled={loading}
                         >
-                            <Chrome className="mr-2 h-4 w-4" />
+                            <Chrome className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                             Continue with Google
                         </Button>
 
@@ -201,32 +201,32 @@ export default function LoginPage() {
                             <div className="absolute inset-0 flex items-center">
                                 <Separator />
                             </div>
-                            <div className="relative flex justify-center text-xs uppercase">
+                            <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
                                 <span className="bg-white px-2 text-muted-foreground">Or use email</span>
                             </div>
                         </div>
 
                         {/* Error Message */}
                         {error && (
-                            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
-                                <AlertCircle className="h-4 w-4" />
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-destructive bg-destructive/10 p-2.5 sm:p-3 rounded-lg">
+                                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                                 {error}
                             </div>
                         )}
 
                         {/* Email/Password Form */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                            <div className="space-y-1.5 sm:space-y-2">
+                                <Label htmlFor="email" className="text-xs sm:text-sm">Email</Label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Mail className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                                     <Input
                                         id="email"
                                         type="email"
                                         placeholder="name@company.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="pl-10"
+                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="email"
@@ -234,25 +234,25 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-1.5 sm:space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password">Password</Label>
+                                    <Label htmlFor="password" className="text-xs sm:text-sm">Password</Label>
                                     <Link
                                         href="/forgot-password"
-                                        className="text-sm text-purple-600 hover:text-purple-700 hover:underline"
+                                        className="text-[10px] sm:text-xs text-purple-600 hover:text-purple-700 hover:underline"
                                     >
                                         Forgot password?
                                     </Link>
                                 </div>
                                 <div className="relative">
-                                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                                     <Input
                                         id="password"
                                         type="password"
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="pl-10"
+                                        className="pl-8 sm:pl-10 text-sm h-9 sm:h-10"
                                         required
                                         disabled={loading}
                                         autoComplete="current-password"
@@ -260,13 +260,13 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
-                            <Button type="submit" className="w-full" disabled={loading}>
+                            <Button type="submit" className="w-full text-xs sm:text-sm h-9 sm:h-10" disabled={loading}>
                                 {loading ? 'Signing in...' : 'Sign in'}
                             </Button>
                         </form>
 
                         {/* Sign Up Link */}
-                        <div className="text-center text-sm">
+                        <div className="text-center text-xs sm:text-sm">
                             <span className="text-muted-foreground">Don&apos;t have an account? </span>
                             <Link
                                 href="/signup"
@@ -279,7 +279,7 @@ export default function LoginPage() {
                 </Card>
 
                 {/* Footer */}
-                <p className="text-center text-xs text-muted-foreground mt-8">
+                <p className="text-center text-[10px] sm:text-xs text-muted-foreground mt-4 sm:mt-6 md:mt-8">
                     By signing in, you agree to our{' '}
                     <Link href="/terms" className="underline hover:text-slate-900">
                         Terms of Service
