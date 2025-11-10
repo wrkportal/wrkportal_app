@@ -339,26 +339,26 @@ export function Sidebar() {
 
             {/* Sidebar */}
             <aside className={cn(
-                "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card backdrop-blur-lg transition-all duration-300",
+                "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card/95 backdrop-blur-xl transition-all duration-300 shadow-sm",
                 // Mobile: slide in from left, Desktop: always visible
                 "md:translate-x-0",
                 sidebarOpen ? "translate-x-0" : "-translate-x-full",
-                sidebarCollapsed ? "w-16" : "w-64"
+                sidebarCollapsed ? "w-14" : "w-56"
             )}
             >
-                <div className="flex h-full flex-col px-2 py-6">
+                <div className="flex h-full flex-col px-2 py-4">
                     {/* Collapse Toggle */}
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={toggleSidebarCollapse}
-                        className="mb-2 ml-auto"
+                        className="mb-3 ml-auto h-7 w-7 hover:bg-accent/50/50"
                         title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     >
                         {sidebarCollapsed ? (
-                            <ChevronRight className="h-5 w-5" />
+                            <ChevronRight className="h-3.5 w-3.5" />
                         ) : (
-                            <ChevronLeft className="h-5 w-5" />
+                            <ChevronLeft className="h-3.5 w-3.5" />
                         )}
                     </Button>
 
@@ -374,24 +374,24 @@ export function Sidebar() {
                                     <div key={item.href}>
                                         {/* Separator line between tabs */}
                                         {index > 0 && (
-                                            <div className="my-2 border-t border-border"></div>
+                                            <div className="my-1.5 border-t border-border/50"></div>
                                         )}
                                         <div
                                             className={cn(
-                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                                "flex items-center justify-between py-2 px-3 text-xs font-medium transition-all cursor-pointer rounded-md -mx-1",
                                                 pathname.includes(item.href) || pathname.includes("/roadmap") || pathname.includes("/programs/") || pathname.includes("/projects/")
-                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                    : "text-foreground hover:bg-accent"
+                                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                                    : "text-foreground hover:bg-accent/50/70"
                                             )}
                                             onClick={() => setExpandedProgramsProjects(!expandedProgramsProjects)}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <Icon className="h-5 w-5" />
+                                            <div className="flex items-center gap-2.5">
+                                                <Icon className="h-3.5 w-3.5" />
                                                 <span>{item.title}</span>
                                             </div>
                                             <ChevronDown
                                                 className={cn(
-                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                    "h-3.5 w-3.5 transition-transform flex-shrink-0",
                                                     expandedProgramsProjects && "rotate-180"
                                                 )}
                                             />
@@ -414,20 +414,20 @@ export function Sidebar() {
                                                                 <div key={child.href}>
                                                                     <div
                                                                         className={cn(
-                                                                            "flex items-center justify-between py-2.5 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10",
+                                                                            "flex items-center justify-between py-1.5 px-3 text-xs font-medium transition-all cursor-pointer rounded-md ml-2",
                                                                             isChildActive
-                                                                                ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50/50"
                                                                         )}
                                                                         onClick={() => setExpandedProgramsSection(!expandedProgramsSection)}
                                                                     >
-                                                                        <div className="flex items-center gap-3">
-                                                                            <ChildIcon className="h-4 w-4" />
+                                                                        <div className="flex items-center gap-2">
+                                                                            <ChildIcon className="h-3.5 w-3.5" />
                                                                             {child.title}
                                                                         </div>
                                                                         <ChevronDown
                                                                             className={cn(
-                                                                                "h-4 w-4 transition-transform flex-shrink-0",
+                                                                                "h-3 w-3 transition-transform flex-shrink-0",
                                                                                 expandedProgramsSection && "rotate-180"
                                                                             )}
                                                                         />
@@ -446,8 +446,8 @@ export function Sidebar() {
                                                                                         className={cn(
                                                                                             "flex items-center gap-2 py-2 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
                                                                                             isProgramActive
-                                                                                                ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                                         )}
                                                                                     >
                                                                                         <Briefcase className="h-3 w-3" />
@@ -479,13 +479,13 @@ export function Sidebar() {
                                                                 href={child.href}
                                                                 onClick={handleLinkClick}
                                                                 className={cn(
-                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
-                                                                <ChildIcon className="h-4 w-4" />
+                                                                <ChildIcon className="h-3.5 w-3.5" />
                                                                 {child.title}
                                                             </Link>
                                                         )
@@ -496,13 +496,13 @@ export function Sidebar() {
                                                     href="/projects"
                                                     onClick={handleLinkClick}
                                                     className={cn(
-                                                        "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                        "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                         pathname === "/projects"
-                                                            ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                            ? "bg-primary text-primary-foreground shadow-sm"
+                                                            : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                     )}
                                                 >
-                                                    <FolderKanban className="h-4 w-4" />
+                                                    <FolderKanban className="h-3.5 w-3.5" />
                                                     <span>Projects</span>
                                                 </Link>
 
@@ -520,13 +520,13 @@ export function Sidebar() {
                                                                 href={child.href}
                                                                 onClick={handleLinkClick}
                                                                 className={cn(
-                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
-                                                                <ChildIcon className="h-4 w-4" />
+                                                                <ChildIcon className="h-3.5 w-3.5" />
                                                                 {child.title}
                                                             </Link>
                                                         )
@@ -534,7 +534,7 @@ export function Sidebar() {
 
                                                 {/* Dynamic Programs with nested Projects */}
                                                 {programs.length > 0 && (
-                                                    <div className="mt-2 pt-2 border-t border-border space-y-1">
+                                                    <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
                                                         <div className="px-10 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                                                             Programs
                                                         </div>
@@ -549,18 +549,18 @@ export function Sidebar() {
                                                                         className={cn(
                                                                             "flex items-center justify-between py-2.5 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10",
                                                                             isProgramActive && !pathname.includes('/projects/')
-                                                                                ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                         )}
                                                                         onClick={() => toggleProgram(program.id)}
                                                                     >
                                                                         <div className="flex items-center gap-2 flex-1">
-                                                                            <Briefcase className="h-4 w-4" />
+                                                                            <Briefcase className="h-3.5 w-3.5" />
                                                                             <span className="truncate">{program.name}</span>
                                                                         </div>
                                                                         <ChevronDown
                                                                             className={cn(
-                                                                                "h-4 w-4 transition-transform flex-shrink-0",
+                                                                                "h-3.5 w-3.5 transition-transform flex-shrink-0",
                                                                                 isExpanded && "rotate-180",
                                                                                 programProjects.length === 0 && "opacity-30"
                                                                             )}
@@ -581,7 +581,7 @@ export function Sidebar() {
                                                                                             "flex items-center gap-2 py-2 text-xs font-medium transition-all tracking-tight -mx-2 px-8",
                                                                                             isProjectActive
                                                                                                 ? "bg-primary text-primary-foreground border-l-4 border-primary/50 hover:bg-primary"
-                                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                                         )}
                                                                                     >
                                                                                         <FolderKanban className="h-3 w-3" />
@@ -608,24 +608,24 @@ export function Sidebar() {
                                     <div key={item.href}>
                                         {/* Separator line between tabs */}
                                         {index > 0 && (
-                                            <div className="my-2 border-t border-border"></div>
+                                            <div className="my-1.5 border-t border-border/50"></div>
                                         )}
                                         <div
                                             className={cn(
-                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                                "flex items-center justify-between py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
                                                 pathname.includes(item.href)
-                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                    : "text-foreground hover:bg-accent"
+                                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                                    : "text-foreground hover:bg-accent/50"
                                             )}
                                             onClick={() => setExpandedReportingStudio(!expandedReportingStudio)}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <Icon className="h-5 w-5" />
+                                            <div className="flex items-center gap-2.5">
+                                                <Icon className="h-4 w-4" />
                                                 <span>{item.title}</span>
                                             </div>
                                             <ChevronDown
                                                 className={cn(
-                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                    "h-3.5 w-3.5 transition-transform flex-shrink-0",
                                                     expandedReportingStudio && "rotate-180"
                                                 )}
                                             />
@@ -647,13 +647,13 @@ export function Sidebar() {
                                                                 href={child.href}
                                                                 onClick={handleLinkClick}
                                                                 className={cn(
-                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
-                                                                <ChildIcon className="h-4 w-4" />
+                                                                <ChildIcon className="h-3.5 w-3.5" />
                                                                 {child.title}
                                                             </Link>
                                                         )
@@ -670,24 +670,24 @@ export function Sidebar() {
                                     <div key={item.href}>
                                         {/* Separator line between tabs */}
                                         {index > 0 && (
-                                            <div className="my-2 border-t border-border"></div>
+                                            <div className="my-1.5 border-t border-border/50"></div>
                                         )}
                                         <div
                                             className={cn(
-                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                                "flex items-center justify-between py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
                                                 pathname.includes(item.href)
-                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                    : "text-foreground hover:bg-accent"
+                                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                                    : "text-foreground hover:bg-accent/50"
                                             )}
                                             onClick={() => setExpandedPerformance(!expandedPerformance)}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <Icon className="h-5 w-5" />
+                                            <div className="flex items-center gap-2.5">
+                                                <Icon className="h-4 w-4" />
                                                 <span>{item.title}</span>
                                             </div>
                                             <ChevronDown
                                                 className={cn(
-                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                    "h-3.5 w-3.5 transition-transform flex-shrink-0",
                                                     expandedPerformance && "rotate-180"
                                                 )}
                                             />
@@ -709,13 +709,13 @@ export function Sidebar() {
                                                                 href={child.href}
                                                                 onClick={handleLinkClick}
                                                                 className={cn(
-                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
-                                                                <ChildIcon className="h-4 w-4" />
+                                                                <ChildIcon className="h-3.5 w-3.5" />
                                                                 {child.title}
                                                             </Link>
                                                         )
@@ -732,24 +732,24 @@ export function Sidebar() {
                                     <div key={item.href}>
                                         {/* Separator line between tabs */}
                                         {index > 0 && (
-                                            <div className="my-2 border-t border-border"></div>
+                                            <div className="my-1.5 border-t border-border/50"></div>
                                         )}
                                         <div
                                             className={cn(
-                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                                "flex items-center justify-between py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
                                                 pathname.includes(item.href)
-                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                    : "text-foreground hover:bg-accent"
+                                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                                    : "text-foreground hover:bg-accent/50"
                                             )}
                                             onClick={() => setExpandedCommunication(!expandedCommunication)}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <Icon className="h-5 w-5" />
+                                            <div className="flex items-center gap-2.5">
+                                                <Icon className="h-4 w-4" />
                                                 <span>{item.title}</span>
                                             </div>
                                             <ChevronDown
                                                 className={cn(
-                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                    "h-3.5 w-3.5 transition-transform flex-shrink-0",
                                                     expandedCommunication && "rotate-180"
                                                 )}
                                             />
@@ -771,13 +771,13 @@ export function Sidebar() {
                                                                 href={child.href}
                                                                 onClick={handleLinkClick}
                                                                 className={cn(
-                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
-                                                                <ChildIcon className="h-4 w-4" />
+                                                                <ChildIcon className="h-3.5 w-3.5" />
                                                                 {child.title}
                                                             </Link>
                                                         )
@@ -794,24 +794,24 @@ export function Sidebar() {
                                     <div key={item.href}>
                                         {/* Separator line between tabs */}
                                         {index > 0 && (
-                                            <div className="my-2 border-t border-border"></div>
+                                            <div className="my-1.5 border-t border-border/50"></div>
                                         )}
                                         <div
                                             className={cn(
-                                                "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                                "flex items-center justify-between py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
                                                 pathname.includes(item.href)
-                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                    : "text-foreground hover:bg-accent"
+                                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                                    : "text-foreground hover:bg-accent/50"
                                             )}
                                             onClick={() => setExpandedPlanetAI(!expandedPlanetAI)}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <Icon className="h-5 w-5" />
+                                            <div className="flex items-center gap-2.5">
+                                                <Icon className="h-4 w-4" />
                                                 <span>{item.title}</span>
                                             </div>
                                             <ChevronDown
                                                 className={cn(
-                                                    "h-4 w-4 transition-transform flex-shrink-0",
+                                                    "h-3.5 w-3.5 transition-transform flex-shrink-0",
                                                     expandedPlanetAI && "rotate-180"
                                                 )}
                                             />
@@ -833,13 +833,13 @@ export function Sidebar() {
                                                                 href={child.href}
                                                                 onClick={handleLinkClick}
                                                                 className={cn(
-                                                                    "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                    "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                     isChildActive
-                                                                        ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                                 )}
                                                             >
-                                                                <ChildIcon className="h-4 w-4" />
+                                                                <ChildIcon className="h-3.5 w-3.5" />
                                                                 {child.title}
                                                             </Link>
                                                         )
@@ -854,23 +854,21 @@ export function Sidebar() {
                                 <div key={item.href}>
                                     {/* Separator line between tabs */}
                                     {index > 0 && (
-                                        <div className="my-2 border-t border-border"></div>
+                                        <div className="my-1.5 border-t border-border/50"></div>
                                     )}
                                     <Link
                                         href={item.href}
                                         onClick={handleLinkClick}
                                         className={cn(
-                                            "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight relative",
-                                            sidebarCollapsed ? "justify-center px-2 rounded-md" : "-mx-2 px-6",
+                                            "flex items-center gap-2.5 py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
+                                            sidebarCollapsed ? "justify-center" : "",
                                             isActive
-                                                ? sidebarCollapsed
-                                                    ? "bg-primary text-primary-foreground rounded-md hover:bg-primary"
-                                                    : "bg-primary text-primary-foreground hover:bg-primary"
-                                                : "text-foreground hover:bg-accent"
+                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                : "text-foreground hover:bg-accent/70"
                                         )}
                                         title={sidebarCollapsed ? item.title : undefined}
                                     >
-                                        <Icon className="h-5 w-5" />
+                                        <Icon className="h-4 w-4" />
                                         {!sidebarCollapsed && item.title}
                                     </Link>
                                 </div>
@@ -880,22 +878,20 @@ export function Sidebar() {
 
                     {/* Academy Tab - Between AI Assistant and Admin */}
                     {user && academyNavItem.roles.includes(effectiveRole) && (
-                        <div className={cn("pt-2 border-t border-border", !sidebarCollapsed && "mt-auto")}>
+                        <div className={cn("pt-2 border-t border-border/50/50", !sidebarCollapsed && "mt-auto")}>
                             <Link
                                 href={academyNavItem.href}
                                 onClick={handleLinkClick}
                                 className={cn(
-                                    "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight relative",
-                                    sidebarCollapsed ? "justify-center px-2 rounded-md" : "-mx-2 px-6",
+                                    "flex items-center gap-2.5 py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
+                                    sidebarCollapsed ? "justify-center" : "",
                                     pathname === academyNavItem.href || pathname.startsWith(academyNavItem.href + "/")
-                                        ? sidebarCollapsed
-                                            ? "bg-primary text-primary-foreground rounded-md hover:bg-primary"
-                                            : "bg-primary text-primary-foreground hover:bg-primary"
-                                        : "text-foreground hover:bg-accent"
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-foreground hover:bg-accent/70"
                                 )}
                                 title={sidebarCollapsed ? academyNavItem.title : undefined}
                             >
-                                <GraduationCap className="h-5 w-5" />
+                                <GraduationCap className="h-4 w-4" />
                                 {!sidebarCollapsed && <span>{academyNavItem.title}</span>}
                             </Link>
                         </div>
@@ -903,39 +899,39 @@ export function Sidebar() {
 
                     {/* Admin Tab - Sticky at the bottom */}
                     {user && adminNavItem.roles.includes(user.role) && (
-                        <div className="pt-2 border-t border-border">
+                        <div className="pt-2 border-t border-border/50">
                             {sidebarCollapsed ? (
                                 <Link
                                     href={adminNavItem.href}
                                     onClick={handleLinkClick}
                                     className={cn(
-                                        "flex items-center justify-center py-3 text-sm font-medium transition-all tracking-tight relative px-2 rounded-md",
+                                        "flex items-center justify-center py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
                                         pathname.includes(adminNavItem.href)
-                                            ? "bg-primary text-primary-foreground hover:bg-primary"
-                                            : "text-foreground hover:bg-accent"
+                                            ? "bg-primary text-primary-foreground shadow-sm"
+                                            : "text-foreground hover:bg-accent/50"
                                     )}
                                     title={adminNavItem.title}
                                 >
-                                    <Settings className="h-5 w-5" />
+                                    <Settings className="h-4 w-4" />
                                 </Link>
                             ) : (
                                 <>
                                     <div
                                         className={cn(
-                                            "flex items-center justify-between py-3 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-6",
+                                            "flex items-center justify-between py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
                                             pathname.includes(adminNavItem.href) && !pathname.includes(adminNavItem.href + "/")
-                                                ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                : "text-foreground hover:bg-accent"
+                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                : "text-foreground hover:bg-accent/50"
                                         )}
                                         onClick={() => setExpandedAdmin(!expandedAdmin)}
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <Settings className="h-5 w-5" />
+                                        <div className="flex items-center gap-2.5">
+                                            <Settings className="h-4 w-4" />
                                             <span>{adminNavItem.title}</span>
                                         </div>
                                         <ChevronDown
                                             className={cn(
-                                                "h-4 w-4 transition-transform flex-shrink-0",
+                                                "h-3.5 w-3.5 transition-transform flex-shrink-0",
                                                 expandedAdmin && "rotate-180"
                                             )}
                                         />
@@ -956,13 +952,13 @@ export function Sidebar() {
                                                             key={child.href}
                                                             href={child.href}
                                                             className={cn(
-                                                                "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                                "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
                                                                 isChildActive
-                                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                             )}
                                                         >
-                                                            <ChildIcon className="h-4 w-4" />
+                                                            <ChildIcon className="h-3.5 w-3.5" />
                                                             {child.title}
                                                         </Link>
                                                     )
@@ -976,22 +972,22 @@ export function Sidebar() {
 
                     {/* Platform Admin Tab - Last tab (god-mode) */}
                     {user && platformAdminNavItem.roles.includes(user.role) && (
-                        <div className="pt-2 border-t border-border">
+                        <div className="pt-2 border-t border-border/50">
                             <Link
                                 href={platformAdminNavItem.href}
                                 onClick={handleLinkClick}
                                 className={cn(
-                                    "flex items-center gap-3 py-3 text-sm font-medium transition-all tracking-tight relative",
+                                    "flex items-center gap-2.5 py-3 text-sm font-medium transition-all tracking-tight relative",
                                     sidebarCollapsed ? "justify-center px-2 rounded-md" : "-mx-2 px-6",
                                     pathname === platformAdminNavItem.href || pathname.startsWith(platformAdminNavItem.href + "/")
                                         ? sidebarCollapsed
                                             ? "bg-primary text-primary-foreground rounded-md hover:bg-primary"
-                                            : "bg-primary text-primary-foreground hover:bg-primary"
-                                        : "text-foreground hover:bg-accent"
+                                            : "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-foreground hover:bg-accent/50"
                                 )}
                                 title={sidebarCollapsed ? platformAdminNavItem.title : undefined}
                             >
-                                <Shield className="h-5 w-5" />
+                                <Shield className="h-4 w-4" />
                                 {!sidebarCollapsed && <span>{platformAdminNavItem.title}</span>}
                             </Link>
                         </div>
