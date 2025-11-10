@@ -20,6 +20,18 @@ export enum UserRole {
   INTEGRATION_ADMIN = 'INTEGRATION_ADMIN',
 }
 
+export enum WorkspaceType {
+  ORGANIZATION = 'ORGANIZATION',  // Full enterprise features
+  GROUP = 'GROUP',                // Lightweight, simplified for teams/freelancers
+}
+
+export enum GroupRole {
+  OWNER = 'OWNER',    // Creator, full control
+  ADMIN = 'ADMIN',    // Can invite, manage members
+  MEMBER = 'MEMBER',  // Can collaborate
+  GUEST = 'GUEST',    // View-only access
+}
+
 export enum ProjectStatus {
   PLANNING = 'PLANNING',
   IN_PROGRESS = 'IN_PROGRESS',
@@ -144,6 +156,7 @@ export interface Tenant {
   name: string
   domain: string
   region: string
+  type: WorkspaceType
   plan: 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE'
   status: 'ACTIVE' | 'SUSPENDED' | 'TRIAL'
   dataResidency: string
@@ -178,6 +191,7 @@ export interface User {
   lastName: string
   avatar?: string
   role: UserRole
+  groupRole?: GroupRole
   orgUnitId?: string
   skills: Skill[]
   timezone: string

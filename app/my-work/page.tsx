@@ -12,6 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { useAuthStore, fetchAuthenticatedUser } from "@/stores/authStore"
 import { getInitials, cn } from "@/lib/utils"
+import { InviteUserModal } from "@/components/invite-user-modal"
+import { canInviteUsers } from "@/lib/permissions"
+import { WorkspaceType, UserRole, GroupRole } from "@/types"
 import {
     Plus,
     ArrowRight,
@@ -48,6 +51,7 @@ import {
     Type,
     Image,
     Download,
+    UserPlus,
     Upload,
     Trash2,
     Edit2,
@@ -158,6 +162,7 @@ export default function HomePage() {
     const [timerSeconds, setTimerSeconds] = useState<{ [key: string]: number }>({})
     const [timerNotesDialogOpen, setTimerNotesDialogOpen] = useState(false)
     const [pendingTimerTask, setPendingTimerTask] = useState<{ id: string; title: string } | null>(null)
+    const [inviteModalOpen, setInviteModalOpen] = useState(false)
 
     // Task filters
     const [statusFilter, setStatusFilter] = useState<string>('ALL')
@@ -1716,6 +1721,22 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* Invite Button */}
+                        {canInviteUsers(
+                            WorkspaceType.ORGANIZATION, // Default to organization, actual check happens in API
+                            user?.role as UserRole,
+                            user?.groupRole as GroupRole | undefined
+                        ) && (
+                                <Button
+                                    onClick={() => setInviteModalOpen(true)}
+                                    variant="outline"
+                                    size="sm"
+                                >
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    Invite
+                                </Button>
+                            )}
+
                         {/* Save as Default Button (Platform Owner only) */}
                         <SaveDefaultLayoutButton
                             pageKey="my-work"
@@ -1957,6 +1978,12 @@ export default function HomePage() {
                     // Optionally navigate to collaborations page
                     router.push('/collaborate')
                 }}
+            />
+
+            {/* Invite User Modal */}
+            <InviteUserModal
+                open={inviteModalOpen}
+                onOpenChange={setInviteModalOpen}
             />
         </div>
     )

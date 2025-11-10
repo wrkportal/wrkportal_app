@@ -34,6 +34,7 @@ model User {
   tenantId      String
   tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   role          UserRole  @default(TEAM_MEMBER)
+  groupRole     GroupRole? // For GROUP type workspaces
   orgUnitId     String?
   orgUnit       OrgUnit?  @relation(fields: [orgUnitId], references: [id])
   
@@ -159,7 +160,10 @@ model Tenant {
   logo        String?
   settings    Json?
   
-  // Domain Verification
+  // Workspace Type (ORGANIZATION or GROUP)
+  type        WorkspaceType @default(ORGANIZATION)
+  
+  // Domain Verification (for ORGANIZATION type)
   domainVerified      Boolean   @default(false)
   verificationCode    String?   @unique
   verificationMethod  String?   // 'DNS', 'EMAIL', 'MANUAL'
@@ -858,6 +862,18 @@ enum UserStatus {
   INACTIVE
   INVITED
   SUSPENDED
+}
+
+enum WorkspaceType {
+  ORGANIZATION  // Full enterprise features
+  GROUP         // Lightweight, simplified for teams/freelancers
+}
+
+enum GroupRole {
+  OWNER         // Creator, full control
+  ADMIN         // Can invite, manage members
+  MEMBER        // Can collaborate
+  GUEST         // View-only access
 }
 
 enum ProgramStatus {

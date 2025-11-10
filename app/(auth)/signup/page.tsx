@@ -10,7 +10,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Mail, Lock, User, Building2, Chrome, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Mail, Lock, User, Building2, Chrome, AlertCircle, CheckCircle2, Users } from 'lucide-react'
+import { WorkspaceType } from '@/types'
 
 export default function SignupPage() {
     const router = useRouter()
@@ -21,6 +23,7 @@ export default function SignupPage() {
         password: '',
         confirmPassword: '',
         organizationName: '',
+        workspaceType: WorkspaceType.ORGANIZATION,
     })
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
@@ -208,10 +211,54 @@ export default function SignupPage() {
                                 </div>
                             </div>
 
+                            {/* Workspace Type Selection */}
+                            <div className="space-y-2">
+                                <Label className="text-xs sm:text-sm text-slate-700">What are you setting up?</Label>
+                                <RadioGroup
+                                    value={formData.workspaceType}
+                                    onValueChange={(value) => setFormData({ ...formData, workspaceType: value as WorkspaceType })}
+                                    className="grid grid-cols-2 gap-2"
+                                    disabled={loading}
+                                >
+                                    <div>
+                                        <RadioGroupItem value={WorkspaceType.ORGANIZATION} id="organization" className="peer sr-only" />
+                                        <Label
+                                            htmlFor="organization"
+                                            className="flex flex-col items-center justify-between rounded-md border-2 border-slate-200 bg-white p-3 hover:bg-slate-50 hover:border-purple-300 peer-data-[state=checked]:border-purple-600 peer-data-[state=checked]:bg-purple-50 cursor-pointer transition-all"
+                                        >
+                                            <Building2 className="mb-2 h-5 w-5 text-slate-600 peer-data-[state=checked]:text-purple-600" />
+                                            <div className="text-center">
+                                                <div className="text-xs sm:text-sm font-semibold text-slate-700">Organization</div>
+                                                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">For companies & enterprises</div>
+                                            </div>
+                                        </Label>
+                                    </div>
+                                    <div>
+                                        <RadioGroupItem value={WorkspaceType.GROUP} id="group" className="peer sr-only" />
+                                        <Label
+                                            htmlFor="group"
+                                            className="flex flex-col items-center justify-between rounded-md border-2 border-slate-200 bg-white p-3 hover:bg-slate-50 hover:border-purple-300 peer-data-[state=checked]:border-purple-600 peer-data-[state=checked]:bg-purple-50 cursor-pointer transition-all"
+                                        >
+                                            <Users className="mb-2 h-5 w-5 text-slate-600 peer-data-[state=checked]:text-purple-600" />
+                                            <div className="text-center">
+                                                <div className="text-xs sm:text-sm font-semibold text-slate-700">Group</div>
+                                                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">For teams & freelancers</div>
+                                            </div>
+                                        </Label>
+                                    </div>
+                                </RadioGroup>
+                            </div>
+
                             <div className="space-y-1.5">
-                                <Label htmlFor="organizationName" className="text-xs sm:text-sm text-slate-700">Organization</Label>
+                                <Label htmlFor="organizationName" className="text-xs sm:text-sm text-slate-700">
+                                    {formData.workspaceType === WorkspaceType.ORGANIZATION ? 'Organization Name' : 'Group Name'}
+                                </Label>
                                 <div className="relative">
-                                    <Building2 className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
+                                    {formData.workspaceType === WorkspaceType.ORGANIZATION ? (
+                                        <Building2 className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
+                                    ) : (
+                                        <Users className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
+                                    )}
                                     <Input
                                         id="organizationName"
                                         name="organizationName"

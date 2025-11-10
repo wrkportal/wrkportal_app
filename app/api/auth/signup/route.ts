@@ -6,7 +6,7 @@ import { isPlatformOwner } from '@/lib/platform-config'
 
 export async function POST(request: Request) {
   try {
-    const { firstName, lastName, email, password, organizationName, invitationToken } =
+    const { firstName, lastName, email, password, organizationName, invitationToken, workspaceType } =
       await request.json()
 
     // Validation
@@ -70,6 +70,7 @@ export async function POST(request: Request) {
           data: {
             name: 'ManagerBook Platform',
             domain: null,
+            type: 'ORGANIZATION',
             domainVerified: true, // Platform tenant is always verified
             plan: 'enterprise',
           },
@@ -134,6 +135,7 @@ export async function POST(request: Request) {
       tenant = await prisma.tenant.create({
         data: {
           name: organizationName,
+          type: workspaceType || 'ORGANIZATION', // Use provided type or default
           domain: null, // Don't set domain for public emails
           domainVerified: false,
         },
@@ -173,6 +175,7 @@ export async function POST(request: Request) {
         tenant = await prisma.tenant.create({
           data: {
             name: organizationName,
+            type: workspaceType || 'ORGANIZATION', // Use provided type or default
             domain: domain,
             domainVerified: false,
           },
@@ -184,6 +187,7 @@ export async function POST(request: Request) {
       tenant = await prisma.tenant.create({
         data: {
           name: organizationName,
+          type: workspaceType || 'ORGANIZATION', // Use provided type or default
           domain: null,
           domainVerified: false,
         },
@@ -200,6 +204,8 @@ export async function POST(request: Request) {
         password: hashedPassword,
         tenantId: tenant.id,
         role: userRole,
+        // Set groupRole for GROUP type workspaces
+        groupRole: tenant.type === 'GROUP' && (userRole === 'TENANT_SUPER_ADMIN' || userRole === 'PLATFORM_OWNER') ? 'OWNER' : undefined,
         status: 'ACTIVE',
       },
     })
