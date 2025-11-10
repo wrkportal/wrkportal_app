@@ -1704,7 +1704,7 @@ export default function HomePage() {
     return (
         <div>
             {/* Header - Sticky */}
-            <div className="sticky top-0 md:top-16 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 mb-4">
+            <div className="sticky top-0 md:top-6 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 mb-4">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
