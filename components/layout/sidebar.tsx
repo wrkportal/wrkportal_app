@@ -491,53 +491,20 @@ export function Sidebar() {
                                                         )
                                                     })}
 
-                                                {/* Projects (standalone) - appears after Programs */}
-                                                {standaloneProjects.length > 0 && (
-                                                    <div className="space-y-1">
-                                                        <div
-                                                            className={cn(
-                                                                "flex items-center justify-between py-2.5 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10",
-                                                                "text-muted-foreground hover:text-foreground hover:bg-accent"
-                                                            )}
-                                                            onClick={() => setExpandedProjectsSection(!expandedProjectsSection)}
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <FolderKanban className="h-4 w-4" />
-                                                                <span>Projects</span>
-                                                            </div>
-                                                            <ChevronDown
-                                                                className={cn(
-                                                                    "h-4 w-4 transition-transform flex-shrink-0",
-                                                                    expandedProjectsSection && "rotate-180"
-                                                                )}
-                                                            />
-                                                        </div>
-                                                        
-                                                        {/* Projects dropdown */}
-                                                        {expandedProjectsSection && (
-                                                            <div className="space-y-1 ml-4">
-                                                                {standaloneProjects.map((project) => {
-                                                                    const isProjectActive = pathname.includes(`/projects/${project.id}`)
-                                                                    return (
-                                                                        <Link
-                                                                            key={project.id}
-                                                                            href={`/projects/${project.id}`}
-                                                                            onClick={handleLinkClick}
-                                                                            className={cn(
-                                                                                "flex items-center gap-2 py-2 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
-                                                                                isProjectActive
-                                                                                    ? "bg-primary text-primary-foreground hover:bg-primary"
-                                                                                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                                                                            )}
-                                                                        >
-                                                                            <span className="truncate">{project.name}</span>
-                                                                        </Link>
-                                                                    )
-                                                                })}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                                {/* Projects - always visible, links to main projects page */}
+                                                <Link
+                                                    href="/projects"
+                                                    onClick={handleLinkClick}
+                                                    className={cn(
+                                                        "flex items-center gap-3 py-2.5 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
+                                                        pathname === "/projects"
+                                                            ? "bg-primary text-primary-foreground hover:bg-primary"
+                                                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                    )}
+                                                >
+                                                    <FolderKanban className="h-4 w-4" />
+                                                    <span>Projects</span>
+                                                </Link>
 
                                                 {/* Roadmap - appears last */}
                                                 {item.children
