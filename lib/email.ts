@@ -1,25 +1,31 @@
 import nodemailer from 'nodemailer'
 import type { Transporter } from 'nodemailer'
 
-// Email configuration
-const EMAIL_CONFIG = {
-  host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587'),
-  secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER || process.env.SMTP_USER,
-    pass: process.env.EMAIL_PASSWORD || process.env.SMTP_PASS,
-  },
+// Email configuration with performance optimizations
+function createEmailConfig() {
+  return {
+    host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587'),
+    secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+      user: process.env.EMAIL_USER || process.env.SMTP_USER,
+      pass: process.env.EMAIL_PASSWORD || process.env.SMTP_PASS,
+    },
+    // Performance and reliability settings
+    pool: true, // Use pooled connections
+    maxConnections: 5, // Maximum simultaneous connections
+    maxMessages: 100, // Max messages per connection
+    rateDelta: 1000, // Time window for rate limiting (ms)
+    rateLimit: 5, // Max messages per rateDelta
+    connectionTimeout: 10000, // 10 seconds connection timeout
+    greetingTimeout: 10000, // 10 seconds greeting timeout
+    socketTimeout: 30000, // 30 seconds socket timeout
+  }
 }
 
-// Create reusable transporter
-let transporter: Transporter | null = null
-
-function getTransporter() {
-  if (!transporter) {
-    transporter = nodemailer.createTransport(EMAIL_CONFIG)
-  }
-  return transporter
+// Create transporter (will be recreated for each serverless function invocation)
+function getTransporter(): Transporter {
+  return nodemailer.createTransport(createEmailConfig())
 }
 
 // Email templates
@@ -232,6 +238,9 @@ export interface SendEmailOptions {
 }
 
 export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
+  const startTime = Date.now()
+  let transporter: Transporter | null = null
+  
   try {
     // Validate environment variables
     const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER
@@ -260,9 +269,13 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
       throw new Error(errorMsg)
     }
 
-    const transporter = getTransporter()
+    console.log('🔌 Creating SMTP transporter...')
+    const createStart = Date.now()
+    transporter = getTransporter()
+    console.log(`✅ Transporter created in ${Date.now() - createStart}ms`)
     
     console.log('📤 Attempting to send email...')
+    const sendStart = Date.now()
     
     const info = await transporter.sendMail({
       from: `"ManagerBook" <${process.env.EMAIL_FROM || emailUser}>`,
@@ -272,21 +285,42 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
       html,
     })
 
+    const totalTime = Date.now() - startTime
+    const sendTime = Date.now() - sendStart
+
     console.log('✅ Email sent successfully:', {
       messageId: info.messageId,
       to,
       subject,
+      totalTime: `${totalTime}ms`,
+      sendTime: `${sendTime}ms`,
     })
+
+    // Close the transporter to free up resources
+    if (transporter && transporter.close) {
+      transporter.close()
+    }
 
     return { success: true, messageId: info.messageId }
   } catch (error: any) {
+    const totalTime = Date.now() - startTime
     console.error('❌ Error sending email:', {
       error: error.message,
       code: error.code,
       command: error.command,
       response: error.response,
-      stack: error.stack,
+      totalTime: `${totalTime}ms`,
     })
+    
+    // Close the transporter even on error
+    if (transporter && transporter.close) {
+      try {
+        transporter.close()
+      } catch (closeError) {
+        console.error('Error closing transporter:', closeError)
+      }
+    }
+    
     throw error
   }
 }
