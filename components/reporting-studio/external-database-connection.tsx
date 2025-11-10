@@ -47,6 +47,9 @@ export function ExternalDatabaseConnection() {
     const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
     const [queryError, setQueryError] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState<'connections' | 'query'>('connections')
+    const [autoRefresh, setAutoRefresh] = useState(false)
+    const [refreshInterval, setRefreshInterval] = useState(30) // seconds
+    const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
     
     // Form state
     const [formData, setFormData] = useState({
@@ -63,6 +66,19 @@ export function ExternalDatabaseConnection() {
     useEffect(() => {
         fetchConnections()
     }, [])
+
+    // Auto-refresh effect
+    useEffect(() => {
+        if (!autoRefresh || !selectedConnection || !sqlQuery.trim()) {
+            return
+        }
+
+        const interval = setInterval(() => {
+            handleExecuteQuery()
+        }, refreshInterval * 1000)
+
+        return () => clearInterval(interval)
+    }, [autoRefresh, refreshInterval, selectedConnection, sqlQuery])
 
     const fetchConnections = async () => {
         try {
@@ -179,6 +195,7 @@ export function ExternalDatabaseConnection() {
 
             if (response.ok) {
                 setQueryResult(result)
+                setLastRefreshed(new Date())
             } else {
                 setQueryError(result.error || 'Query execution failed')
             }
@@ -592,6 +609,50 @@ export function ExternalDatabaseConnection() {
                                     )}
                                 </div>
 
+                                {/* Auto-Refresh Controls */}
+                                <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-md border">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="auto-refresh"
+                                            checked={autoRefresh}
+                                            onChange={(e) => setAutoRefresh(e.target.checked)}
+                                            className="rounded"
+                                        />
+                                        <Label htmlFor="auto-refresh" className="text-sm font-medium cursor-pointer">
+                                            Auto-refresh
+                                        </Label>
+                                    </div>
+                                    {autoRefresh && (
+                                        <>
+                                            <div className="flex items-center gap-2">
+                                                <Label htmlFor="refresh-interval" className="text-sm">Every</Label>
+                                                <Select 
+                                                    value={String(refreshInterval)} 
+                                                    onValueChange={(value) => setRefreshInterval(Number(value))}
+                                                >
+                                                    <SelectTrigger className="w-24 h-8">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="10">10 sec</SelectItem>
+                                                        <SelectItem value="30">30 sec</SelectItem>
+                                                        <SelectItem value="60">1 min</SelectItem>
+                                                        <SelectItem value="300">5 min</SelectItem>
+                                                        <SelectItem value="600">10 min</SelectItem>
+                                                        <SelectItem value="1800">30 min</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            {lastRefreshed && (
+                                                <span className="text-xs text-muted-foreground ml-auto">
+                                                    Last: {lastRefreshed.toLocaleTimeString()}
+                                                </span>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+
                                 {/* Query Error */}
                                 {queryError && (
                                     <div className="flex items-start gap-2 p-3 rounded-md text-sm bg-red-50 text-red-700 border border-red-200">
@@ -613,11 +674,23 @@ export function ExternalDatabaseConnection() {
                                         <CardTitle className="flex items-center gap-2">
                                             <CheckCircle className="h-5 w-5 text-green-500" />
                                             Query Results
+                                            {autoRefresh && (
+                                                <Badge variant="secondary" className="ml-2 animate-pulse">
+                                                    <span className="h-2 w-2 bg-green-500 rounded-full mr-1.5"></span>
+                                                    Live
+                                                </Badge>
+                                            )}
                                         </CardTitle>
                                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                             <span>{queryResult.rowCount} rows</span>
                                             <span>•</span>
                                             <span>{queryResult.executionTime}ms</span>
+                                            {lastRefreshed && (
+                                                <>
+                                                    <span>•</span>
+                                                    <span className="text-xs">Updated {lastRefreshed.toLocaleTimeString()}</span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </CardHeader>
