@@ -117,9 +117,9 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center relative bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+        <div className="min-h-screen flex relative bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
             {/* Form Container - Left Side */}
-            <div className="relative z-10 w-full lg:w-1/2 flex items-center justify-center p-3 sm:p-4 lg:p-8">
+            <div className="relative z-10 w-full lg:w-1/2 min-h-screen flex items-center justify-center p-3 sm:p-4 lg:p-8">
                 <div className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-sm">
                     {/* Logo/Brand */}
                     <div className="text-center mb-3 sm:mb-4 md:mb-5">
@@ -295,7 +295,7 @@ export default function LoginPage() {
             </div>
 
             {/* Right Side - Inspirational Content */}
-            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-12 items-center justify-center relative overflow-hidden">
+            <div className="hidden lg:flex lg:w-1/2 min-h-screen bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-12 items-center justify-center relative overflow-hidden">
                 {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500 rounded-full filter blur-3xl opacity-20"></div>
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500 rounded-full filter blur-3xl opacity-20"></div>
