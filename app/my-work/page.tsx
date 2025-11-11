@@ -73,6 +73,7 @@ import { TimeTrackingDialog } from "@/components/dialogs/time-tracking-dialog"
 import { TimerNotesDialog } from "@/components/dialogs/timer-notes-dialog"
 import { CollaborationDialog } from "@/components/dialogs/collaboration-dialog"
 import { SaveDefaultLayoutButton } from "@/components/ui/save-default-layout-button"
+import { GanttChart } from "@/components/roadmap/gantt-chart"
 import { useDefaultLayout } from "@/hooks/useDefaultLayout"
 import { AdvancedFormsWidget } from "@/components/widgets/AdvancedFormsWidget"
 import { AdvancedMindMapWidget } from "@/components/widgets/AdvancedMindMapWidget"
@@ -169,7 +170,7 @@ export default function HomePage() {
     const [priorityFilter, setPriorityFilter] = useState<string>('ALL')
     const [dueDateFilter, setDueDateFilter] = useState<string>('ALL')
     const [showFilters, setShowFilters] = useState(false)
-    const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar'>('calendar')
+    const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar' | 'gantt'>('calendar')
     const [calendarDate, setCalendarDate] = useState(new Date())
 
     // Useful Links state
@@ -861,25 +862,39 @@ export default function HomePage() {
                                     <CardDescription className="text-xs truncate">Tasks assigned to you</CardDescription>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setTaskViewMode(taskViewMode === 'list' ? 'calendar' : 'list')}
-                                        className="text-xs"
-                                        title={taskViewMode === 'list' ? 'Switch to Calendar View' : 'Switch to List View'}
-                                    >
-                                        {taskViewMode === 'list' ? (
-                                            <>
-                                                <Calendar className="h-3 w-3 md:h-4 md:w-4" />
-                                                <span className="hidden lg:inline ml-1">Calendar</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <List className="h-3 w-3 md:h-4 md:w-4" />
-                                                <span className="hidden lg:inline ml-1">List</span>
-                                            </>
-                                        )}
-                                    </Button>
+                                    {/* View Mode Toggle */}
+                                    <div className="flex gap-1 border rounded-lg p-1">
+                                        <Button
+                                            variant={taskViewMode === 'list' ? 'default' : 'ghost'}
+                                            size="sm"
+                                            onClick={() => setTaskViewMode('list')}
+                                            className="h-7 px-2 text-xs"
+                                            title="List View"
+                                        >
+                                            <List className="h-3 w-3 md:h-4 md:w-4" />
+                                            <span className="hidden xl:inline ml-1">List</span>
+                                        </Button>
+                                        <Button
+                                            variant={taskViewMode === 'calendar' ? 'default' : 'ghost'}
+                                            size="sm"
+                                            onClick={() => setTaskViewMode('calendar')}
+                                            className="h-7 px-2 text-xs"
+                                            title="Calendar View"
+                                        >
+                                            <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                                            <span className="hidden xl:inline ml-1">Calendar</span>
+                                        </Button>
+                                        <Button
+                                            variant={taskViewMode === 'gantt' ? 'default' : 'ghost'}
+                                            size="sm"
+                                            onClick={() => setTaskViewMode('gantt')}
+                                            className="h-7 px-2 text-xs"
+                                            title="Gantt View"
+                                        >
+                                            <Network className="h-3 w-3 md:h-4 md:w-4" />
+                                            <span className="hidden xl:inline ml-1">Gantt</span>
+                                        </Button>
+                                    </div>
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -1323,7 +1338,60 @@ export default function HomePage() {
                                         )
                                     })()}
                                 </div>
-                            )}
+                            ) : taskViewMode === 'gantt' ? (
+                                /* Gantt View */
+                                <div className="h-full -mx-4 -my-4">
+                                    {(() => {
+                                        // Group tasks by project for Gantt chart
+                                        const projectsWithTasks: any[] = []
+                                        
+                                        // Get unique projects from tasks
+                                        const projectMap = new Map()
+                                        
+                                        filteredTasks.forEach(task => {
+                                            if (task.project && task.startDate && task.dueDate) {
+                                                if (!projectMap.has(task.project.id)) {
+                                                    projectMap.set(task.project.id, {
+                                                        id: task.project.id,
+                                                        name: task.project.name,
+                                                        code: task.project.code || task.project.id.substring(0, 6).toUpperCase(),
+                                                        status: task.project.status || 'IN_PROGRESS',
+                                                        ragStatus: task.project.ragStatus || 'GREEN',
+                                                        startDate: task.startDate,
+                                                        endDate: task.dueDate,
+                                                        progress: 0,
+                                                    })
+                                                }
+                                                
+                                                // Update project dates to encompass all tasks
+                                                const project = projectMap.get(task.project.id)
+                                                if (new Date(task.startDate) < new Date(project.startDate)) {
+                                                    project.startDate = task.startDate
+                                                }
+                                                if (new Date(task.dueDate) > new Date(project.endDate)) {
+                                                    project.endDate = task.dueDate
+                                                }
+                                            }
+                                        })
+                                        
+                                        const projects = Array.from(projectMap.values())
+                                        
+                                        return projects.length > 0 ? (
+                                            <GanttChart projects={projects} />
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                                                <Network className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                                                <p className="text-sm text-muted-foreground mb-2">
+                                                    No tasks with start and due dates to display in Gantt chart
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Add start dates and due dates to your tasks to see them here
+                                                </p>
+                                            </div>
+                                        )
+                                    })()}
+                                </div>
+                            ) : null}
                         </CardContent>
                     </Card>
                 )
