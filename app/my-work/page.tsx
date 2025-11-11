@@ -855,8 +855,7 @@ export default function HomePage() {
             case 'myTasks': {
                 const filteredTasks = getFilteredTasks()
 
-                return (
-                    <Card ref={(el) => { widgetRefs.current['myTasks'] = el }} className="h-full flex flex-col overflow-hidden">
+                return <Card ref={(el) => { widgetRefs.current['myTasks'] = el }} className="h-full flex flex-col overflow-hidden">
                         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex flex-wrap items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
@@ -1396,7 +1395,6 @@ export default function HomePage() {
                             ) : null}
                         </CardContent>
                     </Card>
-                )
             }
 
             case 'assignedToOthers': {
