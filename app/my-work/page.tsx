@@ -660,7 +660,7 @@ export default function HomePage() {
                     </Card>
                 )
 
-            case 'recentProjects':
+            case 'recentProjects': {
                 // Sort by most recent (createdAt) and take top 5
                 const recentProjects = [...userProjects]
                     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -753,8 +753,9 @@ export default function HomePage() {
                         </CardContent>
                     </Card>
                 )
+            }
 
-            case 'overdueTasks':
+            case 'overdueTasks': {
                 const today = new Date()
                 today.setHours(0, 0, 0, 0)
 
@@ -849,8 +850,9 @@ export default function HomePage() {
                         </CardContent>
                     </Card>
                 )
+            }
 
-            case 'myTasks':
+            case 'myTasks': {
                 const filteredTasks = getFilteredTasks()
 
                 return (
@@ -1395,8 +1397,9 @@ export default function HomePage() {
                         </CardContent>
                     </Card>
                 )
+            }
 
-            case 'assignedToOthers':
+            case 'assignedToOthers': {
                 const assignedToOthersTasks = userTasks.filter(
                     (task) => task.createdById === user?.id && task.assigneeId !== user?.id && task.assigneeId
                 )
@@ -1485,6 +1488,7 @@ export default function HomePage() {
                         </CardContent>
                     </Card>
                 )
+            }
 
             case 'activeOKRs':
                 return (
