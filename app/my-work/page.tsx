@@ -73,11 +73,11 @@ import { TimeTrackingDialog } from "@/components/dialogs/time-tracking-dialog"
 import { TimerNotesDialog } from "@/components/dialogs/timer-notes-dialog"
 import { CollaborationDialog } from "@/components/dialogs/collaboration-dialog"
 import { SaveDefaultLayoutButton } from "@/components/ui/save-default-layout-button"
-import { GanttChart } from "@/components/roadmap/gantt-chart"
 import { useDefaultLayout } from "@/hooks/useDefaultLayout"
 import { AdvancedFormsWidget } from "@/components/widgets/AdvancedFormsWidget"
 import { AdvancedMindMapWidget } from "@/components/widgets/AdvancedMindMapWidget"
 import { AdvancedCanvasWidget } from "@/components/widgets/AdvancedCanvasWidget"
+import { GanttChartWidget } from "@/components/widgets/GanttChartWidget"
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -99,6 +99,7 @@ const defaultWidgets: Widget[] = [
     { id: 'canvas', type: 'canvas', visible: false },
     { id: 'forms', type: 'forms', visible: true },
     { id: 'mindMap', type: 'mindMap', visible: true },
+    { id: 'ganttChart', type: 'ganttChart', visible: true },
 ]
 
 const defaultLayouts: Layouts = {
@@ -114,6 +115,7 @@ const defaultLayouts: Layouts = {
         { i: 'canvas', x: 0, y: 32, w: 6, h: 8, minW: 3, minH: 8 },
         { i: 'forms', x: 6, y: 32, w: 6, h: 8, minW: 3, minH: 4 },
         { i: 'mindMap', x: 0, y: 40, w: 6, h: 8, minW: 3, minH: 6 },
+        { i: 'ganttChart', x: 6, y: 40, w: 6, h: 10, minW: 4, minH: 8 },
     ],
     md: [
         { i: 'metrics', x: 0, y: 0, w: 5, h: 8, minW: 3, minH: 2 },
@@ -127,6 +129,7 @@ const defaultLayouts: Layouts = {
         { i: 'canvas', x: 0, y: 32, w: 5, h: 8, minW: 3, minH: 8 },
         { i: 'forms', x: 5, y: 32, w: 5, h: 8, minW: 3, minH: 4 },
         { i: 'mindMap', x: 0, y: 40, w: 5, h: 8, minW: 3, minH: 6 },
+        { i: 'ganttChart', x: 5, y: 40, w: 5, h: 10, minW: 4, minH: 8 },
     ],
     sm: [
         { i: 'metrics', x: 0, y: 0, w: 3, h: 8, minW: 2, minH: 2 },
@@ -140,6 +143,7 @@ const defaultLayouts: Layouts = {
         { i: 'canvas', x: 0, y: 32, w: 3, h: 8, minW: 2, minH: 8 },
         { i: 'forms', x: 3, y: 32, w: 3, h: 8, minW: 2, minH: 4 },
         { i: 'mindMap', x: 0, y: 40, w: 3, h: 8, minW: 2, minH: 6 },
+        { i: 'ganttChart', x: 3, y: 40, w: 3, h: 10, minW: 2, minH: 8 },
     ],
 }
 
@@ -170,7 +174,7 @@ export default function HomePage() {
     const [priorityFilter, setPriorityFilter] = useState<string>('ALL')
     const [dueDateFilter, setDueDateFilter] = useState<string>('ALL')
     const [showFilters, setShowFilters] = useState(false)
-    const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar' | 'gantt'>('calendar')
+    const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar'>('calendar')
     const [calendarDate, setCalendarDate] = useState(new Date())
 
     // Useful Links state
@@ -615,10 +619,6 @@ export default function HomePage() {
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }, [])
 
-    const setWidgetRef = (widgetId: string) => (el: HTMLDivElement | null) => {
-        widgetRefs.current[widgetId] = el
-    }
-
     const renderWidget = (widget: Widget) => {
         switch (widget.type) {
             case 'metrics':
@@ -858,7 +858,7 @@ export default function HomePage() {
                 const filteredTasks = getFilteredTasks()
 
                 return (
-                    <Card ref={setWidgetRef('myTasks')} className="h-full flex flex-col overflow-hidden">
+                    <Card ref={(el) => { widgetRefs.current['myTasks'] = el }} className="h-full flex flex-col overflow-hidden">
                         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
                             <div className="flex flex-wrap items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
@@ -866,39 +866,25 @@ export default function HomePage() {
                                     <CardDescription className="text-xs truncate">Tasks assigned to you</CardDescription>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                    {/* View Mode Toggle */}
-                                    <div className="flex gap-1 border rounded-lg p-1">
-                                        <Button
-                                            variant={taskViewMode === 'list' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            onClick={() => setTaskViewMode('list')}
-                                            className="h-7 px-2 text-xs"
-                                            title="List View"
-                                        >
-                                            <List className="h-3 w-3 md:h-4 md:w-4" />
-                                            <span className="hidden xl:inline ml-1">List</span>
-                                        </Button>
-                                        <Button
-                                            variant={taskViewMode === 'calendar' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            onClick={() => setTaskViewMode('calendar')}
-                                            className="h-7 px-2 text-xs"
-                                            title="Calendar View"
-                                        >
-                                            <Calendar className="h-3 w-3 md:h-4 md:w-4" />
-                                            <span className="hidden xl:inline ml-1">Calendar</span>
-                                        </Button>
-                                        <Button
-                                            variant={taskViewMode === 'gantt' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            onClick={() => setTaskViewMode('gantt')}
-                                            className="h-7 px-2 text-xs"
-                                            title="Gantt View"
-                                        >
-                                            <Network className="h-3 w-3 md:h-4 md:w-4" />
-                                            <span className="hidden xl:inline ml-1">Gantt</span>
-                                        </Button>
-                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setTaskViewMode(taskViewMode === 'list' ? 'calendar' : 'list')}
+                                        className="text-xs"
+                                        title={taskViewMode === 'list' ? 'Switch to Calendar View' : 'Switch to List View'}
+                                    >
+                                        {taskViewMode === 'list' ? (
+                                            <>
+                                                <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                                                <span className="hidden lg:inline ml-1">Calendar</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <List className="h-3 w-3 md:h-4 md:w-4" />
+                                                <span className="hidden lg:inline ml-1">List</span>
+                                            </>
+                                        )}
+                                    </Button>
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -1342,60 +1328,7 @@ export default function HomePage() {
                                         )
                                     })()}
                                 </div>
-                            ) : taskViewMode === 'gantt' ? (
-                                /* Gantt View */
-                                <div className="h-full -mx-4 -my-4">
-                                    {(() => {
-                                        // Group tasks by project for Gantt chart
-                                        const projectsWithTasks: any[] = []
-                                        
-                                        // Get unique projects from tasks
-                                        const projectMap = new Map()
-                                        
-                                        filteredTasks.forEach(task => {
-                                            if (task.project && task.startDate && task.dueDate) {
-                                                if (!projectMap.has(task.project.id)) {
-                                                    projectMap.set(task.project.id, {
-                                                        id: task.project.id,
-                                                        name: task.project.name,
-                                                        code: task.project.code || task.project.id.substring(0, 6).toUpperCase(),
-                                                        status: task.project.status || 'IN_PROGRESS',
-                                                        ragStatus: task.project.ragStatus || 'GREEN',
-                                                        startDate: task.startDate,
-                                                        endDate: task.dueDate,
-                                                        progress: 0,
-                                                    })
-                                                }
-                                                
-                                                // Update project dates to encompass all tasks
-                                                const project = projectMap.get(task.project.id)
-                                                if (new Date(task.startDate) < new Date(project.startDate)) {
-                                                    project.startDate = task.startDate
-                                                }
-                                                if (new Date(task.dueDate) > new Date(project.endDate)) {
-                                                    project.endDate = task.dueDate
-                                                }
-                                            }
-                                        })
-                                        
-                                        const projects = Array.from(projectMap.values())
-                                        
-                                        return projects.length > 0 ? (
-                                            <GanttChart projects={projects} />
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                                                <Network className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                                                <p className="text-sm text-muted-foreground mb-2">
-                                                    No tasks with start and due dates to display in Gantt chart
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Add start dates and due dates to your tasks to see them here
-                                                </p>
-                                            </div>
-                                        )
-                                    })()}
-                                </div>
-                            ) : null}
+                            )}
                         </CardContent>
                     </Card>
                 )
@@ -1613,7 +1546,7 @@ export default function HomePage() {
                             </div>
                         </CardHeader>
                         <CardContent className="flex-1 pt-4">
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                                 <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/projects/new')}>
                                     <Plus className="h-5 w-5 shrink-0" />
                                     <span className="text-xs font-medium text-center">New Project</span>
@@ -1759,6 +1692,17 @@ export default function HomePage() {
             case 'canvas':
                 return <AdvancedCanvasWidget />
 
+            case 'ganttChart':
+                return (
+                    <div ref={(el) => { widgetRefs.current['ganttChart'] = el }} className="h-full">
+                        <GanttChartWidget
+                            fullscreenWidget={fullscreenWidget}
+                            widgetId="ganttChart"
+                            onToggleFullscreen={toggleFullscreen}
+                        />
+                    </div>
+                )
+
             default:
                 return null
         }
@@ -1897,6 +1841,12 @@ export default function HomePage() {
                                                 <>
                                                     <Network className="h-4 w-4" />
                                                     <span>Mind Map</span>
+                                                </>
+                                            )}
+                                            {widget.type === 'ganttChart' && (
+                                                <>
+                                                    <Network className="h-4 w-4" />
+                                                    <span>Gantt Chart</span>
                                                 </>
                                             )}
                                         </div>
