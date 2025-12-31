@@ -47,6 +47,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new Error('Invalid credentials')
         }
 
+        // Check if email is verified
+        console.log('🔍 Login check - email verification status:', {
+          email: user.email,
+          emailVerified: user.emailVerified,
+          isVerified: !!user.emailVerified,
+        })
+        
+        if (!user.emailVerified) {
+          console.warn('⚠️ Login blocked - email not verified for:', user.email)
+          throw new Error('EMAIL_NOT_VERIFIED')
+        }
+        
+        console.log('✅ Email verified, allowing login for:', user.email)
+
         // Update last login
         await prisma.user.update({
           where: { id: user.id },
@@ -59,6 +73,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: `${user.firstName} ${user.lastName}`,
           role: user.role,
           tenantId: user.tenantId,
+          emailVerified: user.emailVerified,
         }
       },
     }),

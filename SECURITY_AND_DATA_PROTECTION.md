@@ -23,7 +23,7 @@ This document explains the security features, data protection measures, and best
 
 > Even if someone gains database access, they CANNOT read passwords. Each password is hashed uniquely (with salt), making rainbow table attacks ineffective.
 
-#### Session Security
+#### x
 
 - ✅ **JWT Tokens**: Industry-standard JSON Web Tokens
 - ✅ **Signed Tokens**: Cryptographically signed to prevent tampering

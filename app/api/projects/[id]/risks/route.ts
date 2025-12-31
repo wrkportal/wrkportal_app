@@ -29,20 +29,10 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
-        // Fetch risks for this project
+        // Fetch risks for this project (tenant isolation already verified through project)
         const risks = await prisma.risk.findMany({
             where: {
                 projectId: projectId,
-                tenantId: session.user.tenantId
-            },
-            include: {
-                owner: {
-                    select: {
-                        firstName: true,
-                        lastName: true,
-                        email: true
-                    }
-                }
             },
             orderBy: {
                 createdAt: 'desc'

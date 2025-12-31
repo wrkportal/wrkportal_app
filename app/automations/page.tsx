@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -116,7 +116,7 @@ export default function AutomationsPage() {
         fetchAutomations()
     }, [])
 
-    // Automation Templates
+    // Automation Templates  
     const templates = [
         {
             id: 'task_auto_assign',
@@ -184,7 +184,7 @@ export default function AutomationsPage() {
             action: 'Send Notification',
             popular: false
         }
-    ]
+    ];
 
     const handleCreateAutomation = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -219,9 +219,9 @@ export default function AutomationsPage() {
             activeAutomations: stats.activeAutomations + 1
         })
 
-        setCreateDialogOpen(false)
-        alert('✅ Automation created successfully!')
-    }
+        setCreateDialogOpen(false);
+        alert('✅ Automation created successfully!');
+    };
 
     const handleEditAutomation = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -250,10 +250,10 @@ export default function AutomationsPage() {
             a.id === editingAutomation.id ? updatedAutomation : a
         ))
 
-        setEditDialogOpen(false)
-        setEditingAutomation(null)
-        alert('✅ Automation updated successfully!')
-    }
+        setEditDialogOpen(false);
+        setEditingAutomation(null);
+        alert('✅ Automation updated successfully!');
+    };
 
     const toggleAutomation = (id: string) => {
         const automation = automations.find(a => a.id === id)
@@ -271,8 +271,8 @@ export default function AutomationsPage() {
             activeAutomations: wasEnabled
                 ? stats.activeAutomations - 1
                 : stats.activeAutomations + 1
-        })
-    }
+        });
+    };
 
     const deleteAutomation = (id: string) => {
         if (confirm('Are you sure you want to delete this automation?')) {
@@ -289,73 +289,71 @@ export default function AutomationsPage() {
                 totalExecutions: stats.totalExecutions - (automation?.executions || 0)
             })
 
-            alert('✅ Automation deleted successfully!')
+            alert('✅ Automation deleted successfully!');
         }
-    }
+    };
 
     const duplicateAutomation = (automation: Automation) => {
         const duplicate: Automation = {
             ...automation,
             id: Date.now().toString(),
-            name: `${automation.name} (Copy)`,
+            name: automation.name + ' (Copy)',
             executions: 0,
             enabled: false
-        }
-        setAutomations([duplicate, ...automations])
+        };
+        setAutomations([duplicate, ...automations]);
 
         // Update stats
         setStats({
             ...stats,
             totalAutomations: stats.totalAutomations + 1
-        })
+        });
 
-        alert('✅ Automation duplicated successfully!')
-    }
+        alert('✅ Automation duplicated successfully!');
+    };
 
     const applyTemplate = (templateId: string) => {
-        setSelectedTemplate(templateId)
-        setCreateDialogOpen(true)
-    }
+        setSelectedTemplate(templateId);
+        setCreateDialogOpen(true);
+    };
 
     const openEditDialog = (automation: Automation) => {
-        setEditingAutomation(automation)
-        setEditDialogOpen(true)
-    }
+        setEditingAutomation(automation);
+        setEditDialogOpen(true);
+    };
 
+    // Helper functions
     const getCategoryIcon = (category: string) => {
-        switch (category) {
-            case 'tasks': return FolderKanban
-            case 'financial': return DollarSign
-            case 'okrs': return Target
-            case 'projects': return FolderKanban
-            default: return Workflow
-        }
-    }
+        if (category === 'tasks') return FolderKanban;
+        if (category === 'financial') return DollarSign;
+        if (category === 'okrs') return Target;
+        if (category === 'projects') return FolderKanban;
+        return Workflow;
+    };
 
-    const getCategoryColor = (category: string) => {
-        switch (category) {
-            case 'tasks': return 'text-blue-600 bg-blue-100'
-            case 'financial': return 'text-green-600 bg-green-100'
-            case 'okrs': return 'text-purple-600 bg-purple-100'
-            case 'projects': return 'text-orange-600 bg-orange-100'
-            default: return 'text-gray-600 bg-gray-100'
-        }
-    }
+    const getCategoryColor = (category: string): string => {
+        if (category === 'tasks') return 'text-blue-600 bg-blue-100';
+        if (category === 'financial') return 'text-green-600 bg-green-100';
+        if (category === 'okrs') return 'text-purple-600 bg-purple-100';
+        if (category === 'projects') return 'text-orange-600 bg-orange-100';
+        return 'text-gray-600 bg-gray-100';
+    };
 
+    // Main return with conditional loading
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
-        )
+        );
     }
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">
+            {/* Header - Sticky */}
+            <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-4 mb-4">
+                <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                         Automations & Workflows
                     </h1>
                     <p className="text-sm text-muted-foreground mt-0.5">
@@ -1121,5 +1119,5 @@ export default function AutomationsPage() {
                 </DialogContent>
             </Dialog>
         </div>
-    )
+    );
 }

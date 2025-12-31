@@ -27,6 +27,11 @@ export default function SignupPage() {
     })
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const [showVerificationMessage, setShowVerificationMessage] = useState(false)
+    const [userEmail, setUserEmail] = useState('')
+    const [resendLoading, setResendLoading] = useState(false)
+    const [resendSuccess, setResendSuccess] = useState(false)
+    const [resendError, setResendError] = useState('')
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -65,18 +70,14 @@ export default function SignupPage() {
                 throw new Error(data.error || 'Failed to create account')
             }
 
-            // Auto sign in after successful signup
-            const result = await signIn('credentials', {
-                email: formData.email,
-                password: formData.password,
-                redirect: false,
-            })
-
-            if (result?.error) {
-                setError('Account created but failed to sign in. Please try logging in.')
-            } else {
-                router.push('/my-work')
-                router.refresh()
+            // Show verification message instead of auto-signing in
+            setUserEmail(formData.email)
+            setShowVerificationMessage(true)
+            setLoading(false)
+            
+            // Store emailSent status for display
+            if (data.emailSent === false) {
+                setError('Account created, but verification email could not be sent. Please use the "Resend Verification Email" option on the login page.')
             }
         } catch (error: any) {
             setError(error.message || 'An error occurred. Please try again.')
@@ -89,12 +90,49 @@ export default function SignupPage() {
         setLoading(true)
         try {
             await signIn('google', { 
-                callbackUrl: '/my-work',
+                callbackUrl: '/',
             })
         } catch (error) {
             console.error('Google Sign-In error:', error)
             setError('Failed to sign in with Google. Please try again.')
             setLoading(false)
+        }
+    }
+
+    const handleResendVerification = async () => {
+        if (!userEmail) {
+            setResendError('Email address is required')
+            return
+        }
+
+        setResendLoading(true)
+        setResendError('')
+        setResendSuccess(false)
+
+        try {
+            const response = await fetch('/api/auth/resend-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: userEmail }),
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                setResendSuccess(true)
+                setResendError('')
+                // Clear success message after 5 seconds
+                setTimeout(() => {
+                    setResendSuccess(false)
+                }, 5000)
+            } else {
+                setResendError(data.error || 'Failed to resend verification email')
+            }
+        } catch (error: any) {
+            setResendError('An error occurred. Please try again.')
+            console.error('Resend verification error:', error)
+        } finally {
+            setResendLoading(false)
         }
     }
 
@@ -123,13 +161,13 @@ export default function SignupPage() {
         <div className="min-h-screen flex relative bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
             {/* Form Container - Left Side */}
             <div className="relative z-10 w-full lg:w-1/2 min-h-screen flex items-center justify-center p-3 sm:p-4 lg:p-8 py-6 sm:py-8">
-                <div className="w-full max-w-[260px] sm:max-w-[300px] md:max-w-[340px]">
+                <div className="w-full max-w-[400px] sm:max-w-[450px] md:max-w-[500px] lg:max-w-[520px]">
                     {/* Logo/Brand */}
                     <div className="text-center mb-3 sm:mb-4">
                         <div className="flex items-center justify-center gap-2 mb-1.5">
                             <Image 
                                 src="/logo.png" 
-                                alt="ManagerBook Logo" 
+                                alt="wrkportal.com Logo" 
                                 width={110} 
                                 height={33}
                                 className="h-7 w-auto object-contain"
@@ -176,7 +214,96 @@ export default function SignupPage() {
                             </div>
                         )}
 
+                        {/* Verification Message */}
+                        {showVerificationMessage && (
+                            <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="flex items-start gap-3">
+                                    <Mail className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1 space-y-2">
+                                        <h3 className="text-sm font-semibold text-blue-900">
+                                            {error ? 'Account Created - Email Issue' : 'Check Your Email'}
+                                        </h3>
+                                        {error ? (
+                                            <>
+                                                <p className="text-xs sm:text-sm text-blue-800">
+                                                    Your account <strong>{userEmail}</strong> has been created successfully!
+                                                </p>
+                                                <p className="text-xs sm:text-sm text-orange-800 bg-orange-50 border border-orange-200 p-2 rounded">
+                                                    ⚠️ However, the verification email could not be sent. This may be due to email configuration issues.
+                                                </p>
+                                                <p className="text-xs text-blue-700">
+                                                    Please go to the login page and use the "Resend Verification Email" button after attempting to sign in.
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p className="text-xs sm:text-sm text-blue-800">
+                                                    We've sent a verification link to <strong>{userEmail}</strong>. 
+                                                    Please click the link in the email to verify your account.
+                                                </p>
+                                                <p className="text-xs text-blue-700">
+                                                    Didn't receive the email? Check your spam folder or click "Resend Link" below.
+                                                </p>
+                                                
+                                                {/* Resend success message */}
+                                                {resendSuccess && (
+                                                    <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 p-2 rounded">
+                                                        <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                                                        <span>Verification email sent successfully! Please check your inbox.</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Resend error message */}
+                                                {resendError && (
+                                                    <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 border border-red-200 p-2 rounded">
+                                                        <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                                        <span>{resendError}</span>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    {!error && (
+                                        <Button
+                                            type="button"
+                                            onClick={handleResendVerification}
+                                            disabled={resendLoading}
+                                            className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm h-8 sm:h-9 disabled:opacity-50"
+                                        >
+                                            {resendLoading ? (
+                                                <>
+                                                    <Mail className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-pulse" />
+                                                    Sending...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Mail className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                                    Resend Link
+                                                </>
+                                            )}
+                                        </Button>
+                                    )}
+                                    <Button
+                                        type="button"
+                                        onClick={() => router.push('/login')}
+                                        variant="outline"
+                                        className="w-full border-blue-300 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm h-8 sm:h-9"
+                                    >
+                                        Go to Login
+                                    </Button>
+                                    {error && (
+                                        <p className="text-xs text-center text-blue-700">
+                                            On the login page, enter your email and password, then click "Resend Verification Email" if needed.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Signup Form */}
+                        {!showVerificationMessage && (
                         <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="space-y-1.5">
@@ -368,8 +495,10 @@ export default function SignupPage() {
                                 {loading ? 'Creating account...' : 'Create account'}
                             </Button>
                         </form>
+                        )}
 
                         {/* Sign In Link */}
+                        {!showVerificationMessage && (
                         <div className="text-center text-xs sm:text-sm">
                             <span className="text-slate-600">
                                 Already have an account?{' '}
@@ -381,6 +510,7 @@ export default function SignupPage() {
                                 Sign in
                             </Link>
                         </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -408,7 +538,7 @@ export default function SignupPage() {
                     <div className="space-y-4">
                         <h1 className="text-4xl font-bold leading-tight">
                             Start Your Journey <br />
-                            with <span className="text-purple-200">ManagerBook</span>
+                            with <span className="text-purple-200">wrkportal.com</span>
                         </h1>
                         <p className="text-lg text-purple-100">
                             Transform how your team works together

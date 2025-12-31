@@ -263,29 +263,22 @@ export default function TutorialsAdminPage() {
 
   return (
     <div className="p-6 md:p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-muted rounded-lg">
-              <GraduationCap className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Tutorial Management
-              </h1>
-              <p className="text-muted-foreground">Create and manage academy tutorials</p>
-            </div>
+      {/* Header - Sticky */}
+      <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Tutorial Management
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Create and manage academy tutorials</p>
           </div>
-        </div>
-
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingTutorial(null)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Tutorial
-            </Button>
-          </DialogTrigger>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditingTutorial(null)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Tutorial
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -503,7 +496,8 @@ export default function TutorialsAdminPage() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Stats */}

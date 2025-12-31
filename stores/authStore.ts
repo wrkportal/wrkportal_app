@@ -157,12 +157,25 @@ export const useAuthStore = create<AuthState>()(
   )
 )
 
-// Fetch authenticated user from API
-export async function fetchAuthenticatedUser(): Promise<User | null> {
+// Fetch authenticated user from API with cache busting
+export async function fetchAuthenticatedUser(forceRefresh = false): Promise<User | null> {
   try {
-    const response = await fetch('/api/user/me')
+    // Add cache busting parameter to ensure fresh data
+    const cacheBuster = forceRefresh ? `?t=${Date.now()}` : ''
+    const response = await fetch(`/api/user/me${cacheBuster}`, {
+      cache: 'no-store', // Prevent caching
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    })
     if (response.ok) {
       const data = await response.json()
+      console.log('[AuthStore] Fetched user from API:', {
+        email: data.user?.email,
+        primaryWorkflowType: data.user?.primaryWorkflowType,
+        landingPage: data.user?.landingPage
+      })
       return data.user
     }
     return null

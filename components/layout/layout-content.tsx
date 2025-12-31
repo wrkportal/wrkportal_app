@@ -6,6 +6,7 @@ import { useUIStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
 import { Header } from './header'
 import { Sidebar } from './sidebar'
+import { AIDataQueryWidget } from '@/components/ai/ai-data-query-widget'
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -14,12 +15,33 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
     const user = useAuthStore((state) => state.user)
 
     // Check if current page is an auth page or public marketing page
-    const isAuthPage = pathname?.startsWith('/login') ||
+    const isAuthPage =
+        pathname?.startsWith('/login') ||
         pathname?.startsWith('/signup') ||
         pathname?.startsWith('/forgot-password') ||
         pathname?.startsWith('/verify-email') ||
         pathname?.startsWith('/reset-password') ||
         pathname?.startsWith('/landing')
+
+    // Check if current page is a dashboard page (full-width layout)
+    const isDashboardPage =
+        pathname?.startsWith('/finance-dashboard') ||
+        pathname?.startsWith('/workflows/finance') ||
+        pathname?.startsWith('/product-management') ||
+        pathname?.startsWith('/projects') ||
+        pathname?.startsWith('/roadmap') ||
+        pathname?.startsWith('/releases') ||
+        pathname?.startsWith('/sprints') ||
+        pathname?.startsWith('/backlog') ||
+        pathname?.startsWith('/dependencies') ||
+        pathname?.startsWith('/teams') ||
+        pathname?.startsWith('/operations-dashboard') ||
+        pathname?.startsWith('/it-dashboard') ||
+        pathname?.startsWith('/recruitment-dashboard') ||
+        pathname?.startsWith('/sales-dashboard') ||
+        pathname?.startsWith('/schedule') ||
+        pathname?.startsWith('/reporting-studio') ||
+        pathname?.startsWith('/reporting-engine')
 
     // Redirect logged-in users from root path to /my-work
     useEffect(() => {
@@ -33,25 +55,47 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         return <>{children}</>
     }
 
-    // For regular pages, render with header/sidebar
+    // ================= DASHBOARD PAGES =================
+    if (isDashboardPage) {
+        return (
+            <div className="flex min-h-screen flex-col">
+                <Header />
+                <Sidebar />
+
+                <main
+                    className={`transition-all duration-300 pt-4 sm:pt-6 lg:pt-8 ${sidebarCollapsed ? 'md:pl-14' : 'md:pl-52'
+                        }`}
+                >
+                    {children}
+                </main>
+                {user && <AIDataQueryWidget />}
+            </div>
+        )
+    }
+
+    // ================= REGULAR PAGES =================
     return (
         <div className="flex min-h-screen flex-col">
             <Header />
+
             <div className="flex flex-1">
                 <Sidebar />
-                <main
-                    className={`flex-1 overflow-y-auto transition-all duration-300 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
+
+                <div
+                    className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'md:pl-14' : 'md:pl-52'
                         }`}
-                    style={{ height: 'calc(100vh - 4rem)', marginTop: '-3rem' }}
+                    style={{ height: 'calc(100vh - 4rem)' }}
                 >
-                    <div className="h-full p-6 md:p-12">
-                        <div className="max-w-7xl mx-auto h-full">
-                            {children}
+                    <main className="h-full overflow-y-auto">
+                        <div className="h-full p-4 sm:p-6 md:p-8 lg:p-12 pt-6 sm:pt-8 md:pt-10 lg:pt-12">
+                            <div className="mx-auto h-full max-w-7xl">
+                                {children}
+                            </div>
                         </div>
-                    </div>
-                </main>
+                    </main>
+                </div>
             </div>
+            {user && <AIDataQueryWidget />}
         </div>
     )
 }
-

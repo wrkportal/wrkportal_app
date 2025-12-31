@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -7,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { StatusBadge } from "@/components/common/status-badge"
-import { mockPrograms, mockProjects, mockUsers, mockTasks } from "@/lib/mock-data"
 import { formatDate, formatCurrency, cn } from "@/lib/utils"
 import {
     ArrowLeft,
@@ -20,18 +20,93 @@ import {
     AlertTriangle,
     Clock,
     Briefcase,
-    Target
+    Target,
+    Loader2
 } from "lucide-react"
 import { ProjectStatus, RAGStatus } from "@/types"
 
 export default function ProgramDetailPage({ params }: { params: { id: string } }) {
     const router = useRouter()
-    const program = mockPrograms.find(p => p.id === params.id)
+    const [program, setProgram] = useState<any>(null)
+    const [programProjects, setProgramProjects] = useState<any[]>([])
+    const [programTasks, setProgramTasks] = useState<any[]>([])
+    const [users, setUsers] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
-    if (!program) {
+    useEffect(() => {
+        const fetchProgramData = async () => {
+            try {
+                setLoading(true)
+                setError(null)
+                
+                // Fetch program details
+                const programRes = await fetch(`/api/programs`)
+                if (programRes.ok) {
+                    const programData = await programRes.json()
+                    const foundProgram = programData.programs.find((p: any) => p.id === params.id)
+                    if (foundProgram) {
+                        setProgram(foundProgram)
+                        
+                        // Fetch projects in this program
+                        const projectsRes = await fetch('/api/projects')
+                        if (projectsRes.ok) {
+                            const projectsData = await projectsRes.json()
+                            const filteredProjects = (projectsData.projects || []).filter((p: any) => p.programId === foundProgram.id)
+                            setProgramProjects(filteredProjects)
+                            
+                            // Fetch tasks for all projects
+                            const projectIds = filteredProjects.map((p: any) => p.id)
+                            if (projectIds.length > 0) {
+                                const tasksPromises = projectIds.map((projectId: string) => 
+                                    fetch(`/api/tasks?projectId=${projectId}`).then(res => res.json())
+                                )
+                                const tasksResults = await Promise.all(tasksPromises)
+                                const allTasks = tasksResults.flatMap((result: any) => result.tasks || [])
+                                setProgramTasks(allTasks)
+                            }
+                        }
+                        
+                        // Fetch users for manager lookups
+                        const usersRes = await fetch('/api/users/onboarded')
+                        if (usersRes.ok) {
+                            const usersData = await usersRes.json()
+                            setUsers(usersData.users || [])
+                        }
+                    } else {
+                        setError('Program not found')
+                    }
+                } else {
+                    setError('Failed to load program')
+                }
+            } catch (err) {
+                console.error('Error fetching program data:', err)
+                setError('Failed to load program')
+            } finally {
+                setLoading(false)
+            }
+        }
+        
+        if (params.id) {
+            fetchProgramData()
+        }
+    }, [params.id])
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
+                    <p className="text-muted-foreground">Loading program...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (error || !program) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <h2 className="text-2xl font-bold mb-2">Program Not Found</h2>
+                <h2 className="text-2xl font-bold mb-2">{error || 'Program Not Found'}</h2>
                 <p className="text-muted-foreground mb-4">The program you&apos;re looking for doesn&apos;t exist.</p>
                 <Button onClick={() => router.push('/programs')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -41,37 +116,35 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
         )
     }
 
-    // Get all projects in this program
-    const programProjects = mockProjects.filter(p => p.programId === program.id)
-    const owner = mockUsers.find(u => u.id === program.ownerId)
+    const owner = program.owner
 
     // Calculate aggregated metrics
-    const totalBudget = programProjects.reduce((sum, p) => sum + (Number((p.budget as any)?.total) || 0), Number(program.budget) || 0)
-    const totalSpent = programProjects.reduce((sum, p) => sum + (Number((p.budget as any)?.spent) || 0), 0)
+    const totalBudget = programProjects.reduce((sum: number, p: any) => sum + (Number(p.budget) || 0), Number(program.budget) || 0)
+    const totalSpent = programProjects.reduce((sum: number, p: any) => {
+        // Budget spent would come from budget tracking - for now use 0 or calculate from actuals
+        return sum + 0 // TODO: Add budget tracking
+    }, 0)
     const budgetUtilization = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0
 
-    const completedProjects = programProjects.filter(p => p.status === ProjectStatus.COMPLETED).length
-    const atRiskProjects = programProjects.filter(p => p.status === ProjectStatus.AT_RISK).length
-    const activeProjects = programProjects.filter(p =>
+    const completedProjects = programProjects.filter((p: any) => p.status === ProjectStatus.COMPLETED).length
+    const atRiskProjects = programProjects.filter((p: any) => p.status === ProjectStatus.AT_RISK).length
+    const activeProjects = programProjects.filter((p: any) =>
         p.status === ProjectStatus.IN_PROGRESS || p.status === ProjectStatus.PLANNING
     ).length
 
     // Calculate overall progress (average of all project progress)
     const overallProgress = programProjects.length > 0
-        ? programProjects.reduce((sum, p) => sum + (p.progress || 0), 0) / programProjects.length
+        ? programProjects.reduce((sum: number, p: any) => sum + (p.progress || 0), 0) / programProjects.length
         : 0
 
     // Get all team members across projects
     const allTeamMembers = new Set<string>()
-    programProjects.forEach(project => {
-        project.teamMembers?.forEach(member => allTeamMembers.add(member.userId))
+    programProjects.forEach((project: any) => {
+        if (project.managerId) allTeamMembers.add(project.managerId)
+        project.teamMembers?.forEach((member: any) => allTeamMembers.add(member.userId))
     })
 
-    // Get all tasks across projects
-    const programTasks = mockTasks.filter(task =>
-        programProjects.some(project => project.id === task.projectId)
-    )
-    const completedTasks = programTasks.filter(t => t.status === 'DONE').length
+    const completedTasks = programTasks.filter((t: any) => t.status === 'DONE').length
     const totalTasks = programTasks.length
 
     const getStatusColor = (status: ProjectStatus) => {
@@ -211,10 +284,7 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground mb-1">Status</p>
-                            <div className="flex items-center gap-2">
-                                <div className={cn("w-2 h-2 rounded-full", getRAGColor(program.status))} />
-                                <p className="font-medium">{program.status}</p>
-                            </div>
+                            <StatusBadge status={program.status} />
                         </div>
                     </div>
 
@@ -262,10 +332,10 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {programProjects.map((project) => {
-                                const projectManager = mockUsers.find(u => u.id === project.managerId)
-                                const projectTasks = mockTasks.filter(t => t.projectId === project.id)
-                                const projectCompletedTasks = projectTasks.filter(t => t.status === 'DONE').length
+                            {programProjects.map((project: any) => {
+                                const projectManager = users.find((u: any) => u.id === project.managerId)
+                                const projectTasks = programTasks.filter((t: any) => t.projectId === project.id)
+                                const projectCompletedTasks = projectTasks.filter((t: any) => t.status === 'DONE').length
 
                                 return (
                                     <div
@@ -308,7 +378,7 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
                                             <div>
                                                 <p className="text-xs text-muted-foreground mb-1">Budget</p>
                                                 <p className="text-sm font-medium">
-                                                    {formatCurrency(Number((project.budget as any)?.spent) || 0)} / {formatCurrency(Number((project.budget as any)?.total) || 0)}
+                                                    {formatCurrency(0)} / {formatCurrency(Number(project.budget) || 0)}
                                                 </p>
                                             </div>
                                             <div>
@@ -368,7 +438,7 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
                             <DollarSign className="h-8 w-8 text-purple-500" />
                         </div>
 
-                        {programProjects.map((project) => (
+                        {programProjects.map((project: any) => (
                             <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg">
                                 <div className="flex-1">
                                     <p className="font-medium text-sm">{project.name}</p>
@@ -376,20 +446,14 @@ export default function ProgramDetailPage({ params }: { params: { id: string } }
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm font-semibold">
-                                        {formatCurrency(Number((project.budget as any)?.spent) || 0)}
+                                        {formatCurrency(0)}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        of {formatCurrency(Number((project.budget as any)?.total) || 0)}
+                                        of {formatCurrency(Number(project.budget) || 0)}
                                     </p>
                                 </div>
                                 <div className="ml-4 w-24">
-                                    <Progress
-                                        value={
-                                            (Number((project.budget as any)?.total) || 0) > 0
-                                                ? ((Number((project.budget as any)?.spent) || 0) / (Number((project.budget as any)?.total) || 0)) * 100
-                                                : 0
-                                        }
-                                    />
+                                    <Progress value={0} />
                                 </div>
                             </div>
                         ))}

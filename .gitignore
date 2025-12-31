@@ -36,3 +36,12 @@ next-env.d.ts
 
 # user uploads
 /uploads/
+
+# build artifacts
+/dist/
+
+# downloads (large executables)
+/public/downloads/*.exe
+/public/downloads/*.dmg
+/public/downloads/*.deb
+/public/downloads/*.rpm

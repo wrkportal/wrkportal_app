@@ -1,24 +1,53 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { mockTimesheets, mockProjects } from "@/lib/mock-data"
 import { useAuthStore } from "@/stores/authStore"
 import { formatDate } from "@/lib/utils"
-import { Plus, Clock, Check, X } from "lucide-react"
+import { Plus, Clock, Check, X, Loader2 } from "lucide-react"
 import { TimesheetDialog } from "@/components/dialogs/timesheet-dialog"
 
 export default function TimesheetsPage() {
     const user = useAuthStore((state) => state.user)
     const [currentWeek] = useState(new Date())
     const [newTimesheetOpen, setNewTimesheetOpen] = useState(false)
+    const [timesheets, setTimesheets] = useState<any[]>([])
+    const [projects, setProjects] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!user) return
+            try {
+                setLoading(true)
+                // Fetch projects for reference
+                const projectsRes = await fetch('/api/projects')
+                if (projectsRes.ok) {
+                    const projectsData = await projectsRes.json()
+                    setProjects(projectsData.projects || [])
+                }
+                // TODO: Fetch timesheets from API when available
+                // const timesheetsRes = await fetch(`/api/timesheets?userId=${user.id}`)
+                // if (timesheetsRes.ok) {
+                //     const timesheetsData = await timesheetsRes.json()
+                //     setTimesheets(timesheetsData.timesheets || [])
+                // }
+                setTimesheets([]) // Empty for now until API is implemented
+            } catch (error) {
+                console.error('Error fetching timesheets data:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchData()
+    }, [user])
 
     if (!user) return null
 
-    const myTimesheets = mockTimesheets.filter(ts => ts.userId === user.id)
+    const myTimesheets = timesheets
 
     const getStatusBadge = (status: string) => {
         const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -31,7 +60,7 @@ export default function TimesheetsPage() {
     }
 
     const getProject = (projectId: string) => {
-        return mockProjects.find(p => p.id === projectId)
+        return projects.find((p: any) => p.id === projectId)
     }
 
     return (
@@ -220,30 +249,41 @@ export default function TimesheetsPage() {
                     <CardDescription>Your submitted timesheets</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-3">
-                        {myTimesheets.map((timesheet) => (
-                            <div key={timesheet.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <p className="font-medium">
-                                            Week of {formatDate(timesheet.weekStartDate)}
+                    {loading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : myTimesheets.length === 0 ? (
+                        <div className="text-center py-8">
+                            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <p className="text-muted-foreground">No timesheets submitted yet</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {myTimesheets.map((timesheet: any) => (
+                                <div key={timesheet.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-medium">
+                                                Week of {formatDate(timesheet.weekStartDate)}
+                                            </p>
+                                            {getStatusBadge(timesheet.status)}
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">
+                                            {timesheet.totalHours}h total •
+                                            {timesheet.entries?.filter((e: any) => e.billable).reduce((sum: number, e: any) => sum + e.hours, 0) || 0}h billable
                                         </p>
-                                        {getStatusBadge(timesheet.status)}
+                                        {timesheet.submittedAt && (
+                                            <p className="text-xs text-muted-foreground">
+                                                Submitted {formatDate(timesheet.submittedAt)}
+                                            </p>
+                                        )}
                                     </div>
-                                    <p className="text-sm text-muted-foreground">
-                                        {timesheet.totalHours}h total •
-                                        {timesheet.entries.filter(e => e.billable).reduce((sum, e) => sum + e.hours, 0)}h billable
-                                    </p>
-                                    {timesheet.submittedAt && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Submitted {formatDate(timesheet.submittedAt)}
-                                        </p>
-                                    )}
+                                    <Button variant="outline" size="sm">View Details</Button>
                                 </div>
-                                <Button variant="outline" size="sm">View Details</Button>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

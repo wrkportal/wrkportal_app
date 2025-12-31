@@ -140,8 +140,8 @@ export default function ProjectDetailPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
                     <Button
                         variant="ghost"
@@ -291,6 +291,7 @@ export default function ProjectDetailPage() {
                     <ClosureTab project={project} />
                 </TabsContent>
             </Tabs>
+            </div>
         </div>
     )
 }

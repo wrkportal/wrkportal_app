@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, CheckCircle2, XCircle, Shield, Building2, Key, FileText, AlertCircle, Copy, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { ContactSupportDialog } from '@/components/contact-support-dialog'
 
 interface SSOConfig {
     tenantId: string
@@ -33,6 +34,7 @@ export default function SSOSettingsPage() {
     const [config, setConfig] = useState<SSOConfig | null>(null)
     const [error, setError] = useState('')
     const [success, setSuccess] = useState('')
+    const [showContactDialog, setShowContactDialog] = useState(false)
 
     // Form state
     const [ssoEnabled, setSsoEnabled] = useState(false)
@@ -237,12 +239,16 @@ export default function SSOSettingsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Single Sign-On (SSO) Settings</h1>
-                <p className="text-muted-foreground mt-2">
-                    Configure SSO to allow your users to log in with your organization&apos;s identity provider
-                </p>
+            {/* Header - Sticky */}
+            <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-4 mb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Single Sign-On (SSO) Settings</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                            Configure SSO to allow your users to log in with your organization&apos;s identity provider
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Status Banner */}
@@ -641,13 +647,17 @@ export default function SSOSettingsPage() {
                             </a>
                         </li>
                         <li>
-                            <a href="#" className="text-purple-600 hover:underline">
+                            <button
+                                onClick={() => setShowContactDialog(true)}
+                                className="text-purple-600 hover:underline cursor-pointer"
+                            >
                                 Contact Support
-                            </a>
+                            </button>
                         </li>
                     </ul>
                 </CardContent>
             </Card>
+            <ContactSupportDialog open={showContactDialog} onOpenChange={setShowContactDialog} />
         </div>
     )
 }

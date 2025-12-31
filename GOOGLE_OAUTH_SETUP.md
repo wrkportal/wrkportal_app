@@ -24,12 +24,18 @@ This guide will help you set up Google Sign-In for your Project Management appli
 
 1. In the left sidebar, go to **"APIs & Services"** → **"OAuth consent screen"**
 2. Select **"External"** (unless you have a Google Workspace account)
-3. Click **"Create"**
+3. Click **"Create"** (or **"Edit App"** if already created)
 4. Fill in the required fields:
-   - **App name**: Your app name (e.g., "Project Management")
+   - **App name**: `wrkportal.com` or `wrkportal` (This is what users will see when signing in with Google)
    - **User support email**: Your email
    - **Developer contact information**: Your email
+   - **App logo** (optional): Upload your logo if you have one
+   - **Application home page**: Your website URL (e.g., `https://www.wrkportal.com`)
+   - **Privacy policy link**: Your privacy policy URL
+   - **Terms of service link**: Your terms of service URL
 5. Click **"Save and Continue"**
+
+**Important:** The **App name** field is what appears when users see "Sign in to [App name]" on Google's OAuth screen. Make sure it says "wrkportal.com" or "wrkportal" instead of "projectmanagement".
 6. On the **Scopes** page, click **"Add or Remove Scopes"**
 7. Add these scopes:
    - `userinfo.email`

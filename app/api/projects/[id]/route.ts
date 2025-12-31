@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { WorkflowType, MethodologyType } from '@/types/index'
 
 const updateProjectSchema = z.object({
   name: z.string().min(1).optional(),
@@ -13,6 +14,8 @@ const updateProjectSchema = z.object({
   status: z
     .enum(['PLANNED', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED'])
     .optional(),
+  workflowType: z.nativeEnum(WorkflowType).nullable().optional(),
+  methodologyType: z.nativeEnum(MethodologyType).nullable().optional(),
 })
 
 // GET - Fetch single project by ID
@@ -167,6 +170,14 @@ export async function PATCH(
 
     if (validatedData.status !== undefined) {
       updateData.status = validatedData.status
+    }
+
+    if (validatedData.workflowType !== undefined) {
+      updateData.workflowType = validatedData.workflowType
+    }
+
+    if (validatedData.methodologyType !== undefined) {
+      updateData.methodologyType = validatedData.methodologyType
     }
 
     // Update the project

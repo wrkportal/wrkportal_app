@@ -2,6 +2,258 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Excel-like DataGrid Styles */
+.fill-grid {
+  width: 100%;
+  height: 100%;
+}
+
+.rdg-light {
+  --rdg-border-color: hsl(var(--border));
+  --rdg-header-background-color: hsl(var(--muted));
+  --rdg-row-hover-background-color: hsl(var(--muted) / 0.5);
+  --rdg-selection-color: hsl(var(--primary) / 0.2);
+  --rdg-font-size: 0.875rem;
+}
+
+.rdg-cell {
+  padding: 0.5rem;
+  border-right: 1px solid var(--rdg-border-color);
+  border-bottom: 1px solid var(--rdg-border-color);
+}
+
+.rdg-header-row {
+  background-color: var(--rdg-header-background-color);
+  font-weight: 600;
+}
+
+.rdg-row:hover {
+  background-color: var(--rdg-row-hover-background-color);
+}
+
+.rdg-cell[aria-selected="true"] {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: -2px;
+}
+
+/* Project Dashboard Grid Layout Styles */
+.project-dashboard-grid .react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+
+.project-dashboard-grid .react-grid-item.cssTransforms {
+  transition-property: transform, width, height;
+}
+
+.project-dashboard-grid .react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+}
+
+.project-dashboard-grid .react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+.project-dashboard-grid .react-grid-item.react-grid-placeholder {
+  background: rgba(139, 92, 246, 0.2);
+  opacity: 0.2;
+  transition-duration: 100ms;
+  z-index: 2;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
+.project-dashboard-grid .grid-item {
+  position: relative;
+  border-radius: 0.5rem;
+}
+
+/* Sales Dashboard Grid Layout Styles */
+.sales-dashboard-grid .react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+
+.sales-dashboard-grid .react-grid-item.cssTransforms {
+  transition-property: transform, width, height;
+}
+
+.sales-dashboard-grid .react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+}
+
+.sales-dashboard-grid .react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+.sales-dashboard-grid .react-grid-item.react-grid-placeholder {
+  background: rgba(59, 130, 246, 0.2);
+  opacity: 0.2;
+  transition-duration: 100ms;
+  z-index: 2;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
+.recruitment-dashboard-grid .react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+
+.recruitment-dashboard-grid .react-grid-item.cssTransforms {
+  transition-property: transform, width, height;
+}
+
+.recruitment-dashboard-grid .react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+}
+
+.recruitment-dashboard-grid .react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+.recruitment-dashboard-grid .react-grid-item.react-grid-placeholder {
+  background: rgba(168, 85, 247, 0.2);
+  opacity: 0.2;
+  transition-duration: 100ms;
+  z-index: 2;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
+.operations-dashboard-grid {
+  position: relative;
+  width: 100%;
+}
+
+.operations-dashboard-grid .react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+
+.operations-dashboard-grid .react-grid-item.cssTransforms {
+  transition-property: transform, width, height;
+}
+
+.operations-dashboard-grid .react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+}
+
+.operations-dashboard-grid .react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+.operations-dashboard-grid .react-grid-item.react-grid-placeholder {
+  background: rgba(59, 130, 246, 0.2);
+  opacity: 0.2;
+  transition-duration: 100ms;
+  z-index: 2;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
+/* IT Dashboard Grid Layout Styles */
+.it-dashboard-grid {
+  position: relative;
+  width: 100%;
+}
+
+.it-dashboard-grid .react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+
+.it-dashboard-grid .react-grid-item.cssTransforms {
+  transition-property: transform, width, height;
+}
+
+.it-dashboard-grid .react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+}
+
+.it-dashboard-grid .react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+.it-dashboard-grid .react-grid-item.react-grid-placeholder {
+  background: rgba(147, 51, 234, 0.2);
+  opacity: 0.2;
+  transition-duration: 100ms;
+  z-index: 2;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
 /* Cursor.com inspired color system with proper hierarchy */
 @layer base {
   :root {
@@ -383,6 +635,66 @@ select {
   animation: skeleton-loading 1.5s ease-in-out infinite;
 }
 
+/* Landing page specific animations */
+@keyframes slide-down {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
+  50% { box-shadow: 0 0 60px rgba(168, 85, 247, 0.8); }
+}
+
+@keyframes scale-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes float-up {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-10px) rotate(1deg); }
+  50% { transform: translateY(-5px) rotate(0deg); }
+  75% { transform: translateY(-15px) rotate(-1deg); }
+}
+
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes grid-move {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+.animate-slide-down { 
+  animation: slide-down 3s linear infinite; 
+}
+
+.animate-glow-pulse { 
+  animation: glow-pulse 2s ease-in-out infinite; 
+}
+
+.animate-gradient-shift { 
+  animation: gradient-shift 3s ease infinite;
+  background-size: 200% 200%;
+}
+
+.animate-scale-pulse { 
+  animation: scale-pulse 2s ease-in-out infinite; 
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
 /* Tooltip improvements */
 .tooltip {
   @apply text-xs bg-popover text-popover-foreground px-2 py-1 rounded shadow-lg border border-border;
@@ -451,4 +763,85 @@ select {
 
 .ai-assistant-grid .react-grid-item:hover .react-resizable-handle {
   @apply opacity-100;
+}
+
+/* My Work / Home Grid Styles */
+.home-grid .react-grid-item {
+  transition: all 200ms ease;
+}
+
+.home-grid .react-grid-item.react-grid-placeholder {
+  background: rgb(59 130 246 / 0.2);
+  border: 2px dashed rgb(59 130 246);
+  border-radius: 0.5rem;
+}
+
+.home-grid .react-resizable-handle {
+  background-image: none !important;
+  opacity: 1 !important;
+  z-index: 10;
+}
+
+.home-grid .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 12px;
+  height: 12px;
+  border-right: 3px solid rgb(59 130 246);
+  border-bottom: 3px solid rgb(59 130 246);
+  border-radius: 0 0 4px 0;
+}
+
+.home-grid .react-grid-item:hover .react-resizable-handle::after {
+  border-right-color: rgb(37 99 235);
+  border-bottom-color: rgb(37 99 235);
+}
+
+/* AG Grid Styles - Excel-like Spreadsheet */
+.ag-theme-alpine {
+  --ag-font-family: inherit;
+  --ag-font-size: 0.875rem;
+  --ag-border-color: hsl(var(--border));
+  --ag-header-background-color: hsl(var(--muted));
+  --ag-header-foreground-color: hsl(var(--foreground));
+  --ag-odd-row-background-color: hsl(var(--background));
+  --ag-row-hover-color: hsl(var(--muted) / 0.5);
+  --ag-selected-row-background-color: hsl(var(--primary) / 0.1);
+  --ag-range-selection-background-color: hsl(var(--primary) / 0.2);
+  --ag-range-selection-border-color: hsl(var(--primary));
+  --ag-cell-horizontal-border: solid hsl(var(--border));
+  --ag-header-cell-hover-background-color: hsl(var(--muted) / 0.8);
+}
+
+.ag-theme-alpine .ag-header {
+  background-color: hsl(var(--muted));
+  border-bottom: 2px solid hsl(var(--border));
+  font-weight: 600;
+}
+
+.ag-theme-alpine .ag-cell {
+  border-right: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.ag-theme-alpine .ag-row {
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.ag-theme-alpine .ag-row:hover {
+  background-color: hsl(var(--muted) / 0.5);
+}
+
+.ag-theme-alpine .ag-row-selected {
+  background-color: hsl(var(--primary) / 0.1);
+}
+
+.ag-theme-alpine .ag-cell-focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: -2px;
 }

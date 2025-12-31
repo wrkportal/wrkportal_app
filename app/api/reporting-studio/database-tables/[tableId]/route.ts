@@ -18,7 +18,13 @@ export async function GET(
 
         // Get query parameters
         const { searchParams } = new URL(request.url)
-        const limit = parseInt(searchParams.get('limit') || '100')
+        const requestedLimitParam = searchParams.get('limit')
+        // If limit is provided, use it, otherwise default to 100 for preview
+        // But allow up to 100000 rows for calculations
+        const MAX_ALLOWED_ROWS = 100000
+        const requestedLimit = requestedLimitParam ? parseInt(requestedLimitParam, 10) : 100
+        const limit = Math.min(requestedLimit, MAX_ALLOWED_ROWS) // Cap at MAX_ALLOWED_ROWS
+        console.log(`📊 Database table API called: tableId=${tableId}, requestedLimit=${requestedLimitParam}, parsedLimit=${requestedLimit}, finalLimit=${limit}`)
 
         // Use type assertion to access dynamic model names
         const model = (prisma as any)[tableId]

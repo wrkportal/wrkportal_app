@@ -1,10 +1,32 @@
 # Allow all search engines to crawl the site
 User-agent: *
 Allow: /
+Allow: /landing
+Allow: /login
+Allow: /signup
+Allow: /privacy
+Allow: /terms
+Allow: /security
 
-# Disallow crawling of API routes and admin areas
+# Disallow crawling of API routes, admin areas, and authenticated pages
 Disallow: /api/
 Disallow: /admin/
+Disallow: /my-work
+Disallow: /projects
+Disallow: /programs
+Disallow: /portfolios
+Disallow: /okrs
+Disallow: /roadmap
+Disallow: /reports
+Disallow: /resources
+Disallow: /raid
+Disallow: /timesheets
+Disallow: /changes
+Disallow: /approvals
+Disallow: /notifications
+Disallow: /automations
+Disallow: /settings
+Disallow: /profile
 
 # Sitemap location
 Sitemap: https://www.managerbook.in/sitemap.xml

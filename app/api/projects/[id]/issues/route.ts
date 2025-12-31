@@ -29,20 +29,10 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
-        // Fetch issues for this project
+        // Fetch issues for this project (tenant isolation already verified through project)
         const issues = await prisma.issue.findMany({
             where: {
                 projectId: projectId,
-                tenantId: session.user.tenantId
-            },
-            include: {
-                assignee: {
-                    select: {
-                        firstName: true,
-                        lastName: true,
-                        email: true
-                    }
-                }
             },
             orderBy: {
                 createdAt: 'desc'

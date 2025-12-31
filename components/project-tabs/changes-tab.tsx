@@ -158,7 +158,7 @@ export function ChangesTab({ projectId }: ChangesTabProps) {
                                 </div>
 
                                 {/* Impact Assessment */}
-                                {(change.impact.cost || change.impact.schedule || change.impact.scope) && (
+                                {change.impact && typeof change.impact === 'object' && (
                                     <div className="pt-2 border-t">
                                         <p className="text-xs font-medium text-muted-foreground mb-2">Impact Assessment:</p>
                                         <div className="grid grid-cols-3 gap-4 text-xs">

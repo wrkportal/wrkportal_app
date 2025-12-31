@@ -122,7 +122,7 @@ export function ApprovalsTab({ projectId }: ApprovalsTabProps) {
                                     <span className="text-muted-foreground">
                                         Requested: {formatDate(change.requestedDate)}
                                     </span>
-                                    {change.impact.cost && (
+                                    {change.impact && typeof change.impact === 'object' && change.impact.cost && (
                                         <span className="text-muted-foreground">
                                             Cost Impact: {formatCurrency(change.impact.cost)}
                                         </span>

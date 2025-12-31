@@ -1,0 +1,630 @@
+// ============================================
+// REPORTING STUDIO - ADVANCED PLATFORM MODELS
+// ============================================
+// These models extend the existing ReportingFile and ReportingDashboard models
+// for the new advanced reporting platform
+
+// ============================================
+// DATA SOURCES
+// ============================================
+
+// External database connections (PostgreSQL, MySQL, SQL Server, etc.)
+model ReportingDataSource {
+  id              String                    @id @default(cuid())
+  tenantId        String
+  name            String
+  description     String?
+  type            DataSourceType
+  provider        String?                   // e.g., "postgresql", "mysql", "snowflake"
+  connectionConfig Json                     // Encrypted connection details
+  status          DataSourceStatus          @default(ACTIVE)
+  lastTestedAt    DateTime?
+  lastError       String?
+  createdById     String
+  updatedById     String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  tenant          Tenant                    @relation("ReportingDataSources", fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy       User                      @relation("DataSourceCreator", fields: [createdById], references: [id])
+  updatedBy       User?                     @relation("DataSourceUpdater", fields: [updatedById], references: [id])
+  datasets        ReportingDataset[]
+  tables          ReportingDataSourceTable[]
+  
+  @@index([tenantId])
+  @@index([type])
+  @@index([status])
+  @@index([createdById])
+}
+
+enum DataSourceType {
+  DATABASE
+  API
+  FILE
+  CLOUD_STORAGE
+  SAAS_INTEGRATION
+}
+
+enum DataSourceStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  TESTING
+}
+
+// Tables/views discovered from data sources
+model ReportingDataSourceTable {
+  id            String                    @id @default(cuid())
+  dataSourceId  String
+  schemaName    String?
+  tableName     String
+  tableType     TableType                 @default(TABLE)
+  description   String?
+  rowCount      BigInt?
+  columnCount   Int?
+  lastSyncedAt  DateTime?
+  schema        Json?                     // Column definitions with types
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  
+  dataSource    ReportingDataSource       @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+  columns       ReportingDataSourceColumn[]
+  
+  @@unique([dataSourceId, schemaName, tableName])
+  @@index([dataSourceId])
+}
+
+enum TableType {
+  TABLE
+  VIEW
+  MATERIALIZED_VIEW
+}
+
+// Columns in data source tables
+model ReportingDataSourceColumn {
+  id              String                    @id @default(cuid())
+  tableId         String
+  columnName      String
+  dataType        String
+  isNullable      Boolean                   @default(true)
+  isPrimaryKey    Boolean                   @default(false)
+  defaultValue    String?
+  description     String?
+  sampleValues    Json?                     // Sample data for preview
+  createdAt       DateTime                  @default(now())
+  
+  table           ReportingDataSourceTable  @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  
+  @@unique([tableId, columnName])
+  @@index([tableId])
+}
+
+// ============================================
+// DATASETS (Virtual/Queryable Data)
+// ============================================
+
+model ReportingDataset {
+  id              String                    @id @default(cuid())
+  tenantId        String
+  name            String
+  description     String?
+  type            DatasetType
+  dataSourceId    String?                   // For database/API sources
+  fileId          String?                   // For file-based datasets (references ReportingFile)
+  query           String?                   // SQL query or API endpoint
+  transformationConfig Json?                // Data transformation pipeline
+  schema          Json?                     // Output schema
+  rowCount        BigInt?
+  lastRefreshedAt DateTime?
+  refreshSchedule String?                   // Cron expression
+  status          DatasetStatus             @default(ACTIVE)
+  isPublic        Boolean                   @default(false)
+  createdById     String
+  updatedById     String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  tenant          Tenant                    @relation("ReportingDatasets", fields: [tenantId], references: [id], onDelete: Cascade)
+  dataSource      ReportingDataSource?      @relation(fields: [dataSourceId], references: [id], onDelete: SetNull)
+  createdBy       User                      @relation("DatasetCreator", fields: [createdById], references: [id])
+  updatedBy       User?                     @relation("DatasetUpdater", fields: [updatedById], references: [id])
+  visualizations  ReportingVisualization[]
+  dashboards      ReportingDashboardDataset[]
+  permissions     ReportingDatasetPermission[]
+  
+  @@index([tenantId])
+  @@index([type])
+  @@index([status])
+  @@index([createdById])
+}
+
+enum DatasetType {
+  QUERY
+  FILE
+  API
+  TRANSFORMATION
+  MERGED
+}
+
+enum DatasetStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  REFRESHING
+}
+
+// ============================================
+// VISUALIZATIONS
+// ============================================
+
+model ReportingVisualization {
+  id              String                    @id @default(cuid())
+  tenantId        String
+  name            String
+  description     String?
+  type            VisualizationType
+  datasetId       String
+  config          Json                      // Chart configuration (axes, colors, etc.)
+  query           String?                   // Specific query for this visualization
+  filters         Json?                     // Applied filters
+  xAxis           String?
+  yAxis           String?
+  series          Json?                     // Series configuration
+  styling         Json?                     // Visual styling options
+  width           Int?
+  height          Int?
+  isPublic        Boolean                   @default(false)
+  createdById     String
+  updatedById     String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  tenant          Tenant                    @relation("ReportingVisualizations", fields: [tenantId], references: [id], onDelete: Cascade)
+  dataset         ReportingDataset          @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  createdBy       User                      @relation("VisualizationCreator", fields: [createdById], references: [id])
+  updatedBy       User?                     @relation("VisualizationUpdater", fields: [updatedById], references: [id])
+  dashboardWidgets ReportingDashboardWidget[]
+  permissions     ReportingVisualizationPermission[]
+  
+  @@index([tenantId])
+  @@index([type])
+  @@index([datasetId])
+  @@index([createdById])
+}
+
+enum VisualizationType {
+  BAR
+  LINE
+  AREA
+  PIE
+  DONUT
+  SCATTER
+  BUBBLE
+  HEATMAP
+  SANKEY
+  TREEMAP
+  SUNBURST
+  FUNNEL
+  GAUGE
+  KPI
+  TABLE
+  PIVOT_TABLE
+  MAP_CHOROPLETH
+  MAP_POINT
+  MAP_HEAT
+  WATERFALL
+  BOX_PLOT
+  GANTT
+  NETWORK
+  CUSTOM
+}
+
+// ============================================
+// DASHBOARDS (Enhanced)
+// ============================================
+
+// Extend existing ReportingDashboard - add tenantId and enhance structure
+// This will require a migration to add tenantId to existing ReportingDashboard table
+
+model ReportingDashboardWidget {
+  id              String                    @id @default(cuid())
+  dashboardId     String
+  visualizationId String?
+  widgetType      WidgetType
+  title           String?
+  config          Json                      // Widget-specific configuration
+  position        Json                      // Layout position (x, y, w, h)
+  order           Int                       @default(0)
+  filters         Json?                     // Widget-level filters
+  refreshInterval Int?                      // Auto-refresh interval in seconds
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  dashboard       ReportingDashboard        @relation("DashboardWidgets", fields: [dashboardId], references: [id], onDelete: Cascade)
+  visualization   ReportingVisualization?   @relation(fields: [visualizationId], references: [id], onDelete: SetNull)
+  
+  @@index([dashboardId])
+  @@index([visualizationId])
+}
+
+enum WidgetType {
+  VISUALIZATION
+  KPI
+  TEXT
+  IMAGE
+  IFRAME
+  FILTER_CONTROL
+  CUSTOM
+}
+
+// Dashboard-Dataset relationships (for cross-filtering)
+model ReportingDashboardDataset {
+  id          String                    @id @default(cuid())
+  dashboardId String
+  datasetId   String
+  alias       String?                   // Alias for use in dashboard
+  filters     Json?                     // Default filters
+  createdAt   DateTime                  @default(now())
+  
+  dashboard   ReportingDashboard        @relation("DashboardDatasets", fields: [dashboardId], references: [id], onDelete: Cascade)
+  dataset     ReportingDataset          @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  
+  @@unique([dashboardId, datasetId])
+  @@index([dashboardId])
+  @@index([datasetId])
+}
+
+// ============================================
+// REPORTS
+// ============================================
+
+model ReportingReport {
+  id              String                    @id @default(cuid())
+  tenantId        String
+  name            String
+  description     String?
+  type            ReportType
+  templateId      String?
+  dashboardId     String?                   // If generated from dashboard
+  config          Json                      // Report configuration
+  format          ReportFormat              @default(PDF)
+  schedule        String?                   // Cron expression
+  recipients      Json?                     // Email recipients or user IDs
+  lastGeneratedAt DateTime?
+  lastGeneratedBy String?
+  fileUrl         String?                   // Generated report file URL
+  status          ReportStatus              @default(ACTIVE)
+  createdById     String
+  updatedById     String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  tenant          Tenant                    @relation("ReportingReports", fields: [tenantId], references: [id], onDelete: Cascade)
+  template        ReportingReportTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  dashboard       ReportingDashboard?       @relation("DashboardReports", fields: [dashboardId], references: [id], onDelete: SetNull)
+  createdBy       User                      @relation("ReportCreator", fields: [createdById], references: [id])
+  updatedBy       User?                     @relation("ReportUpdater", fields: [updatedById], references: [id])
+  permissions     ReportingReportPermission[]
+  executions      ReportingReportExecution[]
+  
+  @@index([tenantId])
+  @@index([type])
+  @@index([status])
+  @@index([createdById])
+}
+
+enum ReportType {
+  DASHBOARD_EXPORT
+  QUERY_RESULT
+  CUSTOM
+  SCHEDULED
+}
+
+enum ReportFormat {
+  PDF
+  EXCEL
+  CSV
+  POWERPOINT
+  HTML
+  JSON
+}
+
+enum ReportStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+}
+
+model ReportingReportExecution {
+  id          String                    @id @default(cuid())
+  reportId    String
+  status      ExecutionStatus           @default(PENDING)
+  fileUrl     String?
+  errorMessage String?
+  startedAt   DateTime                  @default(now())
+  completedAt DateTime?
+  triggeredBy String?
+  
+  report      ReportingReport           @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@index([reportId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+enum ExecutionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ============================================
+// TEMPLATES
+// ============================================
+
+model ReportingReportTemplate {
+  id              String                    @id @default(cuid())
+  tenantId        String
+  name            String
+  description     String?
+  category        String?
+  type            TemplateType
+  config          Json                      // Template configuration
+  previewImage    String?
+  isPublic        Boolean                   @default(false)
+  isSystem        Boolean                   @default(false)
+  usageCount      Int                       @default(0)
+  rating          Float?
+  createdById     String
+  updatedById     String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  tenant          Tenant                    @relation("ReportingTemplates", fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy       User                      @relation("TemplateCreator", fields: [createdById], references: [id])
+  updatedBy       User?                     @relation("TemplateUpdater", fields: [updatedById], references: [id])
+  reports         ReportingReport[]
+  
+  @@index([tenantId])
+  @@index([type])
+  @@index([category])
+  @@index([isPublic])
+}
+
+enum TemplateType {
+  DASHBOARD
+  REPORT
+  VISUALIZATION
+}
+
+// ============================================
+// DATA TRANSFORMATIONS
+// ============================================
+
+model ReportingTransformation {
+  id              String                    @id @default(cuid())
+  tenantId        String
+  name            String
+  description     String?
+  inputDatasetId  String
+  outputDatasetId String?                   // Created dataset
+  config          Json                      // Transformation pipeline config
+  code            String?                   // Custom transformation code (Python/JavaScript)
+  status          TransformationStatus      @default(DRAFT)
+  lastRunAt       DateTime?
+  lastRunBy       String?
+  errorMessage    String?
+  createdById     String
+  updatedById     String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  tenant          Tenant                    @relation("ReportingTransformations", fields: [tenantId], references: [id], onDelete: Cascade)
+  inputDataset    ReportingDataset          @relation("InputTransformations", fields: [inputDatasetId], references: [id], onDelete: Cascade)
+  outputDataset   ReportingDataset?         @relation("OutputTransformations", fields: [outputDatasetId], references: [id], onDelete: SetNull)
+  createdBy       User                      @relation("TransformationCreator", fields: [createdById], references: [id])
+  updatedBy       User?                     @relation("TransformationUpdater", fields: [updatedById], references: [id])
+  
+  @@index([tenantId])
+  @@index([status])
+  @@index([inputDatasetId])
+  @@index([createdById])
+}
+
+enum TransformationStatus {
+  DRAFT
+  ACTIVE
+  ERROR
+}
+
+// ============================================
+// PERMISSIONS & ACCESS CONTROL
+// ============================================
+
+model ReportingDatasetPermission {
+  id          String                    @id @default(cuid())
+  datasetId   String
+  userId      String?
+  orgUnitId   String?
+  role        String?                   // User role
+  permission  PermissionLevel
+  rowLevelRules Json?                   // Row-level security rules
+  columnLevelRules Json?                 // Column-level security rules
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  
+  dataset     ReportingDataset          @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  user        User?                     @relation("DatasetPermissions", fields: [userId], references: [id], onDelete: Cascade)
+  orgUnit     OrgUnit?                  @relation("DatasetOrgUnitPermissions", fields: [orgUnitId], references: [id], onDelete: Cascade)
+  
+  @@index([datasetId])
+  @@index([userId])
+  @@index([orgUnitId])
+}
+
+model ReportingVisualizationPermission {
+  id              String                    @id @default(cuid())
+  visualizationId String
+  userId          String?
+  orgUnitId       String?
+  role            String?
+  permission      PermissionLevel
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  
+  visualization   ReportingVisualization    @relation(fields: [visualizationId], references: [id], onDelete: Cascade)
+  user            User?                     @relation("VisualizationPermissions", fields: [userId], references: [id], onDelete: Cascade)
+  orgUnit         OrgUnit?                  @relation("VisualizationOrgUnitPermissions", fields: [orgUnitId], references: [id], onDelete: Cascade)
+  
+  @@index([visualizationId])
+  @@index([userId])
+  @@index([orgUnitId])
+}
+
+model ReportingDashboardPermission {
+  id          String                    @id @default(cuid())
+  dashboardId String
+  userId      String?
+  orgUnitId   String?
+  role        String?
+  permission  PermissionLevel
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  
+  dashboard   ReportingDashboard        @relation("DashboardPermissions", fields: [dashboardId], references: [id], onDelete: Cascade)
+  user        User?                     @relation("DashboardPermissions", fields: [userId], references: [id], onDelete: Cascade)
+  orgUnit     OrgUnit?                  @relation("DashboardOrgUnitPermissions", fields: [orgUnitId], references: [id], onDelete: Cascade)
+  
+  @@index([dashboardId])
+  @@index([userId])
+  @@index([orgUnitId])
+}
+
+model ReportingReportPermission {
+  id          String                    @id @default(cuid())
+  reportId    String
+  userId      String?
+  orgUnitId   String?
+  role        String?
+  permission  PermissionLevel
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  
+  report      ReportingReport           @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user        User?                     @relation("ReportPermissions", fields: [userId], references: [id], onDelete: Cascade)
+  orgUnit     OrgUnit?                  @relation("ReportOrgUnitPermissions", fields: [orgUnitId], references: [id], onDelete: Cascade)
+  
+  @@index([reportId])
+  @@index([userId])
+  @@index([orgUnitId])
+}
+
+enum PermissionLevel {
+  NONE
+  VIEW
+  EDIT
+  DELETE
+  ADMIN
+}
+
+// ============================================
+// QUERY HISTORY & CACHING
+// ============================================
+
+model ReportingQueryCache {
+  id            String                    @id @default(cuid())
+  tenantId      String
+  queryHash     String                    @unique
+  query         String
+  resultHash    String?
+  resultUrl     String?                   // S3 URL or cache key
+  expiresAt     DateTime
+  hitCount      Int                       @default(0)
+  lastAccessedAt DateTime?
+  createdAt     DateTime                  @default(now())
+  
+  tenant        Tenant                    @relation("ReportingQueryCache", fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([queryHash])
+  @@index([expiresAt])
+}
+
+model ReportingQueryLog {
+  id          String                    @id @default(cuid())
+  tenantId    String
+  userId      String?
+  query       String
+  queryType   QueryType
+  duration    Int?                      // Milliseconds
+  rowCount    Int?
+  errorMessage String?
+  cached      Boolean                   @default(false)
+  createdAt   DateTime                  @default(now())
+  
+  tenant      Tenant                    @relation("ReportingQueryLogs", fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User?                     @relation("QueryLogs", fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([tenantId])
+  @@index([userId])
+  @@index([queryType])
+  @@index([createdAt])
+}
+
+enum QueryType {
+  SELECT
+  INSERT
+  UPDATE
+  DELETE
+  EXPLAIN
+  CUSTOM
+}
+
+// ============================================
+// ACTIVITY & AUDIT
+// ============================================
+
+model ReportingActivity {
+  id          String                    @id @default(cuid())
+  tenantId    String
+  userId      String?
+  entityType  EntityType
+  entityId    String
+  action      ActivityAction
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime                  @default(now())
+  
+  tenant      Tenant                    @relation("ReportingActivities", fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User?                     @relation("ReportingActivities", fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([tenantId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+enum EntityType {
+  DATASOURCE
+  DATASET
+  VISUALIZATION
+  DASHBOARD
+  REPORT
+  TEMPLATE
+  TRANSFORMATION
+}
+
+enum ActivityAction {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  SHARE
+  EXPORT
+  EXECUTE
+  PERMISSION_CHANGE
+}
+

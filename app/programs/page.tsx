@@ -60,23 +60,25 @@ export default function ProgramsPage() {
 
     return (
         <div className="space-y-6 p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Programs & Projects</h1>
-                    <p className="text-muted-foreground mt-1">
-                        Manage your programs and their associated projects
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => router.push('/projects/new')}>
-                        <FolderKanban className="h-4 w-4 mr-2" />
-                        New Project
-                    </Button>
-                    <Button onClick={() => router.push('/programs/new')}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Program
-                    </Button>
+            {/* Header - Sticky */}
+            <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-4 mb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Programs & Projects</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                            Manage your programs and their associated projects
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => router.push('/projects/new')}>
+                            <FolderKanban className="h-4 w-4 mr-2" />
+                            New Project
+                        </Button>
+                        <Button onClick={() => router.push('/programs/new')}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            New Program
+                        </Button>
+                    </div>
                 </div>
             </div>
 

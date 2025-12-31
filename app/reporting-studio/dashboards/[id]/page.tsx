@@ -1,362 +1,378 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
-import { ArrowLeft, Loader2, RefreshCw } from "lucide-react"
-import Link from "next/link"
-import { ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
-
-interface Dashboard {
-    id: string
-    name: string
-    configuration: {
-        charts: any[]
-        layout: any[]
-        pageBackgroundColor: string
-        activeFilters: Record<string, string[]>
-    }
-    createdAt: string
-    updatedAt: string
-    createdByUser: {
-        name: string | null
-        email: string
-    }
-}
-
-// Aggregation function to process data
-const aggregateData = (
-    rawData: any[],
-    xField: string,
-    yField: string,
-    aggregation: string
-): any[] => {
-    if (aggregation === 'none') {
-        return rawData.map(item => ({
-            [xField]: item[xField],
-            [yField]: item[yField]
-        }))
-    }
-
-    const grouped = rawData.reduce((acc, item) => {
-        const key = item[xField]
-        if (!acc[key]) {
-            acc[key] = []
-        }
-        acc[key].push(Number(item[yField]) || 0)
-        return acc
-    }, {} as Record<string, number[]>)
-
-    return Object.entries(grouped).map(([key, values]) => {
-        let aggregatedValue: number
-        switch (aggregation) {
-            case 'sum':
-                aggregatedValue = values.reduce((a, b) => a + b, 0)
-                break
-            case 'average':
-                aggregatedValue = values.reduce((a, b) => a + b, 0) / values.length
-                break
-            case 'count':
-                aggregatedValue = values.length
-                break
-            case 'min':
-                aggregatedValue = Math.min(...values)
-                break
-            case 'max':
-                aggregatedValue = Math.max(...values)
-                break
-            default:
-                aggregatedValue = values.reduce((a, b) => a + b, 0)
-        }
-        return {
-            [xField]: key,
-            [yField]: aggregatedValue
-        }
-    })
-}
+import { DashboardBuilder } from '@/components/reporting-studio/dashboard-builder'
+import type { DashboardWidget } from '@/components/reporting-studio/dashboard-builder'
+import { ChartConfig } from '@/lib/reporting-studio/chart-types'
+import { Button } from '@/components/ui/button'
+import { Loader2, Download, Share2 } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { useToast } from '@/hooks/use-toast'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 export default function DashboardViewPage() {
-    const params = useParams()
-    const router = useRouter()
-    const [dashboard, setDashboard] = useState<Dashboard | null>(null)
-    const [chartsWithData, setChartsWithData] = useState<any[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+  const params = useParams()
+  const router = useRouter()
+  const id = params.id as string
+  const { toast } = useToast()
+  const [isEdit, setIsEdit] = useState(false)
 
-    const fetchDashboard = async () => {
-        try {
-            setLoading(true)
-            setError(null)
-            const response = await fetch('/api/reporting-studio/dashboard')
-            if (response.ok) {
-                const data = await response.json()
-                const foundDashboard = data.dashboards?.find((d: Dashboard) => d.id === params.id)
-                if (foundDashboard) {
-                    setDashboard(foundDashboard)
-                    // Load fresh data for each chart
-                    await loadChartsData(foundDashboard.configuration.charts, foundDashboard.configuration.activeFilters)
-                } else {
-                    setError('Dashboard not found')
-                }
-            } else {
-                setError('Failed to load dashboard')
-            }
-        } catch (err) {
-            console.error('Error fetching dashboard:', err)
-            setError('Error loading dashboard')
-        } finally {
-            setLoading(false)
+  const [dashboard, setDashboard] = useState<any>(null)
+  const [widgets, setWidgets] = useState<DashboardWidget[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const dashboardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (id) {
+      fetchDashboard()
+    }
+  }, [id])
+
+  const fetchDashboard = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/reporting-studio/dashboards/${id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setDashboard(data)
+
+        // Convert dashboard configuration to widgets
+        if (data.configuration?.widgets) {
+          const dashboardWidgets: DashboardWidget[] = data.configuration.widgets.map((w: any) => ({
+            id: w.id,
+            title: w.title || 'Untitled Widget',
+            chartConfig: w.chartConfig,
+            data: generateSampleData(w.chartConfig),
+            layout: w.layout || {
+              x: 0,
+              y: 0,
+              w: 6,
+              h: 4,
+              minW: 3,
+              minH: 3,
+            },
+          }))
+          setWidgets(dashboardWidgets)
         }
+      } else {
+        console.error('Failed to fetch dashboard')
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) {
+      toast({
+        title: 'Export Failed',
+        description: 'Dashboard content not found',
+        variant: 'destructive',
+      })
+      return
     }
 
-    const loadChartsData = async (charts: any[], activeFilters: Record<string, string[]>) => {
-        try {
-            console.log('Loading charts data:', charts)
-            const chartsWithFreshData = await Promise.all(
-                charts.map(async (chart) => {
-                    console.log('Processing chart:', chart.id, 'type:', chart.type, 'dataSourceId:', chart.data?.dataSourceId)
-                    
-                    if (chart.type === 'filter' || chart.type === 'table') {
-                        return { ...chart, loadedData: [] }
-                    }
+    setIsExporting(true)
+    try {
+      // Capture the dashboard as canvas
+      const canvas = await html2canvas(dashboardRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+      })
 
-                    try {
-                        // Fetch fresh data from the data source
-                        const dataSourceId = chart.data?.dataSourceId
-                        if (!dataSourceId) {
-                            console.error(`No dataSourceId found for chart ${chart.id}`)
-                            return { ...chart, loadedData: [] }
-                        }
-                        
-                        console.log(`Fetching data from: /api/reporting-studio/files/${dataSourceId}`)
-                        
-                        const response = await fetch(`/api/reporting-studio/files/${dataSourceId}`)
-                        console.log(`Response status for chart ${chart.id}:`, response.status)
-                        
-                        if (!response.ok) {
-                            console.error(`Failed to load data for chart ${chart.id}, status: ${response.status}`)
-                            return { ...chart, loadedData: [] }
-                        }
+      // Calculate PDF dimensions
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+      const pdfWidth = imgWidth * 0.264583 // Convert pixels to mm (96 DPI)
+      const pdfHeight = imgHeight * 0.264583
 
-                        const result = await response.json()
-                        let rawData = result.data || []
-                        console.log(`Raw data loaded for chart ${chart.id}:`, rawData.length, 'rows')
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: [pdfWidth, pdfHeight],
+      })
 
-                        // Apply active filters
-                        Object.entries(activeFilters).forEach(([filterField, selectedValues]) => {
-                            if (selectedValues.length > 0) {
-                                rawData = rawData.filter((row: any) =>
-                                    selectedValues.includes(String(row[filterField]))
-                                )
-                            }
-                        })
-                        console.log(`Filtered data for chart ${chart.id}:`, rawData.length, 'rows')
+      // Add image to PDF
+      const imgData = canvas.toDataURL('image/png')
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
 
-                        // Aggregate data
-                        const chartData = aggregateData(
-                            rawData,
-                            chart.data.xAxis,
-                            chart.data.yAxis,
-                            chart.data.aggregation || 'sum'
-                        )
-                        console.log(`Aggregated data for chart ${chart.id}:`, chartData)
+      // Download PDF
+      const fileName = `${dashboard?.name || 'dashboard'}-${new Date().toISOString().split('T')[0]}.pdf`
+      pdf.save(fileName)
 
-                        return { ...chart, loadedData: chartData }
-                    } catch (error) {
-                        console.error(`Error loading data for chart ${chart.id}:`, error)
-                        return { ...chart, loadedData: [] }
-                    }
-                })
-            )
-            console.log('All charts with data:', chartsWithFreshData)
-            setChartsWithData(chartsWithFreshData)
-        } catch (error) {
-            console.error('Error loading charts data:', error)
-        }
+      toast({
+        title: 'Export Successful',
+        description: 'Dashboard exported as PDF',
+      })
+    } catch (error: any) {
+      console.error('Error exporting PDF:', error)
+      toast({
+        title: 'Export Failed',
+        description: error.message || 'Failed to export dashboard as PDF',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleExportPNG = async () => {
+    if (!dashboardRef.current) {
+      toast({
+        title: 'Export Failed',
+        description: 'Dashboard content not found',
+        variant: 'destructive',
+      })
+      return
     }
 
-    useEffect(() => {
-        fetchDashboard()
-    }, [params.id])
+    setIsExporting(true)
+    try {
+      // Capture the dashboard as canvas
+      const canvas = await html2canvas(dashboardRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+      })
 
-    const renderChart = (chart: any) => {
-        const chartData = chart.loadedData || []
-        const hasData = chartData.length > 0
+      // Convert canvas to blob and download
+      await new Promise<void>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Failed to create image blob'))
+            return
+          }
 
-        if (!hasData) {
-            return (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                    No data available
-                </div>
-            )
-        }
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `${dashboard?.name || 'dashboard'}-${new Date().toISOString().split('T')[0]}.png`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(url)
 
-        const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#a28dff', '#ff6b9d']
+          toast({
+            title: 'Export Successful',
+            description: 'Dashboard exported as PNG',
+          })
+          resolve()
+        }, 'image/png')
+      })
+    } catch (error: any) {
+      console.error('Error exporting PNG:', error)
+      toast({
+        title: 'Export Failed',
+        description: error.message || 'Failed to export dashboard as PNG',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
-        switch (chart.type) {
-            case 'bar':
-                return (
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey={chart.data.xAxis} />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey={chart.data.yAxis} fill="#8884d8" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                )
-            case 'line':
-                return (
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey={chart.data.xAxis} />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line type="monotone" dataKey={chart.data.yAxis} stroke="#8884d8" />
-                        </LineChart>
-                    </ResponsiveContainer>
-                )
-            case 'pie':
-                return (
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={chartData}
-                                dataKey={chart.data.yAxis}
-                                nameKey={chart.data.xAxis}
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={80}
-                                fill="#8884d8"
-                                label
-                            >
-                                {chartData.map((entry: any, index: number) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                            <Legend />
-                        </PieChart>
-                    </ResponsiveContainer>
-                )
-            default:
-                return <div className="text-muted-foreground">Unsupported chart type</div>
-        }
+  const handleShare = async () => {
+    try {
+      // Copy dashboard URL to clipboard
+      const url = window.location.href
+      await navigator.clipboard.writeText(url)
+      toast({
+        title: 'Link Copied',
+        description: 'Dashboard link has been copied to your clipboard.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Share Failed',
+        description: 'Failed to copy link. Please copy the URL manually.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const generateSampleData = (config: ChartConfig): any[] => {
+    if (config.type === 'PIE') {
+      return [
+        { category: 'A', value: 30 },
+        { category: 'B', value: 25 },
+        { category: 'C', value: 20 },
+      ]
     }
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        )
-    }
+    const categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+    return categories.map(cat => {
+      const point: any = {}
+      if (config.xAxis?.field) {
+        point[config.xAxis.field] = cat
+      }
+      config.series?.forEach(series => {
+        point[series.field] = Math.floor(Math.random() * 100) + 10
+      })
+      return point
+    })
+  }
 
-    if (error || !dashboard) {
-        return (
-            <div className="p-6 space-y-6">
-                <div className="flex items-center gap-2">
-                    <Link href="/reporting-studio/dashboards">
-                        <Button variant="ghost" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Dashboards
-                        </Button>
-                    </Link>
-                </div>
-                <Card className="p-12">
-                    <div className="text-center">
-                        <p className="text-red-500 mb-4">{error || 'Dashboard not found'}</p>
-                        <Link href="/reporting-studio/dashboards">
-                            <Button>Return to Dashboards</Button>
-                        </Link>
-                    </div>
-                </Card>
-            </div>
-        )
-    }
+  const handleSave = async (dashboardWidgets: DashboardWidget[]) => {
+    if (!dashboard) return
 
+    setIsSaving(true)
+    try {
+      const configuration = {
+        widgets: dashboardWidgets.map(w => ({
+          id: w.id,
+          title: w.title,
+          chartConfig: w.chartConfig,
+          layout: w.layout,
+        })),
+      }
+
+      const response = await fetch(`/api/reporting-studio/dashboards/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: dashboard.name,
+          configuration,
+        }),
+      })
+
+      if (response.ok) {
+        setIsEdit(false)
+        fetchDashboard() // Refresh dashboard data
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to save dashboard')
+      }
+    } catch (error) {
+      console.error('Error saving dashboard:', error)
+      alert('Failed to save dashboard')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (isLoading) {
     return (
-        <div className="min-h-screen" style={{ backgroundColor: dashboard.configuration.pageBackgroundColor || '#ffffff' }}>
-            <div className="p-6 space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/reporting-studio/dashboards">
-                            <Button variant="ghost" size="sm">
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back
-                            </Button>
-                        </Link>
-                        <div>
-                            <h1 className="text-2xl font-bold">{dashboard.name}</h1>
-                            <p className="text-sm text-muted-foreground">
-                                Created by {dashboard.createdByUser.name || dashboard.createdByUser.email}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Badge variant="secondary">
-                            {dashboard.configuration.charts.length} charts
-                        </Badge>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={fetchDashboard}
-                        >
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Refresh
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Active Filters */}
-                {Object.keys(dashboard.configuration.activeFilters).length > 0 && (
-                    <div className="bg-white rounded-lg shadow-sm p-4">
-                        <h3 className="text-sm font-semibold mb-2">Active Filters:</h3>
-                        <div className="flex flex-wrap gap-2">
-                            {Object.entries(dashboard.configuration.activeFilters).map(([key, values]) => (
-                                <Badge key={key} variant="outline">
-                                    {key}: {values.length} selected
-                                </Badge>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Charts Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {chartsWithData
-                        .filter(chart => chart.type !== 'filter')
-                        .map((chart) => (
-                            <Card key={chart.id} className="p-4">
-                                <div className="mb-2">
-                                    <h3 className="font-semibold">{chart.title}</h3>
-                                    <Badge variant="secondary" className="text-xs">
-                                        {chart.type}
-                                    </Badge>
-                                </div>
-                                <div style={{ height: '300px' }}>
-                                    {renderChart(chart)}
-                                </div>
-                            </Card>
-                        ))}
-                </div>
-
-                {chartsWithData.filter(c => c.type !== 'filter').length === 0 && (
-                    <Card className="p-12">
-                        <div className="text-center text-muted-foreground">
-                            No charts to display
-                        </div>
-                    </Card>
-                )}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-        </div>
+          </CardContent>
+        </Card>
+      </div>
     )
+  }
+
+  if (!dashboard) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Dashboard not found</p>
+              <Button onClick={() => router.push('/reporting-studio/dashboards')} className="mt-4">
+                Back to Dashboards
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const availableFields = ['date', 'value', 'category', 'amount', 'sales', 'revenue']
+
+  return (
+    <div className="h-screen flex flex-col">
+      {/* Header */}
+      <div className="border-b p-4 sm:p-6 bg-background pt-4 sm:pt-6">
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={() => router.push('/reporting-studio/dashboards')}
+            >
+              ← Back
+            </Button>
+            <div>
+              <h1 className="text-xl font-semibold">{dashboard.name}</h1>
+              {dashboard.description && (
+                <p className="text-sm text-muted-foreground">{dashboard.description}</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isEdit && (
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" disabled={isExporting}>
+                      {isExporting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleExportPDF} disabled={isExporting}>
+                      Export as PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportPNG} disabled={isExporting}>
+                      Export as PNG
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button variant="outline" onClick={handleShare}>
+                  <Share2 className="h-4 w-4 mr-2" /> Share
+                </Button>
+              </>
+            )}
+            {isEdit ? (
+              <Button
+                onClick={() => setIsEdit(false)}
+                variant="outline"
+              >
+                Cancel Edit
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setIsEdit(true)}
+              >
+                Edit Dashboard
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Dashboard Builder/Viewer */}
+      <div ref={dashboardRef} className="flex-1 overflow-hidden">
+        <DashboardBuilder
+          dashboardId={id}
+          onSave={isEdit ? handleSave : undefined}
+          initialWidgets={widgets}
+          availableFields={availableFields}
+        />
+      </div>
+    </div>
+  )
 }
 

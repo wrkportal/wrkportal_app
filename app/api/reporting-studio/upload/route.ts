@@ -3,9 +3,11 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
-import * as XLSX from 'xlsx'
-import { parse } from 'csv-parse/sync'
 import { put } from '@vercel/blob'
+import { parseFile } from '@/lib/reporting-studio/file-parser'
+import { detectSchema } from '@/lib/reporting-studio/schema-detector'
+import { validateFileUpload } from '@/lib/reporting-studio/validators'
+import crypto from 'crypto'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads', 'reporting-studio')
 const isDevelopment = process.env.NODE_ENV === 'development'
@@ -37,20 +39,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Validate file type
-    const allowedTypes = ['.csv', '.xlsx', '.xls']
-    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
-    
-    if (!allowedTypes.includes(fileExt)) {
+    // Validate file
+    const validation = validateFileUpload(file)
+    if (!validation.valid) {
       return NextResponse.json(
-        { error: 'Invalid file type. Only CSV and Excel files are allowed.' },
+        { error: validation.error },
         { status: 400 }
       )
     }
 
     // Generate unique filename
     const timestamp = Date.now()
-    const uniqueName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+    const randomHash = crypto.randomBytes(8).toString('hex')
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const uniqueName = `${timestamp}-${randomHash}-${sanitizedName}`
+    
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
 
     // Read file content
     const bytes = await file.arrayBuffer()
@@ -74,26 +78,25 @@ export async function POST(request: NextRequest) {
       filePath = blob.url // Store the blob URL as filePath
     }
 
-    // Parse file to get metadata
+    // Parse file to get metadata and schema (limit rows for faster processing)
     let rowCount = 0
     let columnCount = 0
+    let detectedSchema = null
 
     try {
-      if (fileExt === '.csv') {
-        const content = buffer.toString('utf-8')
-        const records = parse(content, { columns: true, skip_empty_lines: true })
-        rowCount = records.length
-        columnCount = Object.keys(records[0] || {}).length
-      } else {
-        // Excel file
-        const workbook = XLSX.read(buffer, { type: 'buffer' })
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-        const data = XLSX.utils.sheet_to_json(firstSheet)
-        rowCount = data.length
-        columnCount = Object.keys(data[0] || {}).length
-      }
-    } catch (parseError) {
+      const parsedData = await parseFile(buffer, file.name, {
+        limit: 1000, // Parse first 1000 rows for metadata
+        detectSchema: true,
+      })
+      
+      rowCount = parsedData.rowCount
+      columnCount = parsedData.columnCount
+      
+      // Detect schema for better metadata
+      detectedSchema = detectSchema(parsedData)
+    } catch (parseError: any) {
       console.error('Error parsing file:', parseError)
+      // Continue with upload even if parsing fails
     }
 
     // Get tenant ID
@@ -114,10 +117,34 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(
-      { message: 'File uploaded successfully', file: uploadedFile },
-      { status: 200 }
-    )
+    // Log activity (only if ReportingActivity model exists)
+    try {
+      await prisma.reportingActivity.create({
+        data: {
+          tenantId: tenantId,
+          userId: session.user.id,
+          entityType: 'DATASOURCE',
+          entityId: uploadedFile.id,
+          action: 'CREATE',
+          details: {
+            type: 'file_upload',
+            fileName: file.name,
+            fileSize: file.size,
+            rowCount: rowCount,
+            columnCount: columnCount,
+          },
+        },
+      })
+    } catch (activityError) {
+      // Activity logging is not critical, continue even if it fails
+      console.error('Error logging activity:', activityError)
+    }
+
+    return NextResponse.json({
+      message: 'File uploaded successfully',
+      file: uploadedFile,
+      schema: detectedSchema,
+    }, { status: 201 })
   } catch (error) {
     console.error('Error uploading file:', error)
     return NextResponse.json(

@@ -87,27 +87,41 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = defaultLayoutSchema.parse(body)
 
-    // Upsert the default layout
-    const defaultLayout = await prisma.defaultLayout.upsert({
+    // Ensure targetRole is either a valid role or explicitly null (not undefined)
+    const targetRole = validatedData.targetRole || null
+
+    // Prisma doesn't allow null in unique constraint where clauses for upsert
+    // So we need to use findFirst, then update or create
+    const existing = await prisma.defaultLayout.findFirst({
       where: {
-        tenantId_pageKey_targetRole: {
-          tenantId: user.tenantId,
-          pageKey: validatedData.pageKey,
-          targetRole: validatedData.targetRole || null,
-        },
-      },
-      update: {
-        layoutData: validatedData.layoutData,
-        updatedAt: new Date(),
-      },
-      create: {
         tenantId: user.tenantId,
         pageKey: validatedData.pageKey,
-        targetRole: validatedData.targetRole || null,
-        layoutData: validatedData.layoutData,
-        createdById: session.user.id,
+        targetRole: targetRole,
       },
     })
+
+    let defaultLayout
+    if (existing) {
+      // Update existing
+      defaultLayout = await prisma.defaultLayout.update({
+        where: { id: existing.id },
+        data: {
+          layoutData: validatedData.layoutData,
+          updatedAt: new Date(),
+        },
+      })
+    } else {
+      // Create new
+      defaultLayout = await prisma.defaultLayout.create({
+        data: {
+          tenantId: user.tenantId,
+          pageKey: validatedData.pageKey,
+          targetRole: targetRole,
+          layoutData: validatedData.layoutData,
+          createdById: session.user.id,
+        },
+      })
+    }
 
     return NextResponse.json({ defaultLayout }, { status: 200 })
   } catch (error) {

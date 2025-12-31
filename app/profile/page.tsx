@@ -34,7 +34,7 @@ const availablePages = [
     { id: 9, name: "Resources", path: "/resources" },
     { id: 10, name: "RAID", path: "/raid" },
     { id: 11, name: "Timesheets", path: "/timesheets" },
-    { id: 12, name: "Financials", path: "/financials" },
+    { id: 12, name: "Financials", path: "/finance-dashboard" },
     { id: 13, name: "Changes", path: "/changes" },
     { id: 14, name: "Approvals", path: "/approvals" },
     { id: 15, name: "Notifications", path: "/notifications" },
@@ -173,20 +173,22 @@ export default function ProfilePage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        Profile
-                    </h1>
-                    <p className="text-muted-foreground mt-0.5">
-                        View and manage your profile information
-                    </p>
+            {/* Header - Sticky */}
+            <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-4 mb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            Profile
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                            View and manage your profile information
+                        </p>
+                    </div>
+                    <Button onClick={() => router.push('/settings')} className="gap-2">
+                        <Settings className="h-4 w-4" />
+                        Edit Settings
+                    </Button>
                 </div>
-                <Button onClick={() => router.push('/settings')} className="gap-2">
-                    <Settings className="h-4 w-4" />
-                    Edit Settings
-                </Button>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">

@@ -1,16 +1,45 @@
 'use client'
 
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { StatusBadge } from "@/components/common/status-badge"
-import { mockPortfolios, mockUsers } from "@/lib/mock-data"
 import { formatCurrency } from "@/lib/utils"
-import { Plus, Briefcase } from "lucide-react"
+import { Plus, Briefcase, Loader2 } from "lucide-react"
 
 export default function PortfoliosPage() {
     const router = useRouter()
+    const [portfolios, setPortfolios] = useState<any[]>([])
+    const [users, setUsers] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true)
+                // Fetch users for owner lookups
+                const usersRes = await fetch('/api/users/onboarded')
+                if (usersRes.ok) {
+                    const usersData = await usersRes.json()
+                    setUsers(usersData.users || [])
+                }
+                // TODO: Fetch portfolios from API when available
+                // const portfoliosRes = await fetch('/api/portfolios')
+                // if (portfoliosRes.ok) {
+                //     const portfoliosData = await portfoliosRes.json()
+                //     setPortfolios(portfoliosData.portfolios || [])
+                // }
+                setPortfolios([]) // Empty for now until API is implemented
+            } catch (error) {
+                console.error('Error fetching portfolios data:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchData()
+    }, [])
 
     return (
         <div className="space-y-6">
@@ -27,10 +56,17 @@ export default function PortfoliosPage() {
                 </Button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-                {mockPortfolios.map((portfolio) => {
-                    const owner = mockUsers.find(u => u.id === portfolio.ownerId)
-                    const budgetSpentPercent = (portfolio.budget.spentToDate / portfolio.budget.totalBudget) * 100
+            {loading ? (
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+            ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                    {portfolios.map((portfolio: any) => {
+                        const owner = users.find((u: any) => u.id === portfolio.ownerId)
+                        const budgetSpentPercent = portfolio.budget?.totalBudget > 0 
+                            ? (portfolio.budget.spentToDate / portfolio.budget.totalBudget) * 100 
+                            : 0
 
                     return (
                         <Card
@@ -67,24 +103,26 @@ export default function PortfoliosPage() {
                                     <Progress value={budgetSpentPercent} className="h-2" />
                                 </div>
 
-                                <div className="space-y-2 pt-2 border-t">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-muted-foreground">Strategic Goals</span>
-                                        <span className="font-medium">{portfolio.strategicGoals.length}</span>
+                                {portfolio.strategicGoals && portfolio.strategicGoals.length > 0 && (
+                                    <div className="space-y-2 pt-2 border-t">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Strategic Goals</span>
+                                            <span className="font-medium">{portfolio.strategicGoals.length}</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {portfolio.strategicGoals.slice(0, 2).map((goal: string, idx: number) => (
+                                                <span key={idx} className="text-xs bg-secondary px-2 py-1 rounded">
+                                                    {goal}
+                                                </span>
+                                            ))}
+                                            {portfolio.strategicGoals.length > 2 && (
+                                                <span className="text-xs text-muted-foreground px-2 py-1">
+                                                    +{portfolio.strategicGoals.length - 2} more
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {portfolio.strategicGoals.slice(0, 2).map((goal, idx) => (
-                                            <span key={idx} className="text-xs bg-secondary px-2 py-1 rounded">
-                                                {goal}
-                                            </span>
-                                        ))}
-                                        {portfolio.strategicGoals.length > 2 && (
-                                            <span className="text-xs text-muted-foreground px-2 py-1">
-                                                +{portfolio.strategicGoals.length - 2} more
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
+                                )}
 
                                 {owner && (
                                     <div className="flex items-center justify-between text-sm pt-2 border-t">
@@ -100,7 +138,10 @@ export default function PortfoliosPage() {
                 })}
             </div>
 
-            {mockPortfolios.length === 0 && (
+                </div>
+            )}
+
+            {!loading && portfolios.length === 0 && (
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center h-64">
                         <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />

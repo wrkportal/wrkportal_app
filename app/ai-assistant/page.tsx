@@ -660,28 +660,29 @@ export default function AIAssistantPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            AI Assistant
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Your intelligent project management companion
-          </p>
-        </div>
+      {/* Header - Sticky */}
+      <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              AI Assistant
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Your intelligent project management companion
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <SaveDefaultLayoutButton
-            pageKey="ai-assistant"
-            getCurrentLayout={() => ({ widgets, layouts })}
-          />
+          <div className="flex items-center gap-2">
+            <SaveDefaultLayoutButton
+              pageKey="ai-assistant"
+              getCurrentLayout={() => ({ widgets, layouts })}
+            />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-1.5 text-sm font-semibold">Panel Visibility</div>
@@ -708,6 +709,7 @@ export default function AIAssistantPage() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </div>
 

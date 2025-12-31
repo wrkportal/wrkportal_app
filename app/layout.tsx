@@ -8,15 +8,14 @@ import Script from "next/script"
 
 export const metadata: Metadata = {
     title: {
-        default: "ManagerBook - Manager Book | Professional Project Management Platform",
-        template: "%s | ManagerBook - Manager Book"
+        default: "wrkportal.com - AI-Powered Project Management Platform",
+        template: "%s | wrkportal.com"
     },
-    description: "ManagerBook (Manager Book) is a comprehensive project management platform with AI-powered features, OKR tracking, Gantt charts, reporting tools, business intelligence, and team collaboration. The ultimate manager book for project success.",
+    description: "wrkportal.com is a comprehensive project management platform with AI-powered features, OKR tracking, Gantt charts, reporting tools, business intelligence, and team collaboration.",
     keywords: [
-        "ManagerBook",
-        "Manager Book",
-        "manager book",
-        "managerbook",
+        "wrkportal.com",
+        "work portal",
+        "workportal",
         "project management platform",
         "manager's handbook",
         "project manager book",
@@ -45,32 +44,32 @@ export const metadata: Metadata = {
         "manager tool",
         "management platform"
     ],
-    authors: [{ name: "ManagerBook Team" }],
-    creator: "ManagerBook",
-    publisher: "ManagerBook",
+    authors: [{ name: "wrkportal.com Team" }],
+    creator: "wrkportal.com",
+    publisher: "wrkportal.com",
     metadataBase: new URL('https://www.managerbook.in'),
     openGraph: {
         type: 'website',
         locale: 'en_US',
         url: 'https://www.managerbook.in',
-        title: 'ManagerBook - Manager Book | Professional Project Management Platform',
-        description: 'ManagerBook (Manager Book) - Comprehensive project management with AI-powered features, OKR tracking, advanced reporting tools, business intelligence, and team collaboration.',
-        siteName: 'ManagerBook - Manager Book',
+        title: 'wrkportal.com - AI-Powered Project Management Platform',
+        description: 'wrkportal.com - Comprehensive project management with AI-powered features, OKR tracking, advanced reporting tools, business intelligence, and team collaboration.',
+        siteName: 'wrkportal.com',
         images: [
             {
                 url: 'https://www.managerbook.in/logo.png',
                 width: 1200,
                 height: 630,
-                alt: 'ManagerBook Logo',
+                alt: 'wrkportal.com Logo',
             },
         ],
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'ManagerBook - Manager Book | Professional Project Management Platform',
-        description: 'ManagerBook (Manager Book) - Comprehensive project management with AI-powered features, OKR tracking, advanced reporting tools, business intelligence, and team collaboration.',
+        title: 'wrkportal.com - AI-Powered Project Management Platform',
+        description: 'wrkportal.com - Comprehensive project management with AI-powered features, OKR tracking, advanced reporting tools, business intelligence, and team collaboration.',
         images: ['https://www.managerbook.in/logo.png'],
-        creator: '@ManagerBook',
+        creator: '@wrkportal.com',
     },
     robots: {
         index: true,
@@ -85,19 +84,19 @@ export const metadata: Metadata = {
     },
     icons: {
         icon: [
-            { url: '/icon.png', type: 'image/png', sizes: '32x32' },
-            { url: '/icon.png', type: 'image/png', sizes: '192x192' },
+            { url: '/logo.png', type: 'image/png', sizes: '32x32' },
+            { url: '/logo.png', type: 'image/png', sizes: '192x192' },
             { url: '/logo.png', type: 'image/png', sizes: '512x512' },
         ],
         apple: [
-            { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+            { url: '/logo.png', sizes: '180x180', type: 'image/png' },
         ],
-        shortcut: '/icon.png',
+        shortcut: '/logo.png',
     },
     manifest: '/manifest.json',
-    verification: {
-        google: 'your-google-verification-code', // Add your Google Search Console verification code here
-    },
+    // verification: {
+    //     google: 'YOUR_ACTUAL_GOOGLE_VERIFICATION_CODE', // Add your actual Google Search Console verification code here
+    // },
 }
 
 export default function RootLayout({
@@ -116,11 +115,11 @@ export default function RootLayout({
                         __html: JSON.stringify({
                             "@context": "https://schema.org",
                             "@type": "Organization",
-                            "name": "ManagerBook",
-                            "alternateName": "Manager Book",
+                            "name": "wrkportal.com",
+                            "alternateName": "Work Portal",
                             "url": "https://www.managerbook.in",
                             "logo": "https://www.managerbook.in/logo.png",
-                            "description": "ManagerBook (Manager Book) is a professional project management platform with AI-powered features, OKR tracking, advanced reporting tools, and team collaboration.",
+                            "description": "wrkportal.com is a professional project management platform with AI-powered features, OKR tracking, advanced reporting tools, and team collaboration.",
                             "sameAs": [
                                 // Add your social media profiles here
                                 // "https://www.facebook.com/managerbook",
@@ -144,7 +143,7 @@ export default function RootLayout({
                         __html: JSON.stringify({
                             "@context": "https://schema.org",
                             "@type": "WebSite",
-                            "name": "ManagerBook",
+                            "name": "wrkportal.com",
                             "url": "https://www.managerbook.in",
                             "potentialAction": {
                                 "@type": "SearchAction",
@@ -163,7 +162,7 @@ export default function RootLayout({
                         __html: JSON.stringify({
                             "@context": "https://schema.org",
                             "@type": "SoftwareApplication",
-                            "name": "ManagerBook",
+                            "name": "wrkportal.com",
                             "operatingSystem": "Web",
                             "applicationCategory": "BusinessApplication",
                             "offers": {

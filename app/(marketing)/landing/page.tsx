@@ -49,184 +49,205 @@ import {
     Network,
     Atom,
     Send,
+    ChevronDown,
+    Check,
+    X,
+    PenTool,
+    Image as ImageIcon,
+    Video,
+    Plus,
+    Lightbulb,
+    Palette,
+    Briefcase,
+    ClipboardList,
+    UserCheck,
 } from "lucide-react"
 
-// Helper function to check if user has visited before
+// Helper functions
 const hasVisitedBefore = (): boolean => {
     if (typeof window === 'undefined') return false
     return localStorage.getItem('hasVisitedBefore') === 'true'
 }
 
-// Helper function to mark user as having visited
 const markAsVisited = () => {
     if (typeof window === 'undefined') return
     localStorage.setItem('hasVisitedBefore', 'true')
 }
 
-// Animated particle component
-const Particle = ({ delay = 0, duration = 3 }: { delay?: number; duration?: number }) => {
-    const [position] = useState({
-        left: `${Math.random() * 100}%`,
-        animationDelay: `${delay}s`,
-        animationDuration: `${duration + Math.random() * 2}s`,
-    })
+// Animated Background Component
+const AnimatedBackground = () => {
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-950 via-indigo-950 to-black opacity-90"></div>
+            {[...Array(50)].map((_, i) => (
+                <div
+                    key={i}
+                    className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30 animate-pulse"
+                    style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 3}s`,
+                        animationDuration: `${2 + Math.random() * 2}s`,
+                    }}
+                />
+            ))}
+        </div>
+    )
+}
 
+// Floating Glow Orbs
+const FloatingOrb = ({ delay = 0, size = 200, x = 50, y = 50, color = "purple" }: { delay?: number; size?: number; x?: number; y?: number; color?: string }) => {
+    const colorClasses = {
+        purple: "bg-purple-500/20",
+        pink: "bg-pink-500/20",
+        blue: "bg-blue-500/20",
+    }
     return (
         <div
-            className="absolute w-1 h-1 bg-purple-500 rounded-full opacity-30"
-            style={{...position, animation: 'subtle-float 6s ease-in-out infinite'}}
+            className={`absolute rounded-full blur-3xl ${colorClasses[color as keyof typeof colorClasses] || colorClasses.purple} animate-pulse`}
+            style={{
+                width: `${size}px`,
+                height: `${size}px`,
+                left: `${x}%`,
+                top: `${y}%`,
+                animationDelay: `${delay}s`,
+            }}
         />
     )
 }
 
-// AI Neural Network Background
-const NeuralNetwork = () => {
-    const canvasRef = useRef<HTMLCanvasElement>(null)
-
-    useEffect(() => {
-        const canvas = canvasRef.current
-        if (!canvas) return
-
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return
-
-        canvas.width = window.innerWidth
-        canvas.height = window.innerHeight
-
-        const nodes: { x: number; y: number; vx: number; vy: number }[] = []
-        const nodeCount = 50
-
-        // Create nodes
-        for (let i = 0; i < nodeCount; i++) {
-            nodes.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: (Math.random() - 0.5) * 0.5,
-            })
-        }
-
-        let animationFrame: number
-
-        const animate = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-            // Update and draw nodes
-            nodes.forEach((node, i) => {
-                node.x += node.vx
-                node.y += node.vy
-
-                if (node.x < 0 || node.x > canvas.width) node.vx *= -1
-                if (node.y < 0 || node.y > canvas.height) node.vy *= -1
-
-                // Draw node
-                ctx.beginPath()
-                ctx.arc(node.x, node.y, 2, 0, Math.PI * 2)
-                ctx.fillStyle = 'rgba(168, 85, 247, 0.4)'
-                ctx.fill()
-
-                // Draw connections
-                nodes.forEach((otherNode, j) => {
-                    if (i === j) return
-                    const dx = node.x - otherNode.x
-                    const dy = node.y - otherNode.y
-                    const distance = Math.sqrt(dx * dx + dy * dy)
-
-                    if (distance < 150) {
-                        ctx.beginPath()
-                        ctx.moveTo(node.x, node.y)
-                        ctx.lineTo(otherNode.x, otherNode.y)
-                        ctx.strokeStyle = `rgba(168, 85, 247, ${0.2 * (1 - distance / 150)})`
-                        ctx.lineWidth = 1
-                        ctx.stroke()
-                    }
-                })
-            })
-
-            animationFrame = requestAnimationFrame(animate)
-        }
-
-        animate()
-
-        const handleResize = () => {
-            canvas.width = window.innerWidth
-            canvas.height = window.innerHeight
-        }
-        window.addEventListener('resize', handleResize)
-
-        return () => {
-            cancelAnimationFrame(animationFrame)
-            window.removeEventListener('resize', handleResize)
-        }
-    }, [])
-
-    return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none opacity-30" />
-}
-
-// Typewriter effect
-const TypewriterText = ({ texts, className = "" }: { texts: string[]; className?: string }) => {
+// Typing Effect Component
+const TypingFeatureText = ({ features, className = "" }: { features: string[]; className?: string }) => {
+    const [currentIndex, setCurrentIndex] = useState(0)
     const [displayText, setDisplayText] = useState("")
-    const [textIndex, setTextIndex] = useState(0)
     const [isDeleting, setIsDeleting] = useState(false)
 
     useEffect(() => {
-        const currentText = texts[textIndex]
-        const timeout = setTimeout(
-            () => {
-                if (!isDeleting) {
-                    if (displayText.length < currentText.length) {
-                        setDisplayText(currentText.slice(0, displayText.length + 1))
-                    } else {
-                        setTimeout(() => setIsDeleting(true), 2000)
-                    }
-                } else {
-                    if (displayText.length > 0) {
-                        setDisplayText(displayText.slice(0, -1))
-                    } else {
-                        setIsDeleting(false)
-                        setTextIndex((textIndex + 1) % texts.length)
-                    }
-                }
-            },
-            isDeleting ? 50 : 100
-        )
+        const currentText = features[currentIndex] || ""
+        let timeoutId: NodeJS.Timeout
 
-        return () => clearTimeout(timeout)
-    }, [displayText, textIndex, isDeleting, texts])
+        if (!isDeleting && displayText.length < currentText.length) {
+            // Typing out
+            timeoutId = setTimeout(() => {
+                setDisplayText(currentText.slice(0, displayText.length + 1))
+            }, 100)
+        } else if (!isDeleting && displayText.length === currentText.length) {
+            // Finished typing, wait then start deleting
+            timeoutId = setTimeout(() => {
+                setIsDeleting(true)
+            }, 2000)
+        } else if (isDeleting && displayText.length > 0) {
+            // Deleting
+            timeoutId = setTimeout(() => {
+                setDisplayText(currentText.slice(0, displayText.length - 1))
+            }, 50)
+        } else if (isDeleting && displayText.length === 0) {
+            // Finished deleting, move to next text
+            setIsDeleting(false)
+            setCurrentIndex((prev) => (prev + 1) % features.length)
+        }
 
-    return <span className={className}>{displayText}<span className="animate-pulse">|</span></span>
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId)
+        }
+    }, [displayText, isDeleting, currentIndex, features])
+
+    // Reset when currentIndex changes
+    useEffect(() => {
+        setDisplayText("")
+        setIsDeleting(false)
+    }, [currentIndex])
+
+    return (
+        <span className={`inline-block min-w-[300px] text-left ${className}`}>
+            {displayText}
+            <span className="animate-pulse text-amber-500">|</span>
+        </span>
+    )
 }
 
-// Floating AI Icon
-const FloatingAIIcon = ({ icon: Icon, delay = 0, duration = 4 }: { icon: any; delay?: number; duration?: number }) => {
+// Floating Feature Card
+const FloatingFeatureCard = ({
+    title,
+    gradient,
+    onClick,
+    isSelected = false
+}: {
+    title: string;
+    gradient: string;
+    onClick?: () => void;
+    isSelected?: boolean;
+}) => {
     return (
         <div
-            className="absolute opacity-20"
-            style={{
-                left: `${Math.random() * 90 + 5}%`,
-                top: `${Math.random() * 90 + 5}%`,
-                animation: `subtle-float ${duration}s ease-in-out infinite`,
-                animationDelay: `${delay}s`,
-            }}
+            className={`relative border-2 rounded-lg overflow-hidden transition-all duration-300 cursor-pointer group ${isSelected
+                ? `border-purple-500 shadow-lg shadow-purple-500/30`
+                : 'border-purple-500/20 bg-purple-950/30 hover:border-purple-500/50 hover:bg-purple-950/40'
+                }`}
+            onClick={onClick}
         >
-            <div className="relative">
-                <div className="absolute inset-0 bg-purple-500 blur-xl opacity-50"></div>
-                <Icon className="relative h-12 w-12 text-purple-400" />
+            {/* Left Border Accent */}
+            <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${gradient} ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                } transition-opacity duration-300`}></div>
+
+            {/* Content */}
+            <div className="relative px-6 py-4 flex items-center justify-center min-h-[60px]">
+                {/* Subtle gradient overlay for selected */}
+                {isSelected && (
+                    <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-10`}></div>
+                )}
+
+                {/* Text */}
+                <h3 className={`relative text-base font-semibold text-center transition-all duration-300 ${isSelected
+                    ? 'text-white'
+                    : 'text-purple-300 group-hover:text-purple-200'
+                    }`}>
+                    {title}
+                </h3>
+
+                {/* Check indicator for selected */}
+                {isSelected && (
+                    <div className="absolute top-2 right-2 w-2 h-2 bg-purple-400 rounded-full"></div>
+                )}
             </div>
         </div>
     )
 }
 
-// AI Data Stream
-const DataStream = ({ delay = 0 }: { delay?: number }) => {
+// Feature Detail Card (Bottom Cards)
+const FeatureDetailCard = ({ icon: Icon, title, description, delay = 0 }: { icon: any; title: string; description: string; delay?: number }) => {
     return (
-        <div
-            className="absolute w-px h-32 bg-gradient-to-b from-transparent via-purple-500 to-transparent animate-slide-down"
-            style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${delay}s`,
-            }}
-        />
+        <Card className="border-2 border-purple-500/30 bg-purple-950/50 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-purple-500 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 group animate-fade-in-up">
+            <CardContent className="p-5 relative">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 mb-3 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Icon className="h-6 w-6 text-white" />
+                </div>
+                <h4 className="text-base font-bold text-white mb-2">{title}</h4>
+                <p className="text-sm text-purple-300 leading-relaxed">{description}</p>
+            </CardContent>
+        </Card>
+    )
+}
+
+// Accordion Component for FAQ
+const AccordionItem = ({ question, answer, isOpen, onToggle }: { question: string; answer: string; isOpen: boolean; onToggle: () => void }) => {
+    return (
+        <Card className="border-2 border-purple-500/30 overflow-hidden transition-all duration-300 hover:border-purple-500/50 bg-purple-950/50 backdrop-blur-sm">
+            <button
+                onClick={onToggle}
+                className="w-full p-6 text-left flex items-center justify-between hover:bg-purple-900/30 transition-colors"
+            >
+                <span className="font-semibold text-lg pr-8 text-white">{question}</span>
+                <div className={`flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+                    <ChevronDown className="h-5 w-5 text-purple-400" />
+                </div>
+            </button>
+            <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className="px-6 pb-6 text-purple-200 leading-relaxed">
+                    {answer}
+                </div>
+            </div>
+        </Card>
     )
 }
 
@@ -279,17 +300,17 @@ const ContactForm = () => {
     }
 
     return (
-        <Card className="border-2 shadow-xl">
+        <Card className="border-2 border-purple-500/30 shadow-xl bg-purple-950/50 backdrop-blur-sm">
             <CardContent className="p-8">
                 {success && (
-                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800">
+                    <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg flex items-center gap-2 text-green-400">
                         <CheckCircle2 className="h-5 w-5" />
                         <p>Thank you! We'll get back to you soon.</p>
                     </div>
                 )}
-                
+
                 {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-800">
+                    <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center gap-2 text-red-400">
                         <AlertTriangle className="h-5 w-5" />
                         <p>{error}</p>
                     </div>
@@ -298,17 +319,18 @@ const ContactForm = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="name">Name *</Label>
+                            <Label htmlFor="name" className="text-purple-200">Name *</Label>
                             <Input
                                 id="name"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="Your name"
                                 required
+                                className="bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-400/50"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email *</Label>
+                            <Label htmlFor="email" className="text-purple-200">Email *</Label>
                             <Input
                                 id="email"
                                 type="email"
@@ -316,19 +338,20 @@ const ContactForm = () => {
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 placeholder="your.email@company.com"
                                 required
+                                className="bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-400/50"
                             />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="type">Inquiry Type *</Label>
+                            <Label htmlFor="type" className="text-purple-200">Inquiry Type *</Label>
                             <Select
                                 value={formData.type}
                                 onValueChange={(value) => setFormData({ ...formData, type: value })}
                                 required
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className="bg-purple-900/30 border-purple-500/30 text-white">
                                     <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -341,18 +364,19 @@ const ContactForm = () => {
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="subject">Subject</Label>
+                            <Label htmlFor="subject" className="text-purple-200">Subject</Label>
                             <Input
                                 id="subject"
                                 value={formData.subject}
                                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                                 placeholder="Brief subject"
+                                className="bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-400/50"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="message">Message *</Label>
+                        <Label htmlFor="message" className="text-purple-200">Message *</Label>
                         <Textarea
                             id="message"
                             value={formData.message}
@@ -360,11 +384,12 @@ const ContactForm = () => {
                             placeholder="Tell us more about your inquiry..."
                             rows={6}
                             required
+                            className="bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-400/50"
                         />
                     </div>
 
-                    <Button 
-                        type="submit" 
+                    <Button
+                        type="submit"
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                         disabled={submitting}
                     >
@@ -385,18 +410,47 @@ const ContactForm = () => {
 
 export default function LandingPage() {
     const router = useRouter()
-    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-    const [activeFeature, setActiveFeature] = useState(0)
-    const [scrollY, setScrollY] = useState(0)
-    const [statsInView, setStatsInView] = useState(false)
-    const statsRef = useRef<HTMLDivElement>(null)
+    const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly')
+    const [openFAQ, setOpenFAQ] = useState<number | null>(1)
+    const [selectedCategory, setSelectedCategory] = useState<'projects' | 'reporting' | 'clients' | 'tasks'>('projects')
 
-    // Mark that user has visited the landing page
     useEffect(() => {
         markAsVisited()
+        document.title = "wrkportal.com - AI-Powered Project Management Platform"
     }, [])
 
-    // Smart routing handler: Signup for new visitors, Login for returning visitors
+    // Feature details for each category
+    const categoryFeatures = {
+        projects: [
+            { icon: Target, title: "Project Planning", description: "Create detailed project plans with timelines and milestones" },
+            { icon: Calendar, title: "Timeline Management", description: "Visual Gantt charts and timeline tracking" },
+            { icon: Users, title: "Team Collaboration", description: "Assign tasks and collaborate with your team" },
+            { icon: TrendingUp, title: "Progress Tracking", description: "Monitor project health and progress in real-time" },
+            { icon: AlertTriangle, title: "Risk Management", description: "Identify and mitigate project risks proactively" },
+        ],
+        reporting: [
+            { icon: BarChart3, title: "Dashboard Reports", description: "Interactive dashboards with real-time data visualization" },
+            { icon: FileText, title: "Executive Summaries", description: "Generate comprehensive executive reports automatically" },
+            { icon: TrendingUp, title: "Analytics & Insights", description: "Deep analytics and predictive insights" },
+            { icon: Activity, title: "Performance Metrics", description: "Track KPIs and performance indicators" },
+            { icon: Database, title: "Custom Reports", description: "Build custom reports tailored to your needs" },
+        ],
+        clients: [
+            { icon: UserCheck, title: "Client Profiles", description: "Maintain comprehensive client information and history" },
+            { icon: MessageSquare, title: "Communication Hub", description: "Centralized communication and messaging" },
+            { icon: FileText, title: "Project Portals", description: "Dedicated portals for client collaboration" },
+            { icon: Shield, title: "Secure Access", description: "Role-based access control and permissions" },
+            { icon: CheckCircle2, title: "Client Satisfaction", description: "Track feedback and satisfaction metrics" },
+        ],
+        tasks: [
+            { icon: ClipboardList, title: "Task Lists", description: "Organize tasks with lists and boards" },
+            { icon: Clock, title: "Time Tracking", description: "Track time spent on tasks and projects" },
+            { icon: Zap, title: "Task Automation", description: "Automate recurring tasks and workflows" },
+            { icon: CheckCircle2, title: "Status Management", description: "Track task status and completion" },
+            { icon: Users, title: "Task Assignment", description: "Assign and delegate tasks to team members" },
+        ],
+    }
+
     const handleCtaClick = () => {
         const isReturningVisitor = hasVisitedBefore()
         if (isReturningVisitor) {
@@ -406,651 +460,607 @@ export default function LandingPage() {
         }
     }
 
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            setMousePosition({ x: e.clientX, y: e.clientY })
-        }
-        window.addEventListener('mousemove', handleMouseMove)
-        return () => window.removeEventListener('mousemove', handleMouseMove)
-    }, [])
+    const toggleFAQ = (index: number) => {
+        setOpenFAQ(openFAQ === index ? null : index)
+    }
 
-    useEffect(() => {
-        const handleScroll = () => setScrollY(window.scrollY)
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setStatsInView(true)
-                }
-            },
-            { threshold: 0.5 }
-        )
-
-        if (statsRef.current) {
-            observer.observe(statsRef.current)
-        }
-
-        return () => observer.disconnect()
-    }, [])
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setActiveFeature((prev) => (prev + 1) % 6)
-        }, 3000)
-        return () => clearInterval(interval)
-    }, [])
-
-    const aiTexts = [
-        "Predict Project Risks",
-        "Optimize Resources",
-        "Generate Reports",
-        "Analyze Patterns",
-        "Automate Decisions",
-        "Forecast Budgets",
-    ]
-
-    const features = [
+    const pricingPlans = [
         {
-            icon: Brain,
-            title: "AI-Powered Intelligence",
-            description: "Advanced machine learning algorithms predict risks, optimize resources, and automate decision-making.",
-            color: "from-purple-500 via-pink-500 to-rose-500",
+            name: "Free",
+            price: billingPeriod === 'monthly' ? "$0" : "$0",
+            period: "month",
+            description: "Perfect for individuals getting started",
+            features: [
+                "Limited words per month",
+                "Generate AI images",
+                "Text To Speech",
+                "AI Code Generator",
+                "AI-powered Chat",
+                "Speech to Text",
+                "Basic Support",
+            ],
+            popular: false,
+            cta: "Get Started",
         },
         {
-            icon: Target,
-            title: "Strategic Alignment",
-            description: "Connect every task to company objectives with OKR tracking and real-time visibility.",
-            color: "from-blue-500 via-cyan-500 to-teal-500",
+            name: "Starter",
+            price: billingPeriod === 'monthly' ? "$29" : "$278",
+            period: billingPeriod === 'monthly' ? "month" : "year",
+            description: "Best for growing teams and small businesses",
+            features: [
+                "Extended word limit",
+                "Generate multiple AI images",
+                "Extended Text To Speech",
+                "Extended AI Code Generator",
+                "AI-powered Chat",
+                "Unlimited Speech to Text",
+                "24/7 Support",
+            ],
+            popular: true,
+            cta: "Start Free Trial",
         },
         {
-            icon: TrendingUp,
-            title: "Portfolio Intelligence",
-            description: "Manage unlimited projects with real-time health monitoring and predictive analytics.",
-            color: "from-green-500 via-emerald-500 to-teal-500",
-        },
-        {
-            icon: Users,
-            title: "Resource Optimization",
-            description: "AI-driven capacity planning ensures the right people work on the right projects.",
-            color: "from-orange-500 via-amber-500 to-yellow-500",
-        },
-        {
-            icon: BarChart3,
-            title: "Predictive Analytics",
-            description: "Machine learning models forecast budgets, timelines, and risks with precision.",
-            color: "from-indigo-500 via-purple-500 to-pink-500",
-        },
-        {
-            icon: Shield,
-            title: "Enterprise Security",
-            description: "SOC 2, ISO 27001, GDPR compliant with end-to-end encryption.",
-            color: "from-slate-500 via-gray-500 to-zinc-500",
+            name: "Enterprise",
+            price: billingPeriod === 'monthly' ? "$125" : "$1200",
+            period: billingPeriod === 'monthly' ? "month" : "year",
+            description: "For large organizations with advanced needs",
+            features: [
+                "Unlimited words",
+                "Generate extensive AI images",
+                "Extended Text To Speech",
+                "Extended AI Code Generator",
+                "Unlimited AI-powered Chat",
+                "Unlimited Speech to Text",
+                "24/7 Priority Support",
+            ],
+            popular: false,
+            cta: "Contact Sales",
         },
     ]
 
-    const aiCapabilities = [
+    const faqs = [
         {
-            icon: AlertTriangle,
-            title: "Risk Prediction",
-            description: "AI analyzes 50+ factors to predict issues before they occur",
-            metric: "87%",
-            label: "early detection",
-            gradient: "from-red-500 to-orange-500",
+            question: "What Is wrkportal.com AI-Powered Platform?",
+            answer: "wrkportal.com is an advanced AI-powered project management platform that combines intelligent automation with comprehensive project tracking. It uses machine learning to predict risks, optimize resources, and automate decision-making, helping teams deliver projects faster and more efficiently."
         },
         {
-            icon: Users,
-            title: "Smart Assignment",
-            description: "Match tasks based on skills and performance",
-            metric: "3x",
-            label: "faster allocation",
-            gradient: "from-blue-500 to-cyan-500",
+            question: "How Can I Make AI-Powered Content for My Next Project?",
+            answer: "Once you know your audience, choose a topic that will resonate with them. Look for trending topics in your industry or address common questions or challenges your audience may be facing. Keep in mind that your topic should be both interesting and relevant to your audience. wrkportal.com's AI tools can help you generate project plans, reports, and insights automatically."
         },
         {
-            icon: DollarSign,
-            title: "Budget Intelligence",
-            description: "Forecast spending and optimize resources",
-            metric: "23%",
-            label: "cost reduction",
-            gradient: "from-green-500 to-emerald-500",
+            question: "Is there a limitation on how much content I can generate?",
+            answer: "Limits vary by plan. Our Free plan offers limited generation capacity, while Starter and Enterprise plans provide extended or unlimited capabilities. Check our pricing section for specific details on each plan's limits and features."
         },
         {
-            icon: FileText,
-            title: "Auto Reports",
-            description: "Generate executive-ready status reports",
-            metric: "10hrs",
-            label: "saved per week",
-            gradient: "from-purple-500 to-pink-500",
+            question: "What Languages does it support?",
+            answer: "wrkportal.com supports multiple languages and can process content in various languages for international teams. The AI features are optimized for English but support multilingual workflows for global collaboration."
         },
         {
-            icon: Search,
-            title: "Semantic Search",
-            description: "Find anything using natural language",
-            metric: "< 1s",
-            label: "search time",
-            gradient: "from-yellow-500 to-orange-500",
+            question: "What is AI-Powered Project Management and how do I use it?",
+            answer: "AI-Powered Project Management uses machine learning algorithms to analyze project data, predict risks, optimize resource allocation, and generate insights automatically. Simply start creating projects in wrkportal.com, and our AI will begin analyzing patterns, suggesting optimizations, and providing predictive analytics to help you manage more effectively."
         },
         {
-            icon: Activity,
-            title: "Anomaly Detection",
-            description: "Identify unusual patterns automatically",
-            metric: "Real-time",
-            label: "alerts",
-            gradient: "from-indigo-500 to-purple-500",
+            question: "Is it helpful for Project Managers or Team Leads?",
+            answer: "Absolutely! wrkportal.com is designed specifically for project managers, team leads, and organizations managing multiple projects. The AI-powered features help automate routine tasks, predict potential issues, and provide actionable insights that make project management more efficient and effective."
         },
     ]
-
-    const stats = [
-        { value: "99.9%", label: "Uptime SLA", icon: Activity, count: 99.9 },
-        { value: "45%", label: "Efficiency Gain", icon: TrendingUp, count: 45 },
-    ]
-
-    const [animatedStats, setAnimatedStats] = useState(stats.map(() => 0))
-
-    useEffect(() => {
-        if (statsInView) {
-            stats.forEach((stat, index) => {
-                let start = 0
-                const end = stat.count
-                const duration = 2000
-                const increment = end / (duration / 16)
-
-                const timer = setInterval(() => {
-                    start += increment
-                    if (start >= end) {
-                        start = end
-                        clearInterval(timer)
-                    }
-                    setAnimatedStats((prev) => {
-                        const newStats = [...prev]
-                        newStats[index] = start
-                        return newStats
-                    })
-                }, 16)
-            })
-        }
-    }, [statsInView])
 
     return (
-        <div className="min-h-screen bg-background overflow-hidden relative">
-            {/* Custom animations CSS */}
-            <style jsx global>{`
-                @keyframes slide-down {
-                    0% { transform: translateY(-100%); opacity: 0; }
-                    50% { opacity: 1; }
-                    100% { transform: translateY(100vh); opacity: 0; }
-                }
-                @keyframes glow-pulse {
-                    0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.5); }
-                    50% { box-shadow: 0 0 60px rgba(168, 85, 247, 0.8); }
-                }
-                @keyframes gradient-shift {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
-                @keyframes scale-pulse {
-                    0%, 100% { transform: scale(1); }
-                    50% { transform: scale(1.05); }
-                }
-                @keyframes subtle-float {
-                    0%, 100% { transform: translateY(0px); }
-                    50% { transform: translateY(-6px); }
-                }
-                .animate-slide-down { animation: slide-down 3s linear infinite; }
-                .animate-glow-pulse { animation: glow-pulse 2s ease-in-out infinite; }
-                .animate-gradient-shift { 
-                    animation: gradient-shift 3s ease infinite;
-                    background-size: 200% 200%;
-                }
-                .animate-scale-pulse { animation: scale-pulse 2s ease-in-out infinite; }
-            `}</style>
+        <div className="min-h-screen bg-black text-white overflow-hidden relative">
+            {/* Animated Background */}
+            <AnimatedBackground />
+
+            {/* Floating Orbs */}
+            <FloatingOrb delay={0} size={300} x={10} y={10} color="purple" />
+            <FloatingOrb delay={1} size={250} x={80} y={20} color="pink" />
+            <FloatingOrb delay={2} size={200} x={50} y={70} color="blue" />
 
             {/* Fixed Navigation */}
-            <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+            <nav className="fixed top-0 left-0 right-0 z-50 border-b border-purple-500/30 bg-black/80 backdrop-blur-xl">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex h-20 items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="relative flex h-10 w-10 items-center justify-center">
-                                <img 
-                                    src="/logo.png" 
-                                    alt="ManagerBook" 
+                                <img
+                                    src="/logo.png"
+                                    alt="wrkportal.com"
                                     className="relative h-10 w-10 rounded-xl object-cover"
                                 />
                             </div>
                             <div>
-                                <span className="text-2xl font-bold text-blue-900 dark:text-blue-300">
-                                    ManagerBook
+                                <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                                    wrkportal.com
                                 </span>
-                                <div className="text-[10px] text-muted-foreground -mt-1 flex items-center gap-1">
+                                <div className="text-[10px] text-purple-400 -mt-1 flex items-center gap-1">
                                     <Sparkles className="h-2 w-2" />
                                     AI-Powered Platform
                                 </div>
                             </div>
                         </div>
                         <div className="hidden lg:flex items-center gap-8">
-                            <a href="#features" className="text-sm font-medium hover:text-purple-600 transition-colors relative group">
-                                Platform
-                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all"></span>
+                            <a href="#ai-tools" className="text-sm font-medium text-purple-300 hover:text-purple-200 transition-colors">
+                                AI Tools
                             </a>
-                            <a href="#ai-capabilities" className="text-sm font-medium hover:text-purple-600 transition-colors relative group">
-                                AI Features
-                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-600 group-hover:w-full transition-all"></span>
+                            <a href="#features" className="text-sm font-medium text-purple-300 hover:text-purple-200 transition-colors">
+                                Features
+                            </a>
+                            <a href="#pricing" className="text-sm font-medium text-purple-300 hover:text-purple-200 transition-colors">
+                                Pricing
                             </a>
                         </div>
                         <div className="flex items-center gap-3">
-                            <Button variant="ghost" onClick={() => router.push('/login')} className="font-medium">
+                            <Button variant="ghost" onClick={() => router.push('/login')} className="text-purple-300 hover:text-white hover:bg-purple-900/50">
                                 Sign In
                             </Button>
-                            <Button 
-                                onClick={() => router.push('/signup')} 
-                                className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 font-medium shadow-lg shadow-purple-500/30 animate-gradient-shift relative overflow-hidden group"
+                            <Button
+                                onClick={() => router.push('/signup')}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium"
                             >
-                                <span className="relative z-10 flex items-center">
-                                    Start Free Trial 
-                                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                </span>
+                                Start Free Trial
+                                <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                         </div>
                     </div>
                 </div>
             </nav>
 
-            {/* Hero Section with Neural Network */}
-            <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-                {/* Neural Network Background */}
-                <NeuralNetwork />
+            {/* Hero Section */}
+            <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden pt-4 pb-4">
+                {/* Animated Grid Background */}
+                <div className="absolute inset-0 opacity-20">
+                    <div className="absolute inset-0" style={{
+                        backgroundImage: `linear-gradient(rgba(168, 85, 247, 0.1) 1px, transparent 1px),
+                                            linear-gradient(90deg, rgba(168, 85, 247, 0.1) 1px, transparent 1px)`,
+                        backgroundSize: '50px 50px',
+                        animation: 'grid-move 20s linear infinite',
+                    }}></div>
+                </div>
 
-                {/* Animated Particles */}
-                {[...Array(30)].map((_, i) => (
-                    <Particle key={i} delay={i * 0.2} duration={3 + i * 0.1} />
-                ))}
+                {/* Animated Gradient Blobs */}
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
+                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-600/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }}></div>
+                <div className="absolute top-1/2 right-1/3 w-80 h-80 bg-blue-600/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }}></div>
 
-                {/* Data Streams */}
-                {[...Array(10)].map((_, i) => (
-                    <DataStream key={i} delay={i * 0.5} />
-                ))}
-
-                {/* Floating AI Icons */}
-                <FloatingAIIcon icon={Brain} delay={0} duration={6} />
-                <FloatingAIIcon icon={Cpu} delay={1} duration={7} />
-                <FloatingAIIcon icon={Network} delay={2} duration={8} />
-                <FloatingAIIcon icon={Bot} delay={1.5} duration={6.5} />
-                <FloatingAIIcon icon={Atom} delay={0.5} duration={7.5} />
-
-                {/* Cursor Glow Effect */}
-                <div
-                    className="fixed w-96 h-96 rounded-full bg-purple-500/10 blur-3xl pointer-events-none transition-all duration-300"
-                    style={{
-                        left: mousePosition.x - 192,
-                        top: mousePosition.y - 192,
-                    }}
-                />
-
-                {/* Hero Content */}
-                <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                    <div className="flex flex-col items-center text-center">
-                        <Badge variant="secondary" className="mb-6 px-6 py-2 text-sm border border-purple-200 dark:border-purple-800 shadow-lg backdrop-blur-sm">
-                            <Sparkles className="mr-2 h-4 w-4 text-purple-600 animate-spin" style={{ animationDuration: '3s' }} />
-                            Powered by Advanced AI & Machine Learning
+                <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="flex flex-col items-center text-center max-w-6xl mx-auto">
+                        {/* Badge with Animation */}
+                        <Badge className="mb-4 px-6 py-2 bg-purple-500/20 text-purple-300 border-purple-500/50 animate-fade-in-up">
+                            <Sparkles className="mr-2 h-4 w-4 animate-spin" style={{ animationDuration: '3s' }} />
+                            The Only Platform You Need
                         </Badge>
-                        
-                        <h1 className="max-w-6xl text-5xl font-black tracking-tight sm:text-6xl md:text-7xl lg:text-8xl leading-tight mb-8">
-                            <span className="inline-block">Enterprise Manager</span>
-                            <br />
-                            <span className="relative inline-block">
-                                <span className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 blur-3xl opacity-50 animate-pulse"></span>
-                                <span className="relative bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent animate-gradient-shift">
-                                    Meets AI Magic
-                                </span>
+
+                        {/* Main Headline */}
+                        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight mb-4 leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                            <span className="block text-white mb-2">One Platform for</span>
+                            <span className="block bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 bg-clip-text text-transparent">
+                                <TypingFeatureText
+                                    features={[
+                                        "Project Management",
+                                        "Advanced Reporting",
+                                        "Client Management",
+                                        "Task Tracking"
+                                    ]}
+                                    className="text-amber-500"
+                                />
                             </span>
                         </h1>
 
-                        <div className="min-h-[120px] flex flex-col items-center justify-center mb-8">
-                            <p className="text-2xl sm:text-3xl font-bold mb-4 text-muted-foreground">
-                                Let AI help you:
-                            </p>
-                            <div className="text-3xl sm:text-4xl md:text-5xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-                                <TypewriterText texts={aiTexts} />
+                        {/* Subheadline */}
+                        <p className="text-xl sm:text-2xl md:text-3xl text-purple-200 mb-4 max-w-4xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                            Everything you need to manage projects, track tasks, serve clients, and generate reports
+                            <span className="block mt-2 text-lg text-purple-300">
+                                All in one powerful, AI-driven platform
+                            </span>
+                        </p>
+
+                        {/* Feature Cards Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 my-8 w-full max-w-5xl animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                            <FloatingFeatureCard
+                                title="Projects"
+                                gradient="from-purple-600 to-pink-600"
+                                onClick={() => setSelectedCategory('projects')}
+                                isSelected={selectedCategory === 'projects'}
+                            />
+                            <FloatingFeatureCard
+                                title="Reporting"
+                                gradient="from-blue-600 to-purple-600"
+                                onClick={() => setSelectedCategory('reporting')}
+                                isSelected={selectedCategory === 'reporting'}
+                            />
+                            <FloatingFeatureCard
+                                title="Clients"
+                                gradient="from-pink-600 to-orange-600"
+                                onClick={() => setSelectedCategory('clients')}
+                                isSelected={selectedCategory === 'clients'}
+                            />
+                            <FloatingFeatureCard
+                                title="Tasks"
+                                gradient="from-indigo-600 to-blue-600"
+                                onClick={() => setSelectedCategory('tasks')}
+                                isSelected={selectedCategory === 'tasks'}
+                            />
+                        </div>
+
+                        {/* Feature Details Cards (Bottom Cards) */}
+                        <div className="w-full max-w-6xl mt-8 mb-12 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                                {categoryFeatures[selectedCategory].map((feature, index) => (
+                                    <FeatureDetailCard
+                                        key={index}
+                                        icon={feature.icon}
+                                        title={feature.title}
+                                        description={feature.description}
+                                        delay={index * 0.1}
+                                    />
+                                ))}
                             </div>
                         </div>
 
-                        <p className="max-w-3xl text-xl text-muted-foreground mb-12 leading-relaxed">
-                            Truly AI-Powered project management platform. Watch AI predict risks, optimize resources, 
-                            and make intelligent decisions in real-time.
-                        </p>
-
-                        <div className="flex flex-col sm:flex-row gap-4 mb-12">
+                        {/* CTA Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-4 mb-6 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
                             <Button
                                 size="lg"
                                 onClick={() => router.push('/signup')}
-                                className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 text-lg px-10 py-7 shadow-2xl shadow-purple-500/40 hover:shadow-purple-500/60 transition-all duration-300 animate-scale-pulse relative overflow-hidden group"
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg px-10 py-7 shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transition-all duration-300 hover:scale-105 group"
                             >
-                                <span className="relative z-10 flex items-center">
-                                    <Brain className="mr-2 h-5 w-5" />
-                                    Experience AI Platform
-                                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
-                                </span>
+                                <Plus className="mr-2 h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
+                                Get Started Free
+                                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                             </Button>
                             <Button
                                 size="lg"
                                 variant="outline"
                                 onClick={handleCtaClick}
-                                className="text-lg px-10 py-7 border-2 hover:bg-accent group backdrop-blur-sm"
+                                className="text-lg px-10 py-7 border-2 border-purple-500/50 text-purple-300 hover:bg-purple-900/50 hover:border-purple-400 hover:scale-105 transition-all duration-300 group"
                             >
                                 <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-                                Watch AI in Action
+                                Watch Demo
                             </Button>
                         </div>
 
-                        <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground mb-20">
-                            {[
-                                { icon: CheckCircle2, text: "30-day free trial" },
-                                { icon: CheckCircle2, text: "No credit card" },
-                                { icon: CheckCircle2, text: "Full AI access" },
-                                { icon: CheckCircle2, text: "Cancel anytime" },
-                            ].map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                    <item.icon className="h-4 w-4 text-green-500" />
-                                    {item.text}
-                                </div>
-                            ))}
+                        {/* Trust Indicators */}
+                        <div className="flex flex-wrap justify-center gap-6 text-sm text-purple-300 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                                <span>No Credit Card Required</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                                <span>Free Trial Available</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                                <span>Cancel Anytime</span>
+                            </div>
                         </div>
+                    </div>
+                </div>
+            </section>
 
-                        {/* Animated Stats Counter */}
-                        <div ref={statsRef} className="grid grid-cols-2 gap-6 w-full max-w-4xl">
-                            {stats.map((stat, index) => (
-                                <Card 
-                                    key={index} 
-                                    className="relative overflow-hidden border-2 hover:border-purple-500 transition-all duration-500 hover:shadow-2xl hover:shadow-purple-500/20 hover:scale-105 hover:-translate-y-2 group backdrop-blur-sm bg-background/80"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                                    <CardContent className="p-6 text-center relative">
-                                        <stat.icon className="h-10 w-10 mx-auto mb-3 text-purple-600 group-hover:scale-110 transition-transform" />
-                                        <div className="text-4xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-2">
-                                            {statsInView ? stat.value : '0'}
+            {/* AI Writing Tools Section */}
+            <section id="ai-tools" className="relative py-16 overflow-hidden bg-gradient-to-br from-purple-950/40 via-indigo-950/30 to-black/50">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+                        <div className="space-y-6">
+                            <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-4">
+                                <PenTool className="mr-2 h-3 w-3" />
+                                AI Writing Tools
+                            </Badge>
+                            <h2 className="text-5xl font-black text-white mb-4">
+                                Write ✍️ Better Content Faster
+                            </h2>
+                            <p className="text-xl text-purple-200 mb-2">
+                                The Future of AI Writing Tools is Finally here
+                            </p>
+                            <p className="text-purple-300 leading-relaxed mb-6">
+                                Mastering the Art of AI Content Writing: Unleashing the Power of Automated Creativity
+                            </p>
+                            <ul className="space-y-3 text-purple-200">
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle2 className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                                    <span>Multiple use cases and templates to pick from to meet all of your writing demands</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle2 className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                                    <span>Communicate with your customers with emotions</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle2 className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                                    <span>Choose the best AI copy for your message & save as a document</span>
+                                </li>
+                            </ul>
+                            <Button
+                                onClick={() => router.push('/signup')}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white mt-6"
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Get Started
+                            </Button>
+                        </div>
+                        <div className="relative">
+                            <Card className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-black/50 backdrop-blur-sm overflow-hidden">
+                                <CardContent className="p-8">
+                                    <div className="bg-purple-900/30 rounded-lg p-6 space-y-4">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
                                         </div>
-                                        <div className="text-sm text-muted-foreground font-medium">{stat.label}</div>
+                                        <div className="space-y-2">
+                                            <div className="h-4 bg-purple-700/50 rounded w-3/4"></div>
+                                            <div className="h-4 bg-purple-700/30 rounded w-1/2"></div>
+                                        </div>
+                                        <div className="h-32 bg-purple-800/30 rounded mt-4 flex items-center justify-center">
+                                            <PenTool className="h-12 w-12 text-purple-400 opacity-50" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* AI Chat Bot Section */}
+            <section className="relative py-32 overflow-hidden bg-purple-950/30">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+                        <div className="relative">
+                            <Card className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-black/50 backdrop-blur-sm overflow-hidden">
+                                <CardContent className="p-8">
+                                    <div className="bg-purple-900/30 rounded-lg p-6 space-y-4">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <Bot className="h-6 w-6 text-purple-400" />
+                                            <span className="text-purple-300 font-semibold">Chat Assistant</span>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="bg-purple-800/50 rounded-lg p-3 text-sm text-purple-200">
+                                                How can I help with your project?
+                                            </div>
+                                            <div className="bg-purple-700/50 rounded-lg p-3 text-sm text-purple-200 ml-auto w-3/4">
+                                                Show me risk predictions
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                        <div className="space-y-6">
+                            <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-4">
+                                <Bot className="mr-2 h-3 w-3" />
+                                AI Chat Bot
+                            </Badge>
+                            <h2 className="text-5xl font-black text-white mb-4">
+                                Chat 🤖 Smarter, Not Harder
+                            </h2>
+                            <p className="text-purple-300 leading-relaxed mb-6">
+                                With wrkportal.com AI, you can chat smarter, not harder. Master the art of AI-powered conversations and unleash the power of automated intelligence for your projects.
+                            </p>
+                            <Button
+                                onClick={() => router.push('/signup')}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                            >
+                                Start Chat
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* AI Video Generator Section */}
+            <section className="relative py-32 overflow-hidden">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+                        <div className="space-y-6">
+                            <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-4">
+                                <Video className="mr-2 h-3 w-3" />
+                                AI Video Generator
+                            </Badge>
+                            <h2 className="text-5xl font-black text-white mb-4">
+                                A Wonderful Video May Be Created by Anyone
+                            </h2>
+                            <p className="text-purple-300 leading-relaxed mb-6">
+                                That includes you. By leveraging our leading AI text-to-speech reader, you can breeze through presentations, reports, and documentation with ease.
+                            </p>
+                            <Button
+                                onClick={() => router.push('/signup')}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                            >
+                                Try AI Video
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                        <div className="relative">
+                            <Card className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-black/50 backdrop-blur-sm overflow-hidden">
+                                <CardContent className="p-8">
+                                    <div className="bg-purple-900/30 rounded-lg p-6 space-y-4">
+                                        <div className="aspect-video bg-gradient-to-br from-purple-800/50 to-pink-800/50 rounded-lg flex items-center justify-center">
+                                            <Play className="h-16 w-16 text-white opacity-50" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* AI Image Generator Section */}
+            <section className="relative py-32 overflow-hidden bg-purple-950/30">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid md:grid-cols-2 gap-12 items-center">
+                        <div className="grid grid-cols-3 gap-4">
+                            {[...Array(9)].map((_, i) => (
+                                <Card key={i} className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-black/50 backdrop-blur-sm aspect-square overflow-hidden">
+                                    <CardContent className="p-0 h-full">
+                                        <div className={`h-full w-full bg-gradient-to-br ${i % 3 === 0 ? 'from-purple-600/50 to-pink-600/50' :
+                                            i % 3 === 1 ? 'from-blue-600/50 to-purple-600/50' :
+                                                'from-pink-600/50 to-orange-600/50'
+                                            } flex items-center justify-center`}>
+                                            <ImageIcon className="h-8 w-8 text-white/30" />
+                                        </div>
                                     </CardContent>
                                 </Card>
                             ))}
                         </div>
-                    </div>
-                </div>
-
-                {/* Scroll Indicator */}
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
-                    <div className="w-6 h-10 border-2 border-purple-500 rounded-full flex items-start justify-center p-2">
-                        <div className="w-1 h-2 bg-purple-500 rounded-full animate-slide-down"></div>
+                        <div className="space-y-6">
+                            <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-4">
+                                <ImageIcon className="mr-2 h-3 w-3" />
+                                AI Image Generator
+                            </Badge>
+                            <h2 className="text-5xl font-black text-white mb-4">
+                                Generate Outstanding AI Images Just Using Prompt 💡
+                            </h2>
+                            <p className="text-purple-300 leading-relaxed mb-6">
+                                wrkportal.com is an artificial art generator that turns your ideas into one-of-a-kind artwork and photographs in seconds. Finally, you'll have the perfect image to go with your statement.
+                            </p>
+                            <ul className="space-y-3 text-purple-200 mb-6">
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="h-5 w-5 text-purple-400" />
+                                    <span>Multiple Styles</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="h-5 w-5 text-purple-400" />
+                                    <span>Custom Sizes</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="h-5 w-5 text-purple-400" />
+                                    <span>Photo-realistic scenes</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="h-5 w-5 text-purple-400" />
+                                    <span>Graphics & Vector Graphics</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <CheckCircle2 className="h-5 w-5 text-purple-400" />
+                                    <span>And Much More</span>
+                                </li>
+                            </ul>
+                            <Button
+                                onClick={() => router.push('/signup')}
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Generate AI Image
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Interactive AI Demo Section */}
-            <section className="py-32 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-950/50 via-pink-950/50 to-blue-950/50"></div>
-                <div className="absolute inset-0 bg-grid-slate-100 dark:bg-grid-slate-800/20 opacity-20"></div>
-
-                <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-20">
-                        <Badge variant="outline" className="mb-6 text-sm px-4 py-2 backdrop-blur-sm">
-                            <Bot className="mr-2 h-4 w-4 animate-pulse" />
-                            Live AI Demonstration
+            {/* Features Section */}
+            <section id="features" className="relative py-32 overflow-hidden">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-16">
+                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-6">
+                            <Layers className="mr-2 h-4 w-4" />
+                            Platform Features
                         </Badge>
-                        <h2 className="text-5xl font-black tracking-tight sm:text-6xl mb-6">
-                            Watch AI Work
-                            <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-                                In Real-Time
-                            </span>
-                        </h2>
-                        <p className="text-xl text-purple-600 dark:text-purple-400 max-w-3xl mx-auto font-semibold">
-                            See how artificial intelligence transforms project management from reactive to predictive
-                        </p>
-                    </div>
-
-                    {/* AI Visualization Dashboard */}
-                    <Card className="max-w-6xl mx-auto border-2 border-purple-500/50 shadow-2xl shadow-purple-500/20 backdrop-blur-sm bg-background/80 overflow-hidden">
-                        <CardContent className="p-0">
-                            <div className="grid md:grid-cols-2">
-                                {/* Left: AI Processing */}
-                                <div className="p-10 bg-gradient-to-br from-slate-950 to-purple-950 text-white">
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
-                                        <span className="text-sm font-semibold text-green-400">AI PROCESSING</span>
-                                    </div>
-                                    
-                                    <div className="space-y-6">
-                                        {[
-                                            { label: "Analyzing project data", progress: 95, icon: Database },
-                                            { label: "Predicting risk factors", progress: 87, icon: AlertTriangle },
-                                            { label: "Optimizing resource allocation", progress: 92, icon: Users },
-                                            { label: "Generating insights", progress: 78, icon: Brain },
-                                        ].map((item, idx) => (
-                                            <div key={idx} className="space-y-2">
-                                                <div className="flex items-center justify-between text-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <item.icon className="h-4 w-4" />
-                                                        <span>{item.label}</span>
-                                                    </div>
-                                                    <span className="font-bold">{item.progress}%</span>
-                                                </div>
-                                                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-full transition-all duration-1000 animate-gradient-shift"
-                                                        style={{ width: `${item.progress}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="mt-10 p-4 bg-purple-500/20 border border-purple-500/50 rounded-lg backdrop-blur-sm">
-                                        <div className="flex items-start gap-3">
-                                            <Sparkles className="h-5 w-5 text-purple-400 animate-pulse mt-0.5" />
-                                            <div>
-                                                <div className="font-semibold mb-1">AI Recommendation</div>
-                                                <div className="text-sm text-gray-300">
-                                                    Based on current data, Project Alpha has 78% risk of delay. 
-                                                    Recommend reallocating 2 senior developers to accelerate timeline.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Right: Results */}
-                                <div className="p-10 bg-gradient-to-br from-background to-purple-50 dark:to-purple-950/30">
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <div className="h-3 w-3 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-                                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">AI INSIGHTS</span>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        {[
-                                            { 
-                                                icon: TrendingUp, 
-                                                label: "Efficiency Boost", 
-                                                value: "+45%",
-                                                color: "text-green-600 dark:text-green-400",
-                                                bgColor: "bg-green-100 dark:bg-green-900/30"
-                                            },
-                                            { 
-                                                icon: DollarSign, 
-                                                label: "Cost Savings", 
-                                                value: "$125K",
-                                                color: "text-blue-600 dark:text-blue-400",
-                                                bgColor: "bg-blue-100 dark:bg-blue-900/30"
-                                            },
-                                            { 
-                                                icon: Clock, 
-                                                label: "Time Saved", 
-                                                value: "240hrs",
-                                                color: "text-purple-600 dark:text-purple-400",
-                                                bgColor: "bg-purple-100 dark:bg-purple-900/30"
-                                            },
-                                            { 
-                                                icon: Target, 
-                                                label: "Accuracy", 
-                                                value: "99.2%",
-                                                color: "text-orange-600 dark:text-orange-400",
-                                                bgColor: "bg-orange-100 dark:bg-orange-900/30"
-                                            },
-                                        ].map((item, idx) => (
-                                            <Card 
-                                                key={idx} 
-                                                className="border-2 hover:border-purple-500 transition-all duration-500 hover:shadow-lg hover:scale-105 hover:-translate-y-1 group"
-                                            >
-                                                <CardContent className="p-4 flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`h-12 w-12 ${item.bgColor} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                                                            <item.icon className={`h-6 w-6 ${item.color}`} />
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-sm text-muted-foreground">{item.label}</div>
-                                                            <div className={`text-2xl font-black ${item.color}`}>{item.value}</div>
-                                                        </div>
-                                                    </div>
-                                                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </section>
-
-            {/* AI Capabilities Grid */}
-            <section id="ai-capabilities" className="py-32 bg-slate-950 text-white relative overflow-hidden">
-                {/* Animated background */}
-                <div className="absolute inset-0">
-                    {[...Array(20)].map((_, i) => (
-                        <div
-                            key={i}
-                            className="absolute w-1 h-1 bg-purple-500/30 rounded-full animate-pulse"
-                            style={{
-                                left: `${Math.random() * 100}%`,
-                                top: `${Math.random() * 100}%`,
-                                animationDelay: `${Math.random() * 2}s`,
-                                animationDuration: `${2 + Math.random() * 2}s`,
-                            }}
-                        />
-                    ))}
-                </div>
-
-                <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-20">
-                        <Badge variant="secondary" className="mb-6 text-sm px-4 py-2 bg-purple-100 dark:bg-purple-500/20 border-purple-500/50 text-purple-900 dark:text-purple-100">
-                            <Brain className="mr-2 h-4 w-4 animate-pulse" />
-                            AI Superpowers
-                        </Badge>
-                        <h2 className="text-5xl font-black tracking-tight sm:text-6xl mb-6">
-                            6 AI Features That
-                            <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent animate-gradient-shift">
-                                Change Everything
-                            </span>
+                        <h2 className="text-5xl font-black mb-6">
+                            Everything You Need
+                            <span className="block bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">And More</span>
                         </h2>
                     </div>
 
                     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                        {aiCapabilities.map((capability, index) => (
-                            <Card 
-                                key={index} 
-                                className="group relative overflow-hidden bg-slate-900/50 border-slate-800 hover:border-purple-500 transition-all duration-500 hover:shadow-2xl hover:shadow-purple-500/30 backdrop-blur-sm hover:scale-105 hover:-translate-y-2"
-                            >
-                                {/* Animated gradient overlay */}
-                                <div className={`absolute inset-0 bg-gradient-to-br ${capability.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-
-                                <CardContent className="p-8 relative">
-                                    <div className={`inline-flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br ${capability.gradient} mb-6 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 animate-glow-pulse`}>
-                                        <capability.icon className="h-8 w-8 text-white" />
+                        {[
+                            { icon: Brain, title: "AI-Powered Intelligence", description: "Advanced machine learning algorithms predict risks, optimize resources, and automate decision-making." },
+                            { icon: Target, title: "Strategic Alignment", description: "Connect every task to company objectives with OKR tracking and real-time visibility." },
+                            { icon: TrendingUp, title: "Portfolio Intelligence", description: "Manage unlimited projects with real-time health monitoring and predictive analytics." },
+                            { icon: Users, title: "Resource Optimization", description: "AI-driven capacity planning ensures the right people work on the right projects." },
+                            { icon: BarChart3, title: "Predictive Analytics", description: "Machine learning models forecast budgets, timelines, and risks with precision." },
+                            { icon: Shield, title: "Enterprise Security", description: "SOC 2, ISO 27001, GDPR compliant with end-to-end encryption." },
+                        ].map((feature, index) => (
+                            <Card key={index} className="border-2 border-purple-500/30 bg-purple-950/50 backdrop-blur-sm hover:border-purple-500/50 transition-all duration-300 hover:scale-105">
+                                <CardContent className="p-8">
+                                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 mb-6">
+                                        <feature.icon className="h-8 w-8 text-white" />
                                     </div>
-                                    <h3 className="text-xl font-bold mb-3 text-white group-hover:text-purple-400 transition-colors">{capability.title}</h3>
-                                    <p className="text-gray-400 mb-6 leading-relaxed">{capability.description}</p>
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className={`text-3xl font-black bg-gradient-to-r ${capability.gradient} bg-clip-text text-transparent`}>
-                                                {capability.metric}
-                                            </div>
-                                            <div className="text-xs text-gray-500">{capability.label}</div>
-                                        </div>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="sm" 
-                                            onClick={handleCtaClick}
-                                            className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
-                                        >
-                                            Try Now <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                        </Button>
-                                    </div>
+                                    <h3 className="text-xl font-bold mb-3 text-white">{feature.title}</h3>
+                                    <p className="text-purple-300 leading-relaxed">{feature.description}</p>
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
-
-                    <div className="mt-16 text-center">
-                        <Button
-                            size="lg"
-                            onClick={() => router.push('/signup')}
-                            className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-12 py-7 shadow-2xl animate-scale-pulse relative overflow-hidden group"
-                        >
-                            <span className="relative z-10 flex items-center">
-                                <Sparkles className="mr-2 h-5 w-5" />
-                                Unlock All AI Features
-                                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-2 transition-transform" />
-                            </span>
-                        </Button>
-                    </div>
                 </div>
             </section>
 
-            {/* Features Grid */}
-            <section id="features" className="py-32 relative">
+            {/* Pricing Section */}
+            <section id="pricing" className="relative py-32 overflow-hidden bg-purple-950/30">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-20">
-                        <Badge variant="outline" className="mb-6 text-sm px-4 py-2">
-                            <Layers className="mr-2 h-4 w-4" />
-                            Platform Features
+                    <div className="text-center mb-16">
+                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-6">
+                            <DollarSign className="mr-2 h-4 w-4" />
+                            Flexible Pricing
                         </Badge>
-                        <h2 className="text-5xl font-black tracking-tight sm:text-6xl mb-6">
-                            Everything You Need
-                            <span className="block text-purple-600">And More</span>
+                        <h2 className="text-5xl font-black mb-6">
+                            Flexible Pricing Plans
+                            <span className="block bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">That Fit Your Needs</span>
                         </h2>
+
+                        {/* Billing Toggle */}
+                        <div className="flex items-center justify-center gap-4 mt-8">
+                            <span className={`text-sm font-medium ${billingPeriod === 'monthly' ? 'text-white' : 'text-purple-400'}`}>
+                                Pay Monthly
+                            </span>
+                            <button
+                                onClick={() => setBillingPeriod(billingPeriod === 'monthly' ? 'yearly' : 'monthly')}
+                                className="relative w-14 h-7 bg-purple-600 rounded-full transition-colors"
+                            >
+                                <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${billingPeriod === 'yearly' ? 'translate-x-7' : ''}`} />
+                            </button>
+                            <span className={`text-sm font-medium ${billingPeriod === 'yearly' ? 'text-white' : 'text-purple-400'} flex items-center gap-2`}>
+                                Pay Yearly
+                                {billingPeriod === 'yearly' && (
+                                    <Badge className="bg-green-500 text-white text-xs">
+                                        Save 20%
+                                    </Badge>
+                                )}
+                            </span>
+                        </div>
                     </div>
 
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {features.map((feature, index) => (
+                    <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                        {pricingPlans.map((plan, index) => (
                             <Card
                                 key={index}
-                                className={`group relative overflow-hidden border-2 transition-all duration-500 cursor-pointer hover:scale-105 hover:-translate-y-2 ${
-                                    activeFeature === index 
-                                        ? 'border-purple-500 shadow-2xl shadow-purple-500/30 scale-105 -translate-y-2' 
-                                        : 'hover:border-purple-300 hover:shadow-xl'
-                                }`}
-                                onMouseEnter={() => setActiveFeature(index)}
+                                className={`relative overflow-hidden border-2 transition-all duration-500 hover:scale-105 ${plan.popular
+                                    ? 'border-purple-500 bg-purple-950/70 scale-105'
+                                    : 'border-purple-500/30 bg-purple-950/50 hover:border-purple-500/50'
+                                    } backdrop-blur-sm`}
                             >
-                                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-                                <CardContent className="p-8 relative">
-                                    <div className={`inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.color} mb-6 shadow-lg transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
-                                        <feature.icon className="h-8 w-8 text-white" />
+                                {plan.popular && (
+                                    <div className="absolute top-0 right-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1 text-xs font-bold rounded-bl-lg">
+                                        Popular
                                     </div>
-                                    <h3 className="text-2xl font-bold mb-4 group-hover:text-purple-600 transition-colors">{feature.title}</h3>
-                                    <p className="text-muted-foreground leading-relaxed mb-6">{feature.description}</p>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
+                                )}
+                                <CardContent className="p-8">
+                                    <div className="mb-6">
+                                        <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">{plan.name}</h3>
+                                        <div className="flex items-baseline gap-2 mb-4">
+                                            <span className="text-5xl font-black text-white">{plan.price}</span>
+                                            <span className="text-purple-300">/{plan.period}</span>
+                                        </div>
+                                        <p className="text-sm text-purple-400">*Billed monthly until cancelled</p>
+                                    </div>
+                                    <p className="text-purple-300 mb-6">{plan.description}</p>
+                                    <ul className="space-y-4 mb-8">
+                                        {plan.features.map((feature, idx) => (
+                                            <li key={idx} className="flex items-start gap-3">
+                                                <CheckCircle2 className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                                                <span className="text-sm text-purple-200">{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <Button
                                         onClick={() => router.push('/signup')}
-                                        className="p-0 h-auto font-semibold text-purple-600 group-hover:gap-2 transition-all"
+                                        className={`w-full ${plan.popular
+                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                                            : 'bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 border border-purple-500/50'
+                                            }`}
                                     >
-                                        Learn more <ChevronRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                        {plan.cta}
                                     </Button>
                                 </CardContent>
                             </Card>
@@ -1059,46 +1069,64 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Final CTA */}
-            <section className="py-32">
+            {/* FAQ Section */}
+            <section id="faq" className="relative py-32 overflow-hidden">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 shadow-2xl animate-gradient-shift">
-                        <div className="absolute inset-0">
-                            {[...Array(30)].map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="absolute w-2 h-2 bg-white/20 rounded-full animate-pulse"
-                                    style={{
-                                        left: `${Math.random() * 100}%`,
-                                        top: `${Math.random() * 100}%`,
-                                        animationDelay: `${Math.random() * 2}s`,
-                                    }}
-                                />
-                            ))}
-                        </div>
+                    <div className="text-center mb-16">
+                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-6">
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Frequently Asked Questions
+                        </Badge>
+                        <h2 className="text-5xl font-black mb-4">
+                            Questions About Our
+                            <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                                wrkportal.com Platform?
+                            </span>
+                        </h2>
+                        <p className="text-xl text-purple-400 mt-4">We have Answers!</p>
+                    </div>
+
+                    <div className="max-w-4xl mx-auto space-y-4">
+                        {faqs.map((faq, index) => (
+                            <AccordionItem
+                                key={index}
+                                question={faq.question}
+                                answer={faq.answer}
+                                isOpen={openFAQ === index}
+                                onToggle={() => toggleFAQ(index)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Final CTA */}
+            <section className="relative py-32 overflow-hidden bg-gradient-to-r from-purple-950/50 to-pink-950/50">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <Card className="relative overflow-hidden border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-black/50 backdrop-blur-sm">
                         <CardContent className="relative p-16 sm:p-24 text-center">
-                            <div className="inline-flex items-center gap-2 mb-6 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full">
-                                <Brain className="h-5 w-5 text-white animate-pulse" />
-                                <span className="text-white font-semibold">AI-Powered Project Management</span>
+                            <div className="inline-flex items-center gap-2 mb-6 px-6 py-3 bg-purple-500/20 backdrop-blur-sm rounded-full border border-purple-500/50">
+                                <Brain className="h-5 w-5 text-purple-300" />
+                                <span className="text-purple-200 font-semibold">AI-Powered Project Management</span>
                             </div>
                             <h2 className="text-5xl font-black text-white sm:text-6xl mb-6">
                                 Ready to Experience
                                 <span className="block">The Future?</span>
                             </h2>
-                            <p className="text-xl text-white/90 mb-10 max-w-3xl mx-auto">
-                                Join thousands of teams using AI to deliver projects faster, smarter, and with less risk.
+                            <p className="text-xl text-purple-200 mb-10 max-w-3xl mx-auto">
+                                Join teams using AI to deliver projects faster, smarter, and with less risk.
                             </p>
                             <Button
                                 size="lg"
                                 onClick={() => router.push('/signup')}
-                                className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-12 py-7 shadow-2xl font-bold animate-scale-pulse"
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg px-12 py-7 font-bold"
                             >
                                 <Sparkles className="mr-2 h-5 w-5" />
                                 Start Your Free Trial
                                 <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
-                            <p className="mt-6 text-white/80 text-sm">
-                                30 days free • No credit card • Full AI access
+                            <p className="mt-6 text-purple-300 text-sm">
+                                Free trial available • No credit card required • Full AI access
                             </p>
                         </CardContent>
                     </Card>
@@ -1106,109 +1134,73 @@ export default function LandingPage() {
             </section>
 
             {/* Contact Us Section */}
-            <section className="relative py-24 overflow-hidden bg-gradient-to-br from-purple-50 via-background to-pink-50 dark:from-purple-950/20 dark:via-background dark:to-pink-950/20">
+            <section className="relative py-24 overflow-hidden bg-purple-950/30">
                 <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="max-w-4xl mx-auto">
-                        {/* Section Header */}
                         <div className="text-center mb-12">
                             <Badge className="mb-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0">
                                 <MessageSquare className="mr-1 h-3 w-3" />
                                 Get In Touch
                             </Badge>
-                            <h2 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            <h2 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                                 Contact Us
                             </h2>
-                            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                            <p className="text-lg text-purple-300 max-w-2xl mx-auto">
                                 Have a question, suggestion, or want to discuss pricing? We'd love to hear from you!
                             </p>
                         </div>
-
-                        {/* Contact Form */}
                         <ContactForm />
                     </div>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="relative border-t py-16 bg-gradient-to-br from-purple-50/50 via-pink-50/30 to-background dark:from-purple-950/20 dark:via-pink-950/10 overflow-hidden">
-                {/* Decorative Elements */}
-                <div className="absolute inset-0 pointer-events-none">
-                    {[...Array(20)].map((_, i) => (
-                        <div
-                            key={i}
-                            className="absolute w-1 h-1 bg-purple-400/20 rounded-full animate-pulse"
-                            style={{
-                                left: `${Math.random() * 100}%`,
-                                top: `${Math.random() * 100}%`,
-                                animationDelay: `${Math.random() * 3}s`,
-                                animationDuration: `${2 + Math.random() * 2}s`,
-                            }}
-                        />
-                    ))}
-                </div>
-
+            <footer className="relative border-t border-purple-500/30 py-16 bg-black/50 backdrop-blur-sm">
                 <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Main Footer Content */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-                        {/* Brand Section */}
                         <div className="md:col-span-2">
-                            <div 
-                                className="flex items-center gap-3 mb-6 cursor-pointer group" 
+                            <div
+                                className="flex items-center gap-3 mb-6 cursor-pointer group"
                                 onClick={() => router.push('/landing')}
                             >
                                 <div className="relative flex h-12 w-12 items-center justify-center">
-                                    <img 
-                                        src="/logo.png" 
-                                        alt="ManagerBook" 
+                                    <img
+                                        src="/logo.png"
+                                        alt="wrkportal.com"
                                         className="relative h-12 w-12 rounded-xl object-cover"
                                     />
                                 </div>
                                 <div>
-                                    <span className="font-black text-2xl text-blue-900 dark:text-blue-300">
-                                        ManagerBook
+                                    <span className="font-black text-2xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                                        wrkportal.com
                                     </span>
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <p className="text-xs text-purple-400 flex items-center gap-1">
                                         <Brain className="h-3 w-3" />
                                         AI-Powered Platform
                                     </p>
                                 </div>
                             </div>
-                            <p className="text-sm text-muted-foreground max-w-md leading-relaxed mb-4">
+                            <p className="text-sm text-purple-300 max-w-md leading-relaxed mb-4">
                                 Transform your project management with artificial intelligence. Predict risks, optimize resources, and make smarter decisions in real-time.
                             </p>
-                            <div className="flex gap-3">
-                                {[Globe, Shield, Award, Zap].map((Icon, idx) => (
-                                    <div 
-                                        key={idx}
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 transition-all cursor-pointer group"
-                                    >
-                                        <Icon className="h-4 w-4 text-purple-600 group-hover:scale-110 transition-transform" />
-                                    </div>
-                                ))}
-                            </div>
                         </div>
-
                     </div>
 
-                    {/* Bottom Bar */}
-                    <div className="pt-8 border-t border-purple-200/50 dark:border-purple-800/50">
+                    <div className="pt-8 border-t border-purple-500/30">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                                <Link href="/privacy" className="hover:text-purple-600 transition-colors flex items-center gap-1">
-                                    <Shield className="h-3 w-3" />
+                            <div className="flex items-center gap-6 text-sm text-purple-400">
+                                <Link href="/privacy" className="hover:text-purple-300 transition-colors">
                                     Privacy Policy
                                 </Link>
-                                <Link href="/terms" className="hover:text-purple-600 transition-colors flex items-center gap-1">
-                                    <FileText className="h-3 w-3" />
+                                <Link href="/terms" className="hover:text-purple-300 transition-colors">
                                     Terms of Service
                                 </Link>
-                                <Link href="/security" className="hover:text-purple-600 transition-colors flex items-center gap-1">
-                                    <Lock className="h-3 w-3" />
+                                <Link href="/security" className="hover:text-purple-300 transition-colors">
                                     Security
                                 </Link>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <p>&copy; 2025 ManagerBook.</p>
+                            <div className="flex items-center gap-2 text-sm text-purple-400">
+                                <p>&copy; 2025 wrkportal.com</p>
                             </div>
                         </div>
                     </div>

@@ -29,27 +29,10 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
-        // Fetch change requests for this project
+        // Fetch change requests for this project (tenant isolation already verified through project)
         const changeRequests = await prisma.changeRequest.findMany({
             where: {
                 projectId: projectId,
-                tenantId: session.user.tenantId
-            },
-            include: {
-                requestedBy: {
-                    select: {
-                        firstName: true,
-                        lastName: true,
-                        email: true
-                    }
-                },
-                approvedBy: {
-                    select: {
-                        firstName: true,
-                        lastName: true,
-                        email: true
-                    }
-                }
             },
             orderBy: {
                 createdAt: 'desc'

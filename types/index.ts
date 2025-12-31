@@ -99,6 +99,30 @@ export enum TimesheetStatus {
   REJECTED = 'REJECTED',
 }
 
+export enum WorkflowType {
+  SOFTWARE_DEVELOPMENT = 'SOFTWARE_DEVELOPMENT',
+  PRODUCT_MANAGEMENT = 'PRODUCT_MANAGEMENT',
+  MARKETING = 'MARKETING',
+  HUMAN_RESOURCES = 'HUMAN_RESOURCES',
+  LEGAL = 'LEGAL',
+  CUSTOMER_SERVICE = 'CUSTOMER_SERVICE',
+  OPERATIONS = 'OPERATIONS',
+  IT_SUPPORT = 'IT_SUPPORT',
+  FINANCE = 'FINANCE',
+  SALES = 'SALES',
+  GENERAL = 'GENERAL',
+}
+
+export enum MethodologyType {
+  AGILE = 'AGILE',
+  SCRUM = 'SCRUM',
+  KANBAN = 'KANBAN',
+  WATERFALL = 'WATERFALL',
+  LEAN = 'LEAN',
+  HYBRID = 'HYBRID',
+  NONE = 'NONE',
+}
+
 export enum BudgetType {
   CAPEX = 'CAPEX',
   OPEX = 'OPEX',
@@ -197,8 +221,11 @@ export interface User {
   timezone: string
   locale: string
   landingPage?: string
+  primaryWorkflowType?: WorkflowType
+  workflowSettings?: Record<string, any>
   status: 'ACTIVE' | 'INACTIVE' | 'INVITED'
   lastLogin?: Date
+  emailVerified?: Date | null
   createdAt: Date
 }
 
@@ -283,6 +310,8 @@ export interface Project {
   progress: number
   tags: string[]
   metadata: Record<string, any>
+  workflowType?: WorkflowType
+  methodologyType?: MethodologyType
   createdAt: Date
   updatedAt: Date
 }

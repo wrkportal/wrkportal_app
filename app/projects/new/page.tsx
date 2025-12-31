@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Plus } from "lucide-react"
 import { ProgramDialog } from "@/components/dialogs/program-dialog"
+import { useWorkflowTerminology } from "@/hooks/useWorkflowTerminology"
 
 export default function NewProjectPage() {
     const router = useRouter()
+    const { getTerm } = useWorkflowTerminology()
     const [programs, setPrograms] = useState<any[]>([])
     const [users, setUsers] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -99,17 +101,17 @@ export default function NewProjectPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center gap-4">
+                {/* Header */}
+                <div className="flex items-center gap-4">
                 <Button variant="outline" size="icon" onClick={() => router.back()}>
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        Create New Project
+                        Create New {getTerm('project')}
                     </h1>
                     <p className="text-muted-foreground mt-0.5">
-                        Fill in the details to create a new project
+                        Fill in the details to create a new {getTerm('project').toLowerCase()}
                     </p>
                 </div>
             </div>
@@ -125,17 +127,17 @@ export default function NewProjectPage() {
                         <CardContent className="space-y-4">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Project Name *</Label>
+                                    <Label htmlFor="name">{getTerm('project')} Name *</Label>
                                     <Input
                                         id="name"
-                                        placeholder="Enter project name"
+                                        placeholder={`Enter ${getTerm('project').toLowerCase()} name`}
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         required
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="code">Project Code *</Label>
+                                    <Label htmlFor="code">{getTerm('project')} Code *</Label>
                                     <Input
                                         id="code"
                                         placeholder="e.g., PROJ-001"
@@ -191,7 +193,7 @@ export default function NewProjectPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="manager">Project Manager *</Label>
+                                    <Label htmlFor="manager">{getTerm('project')} Manager *</Label>
                                     <Select
                                         value={formData.managerId}
                                         onValueChange={(value) => setFormData({ ...formData, managerId: value })}
@@ -304,7 +306,7 @@ export default function NewProjectPage() {
                         ) : (
                             <>
                                 <Plus className="h-4 w-4" />
-                                Create Project
+                                Create {getTerm('project')}
                             </>
                         )}
                     </Button>

@@ -17,6 +17,7 @@ export const authConfig = {
         token.email = user.email
         token.role = (user as any).role
         token.tenantId = (user as any).tenantId
+        token.emailVerified = (user as any).emailVerified
       }
 
       // Update session
@@ -32,6 +33,7 @@ export const authConfig = {
         session.user.email = token.email as string
         session.user.role = token.role as string
         session.user.tenantId = token.tenantId as string
+        session.user.emailVerified = token.emailVerified as Date | null
       }
       return session
     },
@@ -56,7 +58,7 @@ export const authConfig = {
           ) {
             return true // Allow logged-in users to access password reset pages
           }
-          return Response.redirect(new URL('/my-work', nextUrl))
+          return Response.redirect(new URL('/', nextUrl))
         }
         return true // Allow access to auth pages
       }
@@ -69,6 +71,19 @@ export const authConfig = {
       // Require authentication for all other pages
       if (!isLoggedIn) {
         return Response.redirect(new URL('/login', nextUrl))
+      }
+
+      // Check email verification for protected pages (except verification page itself)
+      if (isLoggedIn && auth.user && !auth.user.emailVerified && !nextUrl.pathname.startsWith('/verify-email')) {
+        // Allow access to settings and verification-related pages
+        if (
+          nextUrl.pathname.startsWith('/settings') ||
+          nextUrl.pathname.startsWith('/api/auth/resend-verification')
+        ) {
+          return true
+        }
+        // Redirect to settings with verification prompt for other pages
+        return Response.redirect(new URL('/settings?verify=required', nextUrl))
       }
 
       return true

@@ -139,16 +139,18 @@ export function RAIDTab({ projectId }: RAIDTabProps) {
                                     <div className="flex items-center gap-4 text-xs">
                                         <div>
                                             <span className="text-muted-foreground">Impact:</span>
-                                            <span className="ml-1 font-medium">{risk.impact}/5</span>
+                                            <span className="ml-1 font-medium">{risk.impact}</span>
                                         </div>
                                         <div>
                                             <span className="text-muted-foreground">Probability:</span>
-                                            <span className="ml-1 font-medium">{risk.probability}/5</span>
+                                            <span className="ml-1 font-medium">{risk.probability}</span>
                                         </div>
-                                        <div>
-                                            <span className="text-muted-foreground">Score:</span>
-                                            <span className="ml-1 font-medium">{risk.score}</span>
-                                        </div>
+                                        {risk.score && (
+                                            <div>
+                                                <span className="text-muted-foreground">Score:</span>
+                                                <span className="ml-1 font-medium">{risk.score}</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <StatusBadge status={risk.status} />
@@ -194,7 +196,7 @@ export function RAIDTab({ projectId }: RAIDTabProps) {
                                     <div className="flex items-center gap-2">
                                         <StatusBadge status={issue.status} />
                                         <span className="text-xs text-muted-foreground">
-                                            Identified: {formatDate(issue.identifiedDate)}
+                                            Reported: {formatDate(issue.reportedDate || issue.createdAt)}
                                         </span>
                                         {issue.resolvedDate && (
                                             <>
@@ -205,13 +207,6 @@ export function RAIDTab({ projectId }: RAIDTabProps) {
                                             </>
                                         )}
                                     </div>
-                                    {issue.escalationLevel > 0 && (
-                                        <div className="text-xs">
-                                            <span className="text-amber-600">
-                                                ⚠ Escalation Level {issue.escalationLevel}
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
                             ))}
                             {issues.length === 0 && (

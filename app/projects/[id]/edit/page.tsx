@@ -119,21 +119,24 @@ export default function EditProjectPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => router.back()}
-                >
-                    <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Edit Project</h1>
-                    <p className="text-muted-foreground mt-0.5">Update project details</p>
+                {/* Header */}
+                <div className="flex items-center justify-between pb-2 mb-4">
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.back()}
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Edit Project</h1>
+                            <p className="text-sm text-muted-foreground mt-0.5">Update project details</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <Card>
+                <Card>
                 <CardHeader>
                     <CardTitle>Project Information</CardTitle>
                     <CardDescription>Update the details for this project</CardDescription>

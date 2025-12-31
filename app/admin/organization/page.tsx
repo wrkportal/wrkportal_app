@@ -207,17 +207,18 @@ export default function AdminOrganizationPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        Organization Management
-                    </h1>
-                    <p className="text-muted-foreground mt-0.5">
-                        Manage users, teams, roles, and organizational structure
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
+            {/* Header - Sticky */}
+            <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-4 mb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            Organization Management
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                            Manage users, teams, roles, and organizational structure
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
                     {/* Organization name and ID */}
                     <div className="px-3 py-2 rounded-md border text-xs text-muted-foreground bg-white dark:bg-gray-900">
                         <span className="font-medium mr-1">Organization:</span>
@@ -233,6 +234,7 @@ export default function AdminOrganizationPage() {
                         <UserPlus className="mr-2 h-4 w-4" />
                         Add User
                     </Button>
+                    </div>
                 </div>
             </div>
 

@@ -56,7 +56,7 @@ export function GanttChart({ projects }: GanttChartProps) {
         if (projectTasks[projectId]) return // Already loaded
 
         setLoadingTasks(prev => new Set(prev).add(projectId))
-        
+
         try {
             const response = await fetch(`/api/projects/${projectId}/tasks`)
             if (response.ok) {
@@ -114,11 +114,11 @@ export function GanttChart({ projects }: GanttChartProps) {
         const firstDay = new Date(year, month, 1)
         const lastDay = new Date(year, month + 1, 0)
         const days: Date[] = []
-        
+
         for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
             days.push(new Date(d))
         }
-        
+
         return days
     }
 
@@ -162,8 +162,8 @@ export function GanttChart({ projects }: GanttChartProps) {
             ON_HOLD: 'bg-amber-500',
             COMPLETED: 'bg-green-500',
             CANCELLED: 'bg-red-500',
-        }
-        return colors[status] || 'bg-gray-500'
+        } as const;
+        return colors[status as keyof typeof colors] || 'bg-gray-500'
     }
 
     const getTaskStatusColor = (status: string) => {
@@ -228,7 +228,7 @@ export function GanttChart({ projects }: GanttChartProps) {
                                 )
                             })}
                         </div>
-                        
+
                         {/* Date Headers (Days) */}
                         <div className="h-10 flex border-b-2 border-slate-300 dark:border-slate-600">
                             {months.map((month, monthIndex) => {
@@ -257,7 +257,7 @@ export function GanttChart({ projects }: GanttChartProps) {
                         const isExpanded = expandedProjects.has(project.id)
                         const tasks = projectTasks[project.id] || []
                         const isLoading = loadingTasks.has(project.id)
-                        
+
                         // Separate tasks into parent tasks, subtasks, and milestones
                         const parentTasks = tasks.filter(t => !t.parentId && !isMilestone(t))
                         const subtasks = tasks.filter(t => t.parentId !== null)
@@ -477,7 +477,7 @@ export function GanttChart({ projects }: GanttChartProps) {
                                                                 {/* Diamond markers at start and end */}
                                                                 <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 bg-yellow-600 rotate-45 shadow-sm" />
                                                                 <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-yellow-600 rotate-45 shadow-sm" />
-                                                                
+
                                                                 {/* Milestone label */}
                                                                 <div className="absolute inset-0 flex items-center px-2">
                                                                     <span className="text-[10px] font-semibold text-white truncate">

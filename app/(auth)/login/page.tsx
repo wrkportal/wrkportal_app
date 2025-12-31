@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Mail, Lock, Chrome, AlertCircle, Building2 } from 'lucide-react'
+import { Mail, Lock, Chrome, AlertCircle, Building2, MailCheck, Loader2 } from 'lucide-react'
+import { useAuthStore } from '@/stores/authStore'
 
 export default function LoginPage() {
     const router = useRouter()
@@ -20,6 +21,9 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false)
     const [showSSO, setShowSSO] = useState(false)
     const [ssoIdentifier, setSsoIdentifier] = useState('')
+    const [showResendVerification, setShowResendVerification] = useState(false)
+    const [resendLoading, setResendLoading] = useState(false)
+    const [resendSuccess, setResendSuccess] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -34,10 +38,30 @@ export default function LoginPage() {
             })
 
             if (result?.error) {
-                setError('Invalid email or password')
+                // Check if error is related to email verification
+                const errorMessage = result.error.toLowerCase()
+                if (errorMessage.includes('email_not_verified') || errorMessage.includes('verify')) {
+                    setError('Please verify your email address before signing in. Check your inbox for the verification link.')
+                    setShowResendVerification(true)
+                } else {
+                    setError('Invalid email or password')
+                }
             } else {
-                router.push('/my-work')
-                router.refresh()
+                console.log('[Login] ✅ Login successful, clearing cache and redirecting...')
+                
+                // Clear auth store cache to force fresh fetch
+                useAuthStore.getState().setUser(null)
+                
+                // Clear localStorage cache
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('auth-storage')
+                    console.log('[Login] Cleared localStorage cache')
+                }
+                
+                // Force a hard navigation to clear any cached data
+                // This ensures the home page will fetch fresh user data
+                console.log('[Login] Redirecting to home page...')
+                window.location.href = '/'
             }
         } catch (error) {
             setError('An error occurred. Please try again.')
@@ -55,7 +79,7 @@ export default function LoginPage() {
             console.log('Calling signIn with google provider...')
             // Use signIn from next-auth/react for proper OAuth flow
             await signIn('google', { 
-                callbackUrl: '/my-work',
+                callbackUrl: '/',
                 redirect: true, // Will redirect on success
             })
             
@@ -95,14 +119,14 @@ export default function LoginPage() {
             } else if (data.ssoProvider === 'OIDC') {
                 // Use NextAuth with OIDC provider
                 const result = await signIn('oidc', {
-                    callbackUrl: '/my-work',
+                    callbackUrl: '/',
                     redirect: true,
                     tenant: data.tenantId,
                 })
             } else if (data.ssoProvider === 'AZURE_AD') {
                 // Use NextAuth with Azure AD
                 const result = await signIn('azure-ad', {
-                    callbackUrl: '/my-work',
+                    callbackUrl: '/',
                     redirect: true,
                     tenant: data.tenantId,
                 })
@@ -126,7 +150,7 @@ export default function LoginPage() {
                         <div className="flex items-center justify-center gap-2 mb-1.5">
                             <Image 
                                 src="/logo.png" 
-                                alt="ManagerBook Logo" 
+                                alt="wrkportal.com Logo" 
                                 width={110} 
                                 height={33}
                                 className="h-7 sm:h-7 md:h-8 w-auto object-contain"
@@ -210,9 +234,68 @@ export default function LoginPage() {
 
                         {/* Error Message */}
                         {error && (
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-red-700 bg-red-50 border border-red-200 p-2.5 sm:p-3 rounded-lg">
-                                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                                {error}
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 text-xs sm:text-sm text-red-700 bg-red-50 border border-red-200 p-2.5 sm:p-3 rounded-lg">
+                                    <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                                    {error}
+                                </div>
+                                
+                                {/* Resend Verification Button */}
+                                {showResendVerification && (
+                                    <div className="space-y-2">
+                                        {resendSuccess ? (
+                                            <div className="flex items-center gap-2 text-xs sm:text-sm text-green-700 bg-green-50 border border-green-200 p-2.5 sm:p-3 rounded-lg">
+                                                <MailCheck className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                                                Verification email sent! Please check your inbox.
+                                            </div>
+                                        ) : (
+                                            <Button
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (!email) {
+                                                        setError('Please enter your email address first')
+                                                        return
+                                                    }
+                                                    setResendLoading(true)
+                                                    setResendSuccess(false)
+                                                    try {
+                                                        const response = await fetch('/api/auth/resend-verification', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ email }),
+                                                        })
+                                                        const data = await response.json()
+                                                        if (response.ok) {
+                                                            setResendSuccess(true)
+                                                            setTimeout(() => setResendSuccess(false), 5000)
+                                                        } else {
+                                                            setError(data.error || 'Failed to resend verification email')
+                                                        }
+                                                    } catch (error) {
+                                                        setError('An error occurred. Please try again.')
+                                                    } finally {
+                                                        setResendLoading(false)
+                                                    }
+                                                }}
+                                                variant="outline"
+                                                className="w-full border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 text-xs sm:text-sm h-8 sm:h-9"
+                                                disabled={resendLoading || !email}
+                                            >
+                                                {resendLoading ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                                                        Sending...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Mail className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                                        Resend Verification Email
+                                                    </>
+                                                )}
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -304,7 +387,7 @@ export default function LoginPage() {
                     <div className="space-y-4">
                         <h1 className="text-4xl font-bold leading-tight">
                             Welcome to <br />
-                            <span className="text-purple-200">ManagerBook</span>
+                            <span className="text-purple-200">wrkportal.com</span>
                         </h1>
                         <p className="text-lg text-purple-100">
                             Your Ultimate Project Management Platform

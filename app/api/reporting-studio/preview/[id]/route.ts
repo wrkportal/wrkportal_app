@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx'
 import { parse } from 'csv-parse/sync'
 
 const MAX_PREVIEW_ROWS = 100
+const MAX_ALLOWED_ROWS = 100000 // Maximum rows we'll allow to prevent memory issues
 const isDevelopment = process.env.NODE_ENV === 'development'
 
 // Helper function to fetch file content
@@ -49,6 +50,22 @@ export async function GET(
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
+    // Get limit from query parameters, default to MAX_PREVIEW_ROWS
+    const { searchParams } = new URL(request.url)
+    const requestedLimitParam = searchParams.get('limit')
+    
+    // If limit is provided, use it (up to MAX_ALLOWED_ROWS), otherwise default to MAX_PREVIEW_ROWS
+    let requestedLimit = MAX_PREVIEW_ROWS
+    if (requestedLimitParam) {
+      const parsed = parseInt(requestedLimitParam, 10)
+      if (!isNaN(parsed) && parsed > 0) {
+        requestedLimit = parsed
+      }
+    }
+    const limit = Math.min(requestedLimit, MAX_ALLOWED_ROWS) // Cap at MAX_ALLOWED_ROWS
+    
+    console.log(`📊 Preview API: fileId=${params.id}, fileName=${file.originalName}, requestedLimitParam=${requestedLimitParam}, parsedLimit=${requestedLimit}, finalLimit=${limit}, fileRowCount=${file.rowCount || 'N/A'}`)
+
     // Read and parse the file
     const buffer = await fetchFileContent(file.filePath)
     const fileExt = file.originalName.substring(file.originalName.lastIndexOf('.')).toLowerCase()
@@ -58,15 +75,25 @@ export async function GET(
 
     if (fileExt === '.csv') {
       const content = buffer.toString('utf-8')
-      const records = parse(content, { 
+      // For CSV, parse all rows if limit is large (for calculations), otherwise use the limit
+      // If limit is >= 1000, parse all rows (don't use 'to' option to avoid parsing issues)
+      const parseOptions: any = { 
         columns: true, 
         skip_empty_lines: true,
-        to: MAX_PREVIEW_ROWS + 1 // +1 for header
-      })
+      }
+      
+      // Only limit parsing if limit is small (for preview)
+      // For large limits (calculations), parse all rows and then slice
+      if (limit < 1000) {
+        parseOptions.to = limit + 1 // +1 for header
+      }
+      
+      const records = parse(content, parseOptions)
 
       if (records.length > 0) {
         columns = Object.keys(records[0])
-        rows = records.slice(0, MAX_PREVIEW_ROWS).map((record: any) => 
+        // Slice to the requested limit
+        rows = records.slice(0, limit).map((record: any) => 
           columns.map(col => record[col])
         )
       }
@@ -78,14 +105,32 @@ export async function GET(
 
       if (data.length > 0) {
         columns = (data[0] as any[]).map(col => String(col || ''))
-        rows = data.slice(1, MAX_PREVIEW_ROWS + 1).map((row: any) => {
+        
+        // For Excel, slice from row 1 (skip header) to the requested limit
+        // data[0] is the header, so we start from index 1
+        // We want to take 'limit' number of data rows (excluding header)
+        const startIndex = 1 // Skip header row
+        const endIndex = Math.min(data.length, startIndex + limit) // Take up to 'limit' rows
+        
+        console.log(`📊 Excel parsing: totalRows=${data.length}, headerRow=1, startIndex=${startIndex}, endIndex=${endIndex}, limit=${limit}`)
+        
+        rows = data.slice(startIndex, endIndex).map((row: any) => {
           const rowArray = Array.isArray(row) ? row : []
           return columns.map((_, idx) => rowArray[idx] !== undefined ? rowArray[idx] : null)
         })
+        
+        console.log(`✅ Excel parsed: ${rows.length} data rows (requested: ${limit})`)
+        
+        // Warn if we got fewer rows than requested and file has more rows
+        if (rows.length < limit && file.rowCount && file.rowCount > rows.length) {
+          console.warn(`⚠️ WARNING: Requested ${limit} rows but only got ${rows.length} rows. File has ${file.rowCount} total rows. This might be due to empty rows being skipped by XLSX parser.`)
+        }
       }
     }
+    
+    console.log(`✅ Preview API: Returning ${rows.length} rows (requested: ${limit}, fileRowCount: ${file.rowCount || 'N/A'})`)
 
-    return NextResponse.json({ columns, rows }, { status: 200 })
+    return NextResponse.json({ columns, rows, rowCount: file.rowCount || rows.length }, { status: 200 })
   } catch (error) {
     console.error('Error previewing file:', error)
     return NextResponse.json(

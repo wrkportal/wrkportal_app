@@ -1,0 +1,6 @@
+# This folder will contain the desktop app installers
+# After running `npm run electron:build`, copy the installers from `dist/` to this folder:
+# - Windows: dist/Project Management Studio Setup.exe -> public/downloads/Project-Management-Studio-Setup.exe
+# - Mac: dist/Project Management Studio.dmg -> public/downloads/Project-Management-Studio.dmg
+# - Linux: dist/Project Management Studio.AppImage -> public/downloads/Project-Management-Studio.AppImage
+

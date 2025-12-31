@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/authStore"
 import { UserRole } from "@/types"
+import { useWorkflowTerminology } from "@/hooks/useWorkflowTerminology"
 import {
     LayoutDashboard,
     FolderKanban,
@@ -36,6 +37,16 @@ import {
     Beaker,
     LayoutGrid,
     FileStack,
+    Code,
+    Package,
+    TrendingDown,
+    Server,
+    UserPlus,
+    Network,
+    CalendarDays,
+    Plug,
+    FileSpreadsheet,
+    BookOpen,
 } from "lucide-react"
 import { useUIStore } from "@/stores/uiStore"
 import { Button } from "@/components/ui/button"
@@ -56,23 +67,67 @@ const navigationItems: NavItem[] = [
         roles: Object.values(UserRole),
     },
     {
-        title: "Programs & Projects",
-        href: "/projects",
-        icon: Briefcase,
-        roles: Object.values(UserRole),
-        children: [
-            {
-                title: "Programs",
-                href: "/programs",
-                icon: Briefcase,
-                roles: Object.values(UserRole),
-            },
-            {
-                title: "Roadmap",
-                href: "/roadmap",
-                icon: Map,
-                roles: Object.values(UserRole),
-            },
+        title: "Finance",
+        href: "/finance-dashboard",
+        icon: LayoutDashboard,
+        roles: [
+            UserRole.FINANCE_CONTROLLER,
+            UserRole.ORG_ADMIN,
+            UserRole.TENANT_SUPER_ADMIN,
+            UserRole.EXECUTIVE,
+            UserRole.PMO_LEAD,
+        ],
+    },
+    {
+        title: "Sales",
+        href: "/sales-dashboard",
+        icon: Target,
+        roles: [
+            UserRole.ORG_ADMIN,
+            UserRole.TENANT_SUPER_ADMIN,
+            UserRole.PROJECT_MANAGER,
+        ],
+    },
+    {
+        title: "Operations",
+        href: "/operations-dashboard",
+        icon: Settings,
+        roles: [
+            UserRole.ORG_ADMIN,
+            UserRole.TENANT_SUPER_ADMIN,
+            UserRole.PMO_LEAD,
+            UserRole.PROJECT_MANAGER,
+        ],
+    },
+    {
+        title: "IT Services",
+        href: "/it-dashboard",
+        icon: Server,
+        roles: [
+            UserRole.ORG_ADMIN,
+            UserRole.TENANT_SUPER_ADMIN,
+            UserRole.INTEGRATION_ADMIN,
+        ],
+    },
+    {
+        title: "Projects",
+        href: "/product-management",
+        icon: FolderKanban,
+        roles: [
+            UserRole.PMO_LEAD,
+            UserRole.ORG_ADMIN,
+            UserRole.TENANT_SUPER_ADMIN,
+            UserRole.PROJECT_MANAGER,
+        ],
+    },
+    {
+        title: "Recruitment",
+        href: "/recruitment-dashboard",
+        icon: UserPlus,
+        roles: [
+            UserRole.ORG_ADMIN,
+            UserRole.TENANT_SUPER_ADMIN,
+            UserRole.RESOURCE_MANAGER,
         ],
     },
     {
@@ -82,15 +137,27 @@ const navigationItems: NavItem[] = [
         roles: Object.values(UserRole),
         children: [
             {
-                title: "Database",
-                href: "/reporting-studio/database",
+                title: "Data Sources",
+                href: "/reporting-studio/data-sources",
                 icon: Database,
                 roles: Object.values(UserRole),
             },
             {
-                title: "Data Lab",
-                href: "/reporting-studio/data-lab",
-                icon: Beaker,
+                title: "Datasets",
+                href: "/reporting-studio/datasets",
+                icon: FileStack,
+                roles: Object.values(UserRole),
+            },
+            {
+                title: "Visualizations",
+                href: "/reporting-studio/visualizations",
+                icon: BarChart3,
+                roles: Object.values(UserRole),
+            },
+            {
+                title: "Query Builder",
+                href: "/reporting-studio/query-builder",
+                icon: Code,
                 roles: Object.values(UserRole),
             },
             {
@@ -100,32 +167,10 @@ const navigationItems: NavItem[] = [
                 roles: Object.values(UserRole),
             },
             {
-                title: "Templates",
-                href: "/reporting-studio/templates",
-                icon: FileStack,
+                title: "Transformations",
+                href: "/reporting-studio/transformations",
+                icon: Beaker,
                 roles: Object.values(UserRole),
-            },
-        ],
-    },
-    {
-        title: "Performance",
-        href: "/performance",
-        icon: TrendingUp,
-        roles: Object.values(UserRole),
-        children: [
-            {
-                title: "Goals & OKRs",
-                href: "/okrs",
-                icon: Target,
-                roles: [
-                    UserRole.PLATFORM_OWNER,
-                    UserRole.TENANT_SUPER_ADMIN,
-                    UserRole.ORG_ADMIN,
-                    UserRole.PMO_LEAD,
-                    UserRole.PROJECT_MANAGER,
-                    UserRole.TEAM_MEMBER,
-                    UserRole.EXECUTIVE,
-                ],
             },
         ],
     },
@@ -163,7 +208,26 @@ const navigationItems: NavItem[] = [
             },
         ],
     },
+    {
+        title: "Documentation",
+        href: "/docs",
+        icon: BookOpen,
+        roles: Object.values(UserRole),
+    },
+    {
+        title: "Beta Program",
+        href: "/beta",
+        icon: Package,
+        roles: Object.values(UserRole),
+    },
 ]
+
+const scheduleNavItem: NavItem = {
+    title: "Schedule",
+    href: "/schedule",
+    icon: CalendarDays,
+    roles: Object.values(UserRole),
+}
 
 const academyNavItem: NavItem = {
     title: "Academy",
@@ -178,6 +242,7 @@ const collaborateNavItem: NavItem = {
     icon: MessageSquare,
     roles: Object.values(UserRole),
 }
+
 
 const adminNavItem: NavItem = {
     title: "Admin",
@@ -216,6 +281,30 @@ const adminNavItem: NavItem = {
             roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN],
         },
         {
+            title: "Permissions",
+            href: "/admin/permissions",
+            icon: Shield,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+        },
+        {
+            title: "Data Governance",
+            href: "/admin/governance",
+            icon: Database,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.COMPLIANCE_AUDITOR],
+        },
+        {
+            title: "Integrations",
+            href: "/admin/integrations",
+            icon: Plug,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+        },
+        {
+            title: "Grid Editor",
+            href: "/grids",
+            icon: FileSpreadsheet,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+        },
+        {
             title: "Audit Log",
             href: "/admin/audit",
             icon: FileText,
@@ -225,6 +314,12 @@ const adminNavItem: NavItem = {
                 UserRole.COMPLIANCE_AUDITOR,
                 UserRole.INTEGRATION_ADMIN,
             ],
+        },
+        {
+            title: "Widget Defaults",
+            href: "/admin/widget-defaults",
+            icon: LayoutGrid,
+            roles: [UserRole.PLATFORM_OWNER],
         },
     ],
 }
@@ -243,11 +338,10 @@ export function Sidebar() {
     const setSidebarOpen = useUIStore((state) => state.setSidebarOpen)
     const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed)
     const toggleSidebarCollapse = useUIStore((state) => state.toggleSidebarCollapse)
+    const { getTerm } = useWorkflowTerminology()
     const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
     const [expandedAdmin, setExpandedAdmin] = useState(false)
     const [expandedOtherProjects, setExpandedOtherProjects] = useState(false)
-    const [expandedReportingStudio, setExpandedReportingStudio] = useState(false)
-    const [expandedPerformance, setExpandedPerformance] = useState(false)
     const [expandedCommunication, setExpandedCommunication] = useState(false)
     const [expandedPlanetAI, setExpandedPlanetAI] = useState(false)
     const [expandedProgramsProjects, setExpandedProgramsProjects] = useState(false)
@@ -298,7 +392,12 @@ export function Sidebar() {
         ? (user.role as UserRole)
         : UserRole.TEAM_MEMBER
 
+    // Special case: sandeep200680@gmail.com sees all pages
+    const isSuperUser = user?.email === 'sandeep200680@gmail.com' || user?.email?.includes('sandeep200680@gmail')
+
     const filteredItems = navigationItems.filter((item) => {
+        // Super user sees everything
+        if (isSuperUser) return true
         // Ensure roles array exists and contains the user's role
         return item.roles && Array.isArray(item.roles) && item.roles.includes(effectiveRole)
     })
@@ -366,10 +465,17 @@ export function Sidebar() {
                     <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
                         {filteredItems.map((item, index) => {
                             const Icon = item.icon
-                            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+                            // Special handling for Finance - should be active on /finance-dashboard and all /workflows/finance/ pages
+                            let isActive = false
+                            if (item.href === "/finance-dashboard") {
+                                isActive = pathname === "/finance-dashboard" || pathname.startsWith("/workflows/finance/")
+                            } else {
+                                isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+                            }
 
-                            // Handle Programs & Projects with children
-                            if (item.children && item.title === "Programs & Projects" && !sidebarCollapsed) {
+                            // Handle Programs & Projects with children - REMOVED
+                            if (false && item.children && item.title === "Programs & Projects" && !sidebarCollapsed) {
+                                const displayTitle = `Programs & ${getTerm('projects')}`
                                 return (
                                     <div key={item.href}>
                                         {/* Separator line between tabs */}
@@ -387,7 +493,7 @@ export function Sidebar() {
                                         >
                                             <div className="flex items-center gap-2.5">
                                                 <Icon className="h-3.5 w-3.5" />
-                                                <span>{item.title}</span>
+                                                <span>{displayTitle}</span>
                                             </div>
                                             <ChevronDown
                                                 className={cn(
@@ -402,7 +508,7 @@ export function Sidebar() {
                                             <div className="space-y-1">
                                                 {/* Static children - render Programs first, then Projects, then Roadmap */}
                                                 {item.children
-                                                    ?.filter((child) => child.roles.includes(effectiveRole))
+                                                    ?.filter((child) => isSuperUser || child.roles.includes(effectiveRole))
                                                     .map((child) => {
                                                         const ChildIcon = child.icon
                                                         const isChildActive =
@@ -473,6 +579,9 @@ export function Sidebar() {
                                                         }
 
                                                         // Regular static children
+                                                        const childTitle = child.title === "Project Dashboard"
+                                                            ? `${getTerm('project')} Dashboard`
+                                                            : child.title
                                                         return (
                                                             <Link
                                                                 key={child.href}
@@ -486,7 +595,7 @@ export function Sidebar() {
                                                                 )}
                                                             >
                                                                 <ChildIcon className="h-3.5 w-3.5" />
-                                                                {child.title}
+                                                                {childTitle}
                                                             </Link>
                                                         )
                                                     })}
@@ -503,12 +612,12 @@ export function Sidebar() {
                                                     )}
                                                 >
                                                     <FolderKanban className="h-3.5 w-3.5" />
-                                                    <span>Projects</span>
+                                                    <span>{getTerm('projects')}</span>
                                                 </Link>
 
                                                 {/* Roadmap - appears last */}
                                                 {item.children
-                                                    ?.filter((child) => child.roles.includes(effectiveRole) && child.title === "Roadmap")
+                                                    ?.filter((child) => (isSuperUser || child.roles.includes(effectiveRole)) && child.title === "Roadmap")
                                                     .map((child) => {
                                                         const ChildIcon = child.icon
                                                         const isChildActive =
@@ -602,130 +711,6 @@ export function Sidebar() {
                                 )
                             }
 
-                            // Handle Reporting Studio with children
-                            if (item.children && item.title === "Reporting Studio" && !sidebarCollapsed) {
-                                return (
-                                    <div key={item.href}>
-                                        {/* Separator line between tabs */}
-                                        {index > 0 && (
-                                            <div className="my-1.5 border-t border-border/50"></div>
-                                        )}
-                                        <div
-                                            className={cn(
-                                                "flex items-center justify-between py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
-                                                pathname.includes(item.href)
-                                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                                    : "text-foreground hover:bg-accent/50"
-                                            )}
-                                            onClick={() => setExpandedReportingStudio(!expandedReportingStudio)}
-                                        >
-                                            <div className="flex items-center gap-2.5">
-                                                <Icon className="h-4 w-4" />
-                                                <span>{item.title}</span>
-                                            </div>
-                                            <ChevronDown
-                                                className={cn(
-                                                    "h-3.5 w-3.5 transition-transform flex-shrink-0",
-                                                    expandedReportingStudio && "rotate-180"
-                                                )}
-                                            />
-                                        </div>
-
-                                        {/* Reporting Studio children */}
-                                        {expandedReportingStudio && (
-                                            <div className="space-y-1">
-                                                {item.children
-                                                    ?.filter((child) => child.roles.includes(effectiveRole))
-                                                    .map((child) => {
-                                                        const ChildIcon = child.icon
-                                                        const isChildActive =
-                                                            pathname === child.href || pathname.startsWith(child.href + "/")
-
-                                                        return (
-                                                            <Link
-                                                                key={child.href}
-                                                                href={child.href}
-                                                                onClick={handleLinkClick}
-                                                                className={cn(
-                                                                    "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
-                                                                    isChildActive
-                                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                                                )}
-                                                            >
-                                                                <ChildIcon className="h-3.5 w-3.5" />
-                                                                {child.title}
-                                                            </Link>
-                                                        )
-                                                    })}
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            }
-
-                            // Handle Performance with children
-                            if (item.children && item.title === "Performance" && !sidebarCollapsed) {
-                                return (
-                                    <div key={item.href}>
-                                        {/* Separator line between tabs */}
-                                        {index > 0 && (
-                                            <div className="my-1.5 border-t border-border/50"></div>
-                                        )}
-                                        <div
-                                            className={cn(
-                                                "flex items-center justify-between py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
-                                                pathname.includes(item.href)
-                                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                                    : "text-foreground hover:bg-accent/50"
-                                            )}
-                                            onClick={() => setExpandedPerformance(!expandedPerformance)}
-                                        >
-                                            <div className="flex items-center gap-2.5">
-                                                <Icon className="h-4 w-4" />
-                                                <span>{item.title}</span>
-                                            </div>
-                                            <ChevronDown
-                                                className={cn(
-                                                    "h-3.5 w-3.5 transition-transform flex-shrink-0",
-                                                    expandedPerformance && "rotate-180"
-                                                )}
-                                            />
-                                        </div>
-
-                                        {/* Performance children */}
-                                        {expandedPerformance && (
-                                            <div className="space-y-1">
-                                                {item.children
-                                                    ?.filter((child) => child.roles.includes(effectiveRole))
-                                                    .map((child) => {
-                                                        const ChildIcon = child.icon
-                                                        const isChildActive =
-                                                            pathname === child.href || pathname.startsWith(child.href + "/")
-
-                                                        return (
-                                                            <Link
-                                                                key={child.href}
-                                                                href={child.href}
-                                                                onClick={handleLinkClick}
-                                                                className={cn(
-                                                                    "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
-                                                                    isChildActive
-                                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                                                )}
-                                                            >
-                                                                <ChildIcon className="h-3.5 w-3.5" />
-                                                                {child.title}
-                                                            </Link>
-                                                        )
-                                                    })}
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            }
-
                             // Handle Communication with children
                             if (item.children && item.title === "Communication" && !sidebarCollapsed) {
                                 return (
@@ -759,7 +744,7 @@ export function Sidebar() {
                                         {expandedCommunication && (
                                             <div className="space-y-1">
                                                 {item.children
-                                                    ?.filter((child) => child.roles.includes(effectiveRole))
+                                                    ?.filter((child) => isSuperUser || child.roles.includes(effectiveRole))
                                                     .map((child) => {
                                                         const ChildIcon = child.icon
                                                         const isChildActive =
@@ -821,7 +806,7 @@ export function Sidebar() {
                                         {expandedPlanetAI && (
                                             <div className="space-y-1">
                                                 {item.children
-                                                    ?.filter((child) => child.roles.includes(effectiveRole))
+                                                    ?.filter((child) => isSuperUser || child.roles.includes(effectiveRole))
                                                     .map((child) => {
                                                         const ChildIcon = child.icon
                                                         const isChildActive =
@@ -876,9 +861,30 @@ export function Sidebar() {
                         })}
                     </nav>
 
-                    {/* Academy Tab - Between AI Assistant and Admin */}
-                    {user && academyNavItem.roles.includes(effectiveRole) && (
-                        <div className={cn("pt-2 border-t border-border/50/50", !sidebarCollapsed && "mt-auto")}>
+                    {/* Schedule Tab - Just above Academy */}
+                    {user && (isSuperUser || scheduleNavItem.roles.includes(effectiveRole)) && (
+                        <div className={cn("pt-2 border-t border-border/50", !sidebarCollapsed && "mt-auto")}>
+                            <Link
+                                href={scheduleNavItem.href}
+                                onClick={handleLinkClick}
+                                className={cn(
+                                    "flex items-center gap-2.5 py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
+                                    sidebarCollapsed ? "justify-center" : "",
+                                    pathname === scheduleNavItem.href || pathname.startsWith(scheduleNavItem.href + "/")
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-foreground hover:bg-accent/70"
+                                )}
+                                title={sidebarCollapsed ? scheduleNavItem.title : undefined}
+                            >
+                                <CalendarDays className="h-4 w-4" />
+                                {!sidebarCollapsed && <span>{scheduleNavItem.title}</span>}
+                            </Link>
+                        </div>
+                    )}
+
+                    {/* Academy Tab - Between Schedule and Admin */}
+                    {user && (isSuperUser || academyNavItem.roles.includes(effectiveRole)) && (
+                        <div className={cn("pt-2 border-t border-border/50", !sidebarCollapsed && "mt-auto")}>
                             <Link
                                 href={academyNavItem.href}
                                 onClick={handleLinkClick}
@@ -897,8 +903,9 @@ export function Sidebar() {
                         </div>
                     )}
 
+
                     {/* Admin Tab - Sticky at the bottom */}
-                    {user && adminNavItem.roles.includes(user.role) && (
+                    {user && (isSuperUser || adminNavItem.roles.includes(user.role)) && (
                         <div className="pt-2 border-t border-border/50">
                             {sidebarCollapsed ? (
                                 <Link
@@ -941,7 +948,7 @@ export function Sidebar() {
                                     {expandedAdmin && (
                                         <div className="space-y-1">
                                             {adminNavItem.children
-                                                ?.filter((child) => child.roles.includes(user.role))
+                                                ?.filter((child) => isSuperUser || child.roles.includes(user.role))
                                                 .map((child) => {
                                                     const ChildIcon = child.icon
                                                     const isChildActive =
@@ -952,10 +959,10 @@ export function Sidebar() {
                                                             key={child.href}
                                                             href={child.href}
                                                             className={cn(
-                                                                            "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
-                                                                            isChildActive
-                                                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                                                                "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
+                                                                isChildActive
+                                                                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                                                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                                                             )}
                                                         >
                                                             <ChildIcon className="h-3.5 w-3.5" />
@@ -971,7 +978,7 @@ export function Sidebar() {
                     )}
 
                     {/* Platform Admin Tab - Last tab (god-mode) */}
-                    {user && platformAdminNavItem.roles.includes(user.role) && (
+                    {user && (isSuperUser || platformAdminNavItem.roles.includes(user.role)) && (
                         <div className="pt-2 border-t border-border/50">
                             <Link
                                 href={platformAdminNavItem.href}

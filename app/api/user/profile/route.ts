@@ -14,6 +14,23 @@ const updateProfileSchema = z.object({
   phone: z.string().optional(),
   location: z.string().optional(),
   department: z.string().optional(),
+  primaryWorkflowType: z
+    .enum([
+      'SOFTWARE_DEVELOPMENT',
+      'PRODUCT_MANAGEMENT',
+      'MARKETING',
+      'HUMAN_RESOURCES',
+      'LEGAL',
+      'CUSTOMER_SERVICE',
+      'OPERATIONS',
+      'IT_SUPPORT',
+      'FINANCE',
+      'SALES',
+      'GENERAL',
+    ])
+    .nullable()
+    .optional(),
+  workflowSettings: z.record(z.any()).optional(),
 })
 
 export async function PATCH(req: NextRequest) {
@@ -45,6 +62,8 @@ export async function PATCH(req: NextRequest) {
         phone: true,
         location: true,
         department: true,
+        primaryWorkflowType: true,
+        workflowSettings: true,
         status: true,
         lastLogin: true,
         createdAt: true,

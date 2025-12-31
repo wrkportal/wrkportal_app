@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
             <p style="margin: 0; line-height: 1.6;">${message.replace(/\n/g, '<br>')}</p>
           </div>
           <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">
-            This email was sent from the ManagerBook contact form.
+            This email was sent from the wrkportal.com contact form.
           </p>
         </div>
       `,

@@ -30,22 +30,47 @@ export default function NotificationSummaryPage() {
       return
     }
 
+    // Prevent multiple simultaneous requests
+    if (isSummarizing) {
+      return
+    }
+
     setIsSummarizing(true)
 
     try {
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
+
       const response = await fetch("/api/ai/notifications/summarize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notifications }),
+        signal: controller.signal,
       })
 
-      if (!response.ok) throw new Error("Failed to summarize")
+      clearTimeout(timeoutId)
 
       const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to summarize")
+      }
+
+      // Validate response structure
+      if (!data.summary) {
+        throw new Error("Invalid response format")
+      }
+
       setSummary(data.summary)
-    } catch (err) {
-      alert("Failed to summarize notifications. Please try again.")
-      console.error(err)
+    } catch (err: any) {
+      console.error('Summarization error:', err)
+      
+      if (err.name === 'AbortError') {
+        alert("Request timed out. Please try again with shorter text or check your connection.")
+      } else {
+        alert(err.message || "Failed to summarize notifications. Please try again.")
+      }
     } finally {
       setIsSummarizing(false)
     }
@@ -118,8 +143,8 @@ export default function NotificationSummaryPage() {
 
             <Button
               onClick={handleSummarize}
-              disabled={isSummarizing}
-              className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white py-6 text-lg"
+              disabled={isSummarizing || !notifications.trim()}
+              className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSummarizing ? (
                 <>

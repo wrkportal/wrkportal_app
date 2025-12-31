@@ -24,11 +24,13 @@ export async function GET(req: NextRequest) {
         timezone: true,
         locale: true,
         landingPage: true,
+        primaryWorkflowType: true,
         phone: true,
         location: true,
         department: true,
         status: true,
         lastLogin: true,
+        emailVerified: true,
         createdAt: true,
       },
     })
@@ -36,6 +38,16 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
+
+    // Log user data for debugging
+    console.log('[API /user/me] Returning user data:', {
+      email: user.email,
+      primaryWorkflowType: user.primaryWorkflowType,
+      primaryWorkflowTypeType: typeof user.primaryWorkflowType,
+      landingPage: user.landingPage,
+      role: user.role,
+      hasPrimaryWorkflowType: !!user.primaryWorkflowType
+    })
 
     return NextResponse.json({ user })
   } catch (error) {

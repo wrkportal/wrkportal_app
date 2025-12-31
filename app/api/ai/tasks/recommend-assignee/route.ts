@@ -3,10 +3,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
+import { prisma } from '@/lib/prisma'
 import { recommendTaskAssignment } from '@/lib/ai/services/task-assignment'
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { taskId } = await request.json()
 
     if (!taskId) {
@@ -16,40 +23,97 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // In production, fetch actual data from database
-    // For now, return mock recommendations
-    const usersResponse = await fetch(`${request.nextUrl.origin}/api/users`)
-    const usersData = await usersResponse.json()
+    // Fetch actual task from database
+    const task = await prisma.task.findFirst({
+      where: {
+        id: taskId,
+        tenantId: session.user.tenantId,
+      },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    })
 
-    // Mock task data - in production, fetch from database
-    const mockTask = {
-      id: taskId,
-      projectId: 'proj-1',
-      title: 'Sample Task',
-      description: 'Task description',
-      status: 'TODO' as const,
-      priority: 'HIGH' as const,
-      reporterId: 'user-1',
-      estimatedHours: 8,
-      tags: ['frontend', 'react'],
-      checklist: [],
-      dependencies: [],
-      attachments: [],
-      comments: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    if (!task) {
+      return NextResponse.json(
+        { error: 'Task not found' },
+        { status: 404 }
+      )
     }
 
-    // Mock workload data
-    const userWorkloads = usersData.users?.map((user: any) => ({
-      userId: user.id,
-      currentHours: Math.random() * 40,
-      capacity: 40,
-    })) || []
+    // Fetch available users from the same tenant
+    const users = await prisma.user.findMany({
+      where: {
+        tenantId: session.user.tenantId,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        skills: true,
+      },
+    })
+
+    // Calculate actual workload from tasks assigned to each user
+    const userWorkloads = await Promise.all(
+      users.map(async (user) => {
+        const activeTasks = await prisma.task.count({
+          where: {
+            assigneeId: user.id,
+            tenantId: session.user.tenantId,
+            status: {
+              notIn: ['DONE', 'CANCELLED'],
+            },
+          },
+        })
+        
+        // Estimate workload: each task = ~8 hours, capacity = 40 hours/week
+        const currentHours = activeTasks * 8
+        const capacity = 40
+
+        return {
+          userId: user.id,
+          currentHours,
+          capacity,
+        }
+      })
+    )
 
     const recommendations = await recommendTaskAssignment({
-      task: mockTask,
-      availableUsers: usersData.users || [],
+      task: {
+        id: task.id,
+        projectId: task.projectId || '',
+        title: task.title,
+        description: task.description || '',
+        status: task.status as any,
+        priority: task.priority as any,
+        reporterId: task.createdById,
+        estimatedHours: task.estimatedHours || 0,
+        tags: task.tags || [],
+        checklist: [],
+        dependencies: [],
+        attachments: [],
+        comments: [],
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+      },
+      availableUsers: users,
       userWorkloads,
     })
 

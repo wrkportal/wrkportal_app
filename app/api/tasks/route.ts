@@ -23,6 +23,7 @@ const createTaskSchema = z.object({
   referencePoint: z.string().optional(),
   sourceType: z.string().optional(),
   sourceId: z.string().optional(),
+  parentId: z.string().optional(),
 })
 
 // GET - Fetch tasks (org-wide for admins, or user's tasks)
@@ -245,6 +246,7 @@ export async function POST(req: NextRequest) {
         createdById: session.user.id,
         sourceType: validatedData.sourceType,
         sourceId: validatedData.sourceId,
+        parentId: validatedData.parentId || null,
         // Store frequency and reference point in tags or custom field
         // For now, we'll add them to description if "Not a Project"
         tags:

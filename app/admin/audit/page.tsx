@@ -176,18 +176,21 @@ export default function AdminAuditPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Audit Log</h1>
-                    <p className="text-muted-foreground">
-                        Comprehensive audit trail of all system activities
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleExport}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Export
-                    </Button>
+            {/* Header - Sticky */}
+            <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-4 mb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Audit Log</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                            Comprehensive audit trail of all system activities
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleExport}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Export
+                        </Button>
+                    </div>
                 </div>
             </div>
 

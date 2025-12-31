@@ -31,7 +31,7 @@ function getTransporter(): Transporter {
 // Email templates
 export const emailTemplates = {
   passwordReset: (resetUrl: string, userName?: string) => ({
-    subject: 'Reset Your Password - ManagerBook',
+    subject: 'Reset Your Password - wrkportal.com',
     html: `
       <!DOCTYPE html>
       <html>
@@ -49,7 +49,7 @@ export const emailTemplates = {
                   <!-- Header -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); padding: 40px 30px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">ManagerBook</h1>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">wrkportal.com</h1>
                       <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Project Management Platform</p>
                     </td>
                   </tr>
@@ -60,7 +60,7 @@ export const emailTemplates = {
                       ${userName ? `<p style="color: #374151; font-size: 16px; margin: 0 0 20px 0;">Hi ${userName},</p>` : ''}
                       
                       <p style="color: #374151; font-size: 16px; line-height: 24px; margin: 0 0 20px 0;">
-                        We received a request to reset your password for your ManagerBook account. Click the button below to create a new password:
+                        We received a request to reset your password for your wrkportal.com account. Click the button below to create a new password:
                       </p>
                       
                       <!-- Reset Button -->
@@ -96,10 +96,10 @@ export const emailTemplates = {
                   <tr>
                     <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                       <p style="color: #6b7280; font-size: 13px; margin: 0 0 10px 0;">
-                        © ${new Date().getFullYear()} ManagerBook. All rights reserved.
+                        © ${new Date().getFullYear()} wrkportal.com. All rights reserved.
                       </p>
                       <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                        If you have any questions, contact us at <a href="mailto:support@managerbook.in" style="color: #7c3aed; text-decoration: none;">support@managerbook.in</a>
+                        If you have any questions, contact us at <a href="mailto:support@wrkportal.com" style="color: #7c3aed; text-decoration: none;">support@wrkportal.com</a>
                       </p>
                     </td>
                   </tr>
@@ -114,7 +114,7 @@ export const emailTemplates = {
     text: `
 Hi ${userName || 'there'},
 
-We received a request to reset your password for your ManagerBook account.
+We received a request to reset your password for your wrkportal.com account.
 
 To reset your password, click the following link:
 ${resetUrl}
@@ -124,20 +124,20 @@ This link expires in 1 hour for security reasons.
 If you didn't request this password reset, you can safely ignore this email. Your password will remain unchanged.
 
 ---
-© ${new Date().getFullYear()} ManagerBook
-If you have any questions, contact us at support@managerbook.in
+© ${new Date().getFullYear()} wrkportal.com
+If you have any questions, contact us at support@wrkportal.com
     `.trim(),
   }),
 
   welcomeEmail: (userName: string, loginUrl: string) => ({
-    subject: 'Welcome to ManagerBook! 🎉',
+    subject: 'Welcome to wrkportal.com! 🎉',
     html: `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Welcome to ManagerBook</title>
+          <title>Welcome to wrkportal.com</title>
         </head>
         <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
@@ -148,7 +148,7 @@ If you have any questions, contact us at support@managerbook.in
                   <!-- Header -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); padding: 40px 30px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 700;">Welcome to ManagerBook! 🎉</h1>
+                      <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 700;">Welcome to wrkportal.com! 🎉</h1>
                     </td>
                   </tr>
                   
@@ -158,7 +158,7 @@ If you have any questions, contact us at support@managerbook.in
                       <p style="color: #374151; font-size: 16px; margin: 0 0 20px 0;">Hi ${userName},</p>
                       
                       <p style="color: #374151; font-size: 16px; line-height: 24px; margin: 0 0 20px 0;">
-                        Thank you for joining ManagerBook! We're excited to have you on board. 🚀
+                        Thank you for joining wrkportal.com! We're excited to have you on board. 🚀
                       </p>
                       
                       <p style="color: #374151; font-size: 16px; line-height: 24px; margin: 0 0 30px 0;">
@@ -192,10 +192,10 @@ If you have any questions, contact us at support@managerbook.in
                   <tr>
                     <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                       <p style="color: #6b7280; font-size: 13px; margin: 0 0 10px 0;">
-                        © ${new Date().getFullYear()} ManagerBook. All rights reserved.
+                        © ${new Date().getFullYear()} wrkportal.com. All rights reserved.
                       </p>
                       <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                        Need help? Contact us at <a href="mailto:support@managerbook.in" style="color: #7c3aed; text-decoration: none;">support@managerbook.in</a>
+                        Need help? Contact us at <a href="mailto:support@wrkportal.com" style="color: #7c3aed; text-decoration: none;">support@wrkportal.com</a>
                       </p>
                     </td>
                   </tr>
@@ -210,7 +210,7 @@ If you have any questions, contact us at support@managerbook.in
     text: `
 Hi ${userName},
 
-Thank you for joining ManagerBook! We're excited to have you on board.
+Thank you for joining wrkportal.com! We're excited to have you on board.
 
 Your account has been successfully created. You can now start managing your projects smarter, faster, and better.
 
@@ -223,8 +223,107 @@ What's Next?
 • Explore AI-powered features
 
 ---
-© ${new Date().getFullYear()} ManagerBook
-Need help? Contact us at support@managerbook.in
+© ${new Date().getFullYear()} wrkportal.com
+Need help? Contact us at support@wrkportal.com
+    `.trim(),
+  }),
+
+  emailVerification: (verificationUrl: string, userName?: string) => ({
+    subject: 'Verify Your Email Address - wrkportal.com',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Verify Your Email</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); padding: 40px 30px; text-align: center;">
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">Verify Your Email</h1>
+                      <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">wrkportal.com</p>
+                    </td>
+                  </tr>
+                  
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding: 40px 30px;">
+                      ${userName ? `<p style="color: #374151; font-size: 16px; margin: 0 0 20px 0;">Hi ${userName},</p>` : ''}
+                      
+                      <p style="color: #374151; font-size: 16px; line-height: 24px; margin: 0 0 20px 0;">
+                        Thank you for signing up! Please verify your email address to complete your account setup and start using wrkportal.com.
+                      </p>
+                      
+                      <!-- Verify Button -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                        <tr>
+                          <td align="center">
+                            <a href="${verificationUrl}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); color: #ffffff; text-decoration: none; padding: 14px 40px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                              Verify Email Address
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <p style="color: #6b7280; font-size: 14px; line-height: 20px; margin: 20px 0 0 0;">
+                        Or copy and paste this link into your browser:
+                      </p>
+                      <p style="color: #7c3aed; font-size: 13px; word-break: break-all; margin: 8px 0 0 0;">
+                        ${verificationUrl}
+                      </p>
+                      
+                      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                        <p style="color: #6b7280; font-size: 14px; line-height: 20px; margin: 0;">
+                          <strong>⏱️ This link expires in 48 hours</strong> for security reasons.
+                        </p>
+                        <p style="color: #6b7280; font-size: 14px; line-height: 20px; margin: 15px 0 0 0;">
+                          If you didn't create an account with wrkportal.com, you can safely ignore this email.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                      <p style="color: #6b7280; font-size: 13px; margin: 0 0 10px 0;">
+                        © ${new Date().getFullYear()} wrkportal.com. All rights reserved.
+                      </p>
+                      <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                        If you have any questions, contact us at <a href="mailto:support@wrkportal.com" style="color: #7c3aed; text-decoration: none;">support@wrkportal.com</a>
+                      </p>
+                    </td>
+                  </tr>
+                  
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `,
+    text: `
+${userName ? `Hi ${userName},` : 'Hi there,'}
+
+Thank you for signing up! Please verify your email address to complete your account setup and start using wrkportal.com.
+
+To verify your email, click the following link:
+${verificationUrl}
+
+This link expires in 48 hours for security reasons.
+
+If you didn't create an account with wrkportal.com, you can safely ignore this email.
+
+---
+© ${new Date().getFullYear()} wrkportal.com
+If you have any questions, contact us at support@wrkportal.com
     `.trim(),
   }),
 }
@@ -278,7 +377,7 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
     const sendStart = Date.now()
     
     const info = await transporter.sendMail({
-      from: `"ManagerBook" <${process.env.EMAIL_FROM || emailUser}>`,
+      from: `"wrkportal.com" <${process.env.EMAIL_FROM || emailUser}>`,
       to,
       subject,
       text,
@@ -355,5 +454,49 @@ export async function sendWelcomeEmail(email: string, userName: string) {
     html,
     text,
   })
+}
+
+// Helper function to send email verification
+export async function sendEmailVerification(
+  email: string,
+  verificationToken: string,
+  userName?: string
+) {
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+  // Ensure token and email are URL encoded to handle any special characters
+  const encodedToken = encodeURIComponent(verificationToken)
+  const encodedEmail = encodeURIComponent(email)
+  // Include email in URL so we can check user status even if token is deleted (idempotent verification)
+  const verificationUrl = `${baseUrl}/verify-email?token=${encodedToken}&email=${encodedEmail}`
+  
+  console.log('📧 Preparing verification email:', {
+    to: email,
+    baseUrl,
+    tokenLength: verificationToken.length,
+    tokenPreview: verificationToken.substring(0, 10) + '...',
+    urlPreview: verificationUrl.substring(0, 100) + '...',
+  })
+  
+  const { subject, html, text } = emailTemplates.emailVerification(verificationUrl, userName)
+  
+  const startTime = Date.now()
+  try {
+    const result = await sendEmail({
+      to: email,
+      subject,
+      html,
+      text,
+    })
+    const duration = Date.now() - startTime
+    console.log(`✅ Verification email sent in ${duration}ms to:`, email)
+    return result
+  } catch (error: any) {
+    const duration = Date.now() - startTime
+    console.error(`❌ Failed to send verification email after ${duration}ms:`, {
+      error: error.message,
+      email,
+    })
+    throw error
+  }
 }
 

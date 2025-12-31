@@ -127,22 +127,24 @@ export default function PlatformAdminPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Platform Administration
-            </h1>
+      {/* Header - Sticky */}
+      <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Shield className="h-8 w-8 text-primary" />
+              <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Platform Administration
+              </h1>
+            </div>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              God-mode access to all tenants and platform settings
+            </p>
           </div>
-          <p className="text-muted-foreground mt-1">
-            God-mode access to all tenants and platform settings
-          </p>
+          <Badge variant="default" className="text-sm px-3 py-1">
+            Platform Owner
+          </Badge>
         </div>
-        <Badge variant="default" className="text-sm px-3 py-1">
-          Platform Owner
-        </Badge>
       </div>
 
       {/* Overview Stats */}

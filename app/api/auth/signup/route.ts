@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server'
 import { hash } from 'bcryptjs'
+import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { isPublicDomain, extractDomain } from '@/lib/domain-utils'
 import { isPlatformOwner } from '@/lib/platform-config'
+import { sendEmailVerification } from '@/lib/email'
 
 export async function POST(request: Request) {
   try {
-    const { firstName, lastName, email, password, organizationName, invitationToken, workspaceType } =
-      await request.json()
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      organizationName,
+      invitationToken,
+      workspaceType,
+    } = await request.json()
 
     // Validation
     if (!firstName || !lastName || !email || !password || !organizationName) {
@@ -43,8 +52,8 @@ export async function POST(request: Request) {
     const isPublic = isPublicDomain(email)
     const isOwner = isPlatformOwner(email)
 
-    let tenant
-    let userRole: 'PLATFORM_OWNER' | 'TENANT_SUPER_ADMIN' | 'ORG_ADMIN' | 'TEAM_MEMBER' = 'TEAM_MEMBER'
+    let tenant: any = null
+    let userRole: string = 'TEAM_MEMBER'
 
     // SPECIAL CASE: Platform Owner
     if (isOwner) {
@@ -53,7 +62,10 @@ export async function POST(request: Request) {
         where: { role: 'PLATFORM_OWNER' },
       })
 
-      if (existingOwner && existingOwner.email.toLowerCase() !== email.toLowerCase()) {
+      if (
+        existingOwner &&
+        existingOwner.email.toLowerCase() !== email.toLowerCase()
+      ) {
         return NextResponse.json(
           { error: 'Platform owner already exists' },
           { status: 403 }
@@ -62,13 +74,13 @@ export async function POST(request: Request) {
 
       // Create or get platform tenant
       tenant = await prisma.tenant.findFirst({
-        where: { name: 'ManagerBook Platform' },
+        where: { name: 'wrkportal.com Platform' },
       })
 
       if (!tenant) {
         tenant = await prisma.tenant.create({
           data: {
-            name: 'ManagerBook Platform',
+            name: 'wrkportal.com Platform',
             domain: null,
             type: 'ORGANIZATION',
             domainVerified: true, // Platform tenant is always verified
@@ -83,7 +95,7 @@ export async function POST(request: Request) {
     // CASE 1: User has an invitation token
     if (invitationToken) {
       const invitation = await prisma.tenantInvitation.findUnique({
-        where: { 
+        where: {
           token: invitationToken,
           status: 'PENDING',
         },
@@ -119,12 +131,12 @@ export async function POST(request: Request) {
 
       // Join the invited tenant
       tenant = invitation.tenant
-      userRole = invitation.role
+      userRole = invitation.role as string
 
       // Mark invitation as accepted
       await prisma.tenantInvitation.update({
         where: { id: invitation.id },
-        data: { 
+        data: {
           status: 'ACCEPTED',
           acceptedAt: new Date(),
         },
@@ -164,8 +176,9 @@ export async function POST(request: Request) {
       } else if (existingTenant) {
         // Verified tenant exists but auto-join is disabled
         return NextResponse.json(
-          { 
-            error: 'This domain is registered. Please request an invitation from your organization admin.',
+          {
+            error:
+              'This domain is registered. Please request an invitation from your organization admin.',
             requiresInvitation: true,
           },
           { status: 403 }
@@ -195,7 +208,15 @@ export async function POST(request: Request) {
       userRole = 'TENANT_SUPER_ADMIN'
     }
 
-    // Create user with appropriate role
+    // Ensure tenant exists before creating user
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'Failed to create or find tenant' },
+        { status: 500 }
+      )
+    }
+
+    // Create user with appropriate role (emailVerified is null initially)
     const user = await prisma.user.create({
       data: {
         firstName,
@@ -203,17 +224,83 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         tenantId: tenant.id,
-        role: userRole,
+        role: userRole as any,
         // Set groupRole for GROUP type workspaces
-        groupRole: tenant.type === 'GROUP' && (userRole === 'TENANT_SUPER_ADMIN' || userRole === 'PLATFORM_OWNER') ? 'OWNER' : undefined,
+        groupRole:
+          tenant.type === 'GROUP' &&
+          (userRole === 'TENANT_SUPER_ADMIN' || userRole === 'PLATFORM_OWNER')
+            ? 'OWNER'
+            : undefined,
         status: 'ACTIVE',
+        emailVerified: null, // Will be set after email verification
       },
     })
 
+    // Generate email verification token
+    const verificationToken = randomBytes(32).toString('hex')
+    // Increase expiration to 48 hours to account for email delivery delays
+    const expires = new Date(Date.now() + 48 * 60 * 60 * 1000) // 48 hours
+
+    console.log('🔑 Generated verification token:', {
+      email,
+      tokenLength: verificationToken.length,
+      expiresAt: expires,
+      expiresInHours: 48,
+    })
+
+    // Store verification token
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token: verificationToken,
+        expires,
+      },
+    })
+
+    // Send verification email
+    let emailSent = false
+    let emailError = null
+    try {
+      await sendEmailVerification(
+        email,
+        verificationToken,
+        `${firstName} ${lastName}`
+      )
+      emailSent = true
+      console.log('✅ Verification email sent successfully to:', email)
+    } catch (emailErrorObj: any) {
+      emailError = emailErrorObj
+      console.error('❌ Failed to send verification email:', {
+        error: emailErrorObj.message,
+        code: emailErrorObj.code,
+        email: email,
+      })
+      // Don't fail signup if email fails, but log it and inform user
+    }
+
     // Prepare response message
     let message = 'Account created successfully!'
-    if (userRole === 'TENANT_SUPER_ADMIN' && !tenant.domainVerified && domain && !isPublic) {
-      message += ' Verify your domain to unlock full features and enable team auto-join.'
+    if (emailSent) {
+      message += ' Please check your email to verify your account.'
+    } else {
+      message +=
+        ' However, we were unable to send the verification email. Please use the "Resend Verification Email" option on the login page.'
+    }
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'Failed to create or find tenant' },
+        { status: 500 }
+      )
+    }
+
+    if (
+      userRole === 'TENANT_SUPER_ADMIN' &&
+      !tenant.domainVerified &&
+      domain &&
+      !isPublic
+    ) {
+      message +=
+        ' After verifying your email, verify your domain to unlock full features and enable team auto-join.'
     } else if (userRole === 'TENANT_SUPER_ADMIN') {
       message += ' You are the organization admin.'
     } else if (invitationToken) {
@@ -236,13 +323,18 @@ export async function POST(request: Request) {
           domainVerified: tenant.domainVerified,
         },
         message,
+        emailSent,
+        ...(emailError && {
+          emailWarning:
+            'Verification email could not be sent. Please use the resend option on the login page.',
+        }),
       },
       { status: 201 }
     )
   } catch (error) {
     console.error('Signup error:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'An error occurred during signup',
         details: error instanceof Error ? error.message : 'Unknown error',
       },

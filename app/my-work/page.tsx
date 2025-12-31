@@ -12,9 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { useAuthStore, fetchAuthenticatedUser } from "@/stores/authStore"
 import { getInitials, cn } from "@/lib/utils"
-import { InviteUserModal } from "@/components/invite-user-modal"
-import { canInviteUsers } from "@/lib/permissions"
-import { WorkspaceType, UserRole, GroupRole } from "@/types"
 import {
     Plus,
     ArrowRight,
@@ -167,7 +164,6 @@ export default function HomePage() {
     const [timerSeconds, setTimerSeconds] = useState<{ [key: string]: number }>({})
     const [timerNotesDialogOpen, setTimerNotesDialogOpen] = useState(false)
     const [pendingTimerTask, setPendingTimerTask] = useState<{ id: string; title: string } | null>(null)
-    const [inviteModalOpen, setInviteModalOpen] = useState(false)
 
     // Task filters
     const [statusFilter, setStatusFilter] = useState<string>('ALL')
@@ -1737,22 +1733,6 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* Invite Button */}
-                        {canInviteUsers(
-                            WorkspaceType.ORGANIZATION, // Default to organization, actual check happens in API
-                            user?.role as UserRole,
-                            user?.groupRole as GroupRole | undefined
-                        ) && (
-                                <Button
-                                    onClick={() => setInviteModalOpen(true)}
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    <UserPlus className="mr-2 h-4 w-4" />
-                                    Invite
-                                </Button>
-                            )}
-
                         {/* Save as Default Button (Platform Owner only) */}
                         <SaveDefaultLayoutButton
                             pageKey="my-work"
@@ -1900,36 +1880,6 @@ export default function HomePage() {
                 </div>
             )}
 
-            <style jsx global>{`
-                .home-grid .react-grid-item {
-                    transition: all 200ms ease;
-                }
-                .home-grid .react-grid-item.react-grid-placeholder {
-                    background: rgb(59 130 246 / 0.2);
-                    border: 2px dashed rgb(59 130 246);
-                    border-radius: 0.5rem;
-                }
-                .home-grid .react-resizable-handle {
-                    background-image: none !important;
-                    opacity: 1 !important;
-                    z-index: 10;
-                }
-                .home-grid .react-resizable-handle::after {
-                    content: "";
-                    position: absolute;
-                    right: 3px;
-                    bottom: 3px;
-                    width: 12px;
-                    height: 12px;
-                    border-right: 3px solid rgb(59 130 246);
-                    border-bottom: 3px solid rgb(59 130 246);
-                    border-radius: 0 0 4px 0;
-                }
-                .home-grid .react-grid-item:hover .react-resizable-handle::after {
-                    border-right-color: rgb(37 99 235);
-                    border-bottom-color: rgb(37 99 235);
-                }
-            `}</style>
 
             {/* Task Dialog */}
             <TaskDialog
@@ -2002,11 +1952,6 @@ export default function HomePage() {
                 }}
             />
 
-            {/* Invite User Modal */}
-            <InviteUserModal
-                open={inviteModalOpen}
-                onOpenChange={setInviteModalOpen}
-            />
         </div>
     )
 }

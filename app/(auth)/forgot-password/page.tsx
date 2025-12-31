@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
                     <div className="flex items-center justify-center mb-3">
                         <Image 
                             src="/logo.png" 
-                            alt="ManagerBook Logo" 
+                            alt="wrkportal.com Logo" 
                             width={160} 
                             height={48}
                             className="h-10 w-auto object-contain"
