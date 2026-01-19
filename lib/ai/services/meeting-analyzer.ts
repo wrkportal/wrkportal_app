@@ -108,3 +108,30 @@ export function convertActionItemsToTasks(
   }))
 }
 
+/**
+ * Extract action items from meeting (wrapper for analyzeMeetingNotes)
+ */
+export async function extractActionItems(data: {
+  meetingTitle: string
+  meetingDate: string | Date
+  attendees: string | string[]
+  notes: string
+}): Promise<{ actionItems: any[] }> {
+  const meetingDate = typeof data.meetingDate === 'string' 
+    ? new Date(data.meetingDate) 
+    : data.meetingDate
+  const participants = Array.isArray(data.attendees) 
+    ? data.attendees 
+    : data.attendees ? data.attendees.split(',').map(a => a.trim()) : []
+
+  const analysis = await analyzeMeetingNotes(
+    data.notes,
+    data.meetingTitle,
+    meetingDate,
+    participants
+  )
+
+  return {
+    actionItems: analysis.actionItems,
+  }
+}

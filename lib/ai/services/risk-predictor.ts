@@ -124,3 +124,56 @@ Provide a detailed risk assessment of the budget situation.
   return response.analysis
 }
 
+/**
+ * Generate risk prediction (wrapper for analyzeProjectRisks)
+ */
+export async function generateRiskPrediction(data: {
+  projectName: string
+  projectDescription: string
+  budget?: number
+  duration?: string
+  teamSize?: number
+  complexity?: string
+  existingRisks?: any[]
+  currentIssues?: any[]
+  projectProgress?: number
+  projectStatus?: string
+  taskData?: any[]
+}): Promise<any> {
+  // This is a simplified version - in production, you'd want to fetch full project data
+  const mockProject: Project = {
+    id: 'temp',
+    name: data.projectName,
+    description: data.projectDescription,
+    status: (data.projectStatus as any) || 'ACTIVE',
+    progress: data.projectProgress || 0,
+    code: '',
+    tenantId: '',
+    managerId: '',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    tags: [],
+    ragStatus: 'NOT_STARTED',
+  }
+
+  const mockBudget: Budget = {
+    id: 'temp',
+    projectId: 'temp',
+    totalBudget: data.budget || 0,
+    spentToDate: 0,
+    committed: 0,
+    forecast: 0,
+    variance: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+
+  return analyzeProjectRisks({
+    project: mockProject,
+    tasks: data.taskData || [],
+    budget: mockBudget,
+    teamSize: data.teamSize || 1,
+    completedTasksPercentage: data.projectProgress || 0,
+    daysUntilDeadline: 30,
+  })
+}

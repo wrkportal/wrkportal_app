@@ -113,3 +113,59 @@ export function calculateWorkloadScore(currentHours: number, capacity: number): 
   return 100 // Lots of capacity
 }
 
+/**
+ * Assign tasks (wrapper for recommendTaskAssignment)
+ */
+export async function assignTasks(data: {
+  projectName: string
+  tasks: string[] | Array<{ title: string; description?: string; priority?: string }>
+  teamMembers: string
+  skillsAndExpertise?: string
+}): Promise<{ assignments: any[] }> {
+  // This is a simplified version - in production, you'd want to fetch real task and user data
+  const tasks = Array.isArray(data.tasks) 
+    ? data.tasks.map((t, idx) => ({
+        id: `task-${idx}`,
+        title: typeof t === 'string' ? t : t.title,
+        description: typeof t === 'string' ? '' : (t.description || ''),
+        priority: typeof t === 'string' ? 'MEDIUM' : (t.priority || 'MEDIUM'),
+        tags: [],
+        status: 'TODO' as const,
+        projectId: 'temp',
+        reporterId: 'temp',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }))
+    : []
+
+  const mockUsers: User[] = data.teamMembers.split('\n').map((line, idx) => ({
+    id: `user-${idx}`,
+    email: `user${idx}@example.com`,
+    name: line.split('-')[0].trim(),
+    firstName: line.split('-')[0].trim().split(' ')[0],
+    lastName: line.split('-')[0].trim().split(' ')[1] || '',
+    tenantId: 'temp',
+    role: 'TEAM_MEMBER' as const,
+    skills: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }))
+
+  const recommendations = await Promise.all(
+    tasks.map(task =>
+      recommendTaskAssignment({
+        task,
+        availableUsers: mockUsers,
+        userWorkloads: mockUsers.map(u => ({
+          userId: u.id,
+          currentHours: 20,
+          capacity: 40,
+        })),
+      })
+    )
+  )
+
+  return {
+    assignments: recommendations.flatMap(r => r.recommendations),
+  }
+}
