@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getOKRsForAI } from '@/lib/ai/data-access'
-import { analyzeOKRProgress } from '@/lib/ai/services/okr-analyzer'
+import { analyzeOKRProgress } from '@/lib/ai/services'
 
 export async function POST(request: NextRequest) {
   try {

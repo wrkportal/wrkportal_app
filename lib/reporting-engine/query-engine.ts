@@ -6,19 +6,26 @@
 import { prisma } from '@/lib/prisma'
 import { buildRLSFilter, type RLSEvaluationContext } from '@/lib/security/rls-engine'
 // DuckDB is optional - will fallback to PostgreSQL if not available
-// Use dynamic import to avoid static analysis issues with Turbopack
+// Completely isolated to avoid Turbopack static analysis
 let DuckDB: any = null
 
-async function initializeDuckDB() {
-  if (typeof window !== 'undefined') return // Only in Node.js
-  if (DuckDB !== null) return // Already initialized
-  
+/**
+ * Get DuckDB module at runtime (only if enabled via env flag)
+ * This function uses require() inside to avoid static analysis
+ */
+export async function getDuckDB() {
+  if (DuckDB !== null) return DuckDB
+
+  if (process.env.ENABLE_DUCKDB !== 'true') {
+    return null
+  }
+
   try {
-    const duckdbModule = await import('duckdb').catch(() => null)
-    DuckDB = duckdbModule?.default ?? duckdbModule ?? null
-  } catch (error) {
-    // DuckDB not available, will use PostgreSQL
-    DuckDB = null
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    DuckDB = require('duckdb')
+    return DuckDB
+  } catch {
+    return null
   }
 }
 
@@ -26,7 +33,9 @@ async function initializeDuckDB() {
 let duckdbInitPromise: Promise<void> | null = null
 function ensureDuckDBInitialized() {
   if (!duckdbInitPromise) {
-    duckdbInitPromise = initializeDuckDB()
+    duckdbInitPromise = getDuckDB().then((db) => {
+      DuckDB = db
+    })
   }
   return duckdbInitPromise
 }

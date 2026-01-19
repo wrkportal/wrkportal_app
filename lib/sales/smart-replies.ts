@@ -4,7 +4,7 @@
  * AI-powered email reply suggestions
  */
 
-import { generateChatCompletion } from '@/lib/ai/ai-service''
+import { generateChatCompletion } from '@/lib/ai/ai-service'
 
 export interface EmailContext {
   subject: string

@@ -187,9 +187,6 @@ export default function DomainVerificationPage() {
   // Check if using public domain (no domain set)
   const isPublicDomain = !tenantInfo.domain
 
-  // Check if using public domain (no domain set)
-  const isPublicDomain = !tenantInfo.domain
-
   if (isPublicDomain) {
     return (
       <div className="container mx-auto p-6 space-y-6">
