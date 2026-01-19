@@ -2,58 +2,63 @@
  * Infrastructure Routing Utilities
  * 
  * Routes database connections and infrastructure based on user tier.
- * Supports tier-based infrastructure (Supabase Free, Neon.tech, AWS Aurora).
+ * Hybrid approach: Use Neon.tech initially, migrate to AWS Aurora when ready.
  */
 
 import { getUserInfrastructure, getUserTier } from '@/lib/utils/tier-utils'
 
-export type InfrastructureProvider = 'supabase-free' | 'neon' | 'aws-aurora'
+export type InfrastructureProvider = 'neon' | 'aws-aurora'
 
 /**
- * Get the database connection string based on user tier
+ * Get the database connection string based on configuration
+ * Phase 1: Uses Neon.tech (via DATABASE_URL)
+ * Phase 2: Migrate to AWS Aurora (via DATABASE_URL_AURORA) when ready
  */
 export async function getDatabaseConnectionString(userId: string): Promise<string | null> {
-  const infrastructure = await getUserInfrastructure(userId)
+  // Check if we should use Aurora (when INFRASTRUCTURE_MODE=aws)
+  // Otherwise, use Neon.tech (current setup)
+  const infrastructureMode = process.env.INFRASTRUCTURE_MODE || 'neon'
   
-  // Get database URLs from environment variables based on infrastructure type
-  switch (infrastructure) {
-    case 'supabase-free':
-      return process.env.DATABASE_URL_SUPABASE_FREE || process.env.DATABASE_URL || null
-    case 'neon':
-      return process.env.DATABASE_URL_NEON || process.env.DATABASE_URL || null
-    case 'aws-aurora':
-      return process.env.DATABASE_URL_AURORA || process.env.DATABASE_URL || null
-    default:
-      return process.env.DATABASE_URL || null
+  if (infrastructureMode === 'aws' && process.env.DATABASE_URL_AURORA) {
+    return process.env.DATABASE_URL_AURORA
   }
+  
+  // Default to Neon.tech (current DATABASE_URL)
+  return process.env.DATABASE_URL || null
 }
 
 /**
- * Get the storage provider based on user tier
+ * Get the storage provider based on configuration
+ * Phase 1: Uses local file system (free)
+ * Phase 2: Migrate to AWS S3 when ready
  */
-export async function getStorageProvider(userId: string): Promise<'supabase-storage' | 's3'> {
-  const tier = await getUserTier(userId)
+export async function getStorageProvider(userId: string): Promise<'local' | 's3'> {
+  // Check if we should use S3 (when INFRASTRUCTURE_MODE=aws)
+  const infrastructureMode = process.env.INFRASTRUCTURE_MODE || 'neon'
   
-  // Free tier uses Supabase Storage, others use S3
-  if (tier === 'free') {
-    return 'supabase-storage'
+  if (infrastructureMode === 'aws' && process.env.S3_BUCKET_NAME) {
+    return 's3'
   }
   
-  return 's3'
+  // Default to local file system (free, for initial phase)
+  return 'local'
 }
 
 /**
- * Get the hosting provider based on user tier
+ * Get the hosting provider based on configuration
+ * Phase 1: Uses Vercel (free tier)
+ * Phase 2: Migrate to AWS Amplify when ready
  */
 export async function getHostingProvider(userId: string): Promise<'vercel' | 'aws-amplify'> {
-  const tier = await getUserTier(userId)
+  // Check if we should use Amplify (when INFRASTRUCTURE_MODE=aws)
+  const infrastructureMode = process.env.INFRASTRUCTURE_MODE || 'neon'
   
-  // Free tier uses Vercel, others use AWS Amplify
-  if (tier === 'free') {
-    return 'vercel'
+  if (infrastructureMode === 'aws') {
+    return 'aws-amplify'
   }
   
-  return 'aws-amplify'
+  // Default to Vercel (free tier, for initial phase)
+  return 'vercel'
 }
 
 /**

@@ -15,13 +15,19 @@ export interface TierLimits {
   automationsPerMonth: number | null // null = unlimited
   storageGB: number | null // null = unlimited
   maxUsers: number | null // null = unlimited
-  infrastructure: 'supabase-free' | 'neon' | 'aws-aurora'
+  infrastructure: 'neon' | 'aws-aurora' // Phase 1: Neon, Phase 2: AWS Aurora
 }
 
 /**
  * Get tier limits for a given tier
+ * Phase 1: Uses Neon.tech (via INFRASTRUCTURE_MODE=neon)
+ * Phase 2: Migrates to AWS Aurora (via INFRASTRUCTURE_MODE=aws)
  */
 export function getTierLimits(tier: UserTier): TierLimits {
+  // Determine infrastructure based on environment variable
+  const infrastructureMode = process.env.INFRASTRUCTURE_MODE || 'neon'
+  const infrastructure: 'neon' | 'aws-aurora' = infrastructureMode === 'aws' ? 'aws-aurora' : 'neon'
+  
   switch (tier) {
     case 'free':
       return {
@@ -30,7 +36,7 @@ export function getTierLimits(tier: UserTier): TierLimits {
         automationsPerMonth: 10,
         storageGB: 1,
         maxUsers: 10,
-        infrastructure: 'supabase-free',
+        infrastructure,
       }
     case 'starter':
       return {
@@ -39,7 +45,7 @@ export function getTierLimits(tier: UserTier): TierLimits {
         automationsPerMonth: 100,
         storageGB: 20,
         maxUsers: 10,
-        infrastructure: 'neon',
+        infrastructure,
       }
     case 'professional':
       return {
@@ -48,7 +54,7 @@ export function getTierLimits(tier: UserTier): TierLimits {
         automationsPerMonth: 250,
         storageGB: 50,
         maxUsers: 50,
-        infrastructure: 'neon',
+        infrastructure,
       }
     case 'business':
       return {
@@ -57,7 +63,7 @@ export function getTierLimits(tier: UserTier): TierLimits {
         automationsPerMonth: null, // unlimited
         storageGB: 250,
         maxUsers: null, // unlimited
-        infrastructure: 'aws-aurora',
+        infrastructure,
       }
     case 'enterprise':
       return {
@@ -66,7 +72,7 @@ export function getTierLimits(tier: UserTier): TierLimits {
         automationsPerMonth: null, // unlimited
         storageGB: null, // unlimited
         maxUsers: null, // unlimited
-        infrastructure: 'aws-aurora',
+        infrastructure,
       }
     default:
       // Default to free tier
@@ -357,8 +363,10 @@ export async function getAutomationLimitInfo(userId: string): Promise<{
 
 /**
  * Get the infrastructure provider for a user's tier
+ * Phase 1: Returns 'neon' (current setup)
+ * Phase 2: Returns 'aws-aurora' (when INFRASTRUCTURE_MODE=aws)
  */
-export async function getUserInfrastructure(userId: string): Promise<'supabase-free' | 'neon' | 'aws-aurora'> {
+export async function getUserInfrastructure(userId: string): Promise<'neon' | 'aws-aurora'> {
   const limits = await getUserTierLimits(userId)
   return limits.infrastructure
 }

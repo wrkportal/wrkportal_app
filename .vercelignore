@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Development files
+.env
+.env*.local
+*.log
+*.tsbuildinfo
+
+# Large files and directories
+uploads/
+public/downloads/
+public/uploads/
+*.exe
+*.dmg
+*.deb
+*.rpm
+*.zip
+*.tar.gz
+
+# Documentation (optional - remove if you want docs deployed)
+docs/
+
+# Test files
+coverage/
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Electron build files
+electron-builder.config.js
+electron/
+
+# Large data files
+*.sql
+*.db
+*.sqlite
+
+# Git
+.git/
+.gitignore
+
+# Vercel
+.vercel/
