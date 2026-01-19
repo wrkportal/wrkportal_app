@@ -100,13 +100,14 @@ export default function QuotesPage() {
   }
 
   return (
-    <SalesPageLayout
-      title="Quotes"
-      description="Create and manage professional sales quotes"
-    >
+    <SalesPageLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div></div>
+        {/* Header with Title and Create Button */}
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Pricing</h2>
+            <p className="text-sm text-muted-foreground mt-1">Create and manage professional pricing quotes</p>
+          </div>
           <Button asChild>
             <Link href="/sales-dashboard/quotes/new">
               <Plus className="mr-2 h-4 w-4" />
@@ -139,18 +140,18 @@ export default function QuotesPage() {
         </CardContent>
       </Card>
 
-      {/* Quotes Table */}
+      {/* Pricing Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Quotes ({quotes.length})</CardTitle>
-          <CardDescription>Manage all sales quotes and proposals</CardDescription>
+          <CardTitle>Pricing ({quotes.length})</CardTitle>
+          <CardDescription>Manage all pricing quotes and proposals</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="text-center py-8">Loading...</div>
           ) : quotes.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No quotes found. Create your first quote to get started.
+              No pricing quotes found. Create your first quote to get started.
             </div>
           ) : (
             <Table>

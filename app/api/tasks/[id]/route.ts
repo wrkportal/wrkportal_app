@@ -59,6 +59,21 @@ export async function GET(
         },
       },
     })
+    
+    // Extract dependencyId from tags if present
+    if (task) {
+      try {
+        const dependencyTag = task.tags?.find((tag: any) => typeof tag === 'string' && tag.startsWith('dependency:'))
+        if (dependencyTag && typeof dependencyTag === 'string') {
+          const dependencyId = String(dependencyTag).replace('dependency:', '')
+          (task as any).dependencyId = dependencyId
+          (task as any).predecessorId = dependencyId
+        }
+      } catch (err) {
+        // Silently ignore dependency extraction errors
+        console.error('Error extracting dependency from tags:', err)
+      }
+    }
 
     if (!task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })

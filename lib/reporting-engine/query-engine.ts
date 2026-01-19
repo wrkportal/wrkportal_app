@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
+import { buildRLSFilter, type RLSEvaluationContext } from '@/lib/security/rls-engine'
 // DuckDB is optional - will fallback to PostgreSQL if not available
 let DuckDB: any = null
 try {
@@ -44,6 +45,9 @@ export interface QueryOptions {
   cache?: boolean
   cacheTTL?: number
   timeout?: number
+  userId?: string
+  userRole?: string
+  orgUnitId?: string
 }
 
 export class QueryEngine {
@@ -65,7 +69,7 @@ export class QueryEngine {
   }
 
   /**
-   * Execute a query
+   * Execute a query with security filters
    */
   async execute(
     query: Query,
@@ -77,12 +81,21 @@ export class QueryEngine {
       limit = 1000,
       offset = 0,
       cache = true,
-      timeout = 30000
+      timeout = 30000,
+      userId,
+      userRole,
+      orgUnitId,
     } = options
 
     try {
-      // Build SQL from query object
-      const sql = this.buildSQL(query, tenantId, limit, offset)
+      // Build SQL from query object with security filters
+      const sql = await this.buildSQLWithSecurity(
+        query,
+        tenantId,
+        limit,
+        offset,
+        { userId, userRole, orgUnitId, tenantId }
+      )
 
       // Execute query
       const results = await this.executeSQL(sql, tenantId, timeout)
@@ -102,13 +115,82 @@ export class QueryEngine {
   }
 
   /**
+   * Build SQL with security filters
+   */
+  private async buildSQLWithSecurity(
+    query: Query,
+    tenantId: string,
+    limit: number,
+    offset: number,
+    context: { userId?: string; userRole?: string; orgUnitId?: string; tenantId: string }
+  ): Promise<string> {
+    // Get RLS filters if user context provided
+    let rlsWhereClause = ''
+    if (context.userId && context.userRole) {
+      try {
+        const rlsContext: RLSEvaluationContext = {
+          userId: context.userId,
+          tenantId: context.tenantId,
+          orgUnitId: context.orgUnitId || null,
+          role: context.userRole as any,
+          action: 'READ',
+          resource: typeof query.from === 'string' ? query.from : 'unknown',
+        }
+        
+        const rlsFilter = await buildRLSFilter(rlsContext)
+        if (rlsFilter.where && Object.keys(rlsFilter.where).length > 0) {
+          // Convert Prisma where clause to SQL WHERE clause
+          rlsWhereClause = this.convertPrismaWhereToSQL(rlsFilter.where)
+        }
+      } catch (error) {
+        console.warn('Failed to build RLS filter:', error)
+      }
+    }
+
+    return this.buildSQL(query, tenantId, limit, offset, rlsWhereClause)
+  }
+
+  /**
+   * Convert Prisma where clause to SQL WHERE clause (simplified)
+   */
+  private convertPrismaWhereToSQL(where: any): string {
+    // This is a simplified converter - in production, you'd need a full converter
+    if (where.OR && Array.isArray(where.OR)) {
+      const conditions = where.OR.map((cond: any) => this.convertPrismaWhereToSQL(cond))
+      return `(${conditions.join(' OR ')})`
+    }
+    
+    if (where.AND && Array.isArray(where.AND)) {
+      const conditions = where.AND.map((cond: any) => this.convertPrismaWhereToSQL(cond))
+      return `(${conditions.join(' AND ')})`
+    }
+
+    // Simple field comparisons
+    for (const [key, value] of Object.entries(where)) {
+      if (typeof value === 'object' && value !== null) {
+        if (value.equals !== undefined) {
+          return `${key} = '${value.equals}'`
+        }
+        if (value.in && Array.isArray(value.in)) {
+          return `${key} IN (${value.in.map((v: any) => `'${v}'`).join(', ')})`
+        }
+      } else {
+        return `${key} = '${value}'`
+      }
+    }
+
+    return ''
+  }
+
+  /**
    * Build SQL from query object
    */
   private buildSQL(
     query: Query,
     tenantId: string,
     limit: number,
-    offset: number
+    offset: number,
+    rlsWhereClause?: string
   ): string {
     let sql = 'SELECT '
 
@@ -124,6 +206,11 @@ export class QueryEngine {
 
     // Add tenant filter
     sql += ` WHERE tenant_id = '${tenantId}'`
+
+    // Add RLS filters
+    if (rlsWhereClause) {
+      sql += ` AND (${rlsWhereClause})`
+    }
 
     // WHERE clause
     if (query.where) {

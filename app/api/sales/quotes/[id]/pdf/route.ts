@@ -111,7 +111,8 @@ export async function GET(
       ]
 
       // Table Header
-      doc.fontSize(10).font('Helvetica-Bold')
+      doc.fontSize(10)
+      // Use default font (PDFKit has built-in fonts)
       columns.forEach((col) => {
         doc.text(col.label, col.x, tableTop, { width: col.width, align: col.align as any })
       })
@@ -121,7 +122,7 @@ export async function GET(
       doc.moveDown(0.5)
 
       // Table Rows
-      doc.fontSize(10).font('Helvetica')
+      doc.fontSize(10)
       quote.lineItems.forEach((item) => {
         const y = doc.y
         
@@ -153,15 +154,18 @@ export async function GET(
         doc.moveDown()
       }
 
-      doc.fontSize(14).font('Helvetica-Bold')
+      doc.fontSize(14)
+      // Use default font for bold effect (size makes it stand out)
       doc.text('Total:', 400, doc.y, { width: 100, align: 'right' })
       doc.text(`$${parseFloat(quote.totalAmount.toString()).toFixed(2)}`, 480, doc.y, { width: 80, align: 'right' })
       doc.moveDown(2)
 
       // Terms
       if (quote.terms) {
-        doc.fontSize(12).font('Helvetica-Bold').text('Terms & Conditions:', { underline: true })
-        doc.fontSize(10).font('Helvetica').text(quote.terms)
+        doc.fontSize(12)
+        doc.text('Terms & Conditions:', { underline: true })
+        doc.fontSize(10)
+        doc.text(quote.terms)
         doc.moveDown()
       }
 

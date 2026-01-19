@@ -25,10 +25,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MessageSquare, Send, Loader2 } from 'lucide-react'
+import { MessageCircle, Send, Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { usePathname } from 'next/navigation'
 import { trackFeedbackSubmission } from '@/lib/analytics/launch-analytics'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 export function FeedbackButton() {
   const [isOpen, setIsOpen] = useState(false)
@@ -83,19 +89,25 @@ export function FeedbackButton() {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-2"
-          aria-label="Submit feedback"
-        >
-          <MessageSquare className="h-4 w-4" />
-          Feedback
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
+    <TooltipProvider>
+      <Tooltip>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                aria-label="Submit feedback"
+              >
+                <MessageCircle className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Feedback</p>
+          </TooltipContent>
+          <DialogContent>
         <DialogHeader>
           <DialogTitle>Submit Feedback</DialogTitle>
           <DialogDescription>
@@ -197,8 +209,10 @@ export function FeedbackButton() {
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+          </DialogContent>
+        </Dialog>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 

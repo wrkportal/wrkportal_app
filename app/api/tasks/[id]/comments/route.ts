@@ -10,7 +10,7 @@ const createCommentSchema = z.object({
 // GET - Fetch comments for a task
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -19,10 +19,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { id } = await params
+
     // Verify task exists and user has access
     const task = await prisma.task.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId: session.user.tenantId,
       },
     })
@@ -34,7 +36,7 @@ export async function GET(
     // Fetch comments
     const comments = await prisma.taskComment.findMany({
       where: {
-        taskId: params.id,
+        taskId: id,
       },
       include: {
         user: {
@@ -66,7 +68,7 @@ export async function GET(
 // POST - Add comment to task
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -75,14 +77,16 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { id } = await params
     const body = await req.json()
     const validatedData = createCommentSchema.parse(body)
 
-    // Verify task exists and user has access
+    // Verify task exists and user has access (anyone in the same tenant who can see the task can comment)
     const task = await prisma.task.findFirst({
       where: {
-        id: params.id,
+        id,
         tenantId: session.user.tenantId,
+        deletedAt: null, // Only allow comments on non-deleted tasks
       },
     })
 
@@ -90,10 +94,13 @@ export async function POST(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
 
+    // Anyone who can access the task (same tenant) can post comments
+    // No additional permission checks needed - if you can see the task, you can comment
+
     // Create comment
     const comment = await prisma.taskComment.create({
       data: {
-        taskId: params.id,
+        taskId: id,
         userId: session.user.id,
         content: validatedData.content,
       },

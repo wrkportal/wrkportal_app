@@ -21,7 +21,10 @@ interface GanttTask {
     id: string
     title: string
     personName?: string
-    status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED'
+    status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'BLOCKED' | 'DONE' | 'CANCELLED'
+    priority?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+    dueDate?: string
+    startDate?: string
     date?: string
     groupId: string
     subtasks?: GanttTask[]
@@ -61,10 +64,12 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
     })
     const [searchQuery, setSearchQuery] = useState('')
     const [searchType, setSearchType] = useState<'all' | 'project' | 'task' | 'subtask' | 'people' | 'date'>('all')
-    const [statusFilter, setStatusFilter] = useState<string[]>([])
+    const [statusFilter, setStatusFilter] = useState<string>('ALL')
+    const [priorityFilter, setPriorityFilter] = useState<string>('ALL')
+    const [dueDateFilter, setDueDateFilter] = useState<string>('ALL')
     const [personFilter, setPersonFilter] = useState<string[]>([])
     const [sortBy, setSortBy] = useState<'none' | 'name' | 'date' | 'status'>('none')
-    const [hideCompleted, setHideCompleted] = useState(false)
+    const [showFilters, setShowFilters] = useState(false)
     const [visibleColumns, setVisibleColumns] = useState({
         person: true,
         status: true,
@@ -332,6 +337,9 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                         title: task.title,
                         personName: task.assignee?.firstName || task.assignee?.name,
                         status: task.status || 'TODO',
+                        priority: task.priority,
+                        dueDate: task.dueDate,
+                        startDate: task.startDate,
                         date: task.dueDate || task.startDate,
                         groupId: groupName,
                         subtasks: taskSubtasks.map((subtask: any) => ({
@@ -339,6 +347,9 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                             title: subtask.title,
                             personName: subtask.assignee?.firstName || subtask.assignee?.name,
                             status: subtask.status || 'TODO',
+                            priority: subtask.priority,
+                            dueDate: subtask.dueDate,
+                            startDate: subtask.startDate,
                             date: subtask.dueDate || subtask.startDate,
                             groupId: groupName,
                             parentId: task.id
@@ -426,16 +437,50 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                 })
             }
 
-            if (statusFilter.length > 0) {
-                tasks = tasks.filter(task => statusFilter.includes(task.status))
+            // Status filter (single select)
+            if (statusFilter !== 'ALL') {
+                tasks = tasks.filter(task => task.status === statusFilter)
             }
 
+            // Priority filter (single select)
+            if (priorityFilter !== 'ALL') {
+                tasks = tasks.filter(task => task.priority === priorityFilter)
+            }
+
+            // Due date filter (single select)
+            if (dueDateFilter !== 'ALL') {
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                
+                tasks = tasks.filter(task => {
+                    if (!task.dueDate) return dueDateFilter === 'NO_DUE_DATE'
+                    
+                    const dueDate = new Date(task.dueDate)
+                    dueDate.setHours(0, 0, 0, 0)
+                    
+                    switch (dueDateFilter) {
+                        case 'OVERDUE':
+                            return dueDate < today
+                        case 'TODAY':
+                            return dueDate.getTime() === today.getTime()
+                        case 'THIS_WEEK':
+                            const weekEnd = new Date(today)
+                            weekEnd.setDate(weekEnd.getDate() + 7)
+                            return dueDate >= today && dueDate <= weekEnd
+                        case 'THIS_MONTH':
+                            return dueDate.getMonth() === today.getMonth() &&
+                                dueDate.getFullYear() === today.getFullYear()
+                        case 'NO_DUE_DATE':
+                            return false
+                        default:
+                            return true
+                    }
+                })
+            }
+
+            // Person filter (multi-select)
             if (personFilter.length > 0) {
                 tasks = tasks.filter(task => task.personName && personFilter.includes(task.personName))
-            }
-
-            if (hideCompleted) {
-                tasks = tasks.filter(task => task.status !== 'COMPLETED')
             }
 
             if (sortBy === 'name') {
@@ -456,7 +501,7 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
 
         filtered = filtered.filter(group => group.tasks.length > 0)
         setFilteredGroups(filtered)
-    }, [groups, searchQuery, searchType, statusFilter, personFilter, sortBy, hideCompleted])
+    }, [groups, searchQuery, searchType, statusFilter, priorityFilter, dueDateFilter, personFilter, sortBy])
 
     const getUniquePersons = () => {
         const persons = new Set<string>()
@@ -480,8 +525,12 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
     const getStatusColor = (status: string) => {
         const colors = {
             TODO: 'bg-slate-200 text-slate-700',
-            IN_PROGRESS: 'bg-orange-500 text-white',
-            COMPLETED: 'bg-green-500 text-white'
+            IN_PROGRESS: 'bg-blue-500 text-white',
+            IN_REVIEW: 'bg-purple-500 text-white',
+            BLOCKED: 'bg-red-500 text-white',
+            DONE: 'bg-green-500 text-white',
+            CANCELLED: 'bg-gray-400 text-white',
+            COMPLETED: 'bg-green-500 text-white' // Legacy support
         }
         return colors[status as keyof typeof colors] || 'bg-gray-200 text-gray-700'
     }
@@ -489,8 +538,12 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
     const getStatusLabel = (status: string) => {
         const labels = {
             TODO: 'To Do',
-            IN_PROGRESS: 'Working on it',
-            COMPLETED: 'Done'
+            IN_PROGRESS: 'In Progress',
+            IN_REVIEW: 'In Review',
+            BLOCKED: 'Blocked',
+            DONE: 'Done',
+            CANCELLED: 'Cancelled',
+            COMPLETED: 'Done' // Legacy support
         }
         return labels[status as keyof typeof labels] || status
     }
@@ -902,10 +955,11 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
     const clearAllFilters = () => {
         setSearchQuery('')
         setSearchType('all')
-        setStatusFilter([])
+        setStatusFilter('ALL')
+        setPriorityFilter('ALL')
+        setDueDateFilter('ALL')
         setPersonFilter([])
         setSortBy('none')
-        setHideCompleted(false)
     }
 
     const openTaskDetail = (taskId: string, isSubtask: boolean, groupId: string, parentId?: string) => {
@@ -1160,7 +1214,7 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                         <CardDescription className="text-xs">Organize tasks in groups</CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                        {(searchQuery || statusFilter.length > 0 || personFilter.length > 0 || hideCompleted) && (
+                        {(searchQuery || statusFilter !== 'ALL' || priorityFilter !== 'ALL' || dueDateFilter !== 'ALL' || personFilter.length > 0) && (
                             <Button variant="outline" size="sm" className="h-8 text-xs" onClick={clearAllFilters}>
                                 Clear Filters
                             </Button>
@@ -1237,21 +1291,63 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
 
                     {/* Right Section - Filters and Options */}
                     <div className="flex items-center gap-2">
+                        {/* Status Filter - Single Select */}
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="h-8 text-xs w-[120px]">
+                                <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">All</SelectItem>
+                                <SelectItem value="TODO">To Do</SelectItem>
+                                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                                <SelectItem value="IN_REVIEW">In Review</SelectItem>
+                                <SelectItem value="BLOCKED">Blocked</SelectItem>
+                                <SelectItem value="DONE">Done</SelectItem>
+                            </SelectContent>
+                        </Select>
 
-                        {/* Consolidated Filter Menu */}
+                        {/* Priority Filter - Single Select */}
+                        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                            <SelectTrigger className="h-8 text-xs w-[120px]">
+                                <SelectValue placeholder="Priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">All</SelectItem>
+                                <SelectItem value="CRITICAL">Critical</SelectItem>
+                                <SelectItem value="HIGH">High</SelectItem>
+                                <SelectItem value="MEDIUM">Medium</SelectItem>
+                                <SelectItem value="LOW">Low</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {/* Due Date Filter - Single Select */}
+                        <Select value={dueDateFilter} onValueChange={setDueDateFilter}>
+                            <SelectTrigger className="h-8 text-xs w-[140px]">
+                                <SelectValue placeholder="Due Date" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">All</SelectItem>
+                                <SelectItem value="OVERDUE">Overdue</SelectItem>
+                                <SelectItem value="TODAY">Today</SelectItem>
+                                <SelectItem value="THIS_WEEK">This Week</SelectItem>
+                                <SelectItem value="THIS_MONTH">This Month</SelectItem>
+                                <SelectItem value="NO_DUE_DATE">No Due Date</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {/* Person Filter - Multi Select */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
-                                    variant={statusFilter.length > 0 || personFilter.length > 0 || hideCompleted ? "default" : "ghost"}
+                                    variant={personFilter.length > 0 ? "default" : "ghost"}
                                     size="sm"
                                     className="h-8 px-2 text-xs"
                                 >
-                                    <Filter className="h-3 w-3 mr-1" />
-                                    Filter
+                                    <Users className="h-3 w-3 mr-1" />
+                                    Person {personFilter.length > 0 && `(${personFilter.length})`}
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-64">
-                                {/* Filter by Person */}
                                 <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Filter by Person</div>
                                 {getUniquePersons().length > 0 ? (
                                     getUniquePersons().map(person => (
@@ -1272,38 +1368,18 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                                 ) : (
                                     <div className="px-2 py-2 text-xs text-muted-foreground">No people assigned yet</div>
                                 )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
-                                <DropdownMenuSeparator />
-
-                                {/* Filter by Status */}
-                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Filter by Status</div>
-                                {['TODO', 'IN_PROGRESS', 'COMPLETED'].map(status => (
-                                    <DropdownMenuCheckboxItem
-                                        key={status}
-                                        checked={statusFilter.includes(status)}
-                                        onCheckedChange={(checked) => {
-                                            if (checked) {
-                                                setStatusFilter([...statusFilter, status])
-                                            } else {
-                                                setStatusFilter(statusFilter.filter(s => s !== status))
-                                            }
-                                        }}
-                                    >
-                                        {getStatusLabel(status)}
-                                    </DropdownMenuCheckboxItem>
-                                ))}
-
-                                <DropdownMenuSeparator />
-
-                                {/* Hide Options */}
-                                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Hide</div>
-                                <DropdownMenuCheckboxItem checked={hideCompleted} onCheckedChange={setHideCompleted}>
-                                    Hide Completed Tasks
-                                </DropdownMenuCheckboxItem>
-
-                                <DropdownMenuSeparator />
-
-                                {/* Column Visibility */}
+                        {/* Column Visibility */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                                    <EyeOff className="h-3 w-3 mr-1" />
+                                    Columns
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
                                 <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Show/Hide Columns</div>
                                 <DropdownMenuCheckboxItem checked={visibleColumns.person} onCheckedChange={(checked) => setVisibleColumns({ ...visibleColumns, person: checked })}>
                                     Person Column
@@ -1597,11 +1673,16 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
 
                                                     {/* Main Task Row */}
                                                     <div
-                                                        className="grid px-6 py-3 border-b border-border hover:bg-accent/30 transition-colors items-center group cursor-move relative"
+                                                        className={cn(
+                                                            "grid px-6 py-3 border-b border-border hover:bg-accent/30 transition-colors items-center group cursor-move relative",
+                                                            dragOverTask?.taskId === task.id && dragOverTask?.groupId === group.id && "bg-blue-100 dark:bg-blue-900/30 border-blue-400"
+                                                        )}
                                                         style={{
                                                             gridTemplateColumns: getGridTemplateColumns(),
                                                             color: taskStyles[task.id]?.fontColor,
-                                                            backgroundColor: taskStyles[task.id]?.backgroundColor
+                                                            backgroundColor: dragOverTask?.taskId === task.id && dragOverTask?.groupId === group.id 
+                                                                ? undefined 
+                                                                : taskStyles[task.id]?.backgroundColor
                                                         }}
                                                         draggable
                                                         onDragStart={(e) => handleDragStart(e, task.id, group.id, false)}
@@ -1666,13 +1747,13 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                                                                     <DropdownMenuTrigger asChild>
                                                                         <button className="focus:outline-none cursor-pointer">
                                                                             {task.personName ? (
-                                                                                <Avatar className="h-6 w-6 hover:ring-2 hover:ring-purple-400 transition-all">
-                                                                                    <AvatarFallback className="text-[10px] bg-purple-600 text-white">
+                                                                                <Avatar className="h-6 w-6">
+                                                                                    <AvatarFallback className="text-[10px]">
                                                                                         {getInitials(task.personName)}
                                                                                     </AvatarFallback>
                                                                                 </Avatar>
                                                                             ) : (
-                                                                                <div className="h-6 w-6 rounded-full border-2 border-dashed border-purple-400/50 hover:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all" />
+                                                                                <div className="h-6 w-6 rounded-full border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 transition-all" />
                                                                             )}
                                                                         </button>
                                                                     </DropdownMenuTrigger>
@@ -1706,8 +1787,8 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                                                         )}
                                                         {visibleColumns.status && (
                                                             <div className="flex justify-center px-2">
-                                                                <Badge className={cn("text-xs font-medium px-3 py-1 rounded-sm", getStatusColor(task.status))}>
-                                                                    {getStatusLabel(task.status)}
+                                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                                                    {task.status}
                                                                 </Badge>
                                                             </div>
                                                         )}
@@ -1828,11 +1909,16 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
 
                                                                     <div
                                                                         key={subtask.id}
-                                                                        className="grid px-6 py-2 border-b border-border hover:bg-gray-100/50 dark:hover:bg-gray-800/30 transition-colors items-center group cursor-move relative"
+                                                                        className={cn(
+                                                                            "grid px-6 py-2 border-b border-border hover:bg-gray-100/50 dark:hover:bg-gray-800/30 transition-colors items-center group cursor-move relative",
+                                                                            dragOverTask?.taskId === subtask.id && dragOverTask?.groupId === group.id && dragOverTask?.parentId === task.id && "bg-blue-100 dark:bg-blue-900/30 border-blue-400"
+                                                                        )}
                                                                         style={{
                                                                             gridTemplateColumns: getGridTemplateColumns(),
                                                                             color: taskStyles[subtask.id]?.fontColor,
-                                                                            backgroundColor: taskStyles[subtask.id]?.backgroundColor
+                                                                            backgroundColor: dragOverTask?.taskId === subtask.id && dragOverTask?.groupId === group.id && dragOverTask?.parentId === task.id
+                                                                                ? undefined 
+                                                                                : taskStyles[subtask.id]?.backgroundColor
                                                                         }}
                                                                         draggable
                                                                         onDragStart={(e) => handleDragStart(e, subtask.id, group.id, true, task.id)}
@@ -1887,13 +1973,13 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                                                                                     <DropdownMenuTrigger asChild>
                                                                                         <button className="focus:outline-none cursor-pointer">
                                                                                             {subtask.personName ? (
-                                                                                                <Avatar className="h-6 w-6 hover:ring-2 hover:ring-purple-400 transition-all">
-                                                                                                    <AvatarFallback className="text-[10px] bg-purple-600 text-white">
+                                                                                                <Avatar className="h-6 w-6">
+                                                                                                    <AvatarFallback className="text-[10px]">
                                                                                                         {getInitials(subtask.personName)}
                                                                                                     </AvatarFallback>
                                                                                                 </Avatar>
                                                                                             ) : (
-                                                                                                <div className="h-6 w-6 rounded-full border-2 border-dashed border-purple-400/50 hover:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all" />
+                                                                                                <div className="h-6 w-6 rounded-full border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 transition-all" />
                                                                                             )}
                                                                                         </button>
                                                                                     </DropdownMenuTrigger>
@@ -1927,8 +2013,8 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                                                                         )}
                                                                         {visibleColumns.status && (
                                                                             <div className="flex items-center px-4">
-                                                                                <Badge className={cn("text-[10px] font-medium px-2 py-0.5 rounded-sm", getStatusColor(subtask.status))}>
-                                                                                    {getStatusLabel(subtask.status)}
+                                                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                                                                    {subtask.status}
                                                                                 </Badge>
                                                                             </div>
                                                                         )}

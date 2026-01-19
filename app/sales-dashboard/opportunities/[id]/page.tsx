@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -50,10 +51,14 @@ import {
   TrendingUp,
   Target,
   Building2,
+  Upload,
+  Package,
 } from 'lucide-react'
 import { SalesPageLayout } from '@/components/sales/sales-page-layout'
 import { PipelineStagesGuide } from '@/components/sales/pipeline-stages-guide'
 import { StageTooltip } from '@/components/sales/stage-tooltip'
+import { AIDealScore } from '@/components/sales/ai-deal-score'
+import { SmartNotesProcessor } from '@/components/sales/smart-notes-processor'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -75,6 +80,7 @@ interface Opportunity {
   type: string | null
   leadSource: string | null
   nextStep: string | null
+  nextContactDate: string | null
   competitorInfo: string | null
   lossReason: string | null
   status: string
@@ -145,6 +151,8 @@ export default function OpportunityDetailPage() {
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [nextContactDateTemp, setNextContactDateTemp] = useState<string>('')
+  const [savingNextContactDate, setSavingNextContactDate] = useState(false)
   const [isUpdatingStage, setIsUpdatingStage] = useState(false)
   
   // Dialog states
@@ -169,6 +177,14 @@ export default function OpportunityDetailPage() {
       fetchOpportunity()
     }
   }, [opportunityId])
+
+  useEffect(() => {
+    if (opportunity?.nextContactDate) {
+      setNextContactDateTemp(new Date(opportunity.nextContactDate).toISOString().slice(0, 16))
+    } else {
+      setNextContactDateTemp('')
+    }
+  }, [opportunity?.nextContactDate])
 
   const fetchOpportunity = async () => {
     try {
@@ -440,6 +456,7 @@ export default function OpportunityDetailPage() {
                           <Progress value={opportunity.probability} className="w-24 h-2" />
                           <span className="text-sm text-muted-foreground">{opportunity.probability}%</span>
                         </div>
+                        <AIDealScore opportunityId={opportunityId} compact={true} />
                       </div>
                     </div>
                   </div>
@@ -577,6 +594,62 @@ export default function OpportunityDetailPage() {
                       <div className="text-sm mt-1">{opportunity.nextStep}</div>
                     </div>
                   )}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Next Contact Date</Label>
+                    <div className="relative mt-1">
+                      <Input
+                        type="datetime-local"
+                        value={nextContactDateTemp}
+                        onChange={(e) => setNextContactDateTemp(e.target.value)}
+                        className="pr-20"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2 text-xs"
+                        onClick={async () => {
+                          setSavingNextContactDate(true)
+                          let newDate: string | null = null
+                          if (nextContactDateTemp && nextContactDateTemp.trim() !== '') {
+                            try {
+                              const dateObj = new Date(nextContactDateTemp)
+                              if (!isNaN(dateObj.getTime())) {
+                                newDate = dateObj.toISOString()
+                              }
+                            } catch (error) {
+                              console.error('Invalid date:', error)
+                            }
+                          }
+                          try {
+                            const response = await fetch(`/api/sales/opportunities/${opportunity.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ nextContactDate: newDate }),
+                            })
+                            if (response.ok) {
+                              const updatedOpportunity = await response.json()
+                              setOpportunity({ ...opportunity, nextContactDate: updatedOpportunity.nextContactDate })
+                              // Trigger a custom event to refresh tasks in the sales dashboard
+                              if (typeof window !== 'undefined') {
+                                window.dispatchEvent(new CustomEvent('refreshSalesTasks'))
+                              }
+                            } else {
+                              const errorData = await response.json().catch(() => ({}))
+                              console.error('Error updating next contact date:', errorData)
+                              alert(errorData.error || 'Failed to update next contact date')
+                            }
+                          } catch (error) {
+                            console.error('Error updating next contact date:', error)
+                          } finally {
+                            setSavingNextContactDate(false)
+                          }
+                        }}
+                        disabled={savingNextContactDate}
+                      >
+                        {savingNextContactDate ? '...' : 'OK'}
+                      </Button>
+                    </div>
+                  </div>
                   {opportunity.competitorInfo && (
                     <div>
                       <Label className="text-xs text-muted-foreground">Competitor Information</Label>
@@ -691,6 +764,9 @@ export default function OpportunityDetailPage() {
 
           {/* Right Column - Summary & Related */}
           <div className="space-y-6">
+            {/* AI Deal Score */}
+            <AIDealScore opportunityId={opportunityId} />
+
             {/* Opportunity Summary */}
             <Card>
               <CardHeader>
@@ -732,18 +808,66 @@ export default function OpportunityDetailPage() {
             {/* Related Records */}
             <Card>
               <CardHeader>
+                <CardTitle className="text-base">Accounts ({opportunity.account ? 1 : 0})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2 mb-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => router.push('/sales-dashboard/accounts?create=true')}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => router.push('/sales-dashboard/accounts?upload=true')}
+                    title="Upload Accounts"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
+                {opportunity.account ? (
+                  <div className="text-sm">
+                    <Link href={`/sales-dashboard/accounts/${opportunity.account.id}`} className="hover:underline">
+                      {opportunity.account.name}
+                    </Link>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Link an account to this opportunity.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle className="text-base">Contacts ({opportunity.contacts.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full mb-2"
-                  onClick={() => router.push(`/sales-dashboard/contacts?create=true&opportunityId=${opportunityId}`)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add
-                </Button>
+                <div className="flex gap-2 mb-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => router.push(`/sales-dashboard/contacts?create=true&opportunityId=${opportunityId}`)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => router.push('/sales-dashboard/contacts?upload=true')}
+                    title="Upload Contacts"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
                 {opportunity.contacts.length > 0 ? (
                   <div className="space-y-2">
                     {opportunity.contacts.map((contactRel) => (
@@ -768,15 +892,25 @@ export default function OpportunityDetailPage() {
                 <CardTitle className="text-base">Quotes ({opportunity.quotes.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full mb-2"
-                  onClick={() => router.push(`/sales-dashboard/quotes?create=true&opportunityId=${opportunityId}`)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add
-                </Button>
+                <div className="flex gap-2 mb-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => router.push(`/sales-dashboard/quotes/new?opportunityId=${opportunityId}`)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled
+                    title="Quote upload coming soon"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
                 {opportunity.quotes.length > 0 ? (
                   <div className="space-y-2">
                     {opportunity.quotes.map((quote) => (
@@ -798,15 +932,25 @@ export default function OpportunityDetailPage() {
                 <CardTitle className="text-base">Products ({opportunity.products.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full mb-2"
-                  onClick={() => router.push(`/sales-dashboard/products?create=true&opportunityId=${opportunityId}`)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add
-                </Button>
+                <div className="flex gap-2 mb-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => router.push(`/sales-dashboard/products?create=true&opportunityId=${opportunityId}`)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => router.push('/sales-dashboard/products?upload=true')}
+                    title="Upload Products"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
                 {opportunity.products.length > 0 ? (
                   <div className="space-y-2">
                     {opportunity.products.map((product) => (
@@ -846,7 +990,29 @@ export default function OpportunityDetailPage() {
               />
             </div>
             <div>
-              <Label htmlFor="note-description">Description</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="note-description">Description</Label>
+                <SmartNotesProcessor
+                  noteContent={activityForm.description}
+                  context={{
+                    type: 'NOTE',
+                    relatedToId: opportunityId,
+                    relatedToType: 'OPPORTUNITY',
+                  }}
+                  onProcessed={(result) => {
+                    // Auto-populate fields from processed result
+                    if (result.summary && !activityForm.subject) {
+                      setActivityForm({ ...activityForm, subject: result.summary.substring(0, 100) })
+                    }
+                    if (result.keyTakeaways.length > 0 && !activityForm.description) {
+                      setActivityForm({
+                        ...activityForm,
+                        description: result.keyTakeaways.join('\n\n'),
+                      })
+                    }
+                  }}
+                />
+              </div>
               <Textarea
                 id="note-description"
                 value={activityForm.description}

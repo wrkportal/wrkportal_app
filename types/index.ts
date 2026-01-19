@@ -902,3 +902,14 @@ export interface PaginatedResponse<T> {
   pageSize: number
   totalPages: number
 }
+
+// Re-export widget types for convenience
+export type {
+  Widget,
+  WidgetLayout,
+  DashboardWidgetConfig,
+  QuickAction,
+  UsefulLink,
+  WidgetRendererProps,
+  UseWidgetStateReturn,
+} from './widgets'

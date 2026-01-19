@@ -6,6 +6,8 @@ import { z } from 'zod'
 const createInvoiceSchema = z.object({
   projectId: z.string().optional(),
   quoteId: z.string().optional(),
+  salesQuoteId: z.string().optional(),
+  salesOrderId: z.string().optional(),
   invoiceNumber: z.string().min(1),
   clientName: z.string().min(1),
   clientEmail: z.string().email().optional(),
@@ -197,6 +199,12 @@ export async function POST(request: NextRequest) {
         },
         quote: {
           select: { id: true, quoteNumber: true },
+        },
+        salesQuote: {
+          select: { id: true, quoteNumber: true, name: true },
+        },
+        salesOrder: {
+          select: { id: true, orderNumber: true, name: true },
         },
         lineItems: true,
         createdBy: {

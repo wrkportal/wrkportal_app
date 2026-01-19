@@ -1,1730 +1,1628 @@
 'use client'
 
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Image from 'next/image'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip'
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from '@/components/ui/dialog'
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-    MessageSquare,
-    Users,
-    Plus,
-    Search,
-    Send,
-    MoreVertical,
-    Paperclip,
-    Image as ImageIcon,
-    Settings,
-    UserPlus,
-    Archive,
-    Trash2,
-    Info,
-    FileText,
-    Edit2,
-    Download,
-    Clock,
-    Smile,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
+  Search,
+  Send,
+  Paperclip,
+  Mic,
+  Phone,
+  Video,
+  MoreVertical,
+  X,
+  CheckCheck,
+  Smile,
+  Image as ImageIcon,
+  FileText,
+  ArrowUp,
+  MessageSquare,
+  Plus,
+  UserPlus,
+  Calendar,
+  Clock,
+  Users,
+  CheckSquare,
 } from 'lucide-react'
-import { getInitials } from '@/lib/utils'
-import { CollaborationDialog } from '@/components/dialogs/collaboration-dialog'
-import { CreateTaskFromMessageDialog } from '@/components/dialogs/create-task-from-message-dialog'
-import { SetReminderDialog } from '@/components/dialogs/set-reminder-dialog'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
+import { getInitials } from '@/lib/utils'
+import { format } from 'date-fns'
+import { CollaborationDialog } from '@/components/dialogs/collaboration-dialog'
+import { CreateTaskFromMessageDialog } from '@/components/dialogs/create-task-from-message-dialog'
+import { StartCallButton } from '@/components/calls'
+import { useCall } from '@/hooks/useCall'
+import { useToast } from '@/hooks/use-toast'
+import { CallInterface } from '@/components/calls'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 
 interface Collaboration {
+  id: string
+  name: string
+  description: string | null
+  type: string
+  status: string
+  isArchived: boolean
+  createdAt: string
+  updatedAt: string
+  members: Array<{
     id: string
-    name: string
-    description: string | null
-    type: string
-    status: string
-    createdAt: string
-    updatedAt: string
-    members: Array<{
-        id: string
-        role: string
-        user: {
-            id: string
-            name: string | null
-            firstName: string | null
-            lastName: string | null
-            email: string
-            avatar: string | null
-        }
-    }>
-    _count: {
-        messages: number
-        files: number
-        suggestions: number
+    role: string
+    user: {
+      id: string
+      name: string | null
+      firstName: string | null
+      lastName: string | null
+      email: string
+      avatar: string | null
     }
+  }>
+  _count: {
+    messages: number
+    files: number
+  }
 }
 
 interface Message {
+  id: string
+  content: string
+  createdAt: string
+  userId: string
+  parentId?: string | null
+  user: {
     id: string
-    content: string
-    createdAt: string
-    parentId?: string | null
-    parent?: {
-        id: string
-        content: string
-        user: {
-            id: string
-            name: string | null
-            firstName: string | null
-            lastName: string | null
-        }
-    } | null
-    user: {
-        id: string
-        name: string | null
-        firstName: string | null
-        lastName: string | null
-        email: string
-        avatar: string | null
-    }
-    reactions?: Array<{
-        emoji: string
-        users: Array<{
-            id: string
-            name: string | null
-            firstName: string | null
-            lastName: string | null
-        }>
+    name: string | null
+    firstName: string | null
+    lastName: string | null
+    email: string
+    avatar: string | null
+  }
+  reactions?: Array<{
+    emoji: string
+    users: Array<{
+      id: string
+      name: string | null
+      firstName: string | null
+      lastName: string | null
     }>
+  }>
 }
 
 interface CollaborationFile {
-    id: string
-    fileName: string
-    fileUrl: string
-    fileType: string
-    fileSize: number
-    createdAt: string
-    user: {
-        id: string
-        name: string | null
-        firstName: string | null
-        lastName: string | null
-        email: string
-    }
+  id: string
+  fileName: string
+  fileUrl: string
+  fileType: string
+  fileSize: number
+  uploadedAt: string
 }
 
-function CollaboratePageContent() {
-    const router = useRouter()
-    const searchParams = useSearchParams()
-    const user = useAuthStore((state) => state.user)
-    const fileInputRef = useRef<HTMLInputElement>(null)
-    
-    const [collaborations, setCollaborations] = useState<Collaboration[]>([])
-    const [selectedCollaboration, setSelectedCollaboration] = useState<Collaboration | null>(null)
-    const [messages, setMessages] = useState<Message[]>([])
-    const [files, setFiles] = useState<CollaborationFile[]>([])
-    const [loading, setLoading] = useState(true)
-    const [loadingMessages, setLoadingMessages] = useState(false)
-    const [loadingFiles, setLoadingFiles] = useState(false)
-    const [searchQuery, setSearchQuery] = useState('')
-    const [messageInput, setMessageInput] = useState('')
-    const [collaborationDialogOpen, setCollaborationDialogOpen] = useState(false)
-    const [sendingMessage, setSendingMessage] = useState(false)
-    const [uploadingFile, setUploadingFile] = useState(false)
-    const [activeTab, setActiveTab] = useState('chat')
-    const [editDialogOpen, setEditDialogOpen] = useState(false)
-    const [editName, setEditName] = useState('')
-    const [editDescription, setEditDescription] = useState('')
-    const [savingEdit, setSavingEdit] = useState(false)
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-    const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
-    const [deleting, setDeleting] = useState(false)
-    const [archiving, setArchiving] = useState(false)
-    const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false)
-    const [availableUsers, setAvailableUsers] = useState<any[]>([])
-    const [selectedMembers, setSelectedMembers] = useState<string[]>([])
-    const [loadingUsers, setLoadingUsers] = useState(false)
-    const [addingMembers, setAddingMembers] = useState(false)
-    const [viewMembersDialogOpen, setViewMembersDialogOpen] = useState(false)
-    const [showArchived, setShowArchived] = useState(false)
-    
-    // Message action dialogs
-    const [createTaskDialogOpen, setCreateTaskDialogOpen] = useState(false)
-    const [reminderDialogOpen, setReminderDialogOpen] = useState(false)
-    const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
-    const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
-    const [replyingTo, setReplyingTo] = useState<Message | null>(null)
-    const [replyInput, setReplyInput] = useState('')
-    const [sendingReply, setSendingReply] = useState(false)
-
-    useEffect(() => {
-        fetchCollaborations()
-    }, [])
-
-    useEffect(() => {
-        // Auto-select first collaboration or from URL param only on initial load
-        if (collaborations.length > 0 && !selectedCollaboration && !loading) {
-            const collabId = searchParams.get('id')
-            if (collabId) {
-                const collab = collaborations.find(c => c.id === collabId)
-                if (collab && !collab.isArchived) {
-                    selectCollaboration(collab)
-                }
-            } else {
-                // Select first active (non-archived) collaboration
-                const firstActive = collaborations.find(c => !c.isArchived)
-                if (firstActive) {
-                    selectCollaboration(firstActive)
-                }
-            }
-        }
-    }, [collaborations.length, loading])
-
-    // Real-time message polling
-    useEffect(() => {
-        if (!selectedCollaboration || activeTab !== 'chat') return
-
-        const pollInterval = setInterval(async () => {
-            try {
-                const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/messages`)
-                if (response.ok) {
-                    const data = await response.json()
-                    // Only update if there are new messages
-                    if (data.messages.length > messages.length) {
-                        setMessages(data.messages)
-                    }
-                }
-            } catch (error) {
-                console.error('Error polling messages:', error)
-            }
-        }, 3000) // Poll every 3 seconds
-
-        return () => clearInterval(pollInterval)
-    }, [selectedCollaboration, activeTab, messages.length])
-
-    const fetchCollaborations = async () => {
-        try {
-            const response = await fetch('/api/collaborations')
-            if (response.ok) {
-                const data = await response.json()
-                setCollaborations(data.collaborations || [])
-            }
-        } catch (error) {
-            console.error('Error fetching collaborations:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const selectCollaboration = async (collaboration: Collaboration) => {
-        setSelectedCollaboration(collaboration)
-        setActiveTab('chat')
-        setLoadingMessages(true)
-        
-        try {
-            // Fetch messages
-            const messagesResponse = await fetch(`/api/collaborations/${collaboration.id}/messages`)
-            if (messagesResponse.ok) {
-                const messagesData = await messagesResponse.json()
-                setMessages(messagesData.messages || [])
-            }
-            
-            // Fetch files immediately
-            const filesResponse = await fetch(`/api/collaborations/${collaboration.id}/files`)
-            if (filesResponse.ok) {
-                const filesData = await filesResponse.json()
-                setFiles(filesData.files || [])
-            }
-        } catch (error) {
-            console.error('Error fetching collaboration data:', error)
-        } finally {
-            setLoadingMessages(false)
-        }
-    }
-
-    const fetchFiles = async (collaborationId: string) => {
-        setLoadingFiles(true)
-        try {
-            const response = await fetch(`/api/collaborations/${collaborationId}/files`)
-            if (response.ok) {
-                const data = await response.json()
-                setFiles(data.files || [])
-            }
-        } catch (error) {
-            console.error('Error fetching files:', error)
-        } finally {
-            setLoadingFiles(false)
-        }
-    }
-
-    useEffect(() => {
-        if (selectedCollaboration && activeTab === 'files') {
-            fetchFiles(selectedCollaboration.id)
-        }
-    }, [selectedCollaboration, activeTab])
-
-    const sendMessage = async () => {
-        if (!messageInput.trim() || !selectedCollaboration) return
-
-        setSendingMessage(true)
-        try {
-            const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/messages`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    content: messageInput,
-                    replyToId: replyingTo?.id 
-                }),
-            })
-
-            if (response.ok) {
-                const data = await response.json()
-                setMessages([...messages, data.message])
-                setMessageInput('')
-                setReplyingTo(null)
-            }
-        } catch (error) {
-            console.error('Error sending message:', error)
-        } finally {
-            setSendingMessage(false)
-        }
-    }
-
-    const sendReply = async () => {
-        if (!replyInput.trim() || !replyingTo || !selectedCollaboration) return
-
-        setSendingReply(true)
-        try {
-            const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/messages`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    content: replyInput,
-                    replyToId: replyingTo.id 
-                }),
-            })
-
-            if (response.ok) {
-                const data = await response.json()
-                setMessages([...messages, data.message])
-                setReplyInput('')
-                setReplyingTo(null)
-            }
-        } catch (error) {
-            console.error('Error sending reply:', error)
-        } finally {
-            setSendingReply(false)
-        }
-    }
-
-    const handleFileUpload = async (file: File) => {
-        if (!selectedCollaboration) return
-
-        setUploadingFile(true)
-        try {
-            const formData = new FormData()
-            formData.append('file', file)
-
-            const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/files`, {
-                method: 'POST',
-                body: formData,
-            })
-
-            if (response.ok) {
-                const data = await response.json()
-                // Update files array
-                setFiles([data.file, ...files])
-                
-                // Don't create a message, file upload is enough
-                // Just refresh the files list
-                const filesResponse = await fetch(`/api/collaborations/${selectedCollaboration.id}/files`)
-                if (filesResponse.ok) {
-                    const filesData = await filesResponse.json()
-                    setFiles(filesData.files || [])
-                }
-            }
-        } catch (error) {
-            console.error('Error uploading file:', error)
-            alert('Failed to upload file. Please try again.')
-        } finally {
-            setUploadingFile(false)
-        }
-    }
-
-    const handleAttachmentClick = () => {
-        fileInputRef.current?.click()
-    }
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (file) {
-            handleFileUpload(file)
-            // Reset the input so the same file can be uploaded again
-            e.target.value = ''
-        }
-    }
-
-    const openEditDialog = () => {
-        if (selectedCollaboration) {
-            setEditName(selectedCollaboration.name)
-            setEditDescription(selectedCollaboration.description || '')
-            setEditDialogOpen(true)
-        }
-    }
-
-    const saveEdit = async () => {
-        if (!selectedCollaboration) return
-
-        setSavingEdit(true)
-        try {
-            const response = await fetch(`/api/collaborations/${selectedCollaboration.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: editName,
-                    description: editDescription,
-                }),
-            })
-
-            if (response.ok) {
-                const data = await response.json()
-                setSelectedCollaboration(data.collaboration)
-                setCollaborations(collaborations.map(c => 
-                    c.id === data.collaboration.id ? data.collaboration : c
-                ))
-                setEditDialogOpen(false)
-            }
-        } catch (error) {
-            console.error('Error updating collaboration:', error)
-        } finally {
-            setSavingEdit(false)
-        }
-    }
-
-    const handleArchive = async () => {
-        if (!selectedCollaboration) return
-
-        setArchiving(true)
-        try {
-            const response = await fetch(`/api/collaborations/${selectedCollaboration.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    isArchived: true,
-                }),
-            })
-
-            if (response.ok) {
-                const archivedId = selectedCollaboration.id
-                // Clear selected collaboration first
-                setSelectedCollaboration(null)
-                setMessages([])
-                setFiles([])
-                // Refresh the collaborations list
-                await fetchCollaborations()
-                setArchiveDialogOpen(false)
-                // Switch to archived view to show the archived chat
-                setShowArchived(true)
-            }
-        } catch (error) {
-            console.error('Error archiving collaboration:', error)
-        } finally {
-            setArchiving(false)
-        }
-    }
-
-    const handleDelete = async () => {
-        if (!selectedCollaboration) return
-
-        setDeleting(true)
-        try {
-            const response = await fetch(`/api/collaborations/${selectedCollaboration.id}`, {
-                method: 'DELETE',
-            })
-
-            if (response.ok) {
-                setCollaborations(collaborations.filter(c => c.id !== selectedCollaboration.id))
-                setSelectedCollaboration(null)
-                setDeleteDialogOpen(false)
-            }
-        } catch (error) {
-            console.error('Error deleting collaboration:', error)
-        } finally {
-            setDeleting(false)
-        }
-    }
-
-    const openAddMemberDialog = async () => {
-        setAddMemberDialogOpen(true)
-        setLoadingUsers(true)
-        try {
-            const response = await fetch('/api/users/onboarded')
-            if (response.ok) {
-                const data = await response.json()
-                // Filter out users who are already members
-                const currentMemberIds = selectedCollaboration?.members.map(m => m.user.id) || []
-                const available = data.users.filter((u: any) => !currentMemberIds.includes(u.id))
-                setAvailableUsers(available)
-            }
-        } catch (error) {
-            console.error('Error fetching users:', error)
-        } finally {
-            setLoadingUsers(false)
-        }
-    }
-
-    const handleAddMembers = async () => {
-        if (!selectedCollaboration || selectedMembers.length === 0) return
-
-        setAddingMembers(true)
-        try {
-            // Add members one by one
-            for (const userId of selectedMembers) {
-                await fetch(`/api/collaborations/${selectedCollaboration.id}/members`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, role: 'MEMBER' }),
-                })
-            }
-            
-            // Refresh collaboration data
-            await selectCollaboration(selectedCollaboration)
-            await fetchCollaborations()
-            
-            setAddMemberDialogOpen(false)
-            setSelectedMembers([])
-        } catch (error) {
-            console.error('Error adding members:', error)
-            alert('Failed to add members. Please try again.')
-        } finally {
-            setAddingMembers(false)
-        }
-    }
-
-    const getDisplayName = (userObj: any) => {
-        if (!userObj) return 'Unknown User'
-        return userObj.firstName && userObj.lastName
-            ? `${userObj.firstName} ${userObj.lastName}`
-            : userObj.name || userObj.email
-    }
-
-    const isImageFile = (fileName: string) => {
-        const ext = fileName.split('.').pop()?.toLowerCase()
-        return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext || '')
-    }
-
-    const isPdfFile = (fileName: string) => {
-        return fileName.toLowerCase().endsWith('.pdf')
-    }
-
-    const isVideoFile = (fileName: string) => {
-        const ext = fileName.split('.').pop()?.toLowerCase()
-        return ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext || '')
-    }
-
-    const formatFileSize = (bytes: number) => {
-        if (bytes < 1024) return bytes + ' B'
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-    }
-
-    const filteredCollaborations = collaborations
-        .filter(c => showArchived ? c.isArchived === true : c.isArchived !== true)
-        .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-
-    return (
-        <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-            {/* Left Sidebar - Chat List */}
-            <div className="w-80 border-r bg-background flex flex-col">
-                {/* Header */}
-                <div className="p-4 border-b">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                            Collaborate
-                        </h2>
-                    </div>
-                    
-                    {/* New/Active/Archived Toggle - Same style as Chat/Files tabs */}
-                    <div className="inline-flex h-8 items-center rounded-md bg-muted p-1 text-muted-foreground mb-3">
-                        <button
-                            onClick={() => setCollaborationDialogOpen(true)}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-background/80"
-                        >
-                            <Plus className="h-3 w-3 mr-1" />
-                            New
-                        </button>
-                        <button
-                            onClick={() => setShowArchived(false)}
-                            className={cn(
-                                "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-                                !showArchived ? "bg-background text-foreground shadow-sm" : "hover:bg-background/80"
-                            )}
-                        >
-                            Active
-                        </button>
-                        <button
-                            onClick={() => setShowArchived(true)}
-                            className={cn(
-                                "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-                                showArchived ? "bg-background text-foreground shadow-sm" : "hover:bg-background/80"
-                            )}
-                        >
-                            <Archive className="h-3 w-3 mr-1" />
-                            Archived
-                        </button>
-                    </div>
-                    
-                    {/* Search */}
-                    <div className="relative">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search chats..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-8"
-                        />
-                    </div>
-                </div>
-
-                {/* Chat List */}
-                <ScrollArea className="flex-1">
-                    {loading ? (
-                        <div className="p-4 text-center text-muted-foreground">
-                            Loading...
-                        </div>
-                    ) : filteredCollaborations.length === 0 ? (
-                        <div className="p-4 text-center">
-                            <MessageSquare className="h-12 w-12 mx-auto mb-2 text-muted-foreground opacity-50" />
-                            <p className="text-sm text-muted-foreground">
-                                {searchQuery ? 'No chats found' : 'No collaborations yet'}
-                            </p>
-                            {!searchQuery && (
-                                <Button
-                                    variant="link"
-                                    size="sm"
-                                    onClick={() => setCollaborationDialogOpen(true)}
-                                    className="mt-2"
-                                >
-                                    Create your first chat
-                                </Button>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="p-2">
-                            {filteredCollaborations.map((collaboration) => (
-                                <div
-                                    key={collaboration.id}
-                                    onClick={() => selectCollaboration(collaboration)}
-                                    className={cn(
-                                        "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors mb-1",
-                                        selectedCollaboration?.id === collaboration.id
-                                            ? "bg-primary/10 border border-primary/20"
-                                            : "hover:bg-accent"
-                                    )}
-                                >
-                                    <Avatar className="h-9 w-9 shrink-0">
-                                        <AvatarFallback className="text-xs">
-                                            {collaboration.name.substring(0, 2).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <h3 className="text-sm font-semibold truncate flex-1">
-                                                {collaboration.name}
-                                            </h3>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-                                                <span>
-                                                    {new Date(collaboration.updatedAt).toLocaleDateString([], {
-                                                        month: 'short',
-                                                        day: 'numeric'
-                                                    })}
-                                                </span>
-                                                <span>•</span>
-                                                <div className="flex items-center gap-0.5">
-                                                    <Users className="h-3 w-3" />
-                                                    <span>{collaboration.members.length}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </ScrollArea>
-            </div>
-
-            {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col bg-background">
-                {selectedCollaboration ? (
-                    <>
-                        {/* Chat Header */}
-                        <div className="p-3 border-b bg-background">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarFallback className="text-xs">
-                                            {selectedCollaboration.name.substring(0, 2).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <h2 className="text-sm font-semibold">{selectedCollaboration.name}</h2>
-                                        <button
-                                            onClick={() => setViewMembersDialogOpen(true)}
-                                            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                                        >
-                                            <Users className="h-3 w-3" />
-                                            {selectedCollaboration.members.length}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {/* Tabs */}
-                                    <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                        <TabsList className="h-8">
-                                            <TabsTrigger value="chat" className="text-xs px-3 py-1">
-                                                <MessageSquare className="h-3 w-3 mr-1" />
-                                                Chat
-                                            </TabsTrigger>
-                                            <TabsTrigger value="files" className="text-xs px-3 py-1">
-                                                <FileText className="h-3 w-3 mr-1" />
-                                                Files ({files.length})
-                                            </TabsTrigger>
-                                        </TabsList>
-                                    </Tabs>
-                                    
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-48">
-                                            <DropdownMenuLabel>Chat Options</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={openEditDialog}>
-                                                <Edit2 className="h-4 w-4 mr-2" />
-                                                Edit Details
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={openAddMemberDialog}>
-                                                <UserPlus className="h-4 w-4 mr-2" />
-                                                Add Members
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            {selectedCollaboration?.isArchived ? (
-                                                <DropdownMenuItem onClick={async () => {
-                                                    try {
-                                                        const response = await fetch(`/api/collaborations/${selectedCollaboration.id}`, {
-                                                            method: 'PUT',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({ isArchived: false }),
-                                                        })
-                                                        if (response.ok) {
-                                                            // Clear selected collaboration first
-                                                            setSelectedCollaboration(null)
-                                                            setMessages([])
-                                                            setFiles([])
-                                                            // Refresh the collaborations list
-                                                            await fetchCollaborations()
-                                                            // Switch to active view
-                                                            setShowArchived(false)
-                                                        }
-                                                    } catch (error) {
-                                                        console.error('Error unarchiving:', error)
-                                                    }
-                                                }}>
-                                                    <Archive className="h-4 w-4 mr-2" />
-                                                    Unarchive Chat
-                                                </DropdownMenuItem>
-                                            ) : (
-                                                <DropdownMenuItem onClick={() => setArchiveDialogOpen(true)}>
-                                                    <Archive className="h-4 w-4 mr-2" />
-                                                    Archive Chat
-                                                </DropdownMenuItem>
-                                            )}
-                                            <DropdownMenuItem 
-                                                className="text-destructive"
-                                                onClick={() => setDeleteDialogOpen(true)}
-                                            >
-                                                <Trash2 className="h-4 w-4 mr-2" />
-                                                Delete Chat
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Content Area */}
-                        {activeTab === 'chat' ? (
-                            <>
-                                {/* Messages Area */}
-                                <ScrollArea className="flex-1 p-4">
-                                    {loadingMessages ? (
-                                        <div className="text-center py-8 text-muted-foreground">
-                                            Loading messages...
-                                        </div>
-                                    ) : messages.length === 0 && files.length === 0 ? (
-                                        <div className="text-center py-8">
-                                            <MessageSquare className="h-12 w-12 mx-auto mb-2 text-muted-foreground opacity-50" />
-                                            <p className="text-muted-foreground">No messages yet</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Start the conversation!
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {/* Combined timeline of messages and files sorted by timestamp */}
-                                            {[
-                                                ...messages.map(m => ({ type: 'message' as const, data: m, timestamp: new Date(m.createdAt).getTime() })),
-                                                ...files.map(f => ({ type: 'file' as const, data: f, timestamp: new Date(f.createdAt || f.uploadedAt).getTime() }))
-                                            ]
-                                                .sort((a, b) => a.timestamp - b.timestamp)
-                                                .map((item) => {
-                                                    if (item.type === 'file') {
-                                                        const file = item.data as CollaborationFile
-                                                        return (
-                                                            <div key={`file-${file.id}`} className="flex gap-3">
-                                                                <Avatar className="h-8 w-8 shrink-0">
-                                                                    <AvatarImage src={file.user.avatar || undefined} />
-                                                                    <AvatarFallback className="text-xs">
-                                                                        {getInitials(getDisplayName(file.user))}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                <div className="flex flex-col max-w-[70%]">
-                                                                    <div className="flex items-center gap-2 mb-1">
-                                                                        <span className="text-xs font-medium">
-                                                                            {getDisplayName(file.user)}
-                                                                        </span>
-                                                                        <span className="text-xs text-muted-foreground">
-                                                                            {new Date(file.createdAt || file.uploadedAt).toLocaleTimeString([], {
-                                                                                hour: '2-digit',
-                                                                                minute: '2-digit'
-                                                                            })}
-                                                                        </span>
-                                                                    </div>
-                                                                    <Card className="p-3 relative group">
-                                                                        {/* File Preview */}
-                                                                        {isImageFile(file.fileName) && (
-                                                                            <div className="mb-2 relative w-full max-w-xs">
-                                                                                <Image
-                                                                                    src={file.fileUrl}
-                                                                                    alt={file.fileName}
-                                                                                    width={300}
-                                                                                    height={200}
-                                                                                    className="rounded-lg object-cover w-full h-auto max-h-40 cursor-pointer"
-                                                                                    onClick={() => window.open(file.fileUrl, '_blank')}
-                                                                                />
-                                                                            </div>
-                                                                        )}
-                                                                        
-                                                                        {isVideoFile(file.fileName) && (
-                                                                            <div className="mb-2 relative w-full max-w-xs">
-                                                                                <video
-                                                                                    src={file.fileUrl}
-                                                                                    controls
-                                                                                    className="rounded-lg w-full h-auto max-h-40"
-                                                                                >
-                                                                                    Your browser does not support the video tag.
-                                                                                </video>
-                                                                            </div>
-                                                                        )}
-                                                                        
-                                                                        {isPdfFile(file.fileName) && (
-                                                                            <div className="mb-2 relative w-full max-w-xs">
-                                                                                <div className="bg-muted rounded-lg p-4 flex items-center justify-center">
-                                                                                    <FileText className="h-12 w-12 text-muted-foreground" />
-                                                                                </div>
-                                                                                <p className="text-xs text-center text-muted-foreground mt-1">PDF Document</p>
-                                                                            </div>
-                                                                        )}
-                                                                        
-                                                                        <div className="flex items-center gap-3">
-                                                                            {!isImageFile(file.fileName) && !isVideoFile(file.fileName) && !isPdfFile(file.fileName) && (
-                                                                                <div className="p-2 bg-primary/10 rounded">
-                                                                                    <FileText className="h-5 w-5 text-primary" />
-                                                                                </div>
-                                                                            )}
-                                                                            <div className="flex-1 min-w-0">
-                                                                                <p className="text-sm font-medium truncate">{file.fileName}</p>
-                                                                                <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>
-                                                                            </div>
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                className="h-8 w-8 shrink-0"
-                                                                                onClick={() => window.open(file.fileUrl, '_blank')}
-                                                                            >
-                                                                                <Download className="h-4 w-4" />
-                                                                            </Button>
-                                                                            <DropdownMenu>
-                                                                                <DropdownMenuTrigger asChild>
-                                                                                    <Button
-                                                                                        variant="ghost"
-                                                                                        size="icon"
-                                                                                        className="h-8 w-8 shrink-0"
-                                                                                    >
-                                                                                        <MoreVertical className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </DropdownMenuTrigger>
-                                                                                <DropdownMenuContent align="end">
-                                                                                    <DropdownMenuItem
-                                                                                        className="text-destructive"
-                                                                                        onClick={async () => {
-                                                                                            if (confirm('Delete this file?')) {
-                                                                                                try {
-                                                                                                    const response = await fetch(`/api/collaborations/${selectedCollaboration?.id}/files/${file.id}`, {
-                                                                                                        method: 'DELETE'
-                                                                                                    })
-                                                                                                    if (response.ok) {
-                                                                                                        setFiles(files.filter(f => f.id !== file.id))
-                                                                                                    }
-                                                                                                } catch (error) {
-                                                                                                    console.error('Error deleting file:', error)
-                                                                                                }
-                                                                                            }
-                                                                                        }}
-                                                                                    >
-                                                                                        <Trash2 className="h-4 w-4 mr-2" />
-                                                                                        Delete File
-                                                                                    </DropdownMenuItem>
-                                                                                </DropdownMenuContent>
-                                                                            </DropdownMenu>
-                                                                        </div>
-                                                                    </Card>
-                                                                </div>
-                                                            </div>
-                                                        )
-                                                    } else {
-                                                        const message = item.data as Message
-                                                        const isOwnMessage = message.user.id === user?.id
-                                                        return (
-                                                            <div
-                                                                key={`message-${message.id}`}
-                                                                className={cn(
-                                                                    "flex gap-3 group relative",
-                                                                    isOwnMessage && "flex-row-reverse"
-                                                                )}
-                                                            >
-                                                                <Avatar className="h-8 w-8 shrink-0">
-                                                                    <AvatarImage src={message.user.avatar || undefined} />
-                                                                    <AvatarFallback className="text-xs">
-                                                                        {getInitials(getDisplayName(message.user))}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                <div
-                                                                    className={cn(
-                                                                        "flex flex-col max-w-[70%] relative",
-                                                                        isOwnMessage && "items-end"
-                                                                    )}
-                                                                >
-                                                                    <div className="flex items-center gap-2 mb-1">
-                                                                        <span className="text-xs font-medium">
-                                                                            {isOwnMessage ? 'You' : getDisplayName(message.user)}
-                                                                        </span>
-                                                                        <span className="text-xs text-muted-foreground">
-                                                                            {new Date(message.createdAt).toLocaleTimeString([], {
-                                                                                hour: '2-digit',
-                                                                                minute: '2-digit'
-                                                                            })}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="relative">
-                                                                        <div
-                                                                            className={cn(
-                                                                                "rounded-lg px-4 py-2",
-                                                                                isOwnMessage
-                                                                                    ? "bg-primary text-primary-foreground"
-                                                                                    : "bg-muted"
-                                                                            )}
-                                                                        >
-                                                                            {/* Reply Reference */}
-                                                                            {message.parent && (
-                                                                                <div className={cn(
-                                                                                    "mb-2 pb-2 border-b text-xs opacity-80",
-                                                                                    isOwnMessage ? "border-primary-foreground/20" : "border-border"
-                                                                                )}>
-                                                                                    <div className="flex items-start gap-1">
-                                                                                        <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
-                                                                                        <div className="flex-1 min-w-0">
-                                                                                            <div className="font-medium truncate">
-                                                                                                {getDisplayName(message.parent.user)}
-                                                                                            </div>
-                                                                                            <div className="truncate">
-                                                                                                {message.parent.content}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
-                                                                            <p className="text-sm whitespace-pre-wrap">
-                                                                                {message.content}
-                                                                            </p>
-                                                                        </div>
-                                                                        
-                                                                        {/* Reactions Display */}
-                                                                        {message.reactions && message.reactions.length > 0 && (
-                                                                            <div className="flex flex-wrap gap-1 mt-2">
-                                                                                {message.reactions.map((reaction, idx) => {
-                                                                                    const hasUserReacted = reaction.users.some(u => u.id === user?.id)
-                                                                                    return (
-                                                                                        <TooltipProvider key={idx}>
-                                                                                            <Tooltip>
-                                                                                                <TooltipTrigger asChild>
-                                                                                                    <Button
-                                                                                                        variant="outline"
-                                                                                                        size="sm"
-                                                                                                        className={cn(
-                                                                                                            "h-7 px-2 py-1 gap-1 text-xs rounded-full hover:scale-105 transition-transform",
-                                                                                                            hasUserReacted && "bg-purple-100 border-purple-300 hover:bg-purple-200"
-                                                                                                        )}
-                                                                                                        onClick={async () => {
-                                                                                                            if (!selectedCollaboration) return
-                                                                                                            try {
-                                                                                                                const response = await fetch(
-                                                                                                                    `/api/collaborations/${selectedCollaboration.id}/messages/${message.id}/react`,
-                                                                                                                    {
-                                                                                                                        method: 'POST',
-                                                                                                                        headers: {
-                                                                                                                            'Content-Type': 'application/json',
-                                                                                                                        },
-                                                                                                                        body: JSON.stringify({ emoji: reaction.emoji }),
-                                                                                                                    }
-                                                                                                                )
-
-                                                                                                                if (response.ok) {
-                                                                                                                    const data = await response.json()
-                                                                                                                    setMessages((prevMessages) =>
-                                                                                                                        prevMessages.map((msg) =>
-                                                                                                                            msg.id === message.id
-                                                                                                                                ? { ...msg, reactions: data.message.reactions }
-                                                                                                                                : msg
-                                                                                                                        )
-                                                                                                                    )
-                                                                                                                }
-                                                                                                            } catch (error) {
-                                                                                                                console.error('Failed to toggle reaction:', error)
-                                                                                                            }
-                                                                                                        }}
-                                                                                                    >
-                                                                                                        <span className="text-base">{reaction.emoji}</span>
-                                                                                                        <span className="font-medium">{reaction.users.length}</span>
-                                                                                                    </Button>
-                                                                                                </TooltipTrigger>
-                                                                                                <TooltipContent>
-                                                                                                    <div className="text-xs">
-                                                                                                        {reaction.users.map(u => 
-                                                                                                            u.firstName && u.lastName 
-                                                                                                                ? `${u.firstName} ${u.lastName}` 
-                                                                                                                : u.name || 'Unknown'
-                                                                                                        ).join(', ')}
-                                                                                                    </div>
-                                                                                                </TooltipContent>
-                                                                                            </Tooltip>
-                                                                                        </TooltipProvider>
-                                                                                    )
-                                                                                })}
-                                                                            </div>
-                                                                        )}
-                                                                        
-                                                                        {/* Action Menu on Hover - Vertical */}
-                                                                        <div className={cn(
-                                                                            "absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity z-10",
-                                                                            isOwnMessage ? "-left-16" : "-right-16"
-                                                                        )}>
-                                                                            <div className="flex flex-col bg-background border rounded-lg shadow-lg overflow-hidden">
-                                                                                <TooltipProvider>
-                                                                                    <Tooltip>
-                                                                                        <TooltipTrigger asChild>
-                                                                                            <Button
-                                                                                                variant="ghost"
-                                                                                                size="sm"
-                                                                                                className="h-10 w-14 rounded-none border-b justify-center"
-                                                                                                onClick={() => {
-                                                                                                    setReplyingTo(message)
-                                                                                                }}
-                                                                                            >
-                                                                                                <MessageSquare className="h-4 w-4" />
-                                                                                            </Button>
-                                                                                        </TooltipTrigger>
-                                                                                        <TooltipContent side="left">Reply</TooltipContent>
-                                                                                    </Tooltip>
-                                                                                    
-                                                                                    <Tooltip>
-                                                                                        <TooltipTrigger asChild>
-                                                                                            <Button
-                                                                                                variant="ghost"
-                                                                                                size="sm"
-                                                                                                className="h-10 w-14 rounded-none border-b justify-center"
-                                                                                                onClick={() => {
-                                                                                                    setSelectedMessage(message)
-                                                                                                    setCreateTaskDialogOpen(true)
-                                                                                                }}
-                                                                                            >
-                                                                                                <FileText className="h-4 w-4" />
-                                                                                            </Button>
-                                                                                        </TooltipTrigger>
-                                                                                        <TooltipContent side="left">Task</TooltipContent>
-                                                                                    </Tooltip>
-                                                                                    
-                                                                                    <Tooltip>
-                                                                                        <TooltipTrigger asChild>
-                                                                                            <Button
-                                                                                                variant="ghost"
-                                                                                                size="sm"
-                                                                                                className="h-10 w-14 rounded-none justify-center"
-                                                                                                onClick={() => {
-                                                                                                    setSelectedMessage(message)
-                                                                                                    setReminderDialogOpen(true)
-                                                                                                }}
-                                                                                            >
-                                                                                                <Clock className="h-4 w-4" />
-                                                                                            </Button>
-                                                                                        </TooltipTrigger>
-                                                                                        <TooltipContent side="left">Remind</TooltipContent>
-                                                                                    </Tooltip>
-                                                                                    
-                                                                                    <Tooltip>
-                                                                                        <TooltipTrigger asChild>
-                                                                                            <Button
-                                                                                                variant="ghost"
-                                                                                                size="sm"
-                                                                                                className="h-10 w-14 rounded-none justify-center"
-                                                                                                onClick={() => {
-                                                                                                    setSelectedMessage(message)
-                                                                                                    setEmojiPickerOpen(true)
-                                                                                                }}
-                                                                                            >
-                                                                                                <Smile className="h-4 w-4" />
-                                                                                            </Button>
-                                                                                        </TooltipTrigger>
-                                                                                        <TooltipContent side="left">React</TooltipContent>
-                                                                                    </Tooltip>
-                                                                                </TooltipProvider>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* Inline Reply Box */}
-                                                                    {replyingTo?.id === message.id && (
-                                                                        <div className="mt-2 ml-11">
-                                                                            <Card className="p-3">
-                                                                                <div className="mb-2">
-                                                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                                                                                        <MessageSquare className="h-3 w-3" />
-                                                                                        <span>Replying to {getDisplayName(message.user)}</span>
-                                                                                    </div>
-                                                                                    <p className="text-xs text-muted-foreground truncate">
-                                                                                        {message.content}
-                                                                                    </p>
-                                                                                </div>
-                                                                                <div className="flex items-end gap-2">
-                                                                                    <Textarea
-                                                                                        placeholder="Type your reply..."
-                                                                                        value={replyInput}
-                                                                                        onChange={(e) => setReplyInput(e.target.value)}
-                                                                                        onKeyDown={(e) => {
-                                                                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                                                                e.preventDefault()
-                                                                                                sendReply()
-                                                                                            }
-                                                                                            if (e.key === 'Escape') {
-                                                                                                setReplyingTo(null)
-                                                                                                setReplyInput('')
-                                                                                            }
-                                                                                        }}
-                                                                                        className="resize-none min-h-[60px]"
-                                                                                        rows={2}
-                                                                                        autoFocus
-                                                                                    />
-                                                                                    <div className="flex flex-col gap-1 shrink-0">
-                                                                                        <Button
-                                                                                            size="sm"
-                                                                                            onClick={sendReply}
-                                                                                            disabled={!replyInput.trim() || sendingReply}
-                                                                                        >
-                                                                                            {sendingReply ? (
-                                                                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
-                                                                                            ) : (
-                                                                                                <Send className="h-4 w-4" />
-                                                                                            )}
-                                                                                        </Button>
-                                                                                        <Button
-                                                                                            size="sm"
-                                                                                            variant="outline"
-                                                                                            onClick={() => {
-                                                                                                setReplyingTo(null)
-                                                                                                setReplyInput('')
-                                                                                            }}
-                                                                                        >
-                                                                                            ✕
-                                                                                        </Button>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </Card>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        )
-                                                    }
-                                                })}
-                                        </div>
-                                    )}
-                                </ScrollArea>
-
-                                {/* Message Input */}
-                                <div className="p-4 pb-8 border-t bg-background">
-                                    <TooltipProvider>
-                                        <div className="flex items-end gap-2">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
-                                                        className="shrink-0"
-                                                        onClick={handleAttachmentClick}
-                                                        disabled={uploadingFile}
-                                                    >
-                                                        {uploadingFile ? (
-                                                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                                                        ) : (
-                                                            <Paperclip className="h-5 w-5" />
-                                                        )}
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Upload file or image</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                            
-                                            <Textarea
-                                                placeholder="Type a message..."
-                                                value={messageInput}
-                                                onChange={(e) => setMessageInput(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                                        e.preventDefault()
-                                                        sendMessage()
-                                                    }
-                                                }}
-                                                className="resize-none min-h-[44px] max-h-32"
-                                                rows={1}
-                                            />
-                                            
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        onClick={sendMessage}
-                                                        disabled={!messageInput.trim() || sendingMessage}
-                                                        className="shrink-0"
-                                                    >
-                                                        <Send className="h-4 w-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Send message (Enter)</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div>
-                                    </TooltipProvider>
-                                    <p className="text-xs text-muted-foreground mt-2">
-                                        Press Enter to send, Shift+Enter for new line
-                                    </p>
-                                </div>
-
-                                {/* Hidden File Input */}
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    className="hidden"
-                                    onChange={handleFileChange}
-                                />
-                            </>
-                        ) : (
-                            /* Files Tab */
-                            <div className="flex-1 p-4 overflow-auto">
-                                {loadingFiles ? (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        Loading files...
-                                    </div>
-                                ) : files.length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground opacity-50" />
-                                        <p className="text-muted-foreground">No files shared yet</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            Upload files from the chat tab
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {files.map((file) => (
-                                            <Card key={file.id}>
-                                                <CardContent className="p-4">
-                                                    <div className="flex items-start justify-between mb-2">
-                                                        <FileText className="h-8 w-8 text-primary" />
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8"
-                                                            onClick={() => window.open(file.fileUrl, '_blank')}
-                                                        >
-                                                            <Download className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                    <h3 className="font-semibold text-sm mb-1 truncate">
-                                                        {file.fileName}
-                                                    </h3>
-                                                    <p className="text-xs text-muted-foreground mb-2">
-                                                        {formatFileSize(file.fileSize)}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        Shared by {getDisplayName(file.user)}
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {new Date(file.createdAt).toLocaleDateString()}
-                                                    </p>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </>
-                ) : (
-                    <div className="flex-1 flex items-center justify-center">
-                        <div className="text-center">
-                            <MessageSquare className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                            <h3 className="text-lg font-semibold mb-2">Select a chat</h3>
-                            <p className="text-muted-foreground mb-4">
-                                Choose a collaboration from the list to start messaging
-                            </p>
-                            <Button onClick={() => setCollaborationDialogOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create New Chat
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Create Collaboration Dialog */}
-            <CollaborationDialog
-                open={collaborationDialogOpen}
-                onOpenChange={setCollaborationDialogOpen}
-                onSuccess={() => {
-                    fetchCollaborations()
-                }}
-            />
-
-            {/* Edit Collaboration Dialog */}
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit Chat Details</DialogTitle>
-                        <DialogDescription>
-                            Update the name and description of this collaboration
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-name">Chat Name</Label>
-                            <Input
-                                id="edit-name"
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                placeholder="Enter chat name"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-description">Description</Label>
-                            <Textarea
-                                id="edit-description"
-                                value={editDescription}
-                                onChange={(e) => setEditDescription(e.target.value)}
-                                placeholder="Enter chat description"
-                                rows={3}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={saveEdit} disabled={savingEdit || !editName.trim()}>
-                            {savingEdit ? 'Saving...' : 'Save Changes'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Archive Confirmation Dialog */}
-            <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Archive this chat?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This chat will be moved to archives. You can still access it later from the archived chats section.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleArchive} disabled={archiving}>
-                            {archiving ? 'Archiving...' : 'Archive Chat'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            {/* Delete Confirmation Dialog */}
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete this chat permanently?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. All messages, files, and suggestions will be permanently deleted.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                            onClick={handleDelete} 
-                            disabled={deleting}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            {deleting ? 'Deleting...' : 'Delete Permanently'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            {/* Add Members Dialog */}
-            <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Add Members to Chat</DialogTitle>
-                        <DialogDescription>
-                            Select users to add to this collaboration
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        {loadingUsers ? (
-                            <div className="text-center py-4 text-muted-foreground">
-                                Loading users...
-                            </div>
-                        ) : availableUsers.length === 0 ? (
-                            <div className="text-center py-4 text-muted-foreground">
-                                No available users to add
-                            </div>
-                        ) : (
-                            <ScrollArea className="h-[300px] pr-4">
-                                <div className="space-y-2">
-                                    {availableUsers.map((user) => (
-                                        <div
-                                            key={user.id}
-                                            className={cn(
-                                                "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors border",
-                                                selectedMembers.includes(user.id)
-                                                    ? "bg-primary/10 border-primary"
-                                                    : "hover:bg-accent border-transparent"
-                                            )}
-                                            onClick={() => {
-                                                setSelectedMembers(prev =>
-                                                    prev.includes(user.id)
-                                                        ? prev.filter(id => id !== user.id)
-                                                        : [...prev, user.id]
-                                                )
-                                            }}
-                                        >
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={user.avatar || undefined} />
-                                                <AvatarFallback className="text-xs">
-                                                    {getInitials(getDisplayName(user))}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium truncate">
-                                                    {getDisplayName(user)}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground truncate">
-                                                    {user.email}
-                                                </p>
-                                            </div>
-                                            {selectedMembers.includes(user.id) && (
-                                                <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                                                    <svg className="h-3 w-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => {
-                            setAddMemberDialogOpen(false)
-                            setSelectedMembers([])
-                        }}>
-                            Cancel
-                        </Button>
-                        <Button 
-                            onClick={handleAddMembers} 
-                            disabled={addingMembers || selectedMembers.length === 0}
-                        >
-                            {addingMembers ? 'Adding...' : `Add ${selectedMembers.length} Member${selectedMembers.length !== 1 ? 's' : ''}`}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            
-            {/* View Members Dialog */}
-            <Dialog open={viewMembersDialogOpen} onOpenChange={setViewMembersDialogOpen}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Chat Members</DialogTitle>
-                        <DialogDescription>
-                            {selectedCollaboration?.members.length} member{selectedCollaboration?.members.length !== 1 ? 's' : ''} in this chat
-                        </DialogDescription>
-                    </DialogHeader>
-                    <ScrollArea className="h-[400px] pr-4">
-                        <div className="space-y-2">
-                            {selectedCollaboration?.members.map((member) => (
-                                <div
-                                    key={member.id}
-                                    className="flex items-center gap-3 p-3 rounded-lg border"
-                                >
-                                    <Avatar className="h-10 w-10">
-                                        <AvatarImage src={member.user.avatar || undefined} />
-                                        <AvatarFallback>
-                                            {getInitials(getDisplayName(member.user))}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">
-                                            {getDisplayName(member.user)}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground truncate">
-                                            {member.user.email}
-                                        </p>
-                                    </div>
-                                    {member.role === 'OWNER' && (
-                                        <Badge variant="secondary" className="text-xs">
-                                            Owner
-                                        </Badge>
-                                    )}
-                                    {member.role === 'ADMIN' && (
-                                        <Badge variant="secondary" className="text-xs">
-                                            Admin
-                                        </Badge>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                    <DialogFooter>
-                        <Button onClick={() => setViewMembersDialogOpen(false)}>
-                            Close
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Create Task from Message Dialog */}
-            {selectedMessage && selectedCollaboration && (
-                <CreateTaskFromMessageDialog
-                    open={createTaskDialogOpen}
-                    onClose={() => {
-                        setCreateTaskDialogOpen(false)
-                        setSelectedMessage(null)
-                    }}
-                    messageContent={selectedMessage.content}
-                    messageId={selectedMessage.id}
-                    collaborationId={selectedCollaboration.id}
-                    onSuccess={() => {
-                        // Optionally refresh something or show a success message
-                        alert('Task created successfully!')
-                    }}
-                />
-            )}
-
-            {/* Set Reminder Dialog */}
-            {selectedMessage && (
-                <SetReminderDialog
-                    open={reminderDialogOpen}
-                    onClose={() => {
-                        setReminderDialogOpen(false)
-                        setSelectedMessage(null)
-                    }}
-                    messageContent={selectedMessage.content}
-                    messageId={selectedMessage.id}
-                    onSuccess={() => {
-                        // Optionally refresh something or show a success message
-                        alert('Reminder set successfully!')
-                    }}
-                />
-            )}
-
-            {/* Emoji & GIF Reaction Picker Dialog */}
-            <Dialog open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Add Reaction</DialogTitle>
-                        <DialogDescription>
-                            Choose an emoji or GIF to react to this message
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <Tabs defaultValue="emoji" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="emoji">Emoji</TabsTrigger>
-                            <TabsTrigger value="gif">GIF</TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="emoji" className="space-y-4">
-                            <div className="grid grid-cols-8 gap-2 p-4 max-h-[300px] overflow-y-auto">
-                                {[
-                                    '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
-                                    '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩',
-                                    '😘', '😗', '☺️', '😚', '😙', '🥲', '😋', '😛',
-                                    '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔',
-                                    '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄',
-                                    '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷',
-                                    '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '😎',
-                                    '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯',
-                                    '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥',
-                                    '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩',
-                                    '😫', '🥱', '😤', '😡', '😠', '🤬', '👍', '👎',
-                                    '👏', '🙌', '🤝', '🙏', '❤️', '🧡', '💛', '💚',
-                                    '💙', '💜', '🤎', '🖤', '🤍', '💯', '💢', '💥',
-                                    '💫', '💦', '💨', '🕳️', '💬', '👁️', '🗨️', '🗯️',
-                                    '💭', '💤', '✅', '❌', '🔥', '⭐', '🎉', '🎊'
-                                ].map((emoji, index) => (
-                                                    <Button
-                                                        key={index}
-                                                        variant="ghost"
-                                                        className="h-12 w-12 text-2xl hover:bg-purple-50 hover:scale-110 transition-transform"
-                                                        onClick={async () => {
-                                                            if (!selectedMessage || !selectedCollaboration) return
-                                                            
-                                                            try {
-                                                                // Call the reaction API
-                                                                const response = await fetch(
-                                                                    `/api/collaborations/${selectedCollaboration.id}/messages/${selectedMessage.id}/react`,
-                                                                    {
-                                                                        method: 'POST',
-                                                                        headers: {
-                                                                            'Content-Type': 'application/json',
-                                                                        },
-                                                                        body: JSON.stringify({ emoji }),
-                                                                    }
-                                                                )
-
-                                                                if (response.ok) {
-                                                                    const data = await response.json()
-                                                                    // Update the messages state with the new reaction
-                                                                    setMessages((prevMessages) =>
-                                                                        prevMessages.map((msg) =>
-                                                                            msg.id === selectedMessage.id
-                                                                                ? { ...msg, reactions: data.message.reactions }
-                                                                                : msg
-                                                                        )
-                                                                    )
-                                                                    setEmojiPickerOpen(false)
-                                                                    setSelectedMessage(null)
-                                                                } else {
-                                                                    alert('Failed to add reaction')
-                                                                }
-                                                            } catch (error) {
-                                                                console.error('Failed to add reaction:', error)
-                                                                alert('Failed to add reaction')
-                                                            }
-                                                        }}
-                                                    >
-                                                        {emoji}
-                                                    </Button>
-                                ))}
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="gif" className="space-y-4">
-                            <div className="p-4">
-                                <Input
-                                    placeholder="Search for GIFs..."
-                                    className="mb-4"
-                                />
-                                <div className="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto">
-                                    {/* Placeholder for GIF search results */}
-                                    <div className="col-span-2 text-center text-muted-foreground py-8">
-                                        <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                                        <p className="text-sm">GIF search coming soon!</p>
-                                        <p className="text-xs mt-1">Integrate with Giphy or Tenor API</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setEmojiPickerOpen(false)
-                                setSelectedMessage(null)
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
-    )
-}
-
-// Wrap the main component with Suspense to handle useSearchParams
 export default function CollaboratePage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const user = useAuthStore((state) => state.user)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [collaborations, setCollaborations] = useState<Collaboration[]>([])
+  const [selectedCollaboration, setSelectedCollaboration] = useState<Collaboration | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [files, setFiles] = useState<CollaborationFile[]>([])
+  const [scheduledCalls, setScheduledCalls] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [messageInput, setMessageInput] = useState('')
+  const [sendingMessage, setSendingMessage] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [chatSearchQuery, setChatSearchQuery] = useState('')
+  const [showGroupInfo, setShowGroupInfo] = useState(true)
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
+  const [addPeopleDialogOpen, setAddPeopleDialogOpen] = useState(false)
+  const [scheduleCallDialogOpen, setScheduleCallDialogOpen] = useState(false)
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false)
+  const [selectedMessageForTask, setSelectedMessageForTask] = useState<Message | null>(null)
+
+  // Fetch collaborations
+  useEffect(() => {
+    fetchCollaborations()
+  }, [])
+
+  // Auto-select collaboration from URL or first one
+  useEffect(() => {
+    if (collaborations.length > 0 && !selectedCollaboration && !loading) {
+      const collabId = searchParams.get('id')
+      if (collabId) {
+        const collab = collaborations.find(c => c.id === collabId)
+        if (collab) {
+          selectCollaboration(collab)
+        }
+      } else {
+        selectCollaboration(collaborations[0])
+      }
+    }
+  }, [collaborations, loading])
+
+  // Fetch messages when collaboration is selected
+  useEffect(() => {
+    if (selectedCollaboration) {
+      fetchMessages()
+      fetchFiles()
+      fetchScheduledCalls()
+      // Poll for new messages every 3 seconds
+      const interval = setInterval(fetchMessages, 3000)
+      return () => clearInterval(interval)
+    }
+  }, [selectedCollaboration?.id])
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const fetchCollaborations = async () => {
+    try {
+      const response = await fetch('/api/collaborations')
+      if (response.ok) {
+        const data = await response.json()
+        const collabs = (data.collaborations || []).filter((c: Collaboration) => !c.isArchived)
+        setCollaborations(collabs)
+        // Calculate unread counts (simplified - you can enhance this)
+        const counts: Record<string, number> = {}
+        collabs.forEach((c: Collaboration) => {
+          counts[c.id] = 0 // You can implement actual unread logic
+        })
+        setUnreadCounts(counts)
+      }
+    } catch (error) {
+      console.error('Error fetching collaborations:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addMemberToCollaboration = async (userId: string) => {
+    if (!selectedCollaboration) return
+
+    try {
+      const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role: 'MEMBER' }),
+      })
+
+      if (response.ok) {
+        // Refresh collaborations to get updated member list
+        await fetchCollaborations()
+        // Update selected collaboration
+        const updated = collaborations.find(c => c.id === selectedCollaboration.id)
+        if (updated) {
+          setSelectedCollaboration(updated)
+        }
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to add member')
+      }
+    } catch (error) {
+      console.error('Error adding member:', error)
+      alert('Failed to add member')
+    }
+  }
+
+  const fetchMessages = async () => {
+    if (!selectedCollaboration) {
+      console.log('[fetchMessages] No collaboration selected')
+      return
+    }
+    try {
+      console.log('[fetchMessages] Fetching messages for collaboration:', selectedCollaboration.id)
+      const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/messages`)
+      console.log('[fetchMessages] Response status:', response.status)
+      if (response.ok) {
+        const data = await response.json()
+        const messagesList = data.messages || []
+        console.log('[fetchMessages] Fetched messages:', messagesList.length)
+        if (messagesList.length > 0) {
+          console.log('[fetchMessages] First message structure:', {
+            id: messagesList[0].id,
+            hasContent: !!messagesList[0].content,
+            contentLength: messagesList[0].content?.length,
+            hasUser: !!messagesList[0].user,
+            userStructure: messagesList[0].user,
+            createdAt: messagesList[0].createdAt
+          })
+        }
+        setMessages(messagesList)
+      } else {
+        const errorText = await response.text()
+        console.error('[fetchMessages] API error:', response.status, response.statusText, errorText)
+      }
+    } catch (error) {
+      console.error('[fetchMessages] Error fetching messages:', error)
+    }
+  }
+
+  const fetchFiles = async () => {
+    if (!selectedCollaboration) return
+    try {
+      const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/files`)
+      if (response.ok) {
+        const data = await response.json()
+        setFiles(data.files || [])
+      }
+    } catch (error) {
+      console.error('Error fetching files:', error)
+    }
+  }
+
+  const fetchScheduledCalls = async () => {
+    if (!selectedCollaboration) {
+      console.log('[fetchScheduledCalls] No collaboration selected')
+      return
+    }
+    console.log('[fetchScheduledCalls] Fetching calls for collaboration:', selectedCollaboration.id)
+    try {
+      // Fetch calls - API only returns calls where current user is a participant
+      const response = await fetch('/api/calls')
+      console.log('[fetchScheduledCalls] API response status:', response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[fetchScheduledCalls] Total calls from API:', data.calls?.length || 0)
+        console.log('[fetchScheduledCalls] Sample call:', data.calls?.[0])
+
+        // Filter for scheduled calls (have scheduledAt)
+        // Since API already filters to calls where user is participant,
+        // and we're scheduling from this collaboration, these should be relevant
+        const scheduledCalls = (data.calls || []).filter((call: any) => {
+          // Check if scheduledAt exists and is not null/undefined/empty string
+          const hasScheduledAt = call.scheduledAt &&
+            call.scheduledAt !== null &&
+            call.scheduledAt !== undefined &&
+            call.scheduledAt !== ''
+          console.log(`[fetchScheduledCalls] Call ${call.id}: title="${call.title}", scheduledAt=${call.scheduledAt}, hasScheduledAt=${hasScheduledAt}, type=${call.type}`)
+          return hasScheduledAt
+        })
+
+        console.log('[fetchScheduledCalls] Scheduled calls found:', scheduledCalls.length)
+
+        // Sort by scheduledAt date (upcoming first)
+        scheduledCalls.sort((a: any, b: any) => {
+          const dateA = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0
+          const dateB = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0
+          return dateA - dateB
+        })
+
+        console.log('[fetchScheduledCalls] Setting scheduled calls:', scheduledCalls)
+        setScheduledCalls(scheduledCalls)
+      } else {
+        console.error('[fetchScheduledCalls] API error:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('[fetchScheduledCalls] Error response:', errorText)
+      }
+    } catch (error) {
+      console.error('[fetchScheduledCalls] Error fetching scheduled calls:', error)
+    }
+  }
+
+  const selectCollaboration = async (collaboration: Collaboration) => {
+    setSelectedCollaboration(collaboration)
+    setMessages([])
+    router.push(`/collaborate?id=${collaboration.id}`, { scroll: false })
+    // Mark as read
+    setUnreadCounts(prev => ({ ...prev, [collaboration.id]: 0 }))
+  }
+
+  const sendMessage = async () => {
+    if (!messageInput.trim() || !selectedCollaboration || sendingMessage) return
+
+    setSendingMessage(true)
+    try {
+      const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: messageInput.trim(),
+          mentions: [],
+        }),
+      })
+
+      if (response.ok) {
+        setMessageInput('')
+        await fetchMessages()
+        await fetchCollaborations() // Refresh to update last message
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+    } finally {
+      setSendingMessage(false)
+    }
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !selectedCollaboration) return
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/files`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (response.ok) {
+        await fetchFiles()
+        await fetchMessages()
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error)
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const formatTime = (dateString: string) => {
+    return format(new Date(dateString), 'HH:mm')
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7) return format(date, 'EEEE')
+    return format(date, 'MMM d, yyyy')
+  }
+
+  const getLastMessage = (collaboration: Collaboration) => {
+    // Get last message from the collaboration
+    const lastMessage = (collaboration as any).messages?.[0]
+    if (!lastMessage) return 'No messages yet'
+
+    const senderName = lastMessage.userId === user?.id
+      ? 'You'
+      : getUserName(lastMessage.user)
+
+    return `${senderName}: ${lastMessage.content.substring(0, 50)}${lastMessage.content.length > 50 ? '...' : ''}`
+  }
+
+  const getLastMessageTime = (collaboration: Collaboration) => {
+    if (!collaboration.updatedAt) return ''
+    const date = new Date(collaboration.updatedAt)
+    const now = new Date()
+    const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+
+    if (diffMinutes < 1) return 'now'
+    if (diffMinutes < 60) return `${diffMinutes}m`
+    const diffHours = Math.floor(diffMinutes / 60)
+    if (diffHours < 24) return `${diffHours}h`
+    const diffDays = Math.floor(diffHours / 24)
+    if (diffDays < 7) return `${diffDays}d`
+    return format(date, 'MMM d')
+  }
+
+  const getUserName = (user: { name: string | null; firstName: string | null; lastName: string | null }) => {
+    if (user.name) return user.name
+    if (user.firstName || user.lastName) {
+      return `${user.firstName || ''} ${user.lastName || ''}`.trim()
+    }
+    return 'Unknown'
+  }
+
+  const filteredCollaborations = collaborations.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const onlineMembers = selectedCollaboration?.members.filter(() => {
+    // You can implement actual online status logic here
+    return Math.random() > 0.5 // Placeholder
+  }) || []
+
+  // Filter messages by search query
+  const filteredMessages = messages.filter(message => {
+    if (!chatSearchQuery.trim()) return true
+    const searchLower = chatSearchQuery.toLowerCase()
     return (
-        <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
-            <CollaboratePageContent />
-        </Suspense>
+      message.content.toLowerCase().includes(searchLower) ||
+      getUserName(message.user).toLowerCase().includes(searchLower)
     )
+  })
+
+  // Group messages by date
+  const groupedMessages = filteredMessages.reduce((acc, message) => {
+    const date = formatDate(message.createdAt)
+    if (!acc[date]) acc[date] = []
+    acc[date].push(message)
+    return acc
+  }, {} as Record<string, Message[]>)
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid h-full min-h-0 w-full bg-background overflow-x-hidden grid-cols-[auto_minmax(0,1fr)_auto] gap-2 px-2">
+      {/* Left Sidebar - Chat List */}
+      <div className="w-80 min-w-[280px] max-w-[400px] border-r bg-card/50 backdrop-blur-sm flex flex-col h-full min-h-0 overflow-hidden">
+        {/* Header */}
+        <div className="p-4 border-b bg-card/80 backdrop-blur-sm flex-shrink-0">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Discussions
+            </h1>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search conversations"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm bg-background/50"
+            />
+          </div>
+
+          <Button
+            onClick={() => setCreateDialogOpen(true)}
+            className="w-full h-9 text-sm font-medium"
+            size="sm"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Discussion
+          </Button>
+        </div>
+
+        {/* Chat List */}
+        <ScrollArea className="flex-1 overflow-y-auto">
+          <div className="p-2 space-y-1">
+            {filteredCollaborations.length === 0 ? (
+              <div className="p-8 text-center">
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">No conversations yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Create a new discussion to get started</p>
+              </div>
+            ) : (
+              filteredCollaborations.map((collaboration) => {
+                const isSelected = selectedCollaboration?.id === collaboration.id
+                const unread = unreadCounts[collaboration.id] || 0
+                const lastMessage = getLastMessage(collaboration)
+                const lastTime = getLastMessageTime(collaboration)
+
+                return (
+                  <button
+                    key={collaboration.id}
+                    onClick={() => selectCollaboration(collaboration)}
+                    className={cn(
+                      'w-full p-3 rounded-lg text-left transition-all duration-200 group',
+                      isSelected
+                        ? 'bg-accent border-l-4 border-primary shadow-sm'
+                        : 'hover:bg-accent/50 border-l-4 border-transparent'
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar className={cn(
+                        "h-11 w-11 flex-shrink-0 ring-2 ring-offset-2 ring-offset-background",
+                        isSelected ? "ring-primary/30" : "ring-transparent"
+                      )}>
+                        <AvatarFallback className={cn(
+                          'text-sm font-semibold',
+                          isSelected ? 'bg-primary/20 text-primary' : 'bg-primary/10 text-primary'
+                        )}>
+                          {getInitials(collaboration.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={cn(
+                            'font-semibold text-sm truncate',
+                            isSelected ? 'text-primary font-medium' : 'text-foreground'
+                          )}>
+                            {collaboration.name}
+                          </span>
+                          {lastTime && (
+                            <span className={cn(
+                              'text-xs ml-2 flex-shrink-0',
+                              isSelected ? 'text-primary/70' : 'text-muted-foreground'
+                            )}>
+                              {lastTime}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={cn(
+                            'text-xs truncate flex-1',
+                            isSelected ? 'text-foreground/80' : 'text-muted-foreground'
+                          )}>
+                            {lastMessage}
+                          </p>
+                          {unread > 0 && (
+                            <Badge className={cn(
+                              'h-5 min-w-5 px-1.5 text-xs flex-shrink-0',
+                              isSelected
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-primary text-primary-foreground'
+                            )}>
+                              {unread}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Center Panel - Messages */}
+      {selectedCollaboration ? (
+        <div className="flex flex-col min-w-0 min-h-0 overflow-hidden h-full bg-background">
+          {/* Top Bar */}
+          <div className="h-16 border-b bg-card/80 backdrop-blur-sm flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-20 shadow-sm">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div className="relative flex-shrink-0">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search messages"
+                  value={chatSearchQuery}
+                  onChange={(e) => setChatSearchQuery(e.target.value)}
+                  className="pl-9 w-64 h-9 text-sm bg-background/50"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-semibold text-base text-foreground truncate">{selectedCollaboration.name}</h2>
+                <p className="text-xs text-muted-foreground truncate">
+                  {selectedCollaboration.members.length} members, {onlineMembers.length} online
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-accent hover:text-primary transition-colors">
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Search</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <StartCallButton
+                        participantIds={selectedCollaboration?.members
+                          .map(m => m.user?.id)
+                          .filter((id): id is string => !!id && id !== user?.id) || undefined}
+                        title={selectedCollaboration ? `Call: ${selectedCollaboration.name}` : undefined}
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 hover:bg-accent hover:text-primary transition-colors"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Quick Call</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <VideoCallButton
+                        participantIds={selectedCollaboration?.members
+                          .map(m => m.user?.id)
+                          .filter((id): id is string => !!id && id !== user?.id) || undefined}
+                        title={selectedCollaboration ? `Video Call: ${selectedCollaboration.name}` : undefined}
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 hover:bg-accent hover:text-primary transition-colors"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Video Call</p>
+                  </TooltipContent>
+                </Tooltip>
+                <DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 hover:bg-accent hover:text-primary transition-colors">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>More Options</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => setShowGroupInfo(!showGroupInfo)}>
+                      {showGroupInfo ? 'Hide' : 'Show'} Group Info
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setSettingsDialogOpen(true)}>
+                      Settings
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TooltipProvider>
+            </div>
+          </div>
+
+          {/* Messages Area */}
+          <ScrollArea className="flex-1 min-h-0 overflow-y-auto bg-muted/30">
+            <div className="p-6 space-y-6 max-w-5xl mx-auto">
+              {Object.entries(groupedMessages).map(([date, dateMessages]) => (
+                <div key={date}>
+                  <div className="text-center mb-6">
+                    <Badge variant="secondary" className="text-xs px-3 py-1 font-medium">
+                      {date}
+                    </Badge>
+                  </div>
+                  {dateMessages.map((message, idx) => {
+                    const isOwn = message.userId === user?.id
+                    const prevMessage = idx > 0 ? dateMessages[idx - 1] : null
+                    const showAvatar = !prevMessage || prevMessage.userId !== message.userId ||
+                      (new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime()) > 300000 // 5 minutes
+                    const showName = !prevMessage || prevMessage.userId !== message.userId
+
+                    return (
+                      <div
+                        key={message.id}
+                        className={cn(
+                          'flex gap-3 mb-4 group',
+                          isOwn && 'flex-row-reverse'
+                        )}
+                      >
+                        {showAvatar ? (
+                          <Avatar className="h-9 w-9 flex-shrink-0">
+                            <AvatarImage src={message.user.avatar || undefined} />
+                            <AvatarFallback className="text-xs font-medium">
+                              {getInitials(getUserName(message.user))}
+                            </AvatarFallback>
+                          </Avatar>
+                        ) : (
+                          <div className="w-9 flex-shrink-0" />
+                        )}
+                        <div className={cn('flex-1 max-w-[65%] lg:max-w-[55%] xl:max-w-[50%]', isOwn && 'flex flex-col items-end')}>
+                          {showName && !isOwn && (
+                            <div className="mb-1.5">
+                              <span className="text-xs font-semibold text-foreground">
+                                {getUserName(message.user)}
+                              </span>
+                              <span className="text-xs text-muted-foreground ml-2">
+                                {formatTime(message.createdAt)}
+                              </span>
+                            </div>
+                          )}
+                          <div
+                            className={cn(
+                              'rounded-2xl px-4 py-2.5 text-sm shadow-sm',
+                              isOwn
+                                ? 'bg-primary text-primary-foreground rounded-br-md'
+                                : 'bg-card border border-border rounded-bl-md'
+                            )}
+                          >
+                            <p className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+                            {message.reactions && message.reactions.length > 0 && (
+                              <div className="flex gap-1.5 mt-2 flex-wrap">
+                                {message.reactions.map((reaction, rIdx) => (
+                                  <Button
+                                    key={rIdx}
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs hover:bg-accent"
+                                  >
+                                    {reaction.emoji} {reaction.users.length}
+                                  </Button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {isOwn && (
+                            <div className="mt-1.5 flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground">
+                                {formatTime(message.createdAt)}
+                              </span>
+                              <CheckCheck className="h-3 w-3 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+              {messages.length === 0 && (
+                <div className="text-center py-12">
+                  <MessageSquare className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground">No messages yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Start the conversation!</p>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+
+          {/* Message Input */}
+          <div className="border-t bg-card/80 backdrop-blur-sm p-4 flex-shrink-0 sticky bottom-0 z-10">
+            <div className="flex items-end gap-2 max-w-5xl mx-auto">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 hover:bg-accent"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="h-5 w-5" />
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <div className="flex-1 relative">
+                <Input
+                  placeholder="Type a message..."
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      sendMessage()
+                    }
+                  }}
+                  className="pr-10 h-10 text-sm bg-background border-border"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-accent"
+                >
+                  <Smile className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 hover:bg-accent"
+              >
+                <Mic className="h-5 w-5" />
+              </Button>
+              <Button
+                onClick={sendMessage}
+                disabled={!messageInput.trim() || sendingMessage}
+                size="icon"
+                className="h-10 w-10 bg-primary hover:bg-primary/90"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center min-w-0 h-full bg-muted/20">
+          <div className="text-center">
+            <MessageSquare className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No conversation selected</h3>
+            <p className="text-sm text-muted-foreground mb-4">Select a conversation or create a new one to start messaging</p>
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Discussion
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Right Sidebar - Group Info */}
+      {selectedCollaboration && showGroupInfo && (
+        <div className="w-80 min-w-[280px] max-w-[400px] border-l bg-card/50 backdrop-blur-sm flex flex-col h-full min-h-0 overflow-hidden">
+          <div className="p-4 border-b bg-card/80 backdrop-blur-sm flex items-center justify-between flex-shrink-0">
+            <h3 className="font-semibold text-base text-foreground">Group Info</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hover:bg-accent"
+              onClick={() => setShowGroupInfo(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <ScrollArea className="flex-1 overflow-y-auto">
+            {/* Files Section */}
+            <div className="p-4 border-b">
+              <h4 className="font-semibold mb-3 text-sm text-foreground">Files</h4>
+              <div className="space-y-1.5">
+                <button className="flex items-center justify-between p-2.5 hover:bg-accent rounded-lg transition-colors w-full text-left group">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                      <ImageIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-foreground">
+                        {files.filter(f => f.fileType.startsWith('image/')).length} photos
+                      </div>
+                    </div>
+                  </div>
+                  <ArrowUp className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+                <button className="flex items-center justify-between p-2.5 hover:bg-accent rounded-lg transition-colors w-full text-left group">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                      <Video className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-foreground">
+                        {files.filter(f => f.fileType.startsWith('video/')).length} videos
+                      </div>
+                    </div>
+                  </div>
+                  <ArrowUp className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+                <button className="flex items-center justify-between p-2.5 hover:bg-accent rounded-lg transition-colors w-full text-left group">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                      <FileText className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-foreground">
+                        {files.length} files
+                      </div>
+                    </div>
+                  </div>
+                  <ArrowUp className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              </div>
+            </div>
+
+            {/* Scheduled Meetings Section */}
+            <div className="p-4 border-b flex flex-col" style={{ height: '300px' }}>
+              <h4 className="font-semibold mb-3 text-sm text-foreground flex-shrink-0">Scheduled Meetings</h4>
+              {scheduledCalls.length === 0 ? (
+                <div className="text-center py-8 flex-1 flex items-center justify-center">
+                  <div>
+                    <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                    <p className="text-xs text-muted-foreground">No scheduled meetings</p>
+                  </div>
+                </div>
+              ) : (
+                <ScrollArea className="flex-1">
+                  <div className="space-y-2 pr-2">
+                    {scheduledCalls.map((call) => {
+                      const scheduledDate = call.scheduledAt ? new Date(call.scheduledAt) : null
+                      const isUpcoming = scheduledDate && scheduledDate > new Date()
+
+                      return (
+                        <div
+                          key={call.id}
+                          className="p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex-1 min-w-0">
+                              <h5 className="font-medium text-sm text-foreground truncate">
+                                {call.title || 'Untitled Call'}
+                              </h5>
+                              {call.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {call.description}
+                                </p>
+                              )}
+                            </div>
+                            {isUpcoming && (
+                              <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                Upcoming
+                              </Badge>
+                            )}
+                          </div>
+                          {scheduledDate && (
+                            <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                {scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          )}
+                          {call.participants && call.participants.length > 0 && (
+                            <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                              <Users className="h-3 w-3" />
+                              <span>{call.participants.length} participants</span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+
+            {/* Discussion Points Section */}
+            <div className="p-4 border-b flex flex-col" style={{ height: '300px' }}>
+              <h4 className="font-semibold mb-3 text-sm text-foreground flex-shrink-0">Discussion Points</h4>
+              {(() => {
+                const filteredMessages = messages.filter(m => m.content && m.content.trim().length > 0)
+                const sortedMessages = filteredMessages.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                const displayMessages = sortedMessages.slice(0, 10)
+
+                console.log('[Discussion Points] Total messages:', messages.length)
+                console.log('[Discussion Points] Filtered messages:', filteredMessages.length)
+                console.log('[Discussion Points] Display messages:', displayMessages.length)
+
+                if (displayMessages.length === 0) {
+                  return (
+                    <div className="text-center py-8 flex-1 flex items-center justify-center">
+                      <div>
+                        <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                        <p className="text-xs text-muted-foreground">No discussion points yet</p>
+                        {messages.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            ({messages.length} messages filtered out)
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                }
+
+                return (
+                  <ScrollArea className="flex-1">
+                    <div className="space-y-2 pr-2">
+                      {displayMessages.map((message) => {
+                        const messageUser = message.user
+                        const messageDate = new Date(message.createdAt)
+
+                        return (
+                          <div
+                            key={message.id}
+                            className="p-2.5 border rounded-lg hover:bg-accent/50 transition-colors group"
+                          >
+                            <div className="flex items-start gap-2 mb-1">
+                              <Avatar className="h-6 w-6 flex-shrink-0">
+                                <AvatarImage src={messageUser?.avatar || undefined} />
+                                <AvatarFallback className="text-xs">
+                                  {getInitials(getUserName(messageUser))}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <span className="font-medium text-xs text-foreground">
+                                    {getUserName(messageUser)}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {messageDate.toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {message.content}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                onClick={() => {
+                                  setSelectedMessageForTask(message)
+                                  setTaskDialogOpen(true)
+                                }}
+                                title="Create task from this message"
+                              >
+                                <CheckSquare className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </ScrollArea>
+                )
+              })()}
+            </div>
+
+            {/* Members Section */}
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-sm text-foreground">
+                  {selectedCollaboration.members.length} members
+                </h4>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScheduleCallDialogOpen(true)}
+                    className="h-8 text-xs"
+                  >
+                    <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                    Schedule Call
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddPeopleDialogOpen(true)}
+                    className="h-8 text-xs"
+                  >
+                    <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                    Add People
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                {selectedCollaboration.members.map((member) => {
+                  const memberUser = member.user
+                  const isAdmin = member.role === 'OWNER' || member.role === 'ADMIN'
+
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex items-center gap-3 p-2.5 hover:bg-accent rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Avatar className="h-9 w-9 flex-shrink-0">
+                        <AvatarImage src={memberUser.avatar || undefined} />
+                        <AvatarFallback className="text-xs font-medium">
+                          {getInitials(getUserName(memberUser))}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate text-foreground">
+                            {getUserName(memberUser)}
+                          </span>
+                          {isAdmin && (
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0 font-medium">
+                              admin
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {memberUser.email}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </ScrollArea>
+        </div>
+      )}
+
+      {/* Create Collaboration Dialog */}
+      <CollaborationDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={(collaboration) => {
+          fetchCollaborations()
+          if (collaboration) {
+            selectCollaboration(collaboration)
+          }
+        }}
+      />
+
+      {/* Settings Dialog */}
+      <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Collaboration Settings</DialogTitle>
+            <DialogDescription>
+              Manage settings for {selectedCollaboration?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCollaboration && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={selectedCollaboration.name}
+                  readOnly
+                  className="bg-muted"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={selectedCollaboration.description || ''}
+                  readOnly
+                  className="bg-muted min-h-[80px]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="type">Type</Label>
+                <Select value={selectedCollaboration.type} disabled>
+                  <SelectTrigger id="type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="GENERAL">General</SelectItem>
+                    <SelectItem value="PROJECT">Project</SelectItem>
+                    <SelectItem value="TASK">Task</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Notifications</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Receive notifications for new messages
+                  </p>
+                </div>
+                <Switch defaultChecked />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSettingsDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add People Dialog */}
+      <AddPeopleDialog
+        open={addPeopleDialogOpen}
+        onOpenChange={setAddPeopleDialogOpen}
+        collaboration={selectedCollaboration}
+        onMemberAdded={async () => {
+          await fetchCollaborations()
+          if (selectedCollaboration) {
+            const updated = collaborations.find(c => c.id === selectedCollaboration.id)
+            if (updated) {
+              setSelectedCollaboration(updated)
+            }
+          }
+        }}
+      />
+
+      {/* Schedule Call Dialog */}
+      <ScheduleCallDialog
+        open={scheduleCallDialogOpen}
+        onOpenChange={setScheduleCallDialogOpen}
+        collaboration={selectedCollaboration}
+        onCallScheduled={fetchScheduledCalls}
+      />
+
+      {/* Create Task from Message Dialog */}
+      {selectedMessageForTask && selectedCollaboration && (
+        <CreateTaskFromMessageDialog
+          open={taskDialogOpen}
+          onClose={() => {
+            setTaskDialogOpen(false)
+            setSelectedMessageForTask(null)
+          }}
+          messageContent={selectedMessageForTask.content}
+          messageId={selectedMessageForTask.id}
+          collaborationId={selectedCollaboration.id}
+          onSuccess={() => {
+            // Optionally refresh messages or show success notification
+            console.log('Task created successfully from message')
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// Add People Dialog Component
+interface AddPeopleDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  collaboration: Collaboration | null
+  onMemberAdded: () => void
+}
+
+function AddPeopleDialog({ open, onOpenChange, collaboration, onMemberAdded }: AddPeopleDialogProps) {
+  const [users, setUsers] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [adding, setAdding] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      fetchUsers()
+    } else {
+      setSearchQuery('')
+    }
+  }, [open])
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users/onboarded')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
+  const handleAddMember = async (userId: string) => {
+    if (!collaboration) return
+
+    setAdding(userId)
+    try {
+      const response = await fetch(`/api/collaborations/${collaboration.id}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role: 'MEMBER' }),
+      })
+
+      if (response.ok) {
+        onMemberAdded()
+        setSearchQuery('')
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to add member')
+      }
+    } catch (error) {
+      console.error('Error adding member:', error)
+      alert('Failed to add member')
+    } finally {
+      setAdding(null)
+    }
+  }
+
+  const existingMemberIds = collaboration?.members.map(m => m.user.id) || []
+  const availableUsers = users.filter(u => !existingMemberIds.includes(u.id))
+  const filteredUsers = availableUsers.filter(u => {
+    const name = u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email
+    return name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  })
+
+  const getUserName = (user: any) => {
+    if (user.name) return user.name
+    if (user.firstName || user.lastName) {
+      return `${user.firstName || ''} ${user.lastName || ''}`.trim()
+    }
+    return user.email
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add People</DialogTitle>
+          <DialogDescription>
+            Add members to {collaboration?.name}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search for users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <ScrollArea className="max-h-[300px]">
+            <div className="space-y-1">
+              {filteredUsers.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  {searchQuery ? 'No users found' : 'No available users'}
+                </div>
+              ) : (
+                filteredUsers.map((user) => (
+                  <button
+                    key={user.id}
+                    onClick={() => handleAddMember(user.id)}
+                    disabled={adding === user.id}
+                    className="w-full flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors text-left disabled:opacity-50"
+                  >
+                    <Avatar className="h-9 w-9 flex-shrink-0">
+                      <AvatarImage src={user.avatar || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {getInitials(getUserName(user))}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-foreground truncate">
+                        {getUserName(user)}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {user.email}
+                      </div>
+                    </div>
+                    {adding === user.id ? (
+                      <div className="text-xs text-muted-foreground">Adding...</div>
+                    ) : (
+                      <UserPlus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// Schedule Call Dialog Component
+interface ScheduleCallDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  collaboration: Collaboration | null
+  onCallScheduled?: () => void
+}
+
+function ScheduleCallDialog({ open, onOpenChange, collaboration, onCallScheduled }: ScheduleCallDialogProps) {
+  const user = useAuthStore((state) => state.user)
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [duration, setDuration] = useState('30')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (open && collaboration) {
+      setTitle(`Call: ${collaboration.name}`)
+      setDescription('')
+      setDate('')
+      setTime('')
+      setDuration('30')
+    }
+  }, [open, collaboration])
+
+  const handleSchedule = async () => {
+    if (!collaboration || !title.trim() || !date || !time) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    setSaving(true)
+    try {
+      // Create scheduled date/time
+      const dateTime = new Date(`${date}T${time}`)
+
+      // Get participant IDs from collaboration members (excluding current user)
+      const participantIds = collaboration.members
+        .map(m => m.user.id)
+        .filter(id => id !== user?.id) // Exclude current user as they're automatically added as host
+
+      // Create the call via API
+      const response = await fetch('/api/calls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'SCHEDULED',
+          title: title.trim(),
+          description: description.trim() || undefined,
+          scheduledAt: dateTime.toISOString(),
+          participantIds: participantIds,
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('[ScheduleCallDialog] Call created successfully:', result)
+        alert(`Call "${title}" scheduled successfully for ${dateTime.toLocaleDateString()} at ${dateTime.toLocaleTimeString()}`)
+        onOpenChange(false)
+        // Reset form
+        setTitle('')
+        setDescription('')
+        setDate('')
+        setTime('')
+        setDuration('30')
+        // Immediately refresh scheduled calls
+        onCallScheduled?.()
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to schedule call')
+      }
+    } catch (error) {
+      console.error('Error scheduling call:', error)
+      alert('Failed to schedule call. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Get minimum date (today)
+  const today = new Date().toISOString().split('T')[0]
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Schedule Call</DialogTitle>
+          <DialogDescription>
+            Schedule a call for {collaboration?.name}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="call-title">Title *</Label>
+            <Input
+              id="call-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Call title"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="call-description">Description</Label>
+            <Textarea
+              id="call-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Call agenda or notes"
+              rows={3}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="call-date">Date *</Label>
+              <Input
+                id="call-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                min={today}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="call-time">Time *</Label>
+              <Input
+                id="call-time"
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="call-duration">Duration (minutes)</Label>
+            <Select value={duration} onValueChange={setDuration}>
+              <SelectTrigger id="call-duration">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15">15 minutes</SelectItem>
+                <SelectItem value="30">30 minutes</SelectItem>
+                <SelectItem value="45">45 minutes</SelectItem>
+                <SelectItem value="60">1 hour</SelectItem>
+                <SelectItem value="90">1.5 hours</SelectItem>
+                <SelectItem value="120">2 hours</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSchedule} disabled={saving || !title.trim() || !date || !time}>
+            {saving ? 'Scheduling...' : 'Schedule Call'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// Video Call Button Component (using same logic as StartCallButton but with Video icon)
+function VideoCallButton({
+  participantIds,
+  title,
+  variant = 'default',
+  size = 'default',
+  className,
+}: {
+  participantIds?: string[]
+  title?: string
+  variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'secondary' | 'link'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
+  className?: string
+}) {
+  const [callOpen, setCallOpen] = useState(false)
+  const [callId, setCallId] = useState<string | null>(null)
+  const { startCall } = useCall()
+  const { toast } = useToast()
+
+  const handleStartCall = async () => {
+    try {
+      const id = await startCall(participantIds, title)
+      setCallId(id)
+      setCallOpen(true)
+    } catch (error: any) {
+      toast({
+        title: 'Failed to start video call',
+        description: error.message || 'Please check your camera and microphone permissions.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleClose = () => {
+    setCallOpen(false)
+    setCallId(null)
+  }
+
+  return (
+    <>
+      <Button
+        variant={variant}
+        size={size}
+        onClick={handleStartCall}
+        className={className}
+        title={size === 'icon' ? 'Start Video Call' : undefined}
+      >
+        {size === 'icon' ? (
+          <Video className="h-4 w-4" />
+        ) : (
+          <>
+            <Video className="h-4 w-4 mr-2" />
+            Start Video Call
+          </>
+        )}
+      </Button>
+
+      <CallInterface
+        callId={callId}
+        open={callOpen}
+        onClose={handleClose}
+      />
+    </>
+  )
 }

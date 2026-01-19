@@ -24,7 +24,7 @@ import {
 
 // Available pages/screens
 const availablePages = [
-    { id: 2, name: "Battlefield", path: "/my-work" },
+    { id: 2, name: "Battlefield", path: "/wrkboard" },
     { id: 3, name: "Projects", path: "/projects" },
     { id: 4, name: "Programs", path: "/programs" },
     { id: 5, name: "Portfolios", path: "/portfolios" },

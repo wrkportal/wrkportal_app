@@ -1,7 +1,7 @@
 /**
- * Product Management Layout
+ * Layout
  * 
- * This layout ensures the navbar appears on all Product Management pages
+ * This layout ensures the navbar appears on all pages
  */
 
 'use client'
@@ -85,7 +85,7 @@ export default function ProductManagementLayout({
   return (
     <div className="min-h-screen bg-background text-foreground flex w-full">
       <main className="flex-1 flex flex-col w-full m-0 p-0">
-        {/* Navigation Bar - appears on all Product Management pages */}
+        {/* Navigation Bar - appears on all pages */}
         {isProductManagementDashboard ? (
           // Pass widgets and toggleWidget only to the main dashboard's navbar
           <ProductManagementNavBar widgets={widgets} toggleWidget={toggleWidget} />

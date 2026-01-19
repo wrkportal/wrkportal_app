@@ -89,70 +89,83 @@ export default function ServiceRequestsPage() {
 
   useEffect(() => {
     fetchServiceRequests()
-  }, [])
+  }, [statusFilter, searchTerm])
 
   const fetchServiceRequests = async () => {
     try {
       setLoading(true)
-      const mockRequests: ServiceRequest[] = [
-        {
-          id: '1',
-          requestNumber: 'SR-2024-001',
-          title: 'Office Cleaning Request',
-          description: 'Request for additional cleaning services',
-          status: 'IN_PROGRESS',
-          priority: 'MEDIUM',
-          requestedBy: 'Sarah Johnson',
-          assignedTo: 'Cleaning Team',
-          category: 'Housekeeping',
-          location: 'Building A, Floor 2',
-          requestedDate: new Date(Date.now() - 3 * 86400000).toISOString(),
-          resolvedDate: null,
-        },
-        {
-          id: '2',
-          requestNumber: 'SR-2024-002',
-          title: 'Catering Services',
-          description: 'Request for catering for company meeting',
-          status: 'OPEN',
-          priority: 'HIGH',
-          requestedBy: 'Mike Wilson',
-          assignedTo: '',
-          category: 'Catering',
-          location: 'Conference Room A',
-          requestedDate: new Date(Date.now() - 1 * 86400000).toISOString(),
-          resolvedDate: null,
-        },
-      ]
-      setRequests(mockRequests)
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter)
+      }
+      if (searchTerm) {
+        params.append('search', searchTerm)
+      }
+
+      const response = await fetch(`/api/operations/service-requests?${params.toString()}`)
+      if (response.ok) {
+        const data = await response.json()
+        // Transform API data to match component interface
+        const transformedRequests = (data.requests || []).map((req: any) => ({
+          id: req.id,
+          requestNumber: req.requestNumber,
+          title: req.title,
+          description: req.description || '',
+          status: req.status,
+          priority: req.priority,
+          requestedBy: req.requestedBy?.name || 'Unknown',
+          assignedTo: req.assignedTo?.name || '',
+          category: req.category || 'General',
+          location: req.location || '',
+          requestedDate: req.requestedDate ? new Date(req.requestedDate).toISOString() : new Date().toISOString(),
+          resolvedDate: req.resolvedDate ? new Date(req.resolvedDate).toISOString() : null,
+        }))
+        setRequests(transformedRequests)
+      } else {
+        setRequests([])
+      }
     } catch (error) {
       console.error('Error fetching service requests:', error)
+      setRequests([])
     } finally {
       setLoading(false)
     }
   }
 
+  const fetchRequests = fetchServiceRequests
+
   const handleCreateRequest = async () => {
     try {
-      const newRequest: ServiceRequest = {
-        id: Date.now().toString(),
-        requestNumber: `SR-2024-${String(requests.length + 1).padStart(3, '0')}`,
-        ...formData,
-        requestedDate: new Date().toISOString(),
-        resolvedDate: null,
-      }
-      setRequests([...requests, newRequest])
-      setIsDialogOpen(false)
-      setFormData({
-        title: '',
-        description: '',
-        status: 'OPEN',
-        priority: 'MEDIUM',
-        requestedBy: '',
-        assignedTo: '',
-        category: '',
-        location: '',
+      const response = await fetch('/api/operations/service-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          status: formData.status,
+          priority: formData.priority,
+          category: formData.category,
+          location: formData.location,
+          assignedToId: formData.assignedTo || null,
+        }),
       })
+      if (response.ok) {
+        await fetchRequests()
+        setIsDialogOpen(false)
+        setFormData({
+          title: '',
+          description: '',
+          status: 'OPEN',
+          priority: 'MEDIUM',
+          requestedBy: '',
+          assignedTo: '',
+          category: '',
+          location: '',
+        })
+      } else {
+        const error = await response.json()
+        console.error('Error creating service request:', error)
+      }
     } catch (error) {
       console.error('Error creating service request:', error)
     }

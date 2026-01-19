@@ -28,6 +28,8 @@ export async function GET(req: NextRequest) {
         phone: true,
         location: true,
         department: true,
+        assistantName: true,
+        voiceSampleUrl: true,
         status: true,
         lastLogin: true,
         emailVerified: true,

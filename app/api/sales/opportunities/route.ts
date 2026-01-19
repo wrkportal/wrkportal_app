@@ -122,6 +122,41 @@ export async function POST(request: NextRequest) {
       products,
     } = body
 
+    // Validate required fields
+    if (!name) {
+      return NextResponse.json(
+        { error: 'Opportunity name is required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate amount if provided
+    if (amount !== undefined && (isNaN(amount) || amount < 0)) {
+      return NextResponse.json(
+        { error: 'Amount must be a positive number' },
+        { status: 400 }
+      )
+    }
+
+    // Validate probability if provided
+    if (probability !== undefined && (isNaN(probability) || probability < 0 || probability > 100)) {
+      return NextResponse.json(
+        { error: 'Probability must be between 0 and 100' },
+        { status: 400 }
+      )
+    }
+
+    // Validate expected close date if provided
+    if (expectedCloseDate) {
+      const closeDate = new Date(expectedCloseDate)
+      if (isNaN(closeDate.getTime())) {
+        return NextResponse.json(
+          { error: 'Invalid expected close date format' },
+          { status: 400 }
+        )
+      }
+    }
+
     const opportunity = await prisma.salesOpportunity.create({
       data: {
         tenantId: session.user.tenantId!,

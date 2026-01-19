@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { extractStructuredData } from '@/lib/ai/openai-service'
+import { extractStructuredData } from '@/lib/ai/ai-service'
 import { PROMPTS } from '@/lib/ai/prompts'
 
 /**
@@ -14,10 +14,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
+    // Check if AI provider is configured
+    const aiProvider = process.env.AI_PROVIDER || 'azure-openai'
+    if (aiProvider === 'azure-openai' && !process.env.AZURE_OPENAI_API_KEY) {
       return NextResponse.json(
-        { error: 'OpenAI API key is not configured' },
+        { error: 'Azure OpenAI API key is not configured' },
         { status: 500 }
       )
     }

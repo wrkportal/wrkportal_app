@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Optimize query
     const optimizedQuery = queryEngine.optimize(query)
 
-    // Execute query
+    // Execute query with security context
     const result = await queryEngine.execute(
       optimizedQuery,
       session.user.tenantId!,
@@ -42,7 +42,10 @@ export async function POST(request: NextRequest) {
         limit: options.limit || 1000,
         offset: options.offset || 0,
         cache: options.cache !== false,
-        timeout: options.timeout || 30000
+        timeout: options.timeout || 30000,
+        userId: session.user.id,
+        userRole: session.user.role,
+        orgUnitId: session.user.orgUnitId || undefined,
       }
     )
 

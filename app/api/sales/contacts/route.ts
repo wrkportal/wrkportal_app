@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         _count: {
           select: {
             activities: true,
-            opportunities: true,
+            cases: true,
           },
         },
       },
@@ -76,11 +76,40 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(contacts)
+    // Add opportunity count manually since it's a many-to-many relation
+    const contactIds = contacts.map((c) => c.id)
+    const opportunityCounts = await prisma.salesOpportunityContact.groupBy({
+      by: ['contactId'],
+      where: {
+        contactId: { in: contactIds },
+      },
+      _count: {
+        contactId: true,
+      },
+    })
+
+    const opportunityCountMap = new Map(
+      opportunityCounts.map((oc) => [oc.contactId, oc._count.contactId])
+    )
+
+    const contactsWithCounts = contacts.map((contact) => ({
+      ...contact,
+      _count: {
+        ...contact._count,
+        opportunities: opportunityCountMap.get(contact.id) || 0,
+      },
+    }))
+
+    return NextResponse.json(contactsWithCounts)
   } catch (error: any) {
     console.error('Error fetching contacts:', error)
+    console.error('Error stack:', error.stack)
     return NextResponse.json(
-      { error: 'Failed to fetch contacts', details: error.message },
+      {
+        error: 'Failed to fetch contacts',
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      },
       { status: 500 }
     )
   }
@@ -167,4 +196,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

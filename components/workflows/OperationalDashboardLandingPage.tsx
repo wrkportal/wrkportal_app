@@ -100,7 +100,6 @@ export default function OperationalDashboardLandingPage() {
           </div>
           <nav className="flex items-center gap-4 text-sm overflow-x-auto pb-1">
             {[
-              "Dashboard",
               "Operations",
               "Workflows",
               "SLAs",

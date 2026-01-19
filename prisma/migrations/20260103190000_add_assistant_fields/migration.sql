@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "assistantName" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "voiceSampleUrl" TEXT;
+

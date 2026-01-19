@@ -93,44 +93,43 @@ export default function WorkOrdersPage() {
 
   useEffect(() => {
     fetchWorkOrders()
-  }, [])
+  }, [statusFilter, searchTerm])
 
   const fetchWorkOrders = async () => {
     try {
       setLoading(true)
-      const mockWorkOrders: WorkOrder[] = [
-        {
-          id: '1',
-          workOrderNumber: 'WO-2024-001',
-          title: 'Repair HVAC System',
-          description: 'HVAC unit not cooling properly, needs repair',
-          status: 'IN_PROGRESS',
-          priority: 'HIGH',
-          assignedTo: 'Maintenance Team A',
-          requestedBy: 'John Smith',
-          asset: 'HVAC Unit #5',
-          location: 'Building A, Floor 3',
-          scheduledDate: new Date(Date.now() - 2 * 86400000).toISOString(),
-          completedDate: null,
-          estimatedCost: '$1,200',
-        },
-        {
-          id: '2',
-          workOrderNumber: 'WO-2024-002',
-          title: 'Electrical Panel Inspection',
-          description: 'Routine safety inspection of electrical panels',
-          status: 'SCHEDULED',
-          priority: 'MEDIUM',
-          assignedTo: 'Electrician Team',
-          requestedBy: 'Facility Manager',
-          asset: 'Electrical Panel #2',
-          location: 'Building B, Basement',
-          scheduledDate: new Date(Date.now() + 7 * 86400000).toISOString(),
-          completedDate: null,
-          estimatedCost: '$500',
-        },
-      ]
-      setWorkOrders(mockWorkOrders)
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter)
+      }
+      if (searchTerm) {
+        params.append('search', searchTerm)
+      }
+
+      const response = await fetch(`/api/operations/work-orders?${params.toString()}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch work orders')
+      }
+      const data = await response.json()
+      
+      // Transform API data to match component interface
+      const transformedWorkOrders: WorkOrder[] = (data.workOrders || []).map((wo: any) => ({
+        id: wo.id,
+        workOrderNumber: wo.workOrderNumber,
+        title: wo.title,
+        description: wo.description || '',
+        status: wo.status,
+        priority: wo.priority,
+        assignedTo: wo.assignedTo?.name || wo.assignedToId || 'Unassigned',
+        requestedBy: wo.requestedBy?.name || wo.requestedById || 'Unknown',
+        asset: wo.assetId || '',
+        location: wo.location || '',
+        scheduledDate: wo.scheduledDate ? new Date(wo.scheduledDate).toISOString() : '',
+        completedDate: wo.completedDate ? new Date(wo.completedDate).toISOString() : null,
+        estimatedCost: wo.estimatedCost ? `$${Number(wo.estimatedCost).toLocaleString()}` : '$0',
+      }))
+      
+      setWorkOrders(transformedWorkOrders)
     } catch (error) {
       console.error('Error fetching work orders:', error)
     } finally {
@@ -140,13 +139,27 @@ export default function WorkOrdersPage() {
 
   const handleCreateWorkOrder = async () => {
     try {
-      const newWorkOrder: WorkOrder = {
-        id: Date.now().toString(),
-        workOrderNumber: `WO-2024-${String(workOrders.length + 1).padStart(3, '0')}`,
-        ...formData,
-        completedDate: null,
+      const response = await fetch('/api/operations/work-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          status: formData.status,
+          priority: formData.priority,
+          location: formData.location,
+          scheduledDate: formData.scheduledDate || new Date().toISOString(),
+          estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost.replace(/[^0-9.]/g, '')) : 0,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create work order')
       }
-      setWorkOrders([...workOrders, newWorkOrder])
+
+      // Refresh work orders list
+      await fetchWorkOrders()
       setIsDialogOpen(false)
       setFormData({
         title: '',
@@ -162,6 +175,7 @@ export default function WorkOrdersPage() {
       })
     } catch (error) {
       console.error('Error creating work order:', error)
+      alert(error instanceof Error ? error.message : 'Failed to create work order')
     }
   }
 
@@ -200,12 +214,35 @@ export default function WorkOrdersPage() {
     }
   }
 
-  const stats = {
-    total: workOrders.length,
-    open: workOrders.filter((wo) => wo.status === 'OPEN').length,
-    inProgress: workOrders.filter((wo) => wo.status === 'IN_PROGRESS').length,
-    completed: workOrders.filter((wo) => wo.status === 'COMPLETED').length,
-  }
+  const [stats, setStats] = useState({
+    total: 0,
+    open: 0,
+    inProgress: 0,
+    completed: 0,
+  })
+
+  useEffect(() => {
+    // Fetch stats from API
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/operations/work-orders')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.stats) {
+            setStats({
+              total: data.stats.total || 0,
+              open: data.stats.pending || 0,
+              inProgress: data.stats.inProgress || 0,
+              completed: data.stats.completed || 0,
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching work order stats:', error)
+      }
+    }
+    fetchStats()
+  }, [])
 
   return (
     <OperationsPageLayout title="Work Orders" description="Manage maintenance and repair work orders">
@@ -493,12 +530,49 @@ export default function WorkOrdersPage() {
                               <Edit className="mr-2 h-4 w-4" />
                               Edit Work Order
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(`/api/operations/work-orders/${wo.id}/complete`, {
+                                    method: 'POST',
+                                  })
+                                  if (response.ok) {
+                                    await fetchWorkOrders()
+                                  } else {
+                                    const errorData = await response.json()
+                                    alert(errorData.error || 'Failed to complete work order')
+                                  }
+                                } catch (error) {
+                                  console.error('Error completing work order:', error)
+                                  alert('Failed to complete work order')
+                                }
+                              }}
+                            >
                               <CheckCircle className="mr-2 h-4 w-4" />
                               Mark Complete
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={async () => {
+                                if (confirm('Are you sure you want to delete this work order?')) {
+                                  try {
+                                    const response = await fetch(`/api/operations/work-orders/${wo.id}`, {
+                                      method: 'DELETE',
+                                    })
+                                    if (response.ok) {
+                                      await fetchWorkOrders()
+                                    } else {
+                                      const errorData = await response.json()
+                                      alert(errorData.error || 'Failed to delete work order')
+                                    }
+                                  } catch (error) {
+                                    console.error('Error deleting work order:', error)
+                                    alert('Failed to delete work order')
+                                  }
+                                }
+                              }}
+                            >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete
                             </DropdownMenuItem>

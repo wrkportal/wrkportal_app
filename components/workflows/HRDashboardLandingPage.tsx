@@ -57,7 +57,6 @@ export default function HRLandingPage() {
         {/* Top Navigation */}
         <nav className="flex items-center gap-3 text-xs overflow-x-auto pb-1">
           {[
-            "Dashboard",
             "Directory",
             "Hiring",
             "Attendance",

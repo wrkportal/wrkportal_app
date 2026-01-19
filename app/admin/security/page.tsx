@@ -5,6 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Shield, Lock, Key, AlertTriangle } from "lucide-react"
+import { IPWhitelistSettings } from "@/components/security/ip-whitelist-settings"
+import { DLPSettings } from "@/components/security/dlp-settings"
+import { GDPRCompliance } from "@/components/security/gdpr-compliance"
 
 interface SecurityStats {
     securityScore: number
@@ -279,6 +282,15 @@ export default function AdminSecurityPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* IP Whitelisting */}
+            <IPWhitelistSettings />
+
+            {/* Data Loss Prevention */}
+            <DLPSettings />
+
+            {/* GDPR Compliance */}
+            <GDPRCompliance />
         </div>
     )
 }

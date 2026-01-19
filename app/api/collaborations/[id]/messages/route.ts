@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 // GET /api/collaborations/[id]/messages - Get messages for a collaboration
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -14,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Verify user is a member of this collaboration
     const collaboration = await prisma.collaboration.findFirst({
@@ -120,7 +120,7 @@ export async function GET(
 // POST /api/collaborations/[id]/messages - Create a new message
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -129,7 +129,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = await params
     const body = await req.json()
     const { content, mentions, replyToId } = body
 

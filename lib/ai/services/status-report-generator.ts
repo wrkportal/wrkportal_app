@@ -2,7 +2,7 @@
  * AI Status Report Generator
  */
 
-import { extractStructuredData } from '../openai-service'
+import { extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { AIStatusReport } from '@/types/ai'
 import { Project, Task, Risk, Issue } from '@/types'

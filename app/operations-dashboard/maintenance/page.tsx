@@ -88,68 +88,83 @@ export default function MaintenancePage() {
   })
 
   useEffect(() => {
-    fetchMaintenance()
-  }, [])
+    fetchMaintenanceRecords()
+  }, [statusFilter, searchTerm])
 
-  const fetchMaintenance = async () => {
+  const fetchMaintenanceRecords = async () => {
     try {
       setLoading(true)
-      const mockMaintenance: Maintenance[] = [
-        {
-          id: '1',
-          maintenanceNumber: 'MNT-2024-001',
-          asset: 'HVAC Unit #5',
-          type: 'PREVENTIVE',
-          status: 'SCHEDULED',
-          scheduledDate: new Date(Date.now() + 14 * 86400000).toISOString(),
-          completedDate: null,
-          technician: 'Maintenance Team A',
-          description: 'Quarterly preventive maintenance',
-          cost: '$300',
-          frequency: 'Quarterly',
-        },
-        {
-          id: '2',
-          maintenanceNumber: 'MNT-2024-002',
-          asset: 'Elevator System',
-          type: 'PREVENTIVE',
-          status: 'COMPLETED',
-          scheduledDate: new Date(Date.now() - 7 * 86400000).toISOString(),
-          completedDate: new Date(Date.now() - 5 * 86400000).toISOString(),
-          technician: 'Elevator Service Co.',
-          description: 'Monthly safety inspection',
-          cost: '$500',
-          frequency: 'Monthly',
-        },
-      ]
-      setMaintenance(mockMaintenance)
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter)
+      }
+      if (searchTerm) {
+        params.append('search', searchTerm)
+      }
+
+      const response = await fetch(`/api/operations/maintenance?${params.toString()}`)
+      if (response.ok) {
+        const data = await response.json()
+        // Transform API data to match component interface
+        const transformedMaintenance = (data.maintenance || []).map((maint: any) => ({
+          id: maint.id,
+          maintenanceNumber: maint.maintenanceNumber,
+          asset: maint.asset?.name || maint.assetId || 'N/A',
+          type: maint.type,
+          status: maint.status,
+          scheduledDate: maint.scheduledDate ? new Date(maint.scheduledDate).toISOString() : new Date().toISOString(),
+          completedDate: maint.completedDate ? new Date(maint.completedDate).toISOString() : null,
+          technician: maint.technician?.name || maint.technicianName || 'Unassigned',
+          description: maint.description || '',
+          cost: maint.cost ? `$${Number(maint.cost).toLocaleString()}` : '$0',
+          frequency: maint.frequency || '',
+        }))
+        setMaintenance(transformedMaintenance)
+      } else {
+        setMaintenance([])
+      }
     } catch (error) {
       console.error('Error fetching maintenance:', error)
+      setMaintenance([])
     } finally {
       setLoading(false)
     }
   }
 
+
   const handleCreateMaintenance = async () => {
     try {
-      const newMaintenance: Maintenance = {
-        id: Date.now().toString(),
-        maintenanceNumber: `MNT-2024-${String(maintenance.length + 1).padStart(3, '0')}`,
-        ...formData,
-        completedDate: null,
-      }
-      setMaintenance([...maintenance, newMaintenance])
-      setIsDialogOpen(false)
-      setFormData({
-        asset: '',
-        type: 'PREVENTIVE',
-        status: 'SCHEDULED',
-        scheduledDate: '',
-        technician: '',
-        description: '',
-        cost: '',
-        frequency: '',
+      const response = await fetch('/api/operations/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.asset || 'Maintenance',
+          description: formData.description,
+          type: formData.type,
+          status: formData.status,
+          scheduledDate: formData.scheduledDate,
+          technicianName: formData.technician,
+          cost: formData.cost ? parseFloat(formData.cost.replace(/[^0-9.]/g, '')) : undefined,
+          frequency: formData.frequency,
+        }),
       })
+      if (response.ok) {
+        await fetchMaintenanceRecords()
+        setIsDialogOpen(false)
+        setFormData({
+          asset: '',
+          type: 'PREVENTIVE',
+          status: 'SCHEDULED',
+          scheduledDate: '',
+          technician: '',
+          description: '',
+          cost: '',
+          frequency: '',
+        })
+      } else {
+        const error = await response.json()
+        console.error('Error creating maintenance:', error)
+      }
     } catch (error) {
       console.error('Error creating maintenance:', error)
     }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
-import { extractStructuredData } from '@/lib/ai/openai-service'
+import { extractStructuredData } from '@/lib/ai/ai-service'
 import { PROMPTS } from '@/lib/ai/prompts'
 
 export async function POST(request: NextRequest) {
@@ -20,10 +20,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
+    // Check if AI provider is configured
+    const aiProvider = process.env.AI_PROVIDER || 'azure-openai'
+    if (aiProvider === 'azure-openai' && !process.env.AZURE_OPENAI_API_KEY) {
       return NextResponse.json(
-        { error: 'OpenAI API key is not configured. Please set OPENAI_API_KEY in your environment variables.' },
+        { error: 'Azure OpenAI API key is not configured. Please set AZURE_OPENAI_API_KEY in your environment variables.' },
         { status: 500 }
       )
     }
@@ -75,10 +76,10 @@ Create a clear, actionable summary that helps the user prioritize what needs att
     
     // Provide more helpful error messages
     let errorMessage = 'Failed to summarize notifications'
-    if (error?.message?.includes('API key')) {
-      errorMessage = 'OpenAI API key is invalid or missing'
+    if (error?.message?.includes('API key') || error?.message?.includes('configuration')) {
+      errorMessage = 'AI provider is not properly configured. Please check your Azure OpenAI settings.'
     } else if (error?.message?.includes('rate limit')) {
-      errorMessage = 'OpenAI API rate limit exceeded. Please try again later.'
+      errorMessage = 'AI API rate limit exceeded. Please try again later.'
     } else if (error?.message) {
       errorMessage = error.message
     }

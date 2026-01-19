@@ -9,7 +9,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 // GET /api/collaborations/[id]/files - Get all files
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
@@ -17,10 +17,12 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        const { id } = await params
+
         // Verify user is a member
         const member = await prisma.collaborationMember.findFirst({
             where: {
-                collaborationId: params.id,
+                collaborationId: id,
                 userId: session.user.id
             }
         })
@@ -31,7 +33,7 @@ export async function GET(
 
         const files = await prisma.collaborationFile.findMany({
             where: {
-                collaborationId: params.id
+                collaborationId: id
             },
             include: {
                 user: {
@@ -59,7 +61,7 @@ export async function GET(
 // POST /api/collaborations/[id]/files - Upload a file
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
@@ -67,10 +69,12 @@ export async function POST(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        const { id } = await params
+
         // Verify user is a member
         const member = await prisma.collaborationMember.findFirst({
             where: {
-                collaborationId: params.id,
+                collaborationId: id,
                 userId: session.user.id
             }
         })
@@ -107,7 +111,7 @@ export async function POST(
 
         const collaborationFile = await prisma.collaborationFile.create({
             data: {
-                collaborationId: params.id,
+                collaborationId: id,
                 userId: session.user.id,
                 fileName: file.name,
                 fileUrl: `/uploads/collaborations/${uniqueFileName}`,
@@ -139,7 +143,7 @@ export async function POST(
 // DELETE /api/collaborations/[id]/files/[fileId] - Delete a file
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
@@ -147,6 +151,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        const { id } = await params
         const { searchParams } = new URL(req.url)
         const fileId = searchParams.get('fileId')
 
@@ -158,7 +163,7 @@ export async function DELETE(
         const file = await prisma.collaborationFile.findFirst({
             where: {
                 id: fileId,
-                collaborationId: params.id
+                collaborationId: id
             }
         })
 
@@ -170,7 +175,7 @@ export async function DELETE(
             // Check if user has admin/owner role
             const member = await prisma.collaborationMember.findFirst({
                 where: {
-                    collaborationId: params.id,
+                    collaborationId: id,
                     userId: session.user.id,
                     OR: [
                         { role: 'OWNER' },

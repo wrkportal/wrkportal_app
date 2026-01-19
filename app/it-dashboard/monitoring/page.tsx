@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ITPageLayout } from '@/components/it/it-page-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -49,85 +49,85 @@ interface ServerStatus {
 }
 
 export default function MonitoringPage() {
-  const [servers] = useState<ServerStatus[]>([
-    {
-      id: 'SRV-001',
-      name: 'Web Server - Production',
-      type: 'Web Server',
-      status: 'HEALTHY',
-      cpuUsage: 45,
-      memoryUsage: 62,
-      diskUsage: 58,
-      uptime: 99.9,
-      lastUpdated: '2024-12-15T10:30:00',
-    },
-    {
-      id: 'SRV-002',
-      name: 'Database Server - Primary',
-      type: 'Database',
-      status: 'HEALTHY',
-      cpuUsage: 38,
-      memoryUsage: 71,
-      diskUsage: 45,
-      uptime: 99.95,
-      lastUpdated: '2024-12-15T10:30:00',
-    },
-    {
-      id: 'SRV-003',
-      name: 'Application Server - App01',
-      type: 'Application',
-      status: 'WARNING',
-      cpuUsage: 78,
-      memoryUsage: 85,
-      diskUsage: 52,
-      uptime: 99.5,
-      lastUpdated: '2024-12-15T10:30:00',
-    },
-    {
-      id: 'SRV-004',
-      name: 'File Server - Storage',
-      type: 'File Server',
-      status: 'HEALTHY',
-      cpuUsage: 25,
-      memoryUsage: 48,
-      diskUsage: 82,
-      uptime: 99.8,
-      lastUpdated: '2024-12-15T10:30:00',
-    },
-  ])
+  const [servers, setServers] = useState<ServerStatus[]>([])
+  const [loading, setLoading] = useState(true)
+  const [systemStats, setSystemStats] = useState({
+    totalServers: 0,
+    healthy: 0,
+    warning: 0,
+    critical: 0,
+    avgCpuUsage: 0,
+    avgMemoryUsage: 0,
+    avgDiskUsage: 0,
+    totalUptime: 0,
+  })
 
-  const systemStats = {
-    totalServers: servers.length,
-    healthy: servers.filter(s => s.status === 'HEALTHY').length,
-    warning: servers.filter(s => s.status === 'WARNING').length,
-    critical: servers.filter(s => s.status === 'CRITICAL').length,
-    avgCpu: servers.reduce((sum, s) => sum + s.cpuUsage, 0) / servers.length,
-    avgMemory: servers.reduce((sum, s) => sum + s.memoryUsage, 0) / servers.length,
-    avgDisk: servers.reduce((sum, s) => sum + s.diskUsage, 0) / servers.length,
+  useEffect(() => {
+    fetchMonitoringData()
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchMonitoringData, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const fetchMonitoringData = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/it/monitoring')
+      if (!response.ok) throw new Error('Failed to fetch monitoring data')
+      const data = await response.json()
+      setServers(data.servers || [])
+      setSystemStats(data.stats || {
+        totalServers: 0,
+        healthy: 0,
+        warning: 0,
+        critical: 0,
+        avgCpuUsage: 0,
+        avgMemoryUsage: 0,
+        avgDiskUsage: 0,
+        totalUptime: 0,
+      })
+    } catch (error) {
+      console.error('Error fetching monitoring data:', error)
+      setServers([])
+      setSystemStats({
+        totalServers: 0,
+        healthy: 0,
+        warning: 0,
+        critical: 0,
+        avgCpuUsage: 0,
+        avgMemoryUsage: 0,
+        avgDiskUsage: 0,
+        totalUptime: 0,
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
+  // Chart data - using average values from API
+  // TODO: Replace with historical trend data from monitoring system integration
   const cpuData = [
-    { time: '00:00', Usage: 42 },
-    { time: '06:00', Usage: 38 },
-    { time: '12:00', Usage: 65 },
-    { time: '18:00', Usage: 58 },
-    { time: '24:00', Usage: 45 },
+    { time: '00:00', Usage: systemStats.avgCpuUsage || 0 },
+    { time: '06:00', Usage: systemStats.avgCpuUsage || 0 },
+    { time: '12:00', Usage: systemStats.avgCpuUsage || 0 },
+    { time: '18:00', Usage: systemStats.avgCpuUsage || 0 },
+    { time: '24:00', Usage: systemStats.avgCpuUsage || 0 },
   ]
 
   const memoryData = [
-    { time: '00:00', Usage: 55 },
-    { time: '06:00', Usage: 58 },
-    { time: '12:00', Usage: 72 },
-    { time: '18:00', Usage: 68 },
-    { time: '24:00', Usage: 62 },
+    { time: '00:00', Usage: systemStats.avgMemoryUsage || 0 },
+    { time: '06:00', Usage: systemStats.avgMemoryUsage || 0 },
+    { time: '12:00', Usage: systemStats.avgMemoryUsage || 0 },
+    { time: '18:00', Usage: systemStats.avgMemoryUsage || 0 },
+    { time: '24:00', Usage: systemStats.avgMemoryUsage || 0 },
   ]
 
   const diskData = [
-    { time: '00:00', Usage: 48 },
-    { time: '06:00', Usage: 50 },
-    { time: '12:00', Usage: 52 },
-    { time: '18:00', Usage: 54 },
-    { time: '24:00', Usage: 58 },
+    { time: '00:00', Usage: systemStats.avgDiskUsage || 0 },
+    { time: '06:00', Usage: systemStats.avgDiskUsage || 0 },
+    { time: '12:00', Usage: systemStats.avgDiskUsage || 0 },
+    { time: '18:00', Usage: systemStats.avgDiskUsage || 0 },
+    { time: '24:00', Usage: systemStats.avgDiskUsage || 0 },
   ]
 
   const getStatusBadgeVariant = (status: string) => {
@@ -183,7 +183,7 @@ export default function MonitoringPage() {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{systemStats.avgCpu.toFixed(0)}%</div>
+              <div className="text-2xl font-bold">{systemStats.avgCpuUsage.toFixed(0)}%</div>
               <p className="text-xs text-muted-foreground">CPU usage</p>
             </CardContent>
           </Card>
@@ -193,7 +193,7 @@ export default function MonitoringPage() {
               <HardDrive className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{systemStats.avgMemory.toFixed(0)}%</div>
+              <div className="text-2xl font-bold">{systemStats.avgMemoryUsage.toFixed(0)}%</div>
               <p className="text-xs text-muted-foreground">Memory usage</p>
             </CardContent>
           </Card>

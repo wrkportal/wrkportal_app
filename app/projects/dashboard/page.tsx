@@ -30,7 +30,9 @@ import {
   Plus,
   List,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LayoutGrid,
+  Briefcase
 } from "lucide-react"
 import { formatDate, formatCurrency } from "@/lib/utils"
 import { GanttChart } from "@/components/roadmap/gantt-chart"
@@ -62,7 +64,7 @@ export default function ProjectDashboardPage() {
   const searchParams = useSearchParams()
   const user = useAuthStore((state) => state.user)
   const { workflowType: contextWorkflowType } = useWorkflowTerminology()
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [projects, setProjects] = useState<any[]>([])
   const [summary, setSummary] = useState<any>(null)
   const [programs, setPrograms] = useState<any[]>([])
@@ -161,8 +163,8 @@ export default function ProjectDashboardPage() {
 
   // Handle widget selection from URL parameter
   useEffect(() => {
-    if (!isLoading) { // Only run after initial load
-      const widgetParam = searchParams?.get('widget')
+    // Always run - no loading check needed for instant load
+    const widgetParam = searchParams?.get('widget')
       if (widgetParam) {
         console.log('Processing widget from URL:', widgetParam, 'for workflow:', currentWorkflowType)
         // Check if widget is available for current workflow
@@ -429,7 +431,7 @@ export default function ProjectDashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      setIsLoading(true)
+      // Don't set loading to true - fetch in background for instant load
       const params = new URLSearchParams()
       if (statusFilter !== 'all') params.append('status', statusFilter)
       if (ragStatusFilter !== 'all') params.append('ragStatus', ragStatusFilter)
@@ -1332,13 +1334,7 @@ export default function ProjectDashboardPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-      </div>
-    )
-  }
+  // Removed loading check - dashboard loads instantly, data fetches in background
 
   return (
     <div className="space-y-6">
@@ -1398,6 +1394,42 @@ export default function ProjectDashboardPage() {
         </div>
       </div>
 
+      {/* Welcome Message - Always shown */}
+      {!widgets.some(w => w.visible) ? (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 mb-6">
+          <div className="max-w-lg">
+            <div className="mb-6">
+              <LayoutGrid className="h-20 w-20 mx-auto text-muted-foreground/30" />
+            </div>
+            <h3 className="text-2xl font-semibold mb-3">Welcome to Your Projects Dashboard</h3>
+            <p className="text-muted-foreground mb-2 text-lg">
+              Get started by adding your first widgets and data.
+            </p>
+            <p className="text-muted-foreground mb-8">
+              Once you start adding widgets, you'll see beautiful visualizations and insights here.
+            </p>
+            <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/projects/dashboard')}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Widget
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push('/projects?create=true')}
+                className="flex items-center gap-2"
+              >
+                <Briefcase className="h-4 w-4" />
+                Create Project
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -1573,6 +1605,8 @@ export default function ProjectDashboardPage() {
           </Card>
         </TabsContent>
       </Tabs>
+        </>
+      )}
       </div>
     </div>
   )

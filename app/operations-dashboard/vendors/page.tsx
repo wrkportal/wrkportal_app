@@ -91,44 +91,44 @@ export default function VendorsPage() {
 
   useEffect(() => {
     fetchVendors()
-  }, [])
+  }, [statusFilter, searchTerm])
 
   const fetchVendors = async () => {
     try {
       setLoading(true)
-      const mockVendors: Vendor[] = [
-        {
-          id: '1',
-          name: 'ABC Maintenance Services',
-          category: 'Maintenance',
-          contactPerson: 'John Miller',
-          email: 'john@abcmaintenance.com',
-          phone: '+1-555-0101',
-          address: '123 Main St, City, State',
-          status: 'ACTIVE',
-          contractValue: '$50,000',
-          contractStartDate: new Date(Date.now() - 180 * 86400000).toISOString(),
-          contractEndDate: new Date(Date.now() + 185 * 86400000).toISOString(),
-          rating: 4.5,
-        },
-        {
-          id: '2',
-          name: 'XYZ IT Solutions',
-          category: 'IT Services',
-          contactPerson: 'Sarah Johnson',
-          email: 'sarah@xyzsolutions.com',
-          phone: '+1-555-0102',
-          address: '456 Tech Ave, City, State',
-          status: 'ACTIVE',
-          contractValue: '$120,000',
-          contractStartDate: new Date(Date.now() - 90 * 86400000).toISOString(),
-          contractEndDate: new Date(Date.now() + 275 * 86400000).toISOString(),
-          rating: 4.8,
-        },
-      ]
-      setVendors(mockVendors)
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter)
+      }
+      if (searchTerm) {
+        params.append('search', searchTerm)
+      }
+
+      const response = await fetch(`/api/operations/vendors?${params.toString()}`)
+      if (response.ok) {
+        const data = await response.json()
+        // Transform API data to match component interface
+        const transformedVendors = (data.vendors || []).map((vendor: any) => ({
+          id: vendor.id,
+          name: vendor.name,
+          category: vendor.category || 'Uncategorized',
+          contactPerson: vendor.contactPerson || '',
+          email: vendor.email || '',
+          phone: vendor.phone || '',
+          address: vendor.address || '',
+          status: vendor.status,
+          contractValue: vendor.contractValue ? `$${Number(vendor.contractValue).toLocaleString()}` : '$0',
+          contractStartDate: vendor.contractStartDate ? new Date(vendor.contractStartDate).toISOString() : null,
+          contractEndDate: vendor.contractEndDate ? new Date(vendor.contractEndDate).toISOString() : null,
+          rating: vendor.rating ? Number(vendor.rating) : 0,
+        }))
+        setVendors(transformedVendors)
+      } else {
+        setVendors([])
+      }
     } catch (error) {
       console.error('Error fetching vendors:', error)
+      setVendors([])
     } finally {
       setLoading(false)
     }
@@ -136,25 +136,33 @@ export default function VendorsPage() {
 
   const handleCreateVendor = async () => {
     try {
-      const newVendor: Vendor = {
-        id: Date.now().toString(),
-        ...formData,
-        rating: 0,
-      }
-      setVendors([...vendors, newVendor])
-      setIsDialogOpen(false)
-      setFormData({
-        name: '',
-        category: '',
-        contactPerson: '',
-        email: '',
-        phone: '',
-        address: '',
-        status: 'ACTIVE',
-        contractValue: '',
-        contractStartDate: '',
-        contractEndDate: '',
+      const response = await fetch('/api/operations/vendors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          contractValue: formData.contractValue ? parseFloat(formData.contractValue.replace(/[^0-9.]/g, '')) : undefined,
+        }),
       })
+      if (response.ok) {
+        await fetchVendors()
+        setIsDialogOpen(false)
+        setFormData({
+          name: '',
+          category: '',
+          contactPerson: '',
+          email: '',
+          phone: '',
+          address: '',
+          status: 'ACTIVE',
+          contractValue: '',
+          contractStartDate: '',
+          contractEndDate: '',
+        })
+      } else {
+        const error = await response.json()
+        console.error('Error creating vendor:', error)
+      }
     } catch (error) {
       console.error('Error creating vendor:', error)
     }

@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/integration-sync",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/follow-up-automation",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
+

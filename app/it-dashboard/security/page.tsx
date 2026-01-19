@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ITPageLayout } from '@/components/it/it-page-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -88,16 +88,60 @@ interface Incident {
 
 export default function SecurityPage() {
   const [activeTab, setActiveTab] = useState('alerts')
-  const [alerts] = useState<SecurityAlert[]>([
-    {
-      id: 'ALERT-001',
-      type: 'Failed Login Attempts',
-      severity: 'HIGH',
-      description: 'Multiple failed login attempts detected for user account',
-      source: '10.0.0.45',
-      detectedAt: '2024-12-15T08:30:00',
-      status: 'OPEN',
-    },
+  const [alerts, setAlerts] = useState<SecurityAlert[]>([])
+  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([])
+  const [incidents, setIncidents] = useState<Incident[]>([])
+  const [loading, setLoading] = useState(true)
+  const [securityStats, setSecurityStats] = useState({
+    totalAlerts: 0,
+    openAlerts: 0,
+    resolvedAlerts: 0,
+    totalVulnerabilities: 0,
+    criticalVulnerabilities: 0,
+    totalIncidents: 0,
+    activeIncidents: 0,
+  })
+
+  useEffect(() => {
+    fetchSecurityData()
+  }, [])
+
+  const fetchSecurityData = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/it/security')
+      if (!response.ok) throw new Error('Failed to fetch security data')
+      const data = await response.json()
+      setAlerts(data.alerts || [])
+      setVulnerabilities(data.vulnerabilities || [])
+      setIncidents(data.incidents || [])
+      setSecurityStats(data.stats || {
+        totalAlerts: 0,
+        openAlerts: 0,
+        resolvedAlerts: 0,
+        totalVulnerabilities: 0,
+        criticalVulnerabilities: 0,
+        totalIncidents: 0,
+        activeIncidents: 0,
+      })
+    } catch (error) {
+      console.error('Error fetching security data:', error)
+      setAlerts([])
+      setVulnerabilities([])
+      setIncidents([])
+      setSecurityStats({
+        totalAlerts: 0,
+        openAlerts: 0,
+        resolvedAlerts: 0,
+        totalVulnerabilities: 0,
+        criticalVulnerabilities: 0,
+        totalIncidents: 0,
+        activeIncidents: 0,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
     {
       id: 'ALERT-002',
       type: 'Malware Detected',

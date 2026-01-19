@@ -46,6 +46,25 @@
   transition-property: transform, width, height;
 }
 
+/* Prevent react-grid-layout from capturing events on interactive elements */
+.react-grid-item button[type="button"] {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 10000 !important;
+}
+
+/* Ensure buttons in chart cards work properly */
+.react-grid-item .group button {
+  pointer-events: auto !important;
+  z-index: 10001 !important;
+}
+
+/* Ensure dropdown menus are above grid items */
+.react-grid-item [data-radix-popper-content-wrapper] {
+  z-index: 10002 !important;
+}
+
 .project-dashboard-grid .react-grid-item > .react-resizable-handle {
   position: absolute;
   width: 20px;
@@ -61,8 +80,8 @@
   bottom: 3px;
   width: 5px;
   height: 5px;
-  border-right: 2px solid rgba(0, 0, 0, 0.4);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+  border-right: 2px solid rgba(255, 117, 31, 0.4);
+  border-bottom: 2px solid rgba(255, 117, 31, 0.4);
 }
 
 .project-dashboard-grid .react-grid-item.react-grid-placeholder {
@@ -107,8 +126,8 @@
   bottom: 3px;
   width: 5px;
   height: 5px;
-  border-right: 2px solid rgba(0, 0, 0, 0.4);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+  border-right: 2px solid rgba(255, 117, 31, 0.4);
+  border-bottom: 2px solid rgba(255, 117, 31, 0.4);
 }
 
 .sales-dashboard-grid .react-grid-item.react-grid-placeholder {
@@ -122,6 +141,7 @@
   -o-user-select: none;
   user-select: none;
 }
+
 
 .recruitment-dashboard-grid .react-grid-item {
   transition: all 200ms ease;
@@ -147,8 +167,8 @@
   bottom: 3px;
   width: 5px;
   height: 5px;
-  border-right: 2px solid rgba(0, 0, 0, 0.4);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+  border-right: 2px solid rgba(255, 117, 31, 0.4);
+  border-bottom: 2px solid rgba(255, 117, 31, 0.4);
 }
 
 .recruitment-dashboard-grid .react-grid-item.react-grid-placeholder {
@@ -192,8 +212,8 @@
   bottom: 3px;
   width: 5px;
   height: 5px;
-  border-right: 2px solid rgba(0, 0, 0, 0.4);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+  border-right: 2px solid rgba(255, 117, 31, 0.4);
+  border-bottom: 2px solid rgba(255, 117, 31, 0.4);
 }
 
 .operations-dashboard-grid .react-grid-item.react-grid-placeholder {
@@ -238,8 +258,8 @@
   bottom: 3px;
   width: 5px;
   height: 5px;
-  border-right: 2px solid rgba(0, 0, 0, 0.4);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+  border-right: 2px solid rgba(255, 117, 31, 0.4);
+  border-bottom: 2px solid rgba(255, 117, 31, 0.4);
 }
 
 .it-dashboard-grid .react-grid-item.react-grid-placeholder {
@@ -269,24 +289,24 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
     
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 23 100% 56%;
+    --primary-foreground: 0 0% 100%;
     
     --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary-foreground: 23 100% 56%;
     
     --muted: 240 4.8% 96.5%;
     --muted-foreground: 240 3.8% 46.1%;
     
     --accent: 240 4.8% 96.5%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent-foreground: 23 100% 56%;
     
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     
     --border: 240 5.9% 88%;           /* Visible borders */
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --ring: 23 100% 56%;
     
     --radius: 0.5rem;
     
@@ -308,8 +328,8 @@
     --popover: 0 0% 10%;
     --popover-foreground: 0 0% 98%;
     
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
+    --primary: 23 100% 56%;
+    --primary-foreground: 0 0% 100%;
     
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -325,7 +345,7 @@
     
     --border: 0 0% 20%;               /* More visible borders in dark mode */
     --input: 0 0% 14%;
-    --ring: 240 4.9% 83.9%;
+    --ring: 23 100% 56%;
     
     /* Cursor-specific accent colors for dark mode */
     --cursor-accent: 142 71% 45%;

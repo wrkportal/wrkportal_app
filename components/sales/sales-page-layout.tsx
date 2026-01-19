@@ -28,7 +28,7 @@ export function SalesPageLayout({ children, title, description, widgets, toggleW
         <div className="flex-1 overflow-y-auto px-4 lg:px-8 py-4 lg:py-6">
           {title && (
             <div className="mb-6">
-              <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+              <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{title}</h2>
               {description && (
                 <p className="text-muted-foreground mt-1">{description}</p>
               )}

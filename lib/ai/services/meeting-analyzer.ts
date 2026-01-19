@@ -2,7 +2,7 @@
  * Meeting Notes to Action Items Analyzer
  */
 
-import { extractStructuredData } from '../openai-service'
+import { extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { MeetingAnalysis, ActionItem, Decision, RiskItem, FollowUpItem } from '@/types/ai'
 

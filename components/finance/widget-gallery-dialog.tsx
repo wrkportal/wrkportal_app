@@ -73,13 +73,13 @@ const widgetMetadata: Record<string, {
     icon: FileText,
     title: 'Invoices',
     description: 'Track pending and overdue invoices',
-    category: 'Finance',
+    category: 'Overview',
     color: 'border-green-500 bg-green-50 dark:bg-green-950/30',
     iconBg: 'bg-green-500/15 text-green-600 dark:text-green-400'
   },
   forecast: {
     icon: TrendingUp,
-    title: 'Financial Forecast',
+    title: 'Forecast',
     description: 'AI-powered revenue and expense forecasting',
     category: 'Analytics',
     color: 'border-purple-500 bg-purple-50 dark:bg-purple-950/30',
@@ -89,7 +89,7 @@ const widgetMetadata: Record<string, {
     icon: TrendingDown,
     title: 'Expenses Breakdown',
     description: 'Detailed expense analysis by category',
-    category: 'Finance',
+    category: 'Overview',
     color: 'border-red-500 bg-red-50 dark:bg-red-950/30',
     iconBg: 'bg-red-500/15 text-red-600 dark:text-red-400'
   },
@@ -330,7 +330,7 @@ const widgetMetadata: Record<string, {
   },
 }
 
-const categories = ['All', 'Overview', 'Finance', 'Sales', 'Analytics', 'Planning', 'Projects', 'Tasks', 'Goals', 'Resources', 'Issues', 'Tools']
+const categories = ['All', 'Overview', 'Sales', 'Analytics', 'Planning', 'Projects', 'Tasks', 'Goals', 'Resources', 'Issues', 'Tools']
 
 export function WidgetGalleryDialog({ open, onOpenChange, widgets, toggleWidget }: WidgetGalleryDialogProps) {
   const [searchQuery, setSearchQuery] = useState('')

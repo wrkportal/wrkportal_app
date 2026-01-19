@@ -31,11 +31,91 @@ export class SalesAutomationEngine {
       for (const rule of rules) {
         const conditions = rule.triggerConditions as any
         if (this.evaluateConditions(conditions, context.data)) {
-          await this.executeAction(rule, context)
+          await this.executeActionWithLogging(rule, context)
         }
       }
     } catch (error) {
       console.error('Automation engine error:', error)
+    }
+  }
+
+  /**
+   * Execute action with logging
+   */
+  static async executeActionWithLogging(rule: any, context: AutomationContext) {
+    const startTime = Date.now()
+    let executionId: string | null = null
+    let status: 'SUCCESS' | 'FAILED' | 'PARTIAL' | 'SKIPPED' = 'SUCCESS'
+    let errorMessage: string | undefined = undefined
+
+    try {
+      // Log execution start
+      const { logRuleExecution } = await import('./rule-execution-history')
+      executionId = await logRuleExecution(
+        context.tenantId,
+        rule.id,
+        context.triggerType,
+        context.data,
+        rule.actionType,
+        rule.actionConfig,
+        'SUCCESS', // Will update if fails
+        undefined,
+        undefined,
+        context.data.userId // If provided in context
+      )
+
+      // Execute action
+      await this.executeAction(rule, context)
+
+      // Update execution with success
+      const executionTime = Date.now() - startTime
+      const { updateExecutionStatus } = await import('./rule-execution-history')
+      await updateExecutionStatus(executionId, 'SUCCESS')
+      
+      // Update execution time
+      await prisma.salesAutomationRuleExecution.update({
+        where: { id: executionId },
+        data: {
+          executionTime,
+          completedAt: new Date(),
+        },
+      })
+    } catch (error: any) {
+      status = 'FAILED'
+      errorMessage = error.message || 'Unknown error'
+      
+      if (executionId) {
+        const { updateExecutionStatus } = await import('./rule-execution-history')
+        await updateExecutionStatus(executionId, 'FAILED', errorMessage)
+        
+        await prisma.salesAutomationRuleExecution.update({
+          where: { id: executionId },
+          data: {
+            executionTime: Date.now() - startTime,
+            completedAt: new Date(),
+          },
+        })
+      } else {
+        // Log failed execution if logging failed
+        try {
+          const { logRuleExecution } = await import('./rule-execution-history')
+          await logRuleExecution(
+            context.tenantId,
+            rule.id,
+            context.triggerType,
+            context.data,
+            rule.actionType,
+            rule.actionConfig,
+            'FAILED',
+            errorMessage,
+            Date.now() - startTime
+          )
+        } catch (logError) {
+          console.error('Failed to log execution:', logError)
+        }
+      }
+      
+      throw error
     }
   }
 
@@ -104,6 +184,12 @@ export class SalesAutomationEngine {
     const actionConfig = rule.actionConfig as any
 
     try {
+      // Support multi-step workflows (if actionConfig contains steps array)
+      if (actionConfig.steps && Array.isArray(actionConfig.steps)) {
+        await this.executeMultiStepWorkflow(rule, context, actionConfig.steps)
+        return
+      }
+
       switch (rule.actionType) {
         case 'ASSIGN_LEAD':
           await this.assignLead(actionConfig, context)
@@ -132,6 +218,59 @@ export class SalesAutomationEngine {
     } catch (error) {
       console.error('Error executing automation action:', error)
     }
+  }
+
+  /**
+   * Execute multi-step workflow with conditional logic
+   */
+  static async executeMultiStepWorkflow(
+    rule: any,
+    context: AutomationContext,
+    steps: any[]
+  ): Promise<void> {
+    for (const step of steps) {
+      // Check step conditions
+      if (step.condition) {
+        const conditionMet = this.evaluateConditions(step.condition, context.data)
+        if (!conditionMet) {
+          // Skip this step if condition not met
+          if (step.elseAction) {
+            // Execute else action if provided
+            await this.executeStepAction(step.elseAction, context, rule)
+          }
+          continue
+        }
+      }
+
+      // Execute step action
+      await this.executeStepAction(step.action, context, rule)
+
+      // Handle delay between steps
+      if (step.delay) {
+        // In a real implementation, this would schedule the next step
+        // For now, we execute sequentially (can be enhanced with job scheduling)
+        if (step.delay.seconds) {
+          await new Promise(resolve => setTimeout(resolve, step.delay.seconds * 1000))
+        }
+      }
+    }
+  }
+
+  /**
+   * Execute a single step action
+   */
+  static async executeStepAction(
+    action: any,
+    context: AutomationContext,
+    rule: any
+  ): Promise<void> {
+    const tempRule = {
+      ...rule,
+      actionType: action.type,
+      actionConfig: action.config || {},
+    }
+
+    await this.executeAction(tempRule, context)
   }
 
   static async assignLead(config: any, context: AutomationContext) {
@@ -170,6 +309,33 @@ export class SalesAutomationEngine {
     // Email sending implementation
     const { sendEmail } = await import('@/lib/email')
 
+    // Check if this is an email sequence
+    if (config.sequence && config.steps) {
+      // Handle email sequence - send first step
+      const { startEmailSequence } = await import('./email-sequences')
+      const entityType = context.data.leadId ? 'lead' : 
+                        context.data.opportunityId ? 'opportunity' : 
+                        context.data.contactId ? 'contact' : 'lead'
+      const entityId = context.data.leadId || context.data.opportunityId || context.data.contactId
+      
+      if (entityId) {
+        // Find the rule ID to use as sequence ID
+        const rule = await prisma.salesAutomationRule.findFirst({
+          where: {
+            tenantId: context.tenantId,
+            triggerType: context.triggerType as any,
+            actionConfig: { path: ['sequence'], equals: true } as any,
+          },
+        })
+        
+        if (rule) {
+          await startEmailSequence(rule.id, entityType, entityId, context.tenantId)
+        }
+      }
+      return
+    }
+
+    // Regular single email
     const lead = context.data.leadId
       ? await prisma.salesLead.findUnique({
           where: { id: context.data.leadId },
@@ -177,13 +343,44 @@ export class SalesAutomationEngine {
         })
       : null
 
+    const opportunity = context.data.opportunityId
+      ? await prisma.salesOpportunity.findUnique({
+          where: { id: context.data.opportunityId },
+          include: {
+            account: { include: { contacts: { take: 1 } } },
+            owner: true,
+          },
+        })
+      : null
+
+    const contact = context.data.contactId
+      ? await prisma.salesContact.findUnique({
+          where: { id: context.data.contactId },
+          include: { account: true, owner: true },
+        })
+      : null
+
+    let email: string | null = null
+    let entityData: any = null
+
     if (lead && lead.email) {
+      email = lead.email
+      entityData = lead
+    } else if (opportunity && opportunity.account?.contacts?.[0]?.email) {
+      email = opportunity.account.contacts[0].email
+      entityData = { ...opportunity, ...opportunity.account.contacts[0] }
+    } else if (contact && (contact.email || contact.personalEmail)) {
+      email = contact.email || contact.personalEmail || null
+      entityData = contact
+    }
+
+    if (email && entityData) {
       const template = config.template || 'default'
-      const subject = this.replacePlaceholders(config.subject || 'Follow-up', lead)
-      const body = this.replacePlaceholders(config.body || 'Hello', lead)
+      const subject = this.replacePlaceholders(config.subject || 'Follow-up', entityData)
+      const body = this.replacePlaceholders(config.body || 'Hello', entityData)
 
       await sendEmail({
-        to: lead.email,
+        to: email,
         subject,
         html: body,
       })

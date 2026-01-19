@@ -33,6 +33,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Activity, Plus, Search, Phone, Mail, Calendar, CheckCircle2, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { SalesPageLayout } from '@/components/sales/sales-page-layout'
+import { SmartRepliesPanel } from '@/components/sales/smart-replies-panel'
+import { useAuthStore } from '@/stores/authStore'
 
 interface ActivityItem {
   id: string
@@ -71,6 +73,7 @@ interface ActivityItem {
 }
 
 export default function ActivitiesPage() {
+  const user = useAuthStore((state) => state.user)
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -272,6 +275,22 @@ export default function ActivitiesPage() {
                   rows={4}
                 />
               </div>
+              {formData.type === 'EMAIL' && (
+                <div>
+                  <SmartRepliesPanel
+                    subject={formData.subject || ''}
+                    body={formData.description || ''}
+                    from={user?.email || ''}
+                    to=""
+                    leadId={formData.leadId || undefined}
+                    opportunityId={formData.opportunityId || undefined}
+                    accountId={formData.accountId || undefined}
+                    onSelectReply={(reply) => {
+                      setFormData({ ...formData, description: reply })
+                    }}
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="dueDate">Due Date</Label>

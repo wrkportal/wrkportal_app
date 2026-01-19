@@ -29,8 +29,11 @@ export function useWorkflowTerminology() {
 
   // Fetch project workflow if on project page
   useEffect(() => {
-    const projectId = params?.projectId || params?.id
-    if (projectId && typeof projectId === 'string') {
+    // Only fetch project workflow if we're actually on a project page
+    const isProjectPage = pathname?.startsWith('/projects/') && pathname !== '/projects'
+    const projectId = isProjectPage ? (params?.projectId || params?.id) : null
+    
+    if (projectId && typeof projectId === 'string' && isProjectPage) {
       fetchProjectWorkflow(projectId)
         .then((workflow) => {
           if (workflow) setWorkflowType(workflow)
@@ -47,7 +50,7 @@ export function useWorkflowTerminology() {
         (user?.primaryWorkflowType as WorkflowType) || WorkflowType.GENERAL
       )
     }
-  }, [params, user?.primaryWorkflowType])
+  }, [params, pathname, user?.primaryWorkflowType])
 
   const getTerm = (key: keyof TerminologyMap): string => {
     return getTermFromLib(workflowType, key)

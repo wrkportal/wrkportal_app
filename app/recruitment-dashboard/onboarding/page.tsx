@@ -70,40 +70,15 @@ export default function OnboardingPage() {
   const fetchOnboardings = async () => {
     try {
       setLoading(true)
-      // Mock data
-      const mockOnboardings: Onboarding[] = [
-        {
-          id: '1',
-          employeeName: 'Jane Smith',
-          jobTitle: 'Product Manager',
-          startDate: new Date(Date.now() + 86400000 * 7).toISOString(),
-          status: 'IN_PROGRESS',
-          progress: 60,
-          tasks: [
-            { id: '1', title: 'Complete paperwork', status: 'COMPLETED', dueDate: null },
-            { id: '2', title: 'IT setup', status: 'COMPLETED', dueDate: null },
-            { id: '3', title: 'Orientation session', status: 'IN_PROGRESS', dueDate: new Date().toISOString() },
-            { id: '4', title: 'Team introduction', status: 'PENDING', dueDate: null },
-          ],
-        },
-        {
-          id: '2',
-          employeeName: 'Bob Johnson',
-          jobTitle: 'Software Engineer',
-          startDate: new Date(Date.now() + 86400000 * 14).toISOString(),
-          status: 'PENDING',
-          progress: 20,
-          tasks: [
-            { id: '1', title: 'Complete paperwork', status: 'IN_PROGRESS', dueDate: null },
-            { id: '2', title: 'IT setup', status: 'PENDING', dueDate: null },
-            { id: '3', title: 'Orientation session', status: 'PENDING', dueDate: null },
-            { id: '4', title: 'Team introduction', status: 'PENDING', dueDate: null },
-          ],
-        },
-      ]
-      setOnboardings(mockOnboardings)
+      const response = await fetch('/api/recruitment/onboarding')
+      if (!response.ok) {
+        throw new Error('Failed to fetch onboarding')
+      }
+      const data = await response.json()
+      setOnboardings(data.onboardings || [])
     } catch (error) {
-      console.error('Error fetching onboardings:', error)
+      console.error('Error fetching onboarding:', error)
+      setOnboardings([])
     } finally {
       setLoading(false)
     }
@@ -111,20 +86,25 @@ export default function OnboardingPage() {
 
   const handleAddOnboarding = async () => {
     try {
-      const newOnboarding: Onboarding = {
-        id: Date.now().toString(),
-        ...formData,
+      const onboardingData = {
+        employeeName: formData.employeeName,
+        jobTitle: formData.jobTitle,
         startDate: formData.startDate,
-        status: 'PENDING',
-        progress: 0,
-        tasks: [
-          { id: '1', title: 'Complete paperwork', status: 'PENDING', dueDate: null },
-          { id: '2', title: 'IT setup', status: 'PENDING', dueDate: null },
-          { id: '3', title: 'Orientation session', status: 'PENDING', dueDate: null },
-          { id: '4', title: 'Team introduction', status: 'PENDING', dueDate: null },
-        ],
       }
-      setOnboardings([...onboardings, newOnboarding])
+
+      const response = await fetch('/api/recruitment/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(onboardingData),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create onboarding')
+      }
+
+      const data = await response.json()
+      setOnboardings([...onboardings, data.onboarding])
       setAddDialogOpen(false)
       setFormData({ employeeName: '', jobTitle: '', startDate: '' })
     } catch (error) {
@@ -140,7 +120,7 @@ export default function OnboardingPage() {
   const handleCompleteTask = (onboardingId: string, taskId: string) => {
     setOnboardings(onboardings.map(ob => {
       if (ob.id === onboardingId) {
-        const updatedTasks = ob.tasks.map(t => 
+        const updatedTasks = ob.tasks.map(t =>
           t.id === taskId ? { ...t, status: 'COMPLETED' as any } : t
         )
         const completedCount = updatedTasks.filter(t => t.status === 'COMPLETED').length

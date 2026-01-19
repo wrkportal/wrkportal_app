@@ -40,12 +40,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { 
-  Plus, 
-  Search, 
-  Users, 
-  Calendar, 
-  Briefcase, 
+import {
+  Plus,
+  Search,
+  Users,
+  Calendar,
+  Briefcase,
   MoreVertical,
   Edit,
   Eye,
@@ -60,7 +60,6 @@ import {
   TrendingDown,
   FileText,
   GraduationCap,
-  ClockIn,
   Package,
   UserPlus,
   UserCheck
@@ -70,8 +69,8 @@ export default function ResourcesPage() {
   const [activeTab, setActiveTab] = useState('capacity')
 
   return (
-    <OperationsPageLayout 
-      title="Resources Management" 
+    <OperationsPageLayout
+      title="Resources Management"
       description="Manage capacity, absenteeism, attritions, assets, shifts, trainings, new hires, onboarding, and timesheets"
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -138,11 +137,30 @@ export default function ResourcesPage() {
 
 // Capacity Management Component
 function CapacityManagement() {
-  const [capacity, setCapacity] = useState([
-    { id: '1', department: 'Operations', total: 150, available: 120, utilized: 80, onLeave: 5, onTraining: 3 },
-    { id: '2', department: 'Support', total: 80, available: 65, utilized: 81, onLeave: 2, onTraining: 1 },
-    { id: '3', department: 'Quality', total: 45, available: 42, utilized: 93, onLeave: 1, onTraining: 0 },
-  ])
+  const [capacity, setCapacity] = useState<any[]>([])
+  const [totals, setTotals] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchCapacity()
+  }, [])
+
+  const fetchCapacity = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/operations/resources/capacity')
+      if (!response.ok) {
+        throw new Error('Failed to fetch capacity data')
+      }
+      const data = await response.json()
+      setCapacity(data.byDepartment || [])
+      setTotals(data.totals || {})
+    } catch (error) {
+      console.error('Error fetching capacity:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -153,7 +171,7 @@ function CapacityManagement() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">275</div>
+            <div className="text-2xl font-bold">{totals.total || 0}</div>
             <p className="text-xs text-muted-foreground">Total employees</p>
           </CardContent>
         </Card>
@@ -163,7 +181,7 @@ function CapacityManagement() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">227</div>
+            <div className="text-2xl font-bold">{totals.available || 0}</div>
             <p className="text-xs text-muted-foreground">Currently available</p>
           </CardContent>
         </Card>
@@ -173,7 +191,7 @@ function CapacityManagement() {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">82.5%</div>
+            <div className="text-2xl font-bold">{totals.utilization || 0}%</div>
             <p className="text-xs text-muted-foreground">Average utilization</p>
           </CardContent>
         </Card>
@@ -183,7 +201,7 @@ function CapacityManagement() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold">{totals.onLeave || 0}</div>
             <p className="text-xs text-muted-foreground">Currently on leave</p>
           </CardContent>
         </Card>
@@ -237,16 +255,43 @@ function CapacityManagement() {
 
 // Attendance & Absenteeism Component
 function AttendanceManagement() {
-  const [attendance, setAttendance] = useState([
-    { id: '1', employee: 'John Doe', department: 'Operations', date: '2024-12-15', status: 'PRESENT', checkIn: '09:00', checkOut: '18:00' },
-    { id: '2', employee: 'Jane Smith', department: 'Support', date: '2024-12-15', status: 'ABSENT', checkIn: '-', checkOut: '-' },
-    { id: '3', employee: 'Bob Wilson', department: 'Quality', date: '2024-12-15', status: 'LATE', checkIn: '09:45', checkOut: '18:30' },
-  ])
+  const [attendance, setAttendance] = useState<any[]>([])
+  const [absenteeism, setAbsenteeism] = useState<any[]>([])
+  const [stats, setStats] = useState<any>({})
+  const [loading, setLoading] = useState(true)
 
-  const [absenteeism, setAbsenteeism] = useState([
-    { id: '1', employee: 'Jane Smith', department: 'Support', daysAbsent: 3, reason: 'Sick Leave', trend: 'INCREASING' },
-    { id: '2', employee: 'Alice Brown', department: 'Operations', daysAbsent: 2, reason: 'Personal', trend: 'STABLE' },
-  ])
+  useEffect(() => {
+    fetchAttendance()
+  }, [])
+
+  const fetchAttendance = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/operations/resources/attendance')
+      if (!response.ok) {
+        throw new Error('Failed to fetch attendance')
+      }
+      const data = await response.json()
+
+      // Transform API data
+      const transformed = (data.records || []).map((record: any) => ({
+        id: record.id,
+        employee: record.employee?.name || 'Unknown',
+        department: record.employee?.department || 'Unknown',
+        date: new Date(record.date).toISOString().split('T')[0],
+        status: record.status,
+        checkIn: record.checkIn ? new Date(record.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '-',
+        checkOut: record.checkOut ? new Date(record.checkOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '-',
+      }))
+
+      setAttendance(transformed)
+      setStats(data.stats || {})
+    } catch (error) {
+      console.error('Error fetching attendance:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -257,8 +302,8 @@ function AttendanceManagement() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">92%</div>
-            <p className="text-xs text-muted-foreground">227 of 247 employees</p>
+            <div className="text-2xl font-bold">{stats.attendanceRate || 0}%</div>
+            <p className="text-xs text-muted-foreground">{stats.present || 0} of {stats.total || 0} employees</p>
           </CardContent>
         </Card>
         <Card>
@@ -267,8 +312,8 @@ function AttendanceManagement() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">20</div>
-            <p className="text-xs text-muted-foreground">8.1% absenteeism rate</p>
+            <div className="text-2xl font-bold">{stats.absent || 0}</div>
+            <p className="text-xs text-muted-foreground">Absent employees</p>
           </CardContent>
         </Card>
         <Card>
@@ -277,8 +322,8 @@ function AttendanceManagement() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">5.3% late arrival rate</p>
+            <div className="text-2xl font-bold">{stats.late || 0}</div>
+            <p className="text-xs text-muted-foreground">Late arrivals today</p>
           </CardContent>
         </Card>
       </div>
@@ -288,79 +333,90 @@ function AttendanceManagement() {
           <CardTitle>Today's Attendance</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {attendance.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell className="font-medium">{record.employee}</TableCell>
-                  <TableCell>{record.department}</TableCell>
-                  <TableCell>
-                    <Badge variant={record.status === 'PRESENT' ? 'default' : record.status === 'ABSENT' ? 'destructive' : 'secondary'}>
-                      {record.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{record.checkIn}</TableCell>
-                  <TableCell>{record.checkOut}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading attendance data...</div>
+          ) : attendance.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No attendance records for today</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Check In</TableHead>
+                  <TableHead>Check Out</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {attendance.map((record) => (
+                  <TableRow key={record.id}>
+                    <TableCell className="font-medium">{record.employee}</TableCell>
+                    <TableCell>{record.department}</TableCell>
+                    <TableCell>
+                      <Badge variant={record.status === 'PRESENT' ? 'default' : record.status === 'ABSENT' ? 'destructive' : 'secondary'}>
+                        {record.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{record.checkIn}</TableCell>
+                    <TableCell>{record.checkOut}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
+      {/* Absenteeism tracking can be added later with a dedicated API endpoint */}
       <Card>
         <CardHeader>
           <CardTitle>Absenteeism Tracking</CardTitle>
           <CardDescription>Employees with high absenteeism rates</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Days Absent</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Trend</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {absenteeism.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell className="font-medium">{record.employee}</TableCell>
-                  <TableCell>{record.department}</TableCell>
-                  <TableCell>{record.daysAbsent}</TableCell>
-                  <TableCell>{record.reason}</TableCell>
-                  <TableCell>
-                    <Badge variant={record.trend === 'INCREASING' ? 'destructive' : 'secondary'}>
-                      {record.trend}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {absenteeism.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No absenteeism records</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Days Absent</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Trend</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {absenteeism.map((record) => (
+                  <TableRow key={record.id}>
+                    <TableCell className="font-medium">{record.employee}</TableCell>
+                    <TableCell>{record.department}</TableCell>
+                    <TableCell>{record.daysAbsent}</TableCell>
+                    <TableCell>{record.reason}</TableCell>
+                    <TableCell>
+                      <Badge variant={record.trend === 'INCREASING' ? 'destructive' : 'secondary'}>
+                        {record.trend}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -369,10 +425,40 @@ function AttendanceManagement() {
 
 // Attrition Management Component
 function AttritionManagement() {
-  const [attrition, setAttrition] = useState([
-    { id: '1', employee: 'Mike Johnson', department: 'Operations', exitDate: '2024-12-20', reason: 'Better Opportunity', type: 'VOLUNTARY' },
-    { id: '2', employee: 'Sarah Lee', department: 'Support', exitDate: '2024-12-18', reason: 'Performance', type: 'INVOLUNTARY' },
-  ])
+  const [attrition, setAttrition] = useState<any[]>([])
+  const [stats, setStats] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAttrition()
+  }, [])
+
+  const fetchAttrition = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/operations/resources/attrition')
+      if (!response.ok) {
+        throw new Error('Failed to fetch attrition data')
+      }
+      const data = await response.json()
+
+      const transformed = (data.attritions || []).map((att: any) => ({
+        id: att.id,
+        employee: att.employee?.name || 'Unknown',
+        department: att.employee?.department || 'Unknown',
+        exitDate: new Date(att.exitDate).toISOString().split('T')[0],
+        reason: att.reason || 'Not specified',
+        type: att.type,
+      }))
+
+      setAttrition(transformed)
+      setStats(data.stats || {})
+    } catch (error) {
+      console.error('Error fetching attrition:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -383,8 +469,8 @@ function AttritionManagement() {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2.5%</div>
-            <p className="text-xs text-muted-foreground">7 employees this month</p>
+            <div className="text-2xl font-bold">{stats.monthlyAttritionRate || 0}%</div>
+            <p className="text-xs text-muted-foreground">{stats.monthlyAttrition || 0} employees this month</p>
           </CardContent>
         </Card>
         <Card>
@@ -393,8 +479,8 @@ function AttritionManagement() {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
-            <p className="text-xs text-muted-foreground">71% of total</p>
+            <div className="text-2xl font-bold">{stats.voluntary || 0}</div>
+            <p className="text-xs text-muted-foreground">Voluntary exits</p>
           </CardContent>
         </Card>
         <Card>
@@ -403,8 +489,8 @@ function AttritionManagement() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
-            <p className="text-xs text-muted-foreground">29% of total</p>
+            <div className="text-2xl font-bold">{stats.involuntary || 0}</div>
+            <p className="text-xs text-muted-foreground">Involuntary exits</p>
           </CardContent>
         </Card>
         <Card>
@@ -413,8 +499,8 @@ function AttritionManagement() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3.2</div>
-            <p className="text-xs text-muted-foreground">Years average</p>
+            <div className="text-2xl font-bold">{stats.avgTenure || 0}</div>
+            <p className="text-xs text-muted-foreground">Months average</p>
           </CardContent>
         </Card>
       </div>
@@ -473,11 +559,30 @@ function AttritionManagement() {
 
 // Asset Management Component
 function AssetManagement() {
-  const [assets, setAssets] = useState([
-    { id: '1', name: 'Laptop - Dell XPS', assignedTo: 'John Doe', status: 'ASSIGNED', location: 'Building A', purchaseDate: '2024-01-15' },
-    { id: '2', name: 'Monitor - LG 27"', assignedTo: 'Jane Smith', status: 'ASSIGNED', location: 'Building B', purchaseDate: '2024-02-20' },
-    { id: '3', name: 'Headset - Logitech', assignedTo: null, status: 'AVAILABLE', location: 'Storage', purchaseDate: '2024-03-10' },
-  ])
+  const [assets, setAssets] = useState<any[]>([])
+  const [stats, setStats] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAssets()
+  }, [])
+
+  const fetchAssets = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/operations/resources/assets')
+      if (!response.ok) {
+        throw new Error('Failed to fetch assets')
+      }
+      const data = await response.json()
+      setAssets(data.assets || [])
+      setStats(data.stats || {})
+    } catch (error) {
+      console.error('Error fetching assets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -488,7 +593,7 @@ function AssetManagement() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">342</div>
+            <div className="text-2xl font-bold">{stats.total || 0}</div>
             <p className="text-xs text-muted-foreground">All assets</p>
           </CardContent>
         </Card>
@@ -498,8 +603,8 @@ function AssetManagement() {
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">298</div>
-            <p className="text-xs text-muted-foreground">87% assigned</p>
+            <div className="text-2xl font-bold">{stats.assigned || 0}</div>
+            <p className="text-xs text-muted-foreground">Assigned assets</p>
           </CardContent>
         </Card>
         <Card>
@@ -508,8 +613,8 @@ function AssetManagement() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">44</div>
-            <p className="text-xs text-muted-foreground">13% available</p>
+            <div className="text-2xl font-bold">{stats.available || 0}</div>
+            <p className="text-xs text-muted-foreground">Available assets</p>
           </CardContent>
         </Card>
         <Card>
@@ -518,8 +623,8 @@ function AssetManagement() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
-            <p className="text-xs text-muted-foreground">2.3% maintenance</p>
+            <div className="text-2xl font-bold">{stats.maintenance || 0}</div>
+            <p className="text-xs text-muted-foreground">In maintenance</p>
           </CardContent>
         </Card>
       </div>
@@ -538,38 +643,44 @@ function AssetManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Asset Name</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Purchase Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {assets.map((asset) => (
-                <TableRow key={asset.id}>
-                  <TableCell className="font-medium">{asset.name}</TableCell>
-                  <TableCell>{asset.assignedTo || '-'}</TableCell>
-                  <TableCell>
-                    <Badge variant={asset.status === 'ASSIGNED' ? 'default' : asset.status === 'AVAILABLE' ? 'secondary' : 'destructive'}>
-                      {asset.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{asset.location}</TableCell>
-                  <TableCell>{asset.purchaseDate}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading assets...</div>
+          ) : assets.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No assets found</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Asset Name</TableHead>
+                  <TableHead>Assigned To</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Purchase Date</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {assets.map((asset: any) => (
+                  <TableRow key={asset.id}>
+                    <TableCell className="font-medium">{asset.name}</TableCell>
+                    <TableCell>{asset.assignedTo?.name || asset.assignedToId || '-'}</TableCell>
+                    <TableCell>
+                      <Badge variant={asset.status === 'ASSIGNED' ? 'default' : asset.status === 'AVAILABLE' ? 'secondary' : 'destructive'}>
+                        {asset.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{asset.location || '-'}</TableCell>
+                    <TableCell>{asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString() : '-'}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -578,11 +689,40 @@ function AssetManagement() {
 
 // Shifts Management Component
 function ShiftsManagement() {
-  const [shifts, setShifts] = useState([
-    { id: '1', name: 'Morning Shift', startTime: '06:00', endTime: '14:00', employees: 45, status: 'ACTIVE' },
-    { id: '2', name: 'Afternoon Shift', startTime: '14:00', endTime: '22:00', employees: 52, status: 'ACTIVE' },
-    { id: '3', name: 'Night Shift', startTime: '22:00', endTime: '06:00', employees: 38, status: 'ACTIVE' },
-  ])
+  const [shifts, setShifts] = useState<any[]>([])
+  const [stats, setStats] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchShifts()
+  }, [])
+
+  const fetchShifts = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/operations/resources/shifts?includeAssignments=true')
+      if (!response.ok) {
+        throw new Error('Failed to fetch shifts')
+      }
+      const data = await response.json()
+
+      const transformed = (data.shifts || []).map((shift: any) => ({
+        id: shift.id,
+        name: shift.name,
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        employees: shift.employees || 0,
+        status: shift.status,
+      }))
+
+      setShifts(transformed)
+      setStats(data.stats || {})
+    } catch (error) {
+      console.error('Error fetching shifts:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -593,7 +733,7 @@ function ShiftsManagement() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{stats.active || 0}</div>
             <p className="text-xs text-muted-foreground">Currently active</p>
           </CardContent>
         </Card>
@@ -603,18 +743,18 @@ function ShiftsManagement() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">135</div>
+            <div className="text-2xl font-bold">{stats.totalEmployees || 0}</div>
             <p className="text-xs text-muted-foreground">Across all shifts</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Coverage</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Shifts</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24/7</div>
-            <p className="text-xs text-muted-foreground">Full coverage</p>
+            <div className="text-2xl font-bold">{stats.total || 0}</div>
+            <p className="text-xs text-muted-foreground">All shifts</p>
           </CardContent>
         </Card>
       </div>
@@ -633,38 +773,44 @@ function ShiftsManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Shift Name</TableHead>
-                <TableHead>Start Time</TableHead>
-                <TableHead>End Time</TableHead>
-                <TableHead>Employees</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {shifts.map((shift) => (
-                <TableRow key={shift.id}>
-                  <TableCell className="font-medium">{shift.name}</TableCell>
-                  <TableCell>{shift.startTime}</TableCell>
-                  <TableCell>{shift.endTime}</TableCell>
-                  <TableCell>{shift.employees}</TableCell>
-                  <TableCell>
-                    <Badge variant={shift.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                      {shift.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading shifts...</div>
+          ) : shifts.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No shifts found</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Shift Name</TableHead>
+                  <TableHead>Start Time</TableHead>
+                  <TableHead>End Time</TableHead>
+                  <TableHead>Employees</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {shifts.map((shift) => (
+                  <TableRow key={shift.id}>
+                    <TableCell className="font-medium">{shift.name}</TableCell>
+                    <TableCell>{shift.startTime}</TableCell>
+                    <TableCell>{shift.endTime}</TableCell>
+                    <TableCell>{shift.employees}</TableCell>
+                    <TableCell>
+                      <Badge variant={shift.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                        {shift.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -673,11 +819,30 @@ function ShiftsManagement() {
 
 // Trainings Management Component
 function TrainingsManagement() {
-  const [trainings, setTrainings] = useState([
-    { id: '1', name: 'Process Standardization', type: 'MANDATORY', employees: 45, completed: 38, status: 'ONGOING' },
-    { id: '2', name: 'Quality Control Procedures', type: 'MANDATORY', employees: 52, completed: 52, status: 'COMPLETED' },
-    { id: '3', name: 'Safety Protocols', type: 'OPTIONAL', employees: 30, completed: 25, status: 'ONGOING' },
-  ])
+  const [trainings, setTrainings] = useState<any[]>([])
+  const [stats, setStats] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchTrainings()
+  }, [])
+
+  const fetchTrainings = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/operations/resources/trainings?includeEnrollments=true')
+      if (!response.ok) {
+        throw new Error('Failed to fetch trainings')
+      }
+      const data = await response.json()
+      setTrainings(data.trainings || [])
+      setStats(data.stats || {})
+    } catch (error) {
+      console.error('Error fetching trainings:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -688,7 +853,7 @@ function TrainingsManagement() {
             <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">{stats.active || 0}</div>
             <p className="text-xs text-muted-foreground">Currently ongoing</p>
           </CardContent>
         </Card>
@@ -698,8 +863,8 @@ function TrainingsManagement() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold">{stats.completed || 0}</div>
+            <p className="text-xs text-muted-foreground">Total completed</p>
           </CardContent>
         </Card>
         <Card>
@@ -708,18 +873,18 @@ function TrainingsManagement() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">127</div>
+            <div className="text-2xl font-bold">{stats.totalEnrolled || 0}</div>
             <p className="text-xs text-muted-foreground">Total enrolled</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Trainings</CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">82%</div>
-            <p className="text-xs text-muted-foreground">Average completion</p>
+            <div className="text-2xl font-bold">{stats.total || 0}</div>
+            <p className="text-xs text-muted-foreground">All trainings</p>
           </CardContent>
         </Card>
       </div>
@@ -738,42 +903,48 @@ function TrainingsManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Training Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Enrolled</TableHead>
-                <TableHead>Completed</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {trainings.map((training) => (
-                <TableRow key={training.id}>
-                  <TableCell className="font-medium">{training.name}</TableCell>
-                  <TableCell>
-                    <Badge variant={training.type === 'MANDATORY' ? 'destructive' : 'secondary'}>
-                      {training.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{training.employees}</TableCell>
-                  <TableCell>{training.completed}</TableCell>
-                  <TableCell>
-                    <Badge variant={training.status === 'COMPLETED' ? 'default' : 'secondary'}>
-                      {training.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading trainings...</div>
+          ) : trainings.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No trainings found</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Training Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Enrolled</TableHead>
+                  <TableHead>Completed</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {trainings.map((training) => (
+                  <TableRow key={training.id}>
+                    <TableCell className="font-medium">{training.name}</TableCell>
+                    <TableCell>
+                      <Badge variant={training.type === 'MANDATORY' ? 'destructive' : 'secondary'}>
+                        {training.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{training.enrolled || training.employees || 0}</TableCell>
+                    <TableCell>{training.completed || 0}</TableCell>
+                    <TableCell>
+                      <Badge variant={training.status === 'COMPLETED' ? 'default' : training.status === 'ONGOING' ? 'secondary' : 'outline'}>
+                        {training.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -782,11 +953,40 @@ function TrainingsManagement() {
 
 // New Hires Management Component
 function NewHiresManagement() {
-  const [newHires, setNewHires] = useState([
-    { id: '1', name: 'Alice Johnson', department: 'Operations', joinDate: '2024-12-20', status: 'PENDING', offerAccepted: true },
-    { id: '2', name: 'Tom Brown', department: 'Support', joinDate: '2024-12-22', status: 'CONFIRMED', offerAccepted: true },
-    { id: '3', name: 'Emma Davis', department: 'Quality', joinDate: '2025-01-05', status: 'PENDING', offerAccepted: false },
-  ])
+  const [newHires, setNewHires] = useState<any[]>([])
+  const [stats, setStats] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchNewHires()
+  }, [])
+
+  const fetchNewHires = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/operations/resources/new-hires')
+      if (!response.ok) {
+        throw new Error('Failed to fetch new hires')
+      }
+      const data = await response.json()
+
+      const transformed = (data.newHires || []).map((hire: any) => ({
+        id: hire.id,
+        name: hire.name,
+        department: hire.department,
+        joinDate: new Date(hire.joinDate).toISOString().split('T')[0],
+        status: hire.status,
+        offerAccepted: hire.offerAccepted,
+      }))
+
+      setNewHires(transformed)
+      setStats(data.stats || {})
+    } catch (error) {
+      console.error('Error fetching new hires:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -797,7 +997,7 @@ function NewHiresManagement() {
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{stats.thisMonth || 0}</div>
             <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
@@ -807,7 +1007,7 @@ function NewHiresManagement() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">{stats.pending || 0}</div>
             <p className="text-xs text-muted-foreground">Awaiting confirmation</p>
           </CardContent>
         </Card>
@@ -817,8 +1017,8 @@ function NewHiresManagement() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1</div>
-            <p className="text-xs text-muted-foreground">Ready to onboard</p>
+            <div className="text-2xl font-bold">{stats.confirmed || 0}</div>
+            <p className="text-xs text-muted-foreground">Confirmed hires</p>
           </CardContent>
         </Card>
         <Card>
@@ -827,8 +1027,8 @@ function NewHiresManagement() {
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
-            <p className="text-xs text-muted-foreground">67% acceptance rate</p>
+            <div className="text-2xl font-bold">{stats.offerAccepted || 0}</div>
+            <p className="text-xs text-muted-foreground">Offers accepted</p>
           </CardContent>
         </Card>
       </div>
@@ -847,42 +1047,48 @@ function NewHiresManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Join Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Offer Accepted</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {newHires.map((hire) => (
-                <TableRow key={hire.id}>
-                  <TableCell className="font-medium">{hire.name}</TableCell>
-                  <TableCell>{hire.department}</TableCell>
-                  <TableCell>{hire.joinDate}</TableCell>
-                  <TableCell>
-                    <Badge variant={hire.status === 'CONFIRMED' ? 'default' : 'secondary'}>
-                      {hire.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={hire.offerAccepted ? 'default' : 'secondary'}>
-                      {hire.offerAccepted ? 'Yes' : 'No'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading new hires...</div>
+          ) : newHires.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No new hires found</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Join Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Offer Accepted</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {newHires.map((hire) => (
+                  <TableRow key={hire.id}>
+                    <TableCell className="font-medium">{hire.name}</TableCell>
+                    <TableCell>{hire.department}</TableCell>
+                    <TableCell>{hire.joinDate}</TableCell>
+                    <TableCell>
+                      <Badge variant={hire.status === 'CONFIRMED' ? 'default' : 'secondary'}>
+                        {hire.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={hire.offerAccepted ? 'default' : 'secondary'}>
+                        {hire.offerAccepted ? 'Yes' : 'No'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -891,10 +1097,40 @@ function NewHiresManagement() {
 
 // Onboarding Management Component
 function OnboardingManagement() {
-  const [onboarding, setOnboarding] = useState([
-    { id: '1', employee: 'Tom Brown', department: 'Support', startDate: '2024-12-22', progress: 65, status: 'IN_PROGRESS' },
-    { id: '2', employee: 'Alice Johnson', department: 'Operations', startDate: '2024-12-20', progress: 30, status: 'IN_PROGRESS' },
-  ])
+  const [onboarding, setOnboarding] = useState<any[]>([])
+  const [stats, setStats] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchOnboarding()
+  }, [])
+
+  const fetchOnboarding = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/operations/resources/onboarding')
+      if (!response.ok) {
+        throw new Error('Failed to fetch onboarding records')
+      }
+      const data = await response.json()
+
+      const transformed = (data.onboarding || []).map((onboard: any) => ({
+        id: onboard.id,
+        employee: onboard.newHire?.name || 'Unknown',
+        department: onboard.newHire?.department || 'Unknown',
+        startDate: new Date(onboard.startDate).toISOString().split('T')[0],
+        progress: onboard.progress,
+        status: onboard.status,
+      }))
+
+      setOnboarding(transformed)
+      setStats(data.stats || {})
+    } catch (error) {
+      console.error('Error fetching onboarding:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -905,7 +1141,7 @@ function OnboardingManagement() {
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">{stats.inProgress || 0}</div>
             <p className="text-xs text-muted-foreground">Currently onboarding</p>
           </CardContent>
         </Card>
@@ -915,7 +1151,7 @@ function OnboardingManagement() {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">47.5%</div>
+            <div className="text-2xl font-bold">{stats.avgProgress || 0}%</div>
             <p className="text-xs text-muted-foreground">Average completion</p>
           </CardContent>
         </Card>
@@ -925,18 +1161,18 @@ function OnboardingManagement() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold">{stats.completed || 0}</div>
+            <p className="text-xs text-muted-foreground">Total completed</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Duration</CardTitle>
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">Days average</p>
+            <div className="text-2xl font-bold">{stats.total || 0}</div>
+            <p className="text-xs text-muted-foreground">All records</p>
           </CardContent>
         </Card>
       </div>
@@ -955,45 +1191,51 @@ function OnboardingManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {onboarding.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell className="font-medium">{record.employee}</TableCell>
-                  <TableCell>{record.department}</TableCell>
-                  <TableCell>{record.startDate}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-muted rounded-full h-2">
-                        <div className="bg-primary h-2 rounded-full" style={{ width: `${record.progress}%` }} />
-                      </div>
-                      <span className="text-sm">{record.progress}%</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={record.status === 'IN_PROGRESS' ? 'default' : 'secondary'}>
-                      {record.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading onboarding records...</div>
+          ) : onboarding.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No onboarding records found</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Start Date</TableHead>
+                  <TableHead>Progress</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {onboarding.map((record) => (
+                  <TableRow key={record.id}>
+                    <TableCell className="font-medium">{record.employee}</TableCell>
+                    <TableCell>{record.department}</TableCell>
+                    <TableCell>{record.startDate}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-muted rounded-full h-2">
+                          <div className="bg-primary h-2 rounded-full" style={{ width: `${record.progress}%` }} />
+                        </div>
+                        <span className="text-sm">{record.progress}%</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={record.status === 'IN_PROGRESS' ? 'default' : record.status === 'COMPLETED' ? 'default' : 'secondary'}>
+                        {record.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -1002,11 +1244,40 @@ function OnboardingManagement() {
 
 // Timesheets Management Component
 function TimesheetsManagement() {
-  const [timesheets, setTimesheets] = useState([
-    { id: '1', employee: 'John Doe', week: '2024-12-09', hours: 40, status: 'SUBMITTED', approved: false },
-    { id: '2', employee: 'Jane Smith', week: '2024-12-09', hours: 38, status: 'SUBMITTED', approved: true },
-    { id: '3', employee: 'Bob Wilson', week: '2024-12-09', hours: 42, status: 'DRAFT', approved: false },
-  ])
+  const [timesheets, setTimesheets] = useState<any[]>([])
+  const [stats, setStats] = useState<any>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchTimesheets()
+  }, [])
+
+  const fetchTimesheets = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/operations/resources/timesheets')
+      if (!response.ok) {
+        throw new Error('Failed to fetch timesheets')
+      }
+      const data = await response.json()
+
+      const transformed = (data.timesheets || []).map((ts: any) => ({
+        id: ts.id,
+        employee: ts.employee?.name || 'Unknown',
+        week: new Date(ts.weekStartDate).toISOString().split('T')[0],
+        hours: ts.totalHours,
+        status: ts.status,
+        approved: ts.status === 'APPROVED',
+      }))
+
+      setTimesheets(transformed)
+      setStats(data.stats || {})
+    } catch (error) {
+      console.error('Error fetching timesheets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -1017,7 +1288,7 @@ function TimesheetsManagement() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45</div>
+            <div className="text-2xl font-bold">{stats.pending || 0}</div>
             <p className="text-xs text-muted-foreground">Awaiting review</p>
           </CardContent>
         </Card>
@@ -1027,8 +1298,8 @@ function TimesheetsManagement() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">182</div>
-            <p className="text-xs text-muted-foreground">This week</p>
+            <div className="text-2xl font-bold">{stats.approved || 0}</div>
+            <p className="text-xs text-muted-foreground">Total approved</p>
           </CardContent>
         </Card>
         <Card>
@@ -1037,18 +1308,18 @@ function TimesheetsManagement() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{stats.draft || 0}</div>
             <p className="text-xs text-muted-foreground">Not submitted</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Hours</CardTitle>
-            <ClockIn className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">39.5</div>
-            <p className="text-xs text-muted-foreground">Hours per week</p>
+            <div className="text-2xl font-bold">{stats.total || 0}</div>
+            <p className="text-xs text-muted-foreground">All timesheets</p>
           </CardContent>
         </Card>
       </div>
@@ -1067,42 +1338,48 @@ function TimesheetsManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Week</TableHead>
-                <TableHead>Hours</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Approved</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {timesheets.map((timesheet) => (
-                <TableRow key={timesheet.id}>
-                  <TableCell className="font-medium">{timesheet.employee}</TableCell>
-                  <TableCell>{timesheet.week}</TableCell>
-                  <TableCell>{timesheet.hours}</TableCell>
-                  <TableCell>
-                    <Badge variant={timesheet.status === 'SUBMITTED' ? 'default' : 'secondary'}>
-                      {timesheet.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={timesheet.approved ? 'default' : 'secondary'}>
-                      {timesheet.approved ? 'Yes' : 'No'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading timesheets...</div>
+          ) : timesheets.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No timesheets found</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Week</TableHead>
+                  <TableHead>Hours</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Approved</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {timesheets.map((timesheet) => (
+                  <TableRow key={timesheet.id}>
+                    <TableCell className="font-medium">{timesheet.employee}</TableCell>
+                    <TableCell>{timesheet.week}</TableCell>
+                    <TableCell>{timesheet.hours}</TableCell>
+                    <TableCell>
+                      <Badge variant={timesheet.status === 'SUBMITTED' ? 'default' : timesheet.status === 'APPROVED' ? 'default' : 'secondary'}>
+                        {timesheet.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={timesheet.approved ? 'default' : 'secondary'}>
+                        {timesheet.approved ? 'Yes' : 'No'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -91,47 +91,8 @@ const COLORS = ['#9333ea', '#ec4899', '#f59e0b', '#ef4444', '#10b981']
 
 export default function TicketsPage() {
   const [activeTab, setActiveTab] = useState('all')
-  const [tickets, setTickets] = useState<Ticket[]>([
-    {
-      id: 'T-001',
-      title: 'Printer not working in Finance Department',
-      description: 'The printer in Finance office is not responding. Error message shows "Paper Jam" but no paper is visible.',
-      priority: 'HIGH',
-      status: 'OPEN',
-      category: 'Hardware',
-      requester: 'Sarah Johnson',
-      assignee: 'John Doe',
-      createdAt: '2024-12-15T08:30:00',
-      updatedAt: '2024-12-15T08:30:00',
-      resolvedAt: null,
-    },
-    {
-      id: 'T-002',
-      title: 'Email access issue for new employee',
-      description: 'New employee cannot access email. Account created but login fails.',
-      priority: 'MEDIUM',
-      status: 'IN_PROGRESS',
-      category: 'Access Management',
-      requester: 'Mike Wilson',
-      assignee: 'Jane Smith',
-      createdAt: '2024-12-14T14:20:00',
-      updatedAt: '2024-12-15T09:15:00',
-      resolvedAt: null,
-    },
-    {
-      id: 'T-003',
-      title: 'Software installation request - Adobe Creative Suite',
-      description: 'Request to install Adobe Creative Suite on design team computers.',
-      priority: 'LOW',
-      status: 'RESOLVED',
-      category: 'Software',
-      requester: 'Emily Davis',
-      assignee: 'Bob Wilson',
-      createdAt: '2024-12-13T10:00:00',
-      updatedAt: '2024-12-14T16:30:00',
-      resolvedAt: '2024-12-14T16:30:00',
-    },
-  ])
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -148,11 +109,41 @@ export default function TicketsPage() {
     requester: '',
   })
 
-  const ticketStats = {
-    total: tickets.length,
-    open: tickets.filter(t => t.status === 'OPEN').length,
-    inProgress: tickets.filter(t => t.status === 'IN_PROGRESS').length,
-    resolved: tickets.filter(t => t.status === 'RESOLVED').length,
+  const [ticketStats, setTicketStats] = useState({
+    total: 0,
+    open: 0,
+    inProgress: 0,
+    resolved: 0,
+  })
+
+  useEffect(() => {
+    fetchTickets()
+  }, [activeTab, statusFilter, priorityFilter])
+
+  const fetchTickets = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') params.append('status', statusFilter)
+      if (priorityFilter !== 'all') params.append('priority', priorityFilter)
+      if (activeTab !== 'all') {
+        if (activeTab === 'OPEN') params.append('status', 'TO_DO')
+        else if (activeTab === 'IN_PROGRESS') params.append('status', 'IN_PROGRESS')
+        else if (activeTab === 'RESOLVED') params.append('status', 'DONE')
+      }
+
+      const response = await fetch(`/api/it/tickets?${params.toString()}`)
+      if (!response.ok) throw new Error('Failed to fetch tickets')
+      const data = await response.json()
+      setTickets(data.tickets || [])
+      setTicketStats(data.stats || { total: 0, open: 0, inProgress: 0, resolved: 0 })
+    } catch (error) {
+      console.error('Error fetching tickets:', error)
+      setTickets([])
+      setTicketStats({ total: 0, open: 0, inProgress: 0, resolved: 0 })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const priorityData = [
@@ -167,23 +158,25 @@ export default function TicketsPage() {
     { name: 'Resolved', value: ticketStats.resolved },
   ]
 
-  const handleCreateTicket = () => {
-    const newTicket: Ticket = {
-      id: `T-${String(tickets.length + 1).padStart(3, '0')}`,
-      title: formData.title,
-      description: formData.description,
-      priority: formData.priority,
-      status: 'OPEN',
-      category: formData.category,
-      requester: formData.requester || 'Current User',
-      assignee: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      resolvedAt: null,
+  const handleCreateTicket = async () => {
+    try {
+      const response = await fetch('/api/it/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          priority: formData.priority,
+          category: formData.category,
+        }),
+      })
+      if (!response.ok) throw new Error('Failed to create ticket')
+      await fetchTickets()
+      setCreateDialogOpen(false)
+      setFormData({ title: '', description: '', priority: 'MEDIUM', category: '', requester: '' })
+    } catch (error) {
+      console.error('Error creating ticket:', error)
     }
-    setTickets([newTicket, ...tickets])
-    setCreateDialogOpen(false)
-    setFormData({ title: '', description: '', priority: 'MEDIUM', category: '', requester: '' })
   }
 
   const handleViewTicket = (ticket: Ticket) => {
@@ -200,9 +193,12 @@ export default function TicketsPage() {
     const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter
+    
+    // Map status for filtering
+    const ticketStatus = ticket.status === 'TO_DO' ? 'OPEN' : ticket.status === 'DONE' ? 'RESOLVED' : ticket.status
+    const matchesStatus = statusFilter === 'all' || ticketStatus === statusFilter
     const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter
-    const matchesTab = activeTab === 'all' || ticket.status === activeTab
+    const matchesTab = activeTab === 'all' || ticketStatus === activeTab
     return matchesSearch && matchesStatus && matchesPriority && matchesTab
   })
 
@@ -221,10 +217,12 @@ export default function TicketsPage() {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
+      case 'TO_DO':
       case 'OPEN':
         return 'destructive'
       case 'IN_PROGRESS':
         return 'default'
+      case 'DONE':
       case 'RESOLVED':
         return 'secondary'
       default:
@@ -232,10 +230,21 @@ export default function TicketsPage() {
     }
   }
 
+  const formatStatus = (status: string) => {
+    switch (status) {
+      case 'TO_DO':
+        return 'OPEN'
+      case 'DONE':
+        return 'RESOLVED'
+      default:
+        return status
+    }
+  }
+
   return (
     <ITPageLayout 
       title="Service Tickets" 
-      description="Manage IT support tickets and service requests"
+      description="Manage support tickets and service requests"
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
@@ -244,6 +253,12 @@ export default function TicketsPage() {
           <TabsTrigger value="IN_PROGRESS">In Progress</TabsTrigger>
           <TabsTrigger value="RESOLVED">Resolved</TabsTrigger>
         </TabsList>
+
+        {loading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-muted-foreground">Loading tickets...</div>
+          </div>
+        )}
 
         <TabsContent value={activeTab} className="space-y-6">
           {/* Stats Cards */}
@@ -383,7 +398,7 @@ export default function TicketsPage() {
                 <DialogHeader>
                   <DialogTitle>Create New Ticket</DialogTitle>
                   <DialogDescription>
-                    Submit a new IT support ticket
+                    Submit a new support ticket
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -510,7 +525,7 @@ export default function TicketsPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant={getStatusBadgeVariant(ticket.status)}>
-                            {ticket.status.replace('_', ' ')}
+                            {formatStatus(ticket.status).replace('_', ' ')}
                           </Badge>
                         </TableCell>
                         <TableCell>{ticket.requester}</TableCell>
@@ -615,7 +630,7 @@ export default function TicketsPage() {
           <DialogHeader>
             <DialogTitle>Assign Ticket</DialogTitle>
             <DialogDescription>
-              Assign ticket {selectedTicket?.id} to an IT staff member
+              Assign ticket {selectedTicket?.id} to a staff member
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

@@ -38,7 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { UserPlus, Search, Plus, Eye, Edit, Trash2, Mail, Phone, Linkedin, Download, CheckCircle, Circle, Clock, FileText, MoreVertical, Calendar, MessageSquare, X, ArrowRight } from 'lucide-react'
+import { UserPlus, Search, Plus, Eye, Edit, Trash2, Mail, Phone, Linkedin, Download, CheckCircle, Circle, Clock, FileText, MoreVertical, Calendar, MessageSquare, X, ArrowRight, Filter, CheckSquare, Square } from 'lucide-react'
 import { RecruitmentPageLayout } from '@/components/recruitment/recruitment-page-layout'
 import {
   ResponsiveContainer,
@@ -86,6 +86,21 @@ export default function CandidatesPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false)
+  const [searchFilters, setSearchFilters] = useState({
+    query: '',
+    status: '',
+    source: '',
+    rating: '',
+    experienceMin: '',
+    experienceMax: '',
+    department: '',
+    location: '',
+    dateFrom: '',
+    dateTo: '',
+  })
+  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([])
+  const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
@@ -132,46 +147,88 @@ export default function CandidatesPage() {
   const fetchCandidates = async () => {
     try {
       setLoading(true)
-      // Mock data for now - replace with actual API call
-      const mockCandidates: Candidate[] = [
-        {
-          id: '1',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@example.com',
-          phone: '+1234567890',
-          linkedin: 'linkedin.com/in/johndoe',
-          position: 'Software Engineer',
-          status: 'INTERVIEW',
-          source: 'LINKEDIN',
-          experience: 5,
-          rating: 'HIGH',
-          resume: null,
-          notes: 'Strong technical background',
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'jane.smith@example.com',
-          phone: '+1234567891',
-          linkedin: 'linkedin.com/in/janesmith',
-          position: 'Product Manager',
-          status: 'OFFER',
-          source: 'REFERRAL',
-          experience: 7,
-          rating: 'HIGH',
-          resume: null,
-          notes: 'Excellent communication skills',
-          createdAt: new Date().toISOString(),
-        },
-      ]
-      setCandidates(mockCandidates)
+      const response = await fetch('/api/recruitment/candidates')
+      if (!response.ok) {
+        throw new Error('Failed to fetch candidates')
+      }
+      const data = await response.json()
+      setCandidates(data.candidates || [])
     } catch (error) {
       console.error('Error fetching candidates:', error)
+      setCandidates([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const performAdvancedSearch = async () => {
+    try {
+      setLoading(true)
+      const searchParams: any = {
+        page: 1,
+        limit: 100,
+      }
+      
+      if (searchFilters.query) searchParams.query = searchFilters.query
+      if (searchFilters.status) searchParams.status = searchFilters.status
+      if (searchFilters.source) searchParams.source = searchFilters.source
+      if (searchFilters.rating) searchParams.rating = searchFilters.rating
+      if (searchFilters.experienceMin) searchParams.experienceMin = parseInt(searchFilters.experienceMin)
+      if (searchFilters.experienceMax) searchParams.experienceMax = parseInt(searchFilters.experienceMax)
+      if (searchFilters.department) searchParams.department = searchFilters.department
+      if (searchFilters.location) searchParams.location = searchFilters.location
+      if (searchFilters.dateFrom) searchParams.dateFrom = searchFilters.dateFrom
+      if (searchFilters.dateTo) searchParams.dateTo = searchFilters.dateTo
+
+      const response = await fetch('/api/recruitment/candidates/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(searchParams),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to search candidates')
+      }
+
+      const data = await response.json()
+      setCandidates(data.candidates || [])
+      setAdvancedSearchOpen(false)
+    } catch (error) {
+      console.error('Error searching candidates:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBulkAction = async (action: string, data?: any) => {
+    if (selectedCandidates.length === 0) {
+      alert('Please select at least one candidate')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/recruitment/candidates/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          candidateIds: selectedCandidates,
+          action,
+          data,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to perform bulk action')
+      }
+
+      const result = await response.json()
+      alert(result.message || 'Action completed successfully')
+      setSelectedCandidates([])
+      setBulkActionDialogOpen(false)
+      fetchCandidates()
+    } catch (error) {
+      console.error('Error performing bulk action:', error)
+      alert('Failed to perform bulk action')
     }
   }
 
@@ -213,18 +270,34 @@ export default function CandidatesPage() {
 
   const handleCreateCandidate = async () => {
     try {
-      const newCandidate: Candidate = {
-        id: Date.now().toString(),
-        ...formData,
+      const candidateData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
         phone: formData.phone || null,
         linkedin: formData.linkedin || null,
         position: formData.position || null,
+        status: formData.status,
+        source: formData.source,
         experience: formData.experience ? parseInt(formData.experience) : null,
+        rating: formData.rating,
         resume: null,
         notes: formData.notes || null,
-        createdAt: new Date().toISOString(),
       }
-      setCandidates([...candidates, newCandidate])
+
+      const response = await fetch('/api/recruitment/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(candidateData),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create candidate')
+      }
+
+      const data = await response.json()
+      setCandidates([...candidates, data.candidate])
       setIsDialogOpen(false)
       setFormData({
         firstName: '',
@@ -270,8 +343,8 @@ export default function CandidatesPage() {
   const handleUpdateCandidate = async () => {
     if (!selectedCandidate) return
     try {
-      setCandidates(candidates.map(c => 
-        c.id === selectedCandidate.id 
+      setCandidates(candidates.map(c =>
+        c.id === selectedCandidate.id
           ? { ...c, ...formData, experience: formData.experience ? parseInt(formData.experience) : null }
           : c
       ))
@@ -289,8 +362,8 @@ export default function CandidatesPage() {
 
   const handleConfirmStatusChange = async () => {
     try {
-      setCandidates(candidates.map(c => 
-        c.id === statusChangeData.candidateId 
+      setCandidates(candidates.map(c =>
+        c.id === statusChangeData.candidateId
           ? { ...c, status: statusChangeData.newStatus as any }
           : c
       ))
@@ -506,6 +579,21 @@ export default function CandidatesPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant="outline"
+              onClick={() => setAdvancedSearchOpen(!advancedSearchOpen)}
+            >
+              <Filter className="mr-2 h-4 w-4" />
+              Advanced Search
+            </Button>
+            {selectedCandidates.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setBulkActionDialogOpen(true)}
+              >
+                Bulk Actions ({selectedCandidates.length})
+              </Button>
+            )}
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -648,6 +736,253 @@ export default function CandidatesPage() {
           </Dialog>
         </div>
 
+        {/* Advanced Search Panel */}
+        {advancedSearchOpen && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Advanced Search</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAdvancedSearchOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <Label>Search Query</Label>
+                  <Input
+                    placeholder="Name, email, phone..."
+                    value={searchFilters.query}
+                    onChange={(e) =>
+                      setSearchFilters({ ...searchFilters, query: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select
+                    value={searchFilters.status}
+                    onValueChange={(value) =>
+                      setSearchFilters({ ...searchFilters, status: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Status</SelectItem>
+                      {candidateStages.map((stage) => (
+                        <SelectItem key={stage.id} value={stage.id}>
+                          {stage.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Source</Label>
+                  <Select
+                    value={searchFilters.source}
+                    onValueChange={(value) =>
+                      setSearchFilters({ ...searchFilters, source: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Sources" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Sources</SelectItem>
+                      <SelectItem value="LINKEDIN">LinkedIn</SelectItem>
+                      <SelectItem value="WEBSITE">Website</SelectItem>
+                      <SelectItem value="REFERRAL">Referral</SelectItem>
+                      <SelectItem value="JOB_BOARD">Job Board</SelectItem>
+                      <SelectItem value="RECRUITER">Recruiter</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Rating</Label>
+                  <Select
+                    value={searchFilters.rating}
+                    onValueChange={(value) =>
+                      setSearchFilters({ ...searchFilters, rating: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Ratings" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Ratings</SelectItem>
+                      <SelectItem value="HIGH">High</SelectItem>
+                      <SelectItem value="AVERAGE">Average</SelectItem>
+                      <SelectItem value="LOW">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Min Experience (years)</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={searchFilters.experienceMin}
+                    onChange={(e) =>
+                      setSearchFilters({ ...searchFilters, experienceMin: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Max Experience (years)</Label>
+                  <Input
+                    type="number"
+                    placeholder="20"
+                    value={searchFilters.experienceMax}
+                    onChange={(e) =>
+                      setSearchFilters({ ...searchFilters, experienceMax: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Department</Label>
+                  <Input
+                    placeholder="Department name"
+                    value={searchFilters.department}
+                    onChange={(e) =>
+                      setSearchFilters({ ...searchFilters, department: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Location</Label>
+                  <Input
+                    placeholder="Location"
+                    value={searchFilters.location}
+                    onChange={(e) =>
+                      setSearchFilters({ ...searchFilters, location: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Date From</Label>
+                  <Input
+                    type="date"
+                    value={searchFilters.dateFrom}
+                    onChange={(e) =>
+                      setSearchFilters({ ...searchFilters, dateFrom: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Date To</Label>
+                  <Input
+                    type="date"
+                    value={searchFilters.dateTo}
+                    onChange={(e) =>
+                      setSearchFilters({ ...searchFilters, dateTo: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchFilters({
+                      query: '',
+                      status: '',
+                      source: '',
+                      rating: '',
+                      experienceMin: '',
+                      experienceMax: '',
+                      department: '',
+                      location: '',
+                      dateFrom: '',
+                      dateTo: '',
+                    })
+                  }}
+                >
+                  Clear
+                </Button>
+                <Button onClick={performAdvancedSearch}>
+                  <Search className="mr-2 h-4 w-4" />
+                  Search
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Bulk Actions Dialog */}
+        <Dialog open={bulkActionDialogOpen} onOpenChange={setBulkActionDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Bulk Actions</DialogTitle>
+              <DialogDescription>
+                Perform actions on {selectedCandidates.length} selected candidates
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const newStatus = prompt('Enter new status (APPLIED, SCREENING, INTERVIEW, OFFER, HIRED, REJECTED):')
+                    if (newStatus) {
+                      handleBulkAction('UPDATE_STATUS', { status: newStatus })
+                    }
+                  }}
+                >
+                  Update Status
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const tag = prompt('Enter tag name:')
+                    if (tag) {
+                      handleBulkAction('ADD_TAG', { tag })
+                    }
+                  }}
+                >
+                  Add Tag
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const tag = prompt('Enter tag name to remove:')
+                    if (tag) {
+                      handleBulkAction('REMOVE_TAG', { tag })
+                    }
+                  }}
+                >
+                  Remove Tag
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const templateId = prompt('Enter email template ID (or leave blank for custom):')
+                    const subject = prompt('Enter email subject:')
+                    if (subject) {
+                      handleBulkAction('SEND_EMAIL', { templateId, subject })
+                    }
+                  }}
+                >
+                  Send Email
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleBulkAction('EXPORT')}
+                >
+                  Export Candidates
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Candidates Table */}
         <Card>
           <CardHeader>
@@ -667,6 +1002,25 @@ export default function CandidatesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (selectedCandidates.length === filteredCandidates.length) {
+                            setSelectedCandidates([])
+                          } else {
+                            setSelectedCandidates(filteredCandidates.map((c) => c.id))
+                          }
+                        }}
+                      >
+                        {selectedCandidates.length === filteredCandidates.length ? (
+                          <CheckSquare className="h-4 w-4" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Position</TableHead>
                     <TableHead>Contact</TableHead>
@@ -680,6 +1034,25 @@ export default function CandidatesPage() {
                 <TableBody>
                   {filteredCandidates.map((candidate) => (
                     <TableRow key={candidate.id}>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedCandidates.includes(candidate.id)) {
+                              setSelectedCandidates(selectedCandidates.filter((id) => id !== candidate.id))
+                            } else {
+                              setSelectedCandidates([...selectedCandidates, candidate.id])
+                            }
+                          }}
+                        >
+                          {selectedCandidates.includes(candidate.id) ? (
+                            <CheckSquare className="h-4 w-4" />
+                          ) : (
+                            <Square className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {candidate.firstName} {candidate.lastName}
                       </TableCell>
@@ -751,7 +1124,7 @@ export default function CandidatesPage() {
                               Download Resume
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => {
                                 setSelectedCandidate(candidate)
                                 setDeleteDialogOpen(true)

@@ -41,12 +41,25 @@ import {
   XCircle,
   Edit,
   Copy,
-  Signature,
+  PenTool,
   History,
   AlertCircle,
   Send,
   Save,
+  DollarSign,
+  FileCheck,
+  AlertTriangle,
+  MessageSquare,
+  CheckSquare,
+  Plus,
+  Upload,
 } from 'lucide-react'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 import { format } from 'date-fns'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
@@ -138,10 +151,63 @@ export default function QuoteDetailPage() {
     signedByEmail: '',
     signatureData: null as any,
   })
+  
+  // Contract/SOW state
+  const [contracts, setContracts] = useState<any[]>([])
+  const [loadingContracts, setLoadingContracts] = useState(false)
+  const [selectedContract, setSelectedContract] = useState<string | null>(null)
 
   useEffect(() => {
     fetchQuote()
+    fetchContracts()
   }, [params.id])
+  
+  const fetchContracts = async () => {
+    try {
+      setLoadingContracts(true)
+      const response = await fetch(`/api/sales/quotes/${params.id}/contracts`)
+      if (response.ok) {
+        const data = await response.json()
+        setContracts(Array.isArray(data) ? data : [])
+        if (data.length > 0 && !selectedContract) {
+          setSelectedContract(data[0].id)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching contracts:', error)
+    } finally {
+      setLoadingContracts(false)
+    }
+  }
+  
+  const handleCreateContract = async () => {
+    try {
+      const response = await fetch(`/api/sales/quotes/${params.id}/contracts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `Contract for ${quote?.name || 'Quote'}`,
+          type: 'SOW',
+        }),
+      })
+      if (response.ok) {
+        const newContract = await response.json()
+        toast({
+          title: 'Success',
+          description: 'Contract created successfully',
+        })
+        fetchContracts()
+        setSelectedContract(newContract.id)
+      }
+    } catch (error) {
+      console.error('Error creating contract:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to create contract',
+        variant: 'destructive',
+      })
+    }
+  }
 
   const fetchQuote = async () => {
     try {
@@ -174,6 +240,44 @@ export default function QuoteDetailPage() {
 
   const handleDownloadPDF = () => {
     window.open(`/api/sales/quotes/${params.id}/pdf`, '_blank')
+  }
+
+  const handleCreateInvoice = async () => {
+    if (!confirm('Create an invoice from this quote? This will generate a new invoice with all quote line items.')) {
+      return
+    }
+
+    try {
+      setCreatingInvoice(true)
+      const response = await fetch(`/api/sales/quotes/${params.id}/invoice`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast({
+          title: 'Success',
+          description: 'Invoice created successfully',
+        })
+        router.push(`/sales-dashboard/invoices`)
+      } else {
+        const error = await response.json()
+        toast({
+          title: 'Error',
+          description: error.error || 'Failed to create invoice',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      console.error('Error creating invoice:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to create invoice',
+        variant: 'destructive',
+      })
+    } finally {
+      setCreatingInvoice(false)
+    }
   }
 
   const handleSendEmail = async () => {
@@ -523,7 +627,7 @@ export default function QuoteDetailPage() {
               <Dialog open={signDialogOpen} onOpenChange={setSignDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline">
-                    <Signature className="mr-2 h-4 w-4" />
+                    <PenTool className="mr-2 h-4 w-4" />
                     Sign Quote
                   </Button>
                 </DialogTrigger>
@@ -558,7 +662,7 @@ export default function QuoteDetailPage() {
                         Cancel
                       </Button>
                       <Button onClick={handleSign}>
-                        <Signature className="mr-2 h-4 w-4" />
+                        <PenTool className="mr-2 h-4 w-4" />
                         Sign & Accept
                       </Button>
                     </div>
@@ -905,6 +1009,284 @@ export default function QuoteDetailPage() {
             )}
           </div>
         )}
+
+        {/* Contract/SOW Section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <FileCheck className="h-5 w-5" />
+                Contracts / SOW
+              </CardTitle>
+              <Button onClick={handleCreateContract} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Contract
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingContracts ? (
+              <div className="text-center py-8">Loading contracts...</div>
+            ) : contracts.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No contracts or SOWs yet.</p>
+                <p className="text-sm mt-2">Create one to manage versions, clauses, risk flags, and legal comments.</p>
+              </div>
+            ) : (
+              <Tabs value={selectedContract || undefined} onValueChange={setSelectedContract}>
+                <TabsList className="mb-4">
+                  {contracts.map((contract) => (
+                    <TabsTrigger key={contract.id} value={contract.id}>
+                      {contract.name} ({contract.type})
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                
+                {contracts.map((contract) => (
+                  <TabsContent key={contract.id} value={contract.id} className="space-y-6">
+                    {/* Contract Overview */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Contract Number</Label>
+                        <p className="font-medium">{contract.contractNumber}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Status</Label>
+                        <div>
+                          <Badge variant={contract.status === 'APPROVED' ? 'default' : contract.status === 'EXECUTED' ? 'default' : 'secondary'}>
+                            {contract.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      {contract.predictedTimeline && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Predicted Timeline</Label>
+                          <p className="font-medium text-blue-600">{contract.predictedTimeline}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Risk Flags */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 text-orange-500" />
+                          Risk Flags
+                        </h3>
+                      </div>
+                      {contract.riskFlags && contract.riskFlags.length > 0 ? (
+                        <div className="space-y-2">
+                          {contract.riskFlags.map((flag: any) => (
+                            <div key={flag.id} className={`p-3 border rounded-lg ${
+                              flag.severity === 'CRITICAL' ? 'border-red-300 bg-red-50' :
+                              flag.severity === 'HIGH' ? 'border-orange-300 bg-orange-50' :
+                              flag.severity === 'MEDIUM' ? 'border-yellow-300 bg-yellow-50' :
+                              'border-gray-200'
+                            }`}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge variant={flag.severity === 'CRITICAL' ? 'destructive' : flag.severity === 'HIGH' ? 'default' : 'secondary'}>
+                                      {flag.riskType} - {flag.severity}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm">{flag.description}</p>
+                                  {flag.clauseReference && (
+                                    <p className="text-xs text-muted-foreground mt-1">Ref: {flag.clauseReference}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No risk flags identified</p>
+                      )}
+                    </div>
+
+                    {/* Clauses with Unusual Clause Alert */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold">Clause Library</h3>
+                      </div>
+                      {contract.clauses && contract.clauses.length > 0 ? (
+                        <div className="space-y-3">
+                          {contract.clauses.map((clause: any) => (
+                            <div key={clause.id} className="border rounded-lg p-3">
+                              {clause.isUnusual && (
+                                <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded flex items-start gap-2">
+                                  <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                  <div className="flex-1">
+                                    <p className="text-sm font-semibold text-red-800">Customer asks unusual clause</p>
+                                    <p className="text-xs text-red-600 mt-1">This clause contains unusual terms that may require legal review.</p>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="flex items-start justify-between mb-2">
+                                <Badge variant="outline">{clause.clauseType}</Badge>
+                                {clause.isStandard && <Badge variant="secondary" className="text-xs">Standard</Badge>}
+                              </div>
+                              <p className="text-sm mb-2">{clause.clauseText}</p>
+                              {clause.suggestedClause && (
+                                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                                  <p className="text-xs font-semibold text-blue-800 mb-1">💡 Suggestion:</p>
+                                  <p className="text-xs text-blue-700">{clause.suggestedClause}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No clauses added yet</p>
+                      )}
+                    </div>
+
+                    {/* Legal Comments */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Legal Comments & Customer Requests
+                        </h3>
+                      </div>
+                      {contract.legalComments && contract.legalComments.length > 0 ? (
+                        <div className="space-y-3">
+                          {contract.legalComments.map((comment: any) => (
+                            <div key={comment.id} className={`border rounded-lg p-3 ${
+                              comment.commentType === 'CUSTOMER_REQUEST' ? 'border-blue-200 bg-blue-50' :
+                              comment.commentType === 'LEGAL_REVIEW' ? 'border-purple-200 bg-purple-50' :
+                              'border-gray-200'
+                            }`}>
+                              <div className="flex items-start justify-between mb-2">
+                                <Badge variant={comment.commentType === 'CUSTOMER_REQUEST' ? 'default' : comment.commentType === 'LEGAL_REVIEW' ? 'secondary' : 'outline'}>
+                                  {comment.commentType.replace('_', ' ')}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(comment.createdAt), 'MMM dd, yyyy HH:mm')}
+                                </span>
+                              </div>
+                              <p className="text-sm">{comment.content}</p>
+                              {comment.clauseReference && (
+                                <p className="text-xs text-muted-foreground mt-1">Ref: {comment.clauseReference}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-2">
+                                By {comment.createdBy?.name || comment.createdBy?.email || 'Unknown'}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No comments yet</p>
+                      )}
+                    </div>
+
+                    {/* Open Items */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold flex items-center gap-2">
+                          <CheckSquare className="h-4 w-4" />
+                          Open Items
+                        </h3>
+                      </div>
+                      {contract.openItems && contract.openItems.length > 0 ? (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Item</TableHead>
+                              <TableHead>Owner</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Due Date</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {contract.openItems.map((item: any) => (
+                              <TableRow key={item.id}>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium text-sm">{item.item}</p>
+                                    {item.description && (
+                                      <p className="text-xs text-muted-foreground">{item.description}</p>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {item.owner?.name || item.owner?.email || 'Unassigned'}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={item.status === 'COMPLETED' ? 'default' : item.status === 'IN_PROGRESS' ? 'secondary' : 'outline'}>
+                                    {item.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {item.dueDate ? format(new Date(item.dueDate), 'MMM dd, yyyy') : '—'}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No open items</p>
+                      )}
+                    </div>
+
+                    {/* Versions */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold flex items-center gap-2">
+                          <History className="h-4 w-4" />
+                          Versions & Redlines
+                        </h3>
+                      </div>
+                      {contract.versions && contract.versions.length > 0 ? (
+                        <div className="space-y-2">
+                          {contract.versions.map((version: any) => (
+                            <div key={version.id} className="border rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge>v{version.versionNumber}</Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(version.createdAt), 'MMM dd, yyyy HH:mm')}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  By {version.createdBy?.name || version.createdBy?.email || 'Unknown'}
+                                </span>
+                              </div>
+                              {version.changeSummary && (
+                                <p className="text-sm mb-2">{version.changeSummary}</p>
+                              )}
+                              <div className="flex gap-2">
+                                {version.documentUrl && (
+                                  <Button size="sm" variant="outline" asChild>
+                                    <a href={version.documentUrl} target="_blank" rel="noopener noreferrer">
+                                      <FileText className="h-3 w-3 mr-1" />
+                                      Document
+                                    </a>
+                                  </Button>
+                                )}
+                                {version.redlineUrl && (
+                                  <Button size="sm" variant="outline" asChild>
+                                    <a href={version.redlineUrl} target="_blank" rel="noopener noreferrer">
+                                      <Edit className="h-3 w-3 mr-1" />
+                                      Redline
+                                    </a>
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No versions yet</p>
+                      )}
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </SalesPageLayout>
   )

@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Sparkles } from 'lucide-react'
-import { NaturalLanguageQuery } from '@/components/reporting-studio/natural-language-query'
+// Reporting Studio removed - AI Data Query Widget disabled
 
 export function AIDataQueryWidget() {
   const [open, setOpen] = useState(false)
@@ -37,7 +37,11 @@ export function AIDataQueryWidget() {
               Get insights from your data by asking questions in plain English. Only data-related questions are supported.
             </DialogDescription>
           </DialogHeader>
-          <NaturalLanguageQuery />
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">
+              AI Data Query feature is currently unavailable. Reporting Studio has been removed.
+            </p>
+          </div>
         </DialogContent>
       </Dialog>
     </>

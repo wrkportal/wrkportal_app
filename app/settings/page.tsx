@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useAuthStore, fetchAuthenticatedUser } from "@/stores/authStore"
-import { getInitials } from "@/lib/utils"
+import { getInitials, cn } from "@/lib/utils"
 import {
     User,
     Settings,
@@ -37,16 +37,113 @@ import {
     Zap,
     Database,
     Globe,
-    AlertCircle
+    AlertCircle,
+    Users,
+    Shield,
+    GraduationCap,
+    Plug,
+    FileSpreadsheet,
+    FileText,
+    LayoutGrid
 } from "lucide-react"
+import { UserRole } from '@/types'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { WorkflowSelector } from '@/components/workflows/WorkflowSelector'
 import { MethodologySelector } from '@/components/workflows/MethodologySelector'
 import { WorkflowType } from '@/lib/workflows/terminology'
 import { MethodologyType } from '@/lib/workflows/methodologies'
+import { MFASection } from '@/components/settings/mfa-section'
+import { FeedbackButton } from '@/components/feedback/feedback-button'
 
 export default function SettingsPage() {
     const user = useAuthStore((state) => state.user)
     const setUser = useAuthStore((state) => state.setUser)
+    const pathname = usePathname()
+    
+    // Admin pages configuration
+    const adminPages = [
+        {
+            title: "Organization",
+            href: "/admin/organization",
+            icon: Users,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+        },
+        {
+            title: "Domain Verification",
+            href: "/admin/domain-verification",
+            icon: Shield,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN],
+        },
+        {
+            title: "Tutorials",
+            href: "/admin/tutorials",
+            icon: GraduationCap,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN],
+        },
+        {
+            title: "SSO Settings",
+            href: "/admin/sso-settings",
+            icon: Shield,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+        },
+        {
+            title: "Security",
+            href: "/admin/security",
+            icon: Shield,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN],
+        },
+        {
+            title: "Permissions",
+            href: "/admin/permissions",
+            icon: Shield,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+        },
+        {
+            title: "Data Governance",
+            href: "/admin/governance",
+            icon: Database,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.COMPLIANCE_AUDITOR],
+        },
+        {
+            title: "Integrations",
+            href: "/admin/integrations",
+            icon: Plug,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+        },
+        {
+            title: "Grid Editor",
+            href: "/grids",
+            icon: FileSpreadsheet,
+            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
+        },
+        {
+            title: "Audit Log",
+            href: "/admin/audit",
+            icon: FileText,
+            roles: [
+                UserRole.PLATFORM_OWNER,
+                UserRole.TENANT_SUPER_ADMIN,
+                UserRole.COMPLIANCE_AUDITOR,
+                UserRole.INTEGRATION_ADMIN,
+            ],
+        },
+        {
+            title: "Widget Defaults",
+            href: "/admin/widget-defaults",
+            icon: LayoutGrid,
+            roles: [UserRole.PLATFORM_OWNER],
+        },
+    ]
+    
+    // Check if user has admin access
+    const isSuperUser = user?.email === 'sandeep200680@gmail.com' || user?.email?.includes('sandeep200680@gmail')
+    const hasAdminAccess = user && (isSuperUser || [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.INTEGRATION_ADMIN].includes(user.role))
+    
+    // Filter admin pages based on user role
+    const availableAdminPages = adminPages.filter(page => 
+        isSuperUser || page.roles.includes(user?.role || UserRole.TEAM_MEMBER)
+    )
     
     // Library/Download Desktop App state
     const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
@@ -487,6 +584,12 @@ export default function SettingsPage() {
                         <Library className="h-4 w-4" />
                         Library
                     </TabsTrigger>
+                    {hasAdminAccess && (
+                        <TabsTrigger value="admin" className="gap-2">
+                            <Shield className="h-4 w-4" />
+                            Admin
+                        </TabsTrigger>
+                    )}
                 </TabsList>
 
                 {/* Profile Tab */}
@@ -1097,19 +1200,7 @@ export default function SettingsPage() {
                             <Separator />
 
                             <div className="space-y-4">
-                                <Label className="text-base">Two-Factor Authentication</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Add an extra layer of security to your account
-                                </p>
-                                <Button 
-                                    variant="outline"
-                                    onClick={() => alert('2FA functionality is coming soon! This feature will allow you to enable two-factor authentication using authenticator apps like Google Authenticator or Microsoft Authenticator for enhanced account security.')}
-                                >
-                                    Enable 2FA
-                                </Button>
-                                <p className="text-xs text-muted-foreground italic">
-                                    Note: 2FA setup will be available in a future update
-                                </p>
+                                <MFASection />
                             </div>
 
                             <Separator />
@@ -1374,6 +1465,58 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                {/* Admin Tab */}
+                {hasAdminAccess && (
+                    <TabsContent value="admin" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Administration</CardTitle>
+                                <CardDescription>
+                                    Manage organization settings, security, and administrative features
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {availableAdminPages.map((page) => {
+                                        const Icon = page.icon
+                                        const isActive = pathname === page.href || pathname.startsWith(page.href + "/")
+                                        
+                                        return (
+                                            <Link
+                                                key={page.href}
+                                                href={page.href}
+                                                className={cn(
+                                                    "flex items-center gap-3 p-4 rounded-lg border transition-all hover:shadow-md",
+                                                    isActive
+                                                        ? "border-primary bg-primary/5 shadow-sm"
+                                                        : "border-border hover:border-primary/50 hover:bg-accent/50"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "p-2 rounded-md",
+                                                    isActive
+                                                        ? "bg-primary/10 text-primary"
+                                                        : "bg-muted text-muted-foreground"
+                                                )}>
+                                                    <Icon className="h-5 w-5" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={cn(
+                                                        "text-sm font-medium",
+                                                        isActive && "text-primary"
+                                                    )}>
+                                                        {page.title}
+                                                    </p>
+                                                </div>
+                                            </Link>
+                                        )
+                                    })}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                )}
             </Tabs>
         </div>
     )

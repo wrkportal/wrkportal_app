@@ -22,7 +22,8 @@ import {
     Play,
     Pause,
     Timer,
-    History
+    History,
+    Palette
 } from 'lucide-react'
 import { TimerNotesDialog } from './timer-notes-dialog'
 
@@ -32,9 +33,23 @@ interface TaskDetailDialogProps {
     taskId: string | null
     onUpdate?: () => void
     onDelete?: () => void
+    taskColors?: Record<string, string>
+    onSetTaskColor?: (taskId: string, color: string) => void
+    onResetTaskColor?: (taskId: string) => void
+    getStatusColorHex?: (status: string) => string
 }
 
-export function TaskDetailDialog({ open, onClose, taskId, onUpdate, onDelete }: TaskDetailDialogProps) {
+export function TaskDetailDialog({ 
+    open, 
+    onClose, 
+    taskId, 
+    onUpdate, 
+    onDelete,
+    taskColors = {},
+    onSetTaskColor,
+    onResetTaskColor,
+    getStatusColorHex
+}: TaskDetailDialogProps) {
     const [task, setTask] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
@@ -44,6 +59,8 @@ export function TaskDetailDialog({ open, onClose, taskId, onUpdate, onDelete }: 
     const [timerSeconds, setTimerSeconds] = useState(0)
     const [timeLogs, setTimeLogs] = useState<any[]>([])
     const [timerNotesDialogOpen, setTimerNotesDialogOpen] = useState(false)
+    const [availableTasks, setAvailableTasks] = useState<any[]>([])
+    const [dependencyId, setDependencyId] = useState<string>('')
 
     // Fetch task details
     useEffect(() => {
@@ -51,8 +68,23 @@ export function TaskDetailDialog({ open, onClose, taskId, onUpdate, onDelete }: 
             fetchTask()
             checkActiveTimer()
             fetchTimeLogs()
+            fetchAvailableTasks()
         }
     }, [open, taskId])
+
+    const fetchAvailableTasks = async () => {
+        try {
+            const response = await fetch('/api/tasks?includeCreated=true')
+            if (response.ok) {
+                const data = await response.json()
+                // Filter out current task and get tasks that could be dependencies
+                const tasks = (data.tasks || []).filter((t: any) => t.id !== taskId)
+                setAvailableTasks(tasks)
+            }
+        } catch (error) {
+            console.error('Error fetching available tasks:', error)
+        }
+    }
 
     // Update timer seconds
     useEffect(() => {
@@ -76,6 +108,9 @@ export function TaskDetailDialog({ open, onClose, taskId, onUpdate, onDelete }: 
             if (response.ok) {
                 const data = await response.json()
                 setTask(data.task)
+                // Set dependency ID if it exists (check multiple possible field names)
+                const depId = data.task.dependencyId || data.task.predecessorId || data.task.dependsOnId || ''
+                setDependencyId(depId)
             }
         } catch (error) {
             console.error('Error fetching task:', error)
@@ -129,6 +164,57 @@ export function TaskDetailDialog({ open, onClose, taskId, onUpdate, onDelete }: 
             }
         } catch (error) {
             console.error('Error updating priority:', error)
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handleDependencyChange = async (value: string) => {
+        if (!taskId) return
+
+        // Convert "none" to empty string for clearing dependency
+        const newDependencyId = value === 'none' ? '' : value
+
+        setIsSaving(true)
+        const previousDependencyId = dependencyId
+        // Optimistically update UI immediately
+        setDependencyId(newDependencyId)
+        
+        try {
+            const response = await fetch('/api/tasks', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskId,
+                    dependencyId: newDependencyId || null,
+                    predecessorId: newDependencyId || null,
+                }),
+            })
+
+            if (response.ok) {
+                const result = await response.json()
+                // Update local state from response (if available) or keep the new value we set
+                const savedDependencyId = result.task?.dependencyId || result.task?.predecessorId || result.task?.dependsOnId || newDependencyId
+                setDependencyId(savedDependencyId)
+                
+                // Update the task object if available
+                if (result.task) {
+                    setTask(result.task)
+                }
+                
+                onUpdate?.()
+            } else {
+                const errorData = await response.json().catch(() => ({ error: 'Failed to update dependency' }))
+                console.error('Error updating dependency:', errorData)
+                alert(errorData.error || 'Failed to update dependency')
+                // Revert on error
+                setDependencyId(previousDependencyId)
+            }
+        } catch (error) {
+            console.error('Error updating dependency:', error)
+            alert('Failed to update dependency. Please try again.')
+            // Revert on error
+            setDependencyId(previousDependencyId)
         } finally {
             setIsSaving(false)
         }
@@ -406,6 +492,71 @@ export function TaskDetailDialog({ open, onClose, taskId, onUpdate, onDelete }: 
                         </div>
                     )}
 
+                    {/* Dependency */}
+                    <div className="space-y-2">
+                        <Label>Depends On (Predecessor Task)</Label>
+                        <Select 
+                            value={dependencyId || 'none'} 
+                            onValueChange={handleDependencyChange} 
+                            disabled={isSaving}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="No dependency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">No dependency</SelectItem>
+                                {availableTasks.map((t) => (
+                                    <SelectItem key={t.id} value={t.id}>
+                                        {t.title}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {dependencyId && (
+                            <p className="text-xs text-muted-foreground">
+                                This task will start after the selected task completes
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Task Color */}
+                    {taskId && onSetTaskColor && onResetTaskColor && getStatusColorHex && (
+                        <div className="space-y-2">
+                            <Label className="flex items-center gap-2">
+                                <Palette className="h-4 w-4" />
+                                Task Color (Gantt Chart)
+                            </Label>
+                            <div className="flex items-center gap-3 p-3 bg-muted rounded-md">
+                                <input
+                                    type="color"
+                                    value={taskColors[taskId] || getStatusColorHex(task.status)}
+                                    onChange={(e) => onSetTaskColor(taskId, e.target.value)}
+                                    className="h-10 w-20 rounded border cursor-pointer"
+                                    title="Task color"
+                                />
+                                <div className="flex-1">
+                                    <p className="text-sm text-muted-foreground mb-1">
+                                        Customize the color of this task in the Gantt chart view
+                                    </p>
+                                    {taskColors[taskId] ? (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-xs"
+                                            onClick={() => onResetTaskColor(taskId)}
+                                        >
+                                            Reset to default status color
+                                        </Button>
+                                    ) : (
+                                        <p className="text-xs text-muted-foreground italic">
+                                            Using default status-based color
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Details Grid */}
                     <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
                         {task.project && (
@@ -577,10 +728,15 @@ export function TaskDetailDialog({ open, onClose, taskId, onUpdate, onDelete }: 
                     </div>
 
                     {/* Created Info */}
-                    <div className="text-xs text-muted-foreground pt-4 border-t">
-                        Created by {task.createdBy.firstName} {task.createdBy.lastName} on{' '}
-                        {formatDate(task.createdAt)}
-                    </div>
+                    {task.createdBy && (
+                        <div className="text-xs text-muted-foreground pt-4 border-t">
+                            Created by{' '}
+                            {task.createdBy.firstName || task.createdBy.lastName
+                                ? `${task.createdBy.firstName || ''} ${task.createdBy.lastName || ''}`.trim()
+                                : task.createdBy.name || task.createdBy.email || 'Unknown'}{' '}
+                            on {formatDate(task.createdAt)}
+                        </div>
+                    )}
                 </div>
 
                 {/* Timer Notes Dialog */}

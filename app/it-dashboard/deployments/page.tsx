@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ITPageLayout } from '@/components/it/it-page-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -64,21 +64,36 @@ interface Deployment {
 
 export default function DeploymentsPage() {
   const [activeTab, setActiveTab] = useState('all')
-  const [deployments] = useState<Deployment[]>([
-    {
-      id: 'DEP-001',
-      environment: 'Production',
-      application: 'workportal-frontend',
-      version: 'v2.4.1',
-      branch: 'main',
-      status: 'SUCCESS',
-      deployedBy: 'John Doe',
-      deployedAt: '2024-12-15T10:00:00',
-      duration: 420,
-      buildNumber: '1247',
-      commitHash: 'abc123',
-      rollbackAvailable: true,
-    },
+  const [deployments, setDeployments] = useState<Deployment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [deploymentStats, setDeploymentStats] = useState({
+    total: 0,
+    success: 0,
+    failed: 0,
+    inProgress: 0,
+    avgDuration: 0,
+  })
+
+  useEffect(() => {
+    fetchDeployments()
+  }, [activeTab])
+
+  const fetchDeployments = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/it/deployments')
+      if (!response.ok) throw new Error('Failed to fetch deployments')
+      const data = await response.json()
+      setDeployments(data.deployments || [])
+      setDeploymentStats(data.stats || { total: 0, success: 0, failed: 0, inProgress: 0, avgDuration: 0 })
+    } catch (error) {
+      console.error('Error fetching deployments:', error)
+      setDeployments([])
+      setDeploymentStats({ total: 0, success: 0, failed: 0, inProgress: 0, avgDuration: 0 })
+    } finally {
+      setLoading(false)
+    }
+  }
     {
       id: 'DEP-002',
       environment: 'Staging',
@@ -123,20 +138,13 @@ export default function DeploymentsPage() {
     },
   ])
 
-  const deploymentStats = {
-    total: deployments.length,
-    success: deployments.filter(d => d.status === 'SUCCESS').length,
-    failed: deployments.filter(d => d.status === 'FAILED').length,
-    inProgress: deployments.filter(d => d.status === 'IN_PROGRESS').length,
-    avgDuration: deployments.filter(d => d.status === 'SUCCESS').reduce((sum, d) => sum + d.duration, 0) / deployments.filter(d => d.status === 'SUCCESS').length || 0,
-  }
-
+  // Use stats from API
   const deploymentTrendData = [
-    { day: 'Mon', deployments: 3, success: 3, failed: 0 },
-    { day: 'Tue', deployments: 5, success: 4, failed: 1 },
-    { day: 'Wed', deployments: 4, success: 4, failed: 0 },
-    { day: 'Thu', deployments: 6, success: 5, failed: 1 },
-    { day: 'Fri', deployments: 4, success: 3, failed: 1 },
+    { day: 'Mon', deployments: 0, success: 0, failed: 0 },
+    { day: 'Tue', deployments: 0, success: 0, failed: 0 },
+    { day: 'Wed', deployments: 0, success: 0, failed: 0 },
+    { day: 'Thu', deployments: 0, success: 0, failed: 0 },
+    { day: 'Fri', deployments: 0, success: 0, failed: 0 },
   ]
 
   const environmentData = [

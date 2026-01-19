@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { 
   CheckCircle2, 
   AlertCircle, 
@@ -12,6 +14,7 @@ import {
   RefreshCw, 
   Shield,
   Info,
+  Loader2,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
@@ -39,6 +42,7 @@ export default function DomainVerificationPage() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [tenantInfo, setTenantInfo] = useState<any>(null)
+  const [updatingAutoJoin, setUpdatingAutoJoin] = useState(false)
 
   useEffect(() => {
     fetchTenantInfo()
@@ -126,6 +130,41 @@ export default function DomainVerificationPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleAutoJoinToggle = async (enabled: boolean) => {
+    setUpdatingAutoJoin(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/tenant', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ autoJoinEnabled: enabled }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Update local state
+        setTenantInfo((prev: any) => ({
+          ...prev,
+          autoJoinEnabled: enabled,
+        }))
+      } else {
+        setError(data.error || 'Failed to update auto-join setting')
+      }
+    } catch (err) {
+      setError('An error occurred while updating auto-join setting')
+      console.error('Error updating auto-join:', err)
+    } finally {
+      setUpdatingAutoJoin(false)
+    }
+  }
+
+  // Check if user can manage auto-join settings
+  const canManageAutoJoin = user?.role === 'TENANT_SUPER_ADMIN' || user?.role === 'PLATFORM_OWNER'
+
   if (loading) {
     return (
       <div className="container mx-auto p-6">
@@ -141,6 +180,69 @@ export default function DomainVerificationPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>Unable to load tenant information</AlertDescription>
         </Alert>
+      </div>
+    )
+  }
+
+  // Check if using public domain (no domain set)
+  const isPublicDomain = !tenantInfo.domain
+
+  // Check if using public domain (no domain set)
+  const isPublicDomain = !tenantInfo.domain
+
+  if (isPublicDomain) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Organization Setup
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your organization settings
+          </p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Info className="h-8 w-8 text-blue-500" />
+              <div>
+                <CardTitle>Public Email Domain</CardTitle>
+                <CardDescription>
+                  You're using a public email provider (Gmail, Yahoo, etc.)
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-blue-900 dark:text-blue-100">
+                <strong>Invite-Only Access:</strong> Since you're using a public email domain, 
+                you'll need to invite team members manually. Domain verification and auto-join 
+                are only available for organizations with custom email domains.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">How to Add Team Members:</h3>
+              <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+                <li>Go to <strong>Admin → Organization → Users</strong></li>
+                <li>Click <strong>"Invite User"</strong> button</li>
+                <li>Enter their email address (Gmail, Yahoo, etc.)</li>
+                <li>Select their role and send invitation</li>
+                <li>They'll receive an email to join your organization</li>
+              </ol>
+            </div>
+
+            <Button
+              onClick={() => router.push('/admin/organization')}
+              className="w-full"
+            >
+              Go to Organization Settings & Invite Members
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -190,13 +292,72 @@ export default function DomainVerificationPage() {
               <AlertDescription>
                 <strong>Enabled Features:</strong>
                 <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Auto-join for users with @{tenantInfo.domain} email addresses</li>
+                  {tenantInfo.autoJoinEnabled ? (
+                    <li>Auto-join for users with @{tenantInfo.domain} email addresses</li>
+                  ) : (
+                    <li>Invite-only access (auto-join disabled)</li>
+                  )}
                   <li>SSO configuration</li>
                   <li>Advanced security settings</li>
                   <li>Team management capabilities</li>
                 </ul>
               </AlertDescription>
             </Alert>
+
+            {/* Auto-Join Toggle - Only for Admins */}
+            {canManageAutoJoin && (
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle className="text-base">Auto-Join Settings</CardTitle>
+                  <CardDescription>
+                    Control whether users with @{tenantInfo.domain} email addresses can automatically join your organization
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="auto-join-toggle" className="text-base">
+                        Enable Auto-Join
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        {tenantInfo.autoJoinEnabled
+                          ? 'Anyone with your domain email can join automatically'
+                          : 'Only invited users can join (Recommended for small teams)'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {updatingAutoJoin && (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      )}
+                      <Switch
+                        id="auto-join-toggle"
+                        checked={tenantInfo.autoJoinEnabled || false}
+                        onCheckedChange={handleAutoJoinToggle}
+                        disabled={updatingAutoJoin}
+                      />
+                    </div>
+                  </div>
+                  {!tenantInfo.autoJoinEnabled && (
+                    <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <AlertDescription className="text-blue-900 dark:text-blue-100">
+                        <strong>Invite-Only Mode:</strong> Users must be invited by an admin to join your organization. 
+                        This is recommended for better security and access control.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  {tenantInfo.autoJoinEnabled && (
+                    <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      <AlertDescription className="text-amber-900 dark:text-amber-100">
+                        <strong>Auto-Join Enabled:</strong> Anyone with an @{tenantInfo.domain} email address can automatically 
+                        join your organization. Consider disabling this for better security.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             <Button
               variant="outline"

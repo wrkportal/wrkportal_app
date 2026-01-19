@@ -95,72 +95,44 @@ const COLORS = ['#9333ea', '#ec4899', '#f59e0b', '#ef4444', '#10b981', '#06b6d4'
 
 export default function AssetsPage() {
   const [activeTab, setActiveTab] = useState('all')
-  const [assets, setAssets] = useState<Asset[]>([
-    {
-      id: 'AST-001',
-      name: 'Dell Latitude 7420',
-      type: 'Laptop',
-      category: 'Computer',
-      brand: 'Dell',
-      model: 'Latitude 7420',
-      serialNumber: 'DL742012345',
-      status: 'IN_USE',
-      location: 'Floor 3 - Finance',
-      assignedTo: 'Sarah Johnson',
-      purchaseDate: '2023-01-15',
-      warrantyExpiry: '2026-01-15',
-      cost: 1200,
-      notes: 'Standard issue laptop for finance team',
-    },
-    {
-      id: 'AST-002',
-      name: 'HP LaserJet Pro',
-      type: 'Printer',
-      category: 'Peripheral',
-      brand: 'HP',
-      model: 'LaserJet Pro M404dn',
-      serialNumber: 'HP404987654',
-      status: 'AVAILABLE',
-      location: 'IT Storage Room',
-      assignedTo: null,
-      purchaseDate: '2023-06-20',
-      warrantyExpiry: '2026-06-20',
-      cost: 350,
-      notes: 'Backup printer',
-    },
-    {
-      id: 'AST-003',
-      name: 'Cisco Catalyst Switch',
-      type: 'Network Device',
-      category: 'Infrastructure',
-      brand: 'Cisco',
-      model: 'Catalyst 2960-X',
-      serialNumber: 'CS2960X456',
-      status: 'IN_USE',
-      location: 'Server Room',
-      assignedTo: null,
-      purchaseDate: '2022-11-10',
-      warrantyExpiry: '2025-11-10',
-      cost: 2500,
-      notes: 'Main network switch for floor 2',
-    },
-    {
-      id: 'AST-004',
-      name: 'Apple MacBook Pro',
-      type: 'Laptop',
-      category: 'Computer',
-      brand: 'Apple',
-      model: 'MacBook Pro 16" M2',
-      serialNumber: 'MBP16M2ABC123',
-      status: 'MAINTENANCE',
-      location: 'IT Service Desk',
-      assignedTo: 'John Doe',
-      purchaseDate: '2023-09-01',
-      warrantyExpiry: '2026-09-01',
-      cost: 2800,
-      notes: 'Under repair - screen replacement',
-    },
-  ])
+  const [assets, setAssets] = useState<Asset[]>([])
+  const [loading, setLoading] = useState(true)
+  const [assetStats, setAssetStats] = useState({
+    total: 0,
+    available: 0,
+    assigned: 0,
+    maintenance: 0,
+    retired: 0,
+  })
+
+  useEffect(() => {
+    fetchAssets()
+  }, [activeTab])
+
+  const fetchAssets = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams()
+      if (activeTab !== 'all') {
+        if (activeTab === 'AVAILABLE') params.append('status', 'AVAILABLE')
+        else if (activeTab === 'ASSIGNED') params.append('status', 'ASSIGNED')
+        else if (activeTab === 'MAINTENANCE') params.append('status', 'MAINTENANCE')
+        else if (activeTab === 'RETIRED') params.append('status', 'RETIRED')
+      }
+
+      const response = await fetch(`/api/it/assets?${params.toString()}`)
+      if (!response.ok) throw new Error('Failed to fetch assets')
+      const data = await response.json()
+      setAssets(data.assets || [])
+      setAssetStats(data.stats || { total: 0, available: 0, assigned: 0, maintenance: 0, retired: 0 })
+    } catch (error) {
+      console.error('Error fetching assets:', error)
+      setAssets([])
+      setAssetStats({ total: 0, available: 0, assigned: 0, maintenance: 0, retired: 0 })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -185,52 +157,51 @@ export default function AssetsPage() {
     notes: '',
   })
 
-  const assetStats = {
-    total: assets.length,
-    inUse: assets.filter(a => a.status === 'IN_USE').length,
-    available: assets.filter(a => a.status === 'AVAILABLE').length,
-    maintenance: assets.filter(a => a.status === 'MAINTENANCE').length,
-    retired: assets.filter(a => a.status === 'RETIRED').length,
-  }
+  // Use stats from API instead of calculating from local state
 
   const categoryData = [
-    { name: 'Computers', value: assets.filter(a => a.category === 'Computer').length },
-    { name: 'Peripherals', value: assets.filter(a => a.category === 'Peripheral').length },
-    { name: 'Infrastructure', value: assets.filter(a => a.category === 'Infrastructure').length },
-    { name: 'Other', value: assets.filter(a => !['Computer', 'Peripheral', 'Infrastructure'].includes(a.category)).length },
+    { name: 'Computers', value: assets.filter(a => a.category === 'Computer' || a.category === 'Laptop' || a.category === 'Desktop').length },
+    { name: 'Peripherals', value: assets.filter(a => a.category === 'Peripheral' || a.category === 'Printer').length },
+    { name: 'Infrastructure', value: assets.filter(a => a.category === 'Infrastructure' || a.category === 'Network Device' || a.category === 'Server').length },
+    { name: 'Other', value: assets.filter(a => !['Computer', 'Peripheral', 'Infrastructure', 'Laptop', 'Desktop', 'Printer', 'Network Device', 'Server'].includes(a.category)).length },
   ]
 
   const statusData = [
-    { name: 'In Use', value: assetStats.inUse },
+    { name: 'Assigned', value: assetStats.assigned },
     { name: 'Available', value: assetStats.available },
     { name: 'Maintenance', value: assetStats.maintenance },
     { name: 'Retired', value: assetStats.retired },
   ]
 
-  const handleCreateAsset = () => {
-    const newAsset: Asset = {
-      id: `AST-${String(assets.length + 1).padStart(3, '0')}`,
-      name: formData.name,
-      type: formData.type,
-      category: formData.category,
-      brand: formData.brand,
-      model: formData.model,
-      serialNumber: formData.serialNumber,
-      status: formData.status,
-      location: formData.location,
-      assignedTo: formData.assignedTo || null,
-      purchaseDate: formData.purchaseDate,
-      warrantyExpiry: formData.warrantyExpiry,
-      cost: parseFloat(formData.cost) || 0,
-      notes: formData.notes,
+  const handleCreateAsset = async () => {
+    try {
+      const response = await fetch('/api/it/assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          category: formData.category || formData.type,
+          serialNumber: formData.serialNumber,
+          status: formData.status,
+          location: formData.location,
+          assignedToId: formData.assignedTo || null,
+          purchaseDate: formData.purchaseDate || null,
+          purchaseCost: parseFloat(formData.cost) || null,
+          warrantyExpiry: formData.warrantyExpiry || null,
+          notes: formData.notes,
+        }),
+      })
+      if (!response.ok) throw new Error('Failed to create asset')
+      await fetchAssets()
+      setCreateDialogOpen(false)
+      setFormData({
+        name: '', type: '', category: '', brand: '', model: '', serialNumber: '',
+        status: 'AVAILABLE', location: '', assignedTo: '', purchaseDate: '',
+        warrantyExpiry: '', cost: '', notes: ''
+      })
+    } catch (error) {
+      console.error('Error creating asset:', error)
     }
-    setAssets([newAsset, ...assets])
-    setCreateDialogOpen(false)
-    setFormData({
-      name: '', type: '', category: '', brand: '', model: '', serialNumber: '',
-      status: 'AVAILABLE', location: '', assignedTo: '', purchaseDate: '',
-      warrantyExpiry: '', cost: '', notes: ''
-    })
   }
 
   const handleEditAsset = (asset: Asset) => {
@@ -253,25 +224,44 @@ export default function AssetsPage() {
     setEditDialogOpen(true)
   }
 
-  const handleUpdateAsset = () => {
+  const handleUpdateAsset = async () => {
     if (!selectedAsset) return
-    const updatedAssets = assets.map(asset =>
-      asset.id === selectedAsset.id
-        ? {
-            ...asset,
-            ...formData,
-            cost: parseFloat(formData.cost) || 0,
-            assignedTo: formData.assignedTo || null,
-          }
-        : asset
-    )
-    setAssets(updatedAssets)
-    setEditDialogOpen(false)
-    setSelectedAsset(null)
+    try {
+      const response = await fetch(`/api/it/assets/${selectedAsset.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          category: formData.category || formData.type,
+          serialNumber: formData.serialNumber,
+          status: formData.status,
+          location: formData.location,
+          assignedToId: formData.assignedTo || null,
+          purchaseDate: formData.purchaseDate || null,
+          purchaseCost: parseFloat(formData.cost) || null,
+          warrantyExpiry: formData.warrantyExpiry || null,
+          notes: formData.notes,
+        }),
+      })
+      if (!response.ok) throw new Error('Failed to update asset')
+      await fetchAssets()
+      setEditDialogOpen(false)
+      setSelectedAsset(null)
+    } catch (error) {
+      console.error('Error updating asset:', error)
+    }
   }
 
-  const handleDeleteAsset = (assetId: string) => {
-    setAssets(assets.filter(a => a.id !== assetId))
+  const handleDeleteAsset = async (assetId: string) => {
+    try {
+      const response = await fetch(`/api/it/assets/${assetId}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) throw new Error('Failed to delete asset')
+      await fetchAssets()
+    } catch (error) {
+      console.error('Error deleting asset:', error)
+    }
   }
 
   const handleViewAsset = (asset: Asset) => {
@@ -281,6 +271,7 @@ export default function AssetsPage() {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
+      case 'ASSIGNED':
       case 'IN_USE':
         return 'default'
       case 'AVAILABLE':
@@ -322,8 +313,8 @@ export default function AssetsPage() {
 
   return (
     <ITPageLayout 
-      title="IT Assets" 
-      description="Manage IT hardware, software, and infrastructure assets"
+      title="Assets" 
+      description="Manage hardware, software, and infrastructure assets"
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
@@ -474,7 +465,7 @@ export default function AssetsPage() {
                 <DialogHeader>
                   <DialogTitle>Add New Asset</DialogTitle>
                   <DialogDescription>
-                    Register a new IT asset
+                    Register a new asset
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -652,7 +643,7 @@ export default function AssetsPage() {
           {/* Assets Table */}
           <Card>
             <CardHeader>
-              <CardTitle>IT Assets</CardTitle>
+              <CardTitle>Assets</CardTitle>
               <CardDescription>
                 {filteredAssets.length} asset(s) found
               </CardDescription>

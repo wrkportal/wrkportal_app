@@ -31,6 +31,8 @@ const updateProfileSchema = z.object({
     .nullable()
     .optional(),
   workflowSettings: z.record(z.any()).optional(),
+  assistantName: z.string().min(1).max(50).optional().nullable(),
+  voiceSampleUrl: z.string().url().optional().nullable(),
 })
 
 export async function PATCH(req: NextRequest) {
@@ -64,6 +66,8 @@ export async function PATCH(req: NextRequest) {
         department: true,
         primaryWorkflowType: true,
         workflowSettings: true,
+        assistantName: true,
+        voiceSampleUrl: true,
         status: true,
         lastLogin: true,
         createdAt: true,

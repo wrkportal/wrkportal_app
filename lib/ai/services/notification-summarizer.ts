@@ -2,7 +2,7 @@
  * Smart Notification Summary Service
  */
 
-import { extractStructuredData } from '../openai-service'
+import { extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { NotificationSummary } from '@/types/ai'
 import { Notification, UserRole } from '@/types'

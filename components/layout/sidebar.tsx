@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -30,6 +30,7 @@ import {
     Home,
     Sparkles,
     Bot,
+    Brain,
     Map,
     GraduationCap,
     MessageSquare,
@@ -46,10 +47,22 @@ import {
     CalendarDays,
     Plug,
     FileSpreadsheet,
-    BookOpen,
+    MessageCircle,
+    X,
+    Upload,
+    ClipboardList,
+    FileUp,
+    Download,
+    Phone,
 } from "lucide-react"
 import { useUIStore } from "@/stores/uiStore"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { StartCallButton } from "@/components/calls"
 
 interface NavItem {
     title: string
@@ -61,8 +74,8 @@ interface NavItem {
 
 const navigationItems: NavItem[] = [
     {
-        title: "Home",
-        href: "/my-work",
+        title: "wrkboard",
+        href: "/wrkboard",
         icon: Home,
         roles: Object.values(UserRole),
     },
@@ -100,6 +113,16 @@ const navigationItems: NavItem[] = [
         ],
     },
     {
+        title: "Developer",
+        href: "/developer-dashboard",
+        icon: Code,
+        roles: [
+            UserRole.ORG_ADMIN,
+            UserRole.TENANT_SUPER_ADMIN,
+            UserRole.INTEGRATION_ADMIN,
+        ],
+    },
+    {
         title: "IT Services",
         href: "/it-dashboard",
         icon: Server,
@@ -107,6 +130,15 @@ const navigationItems: NavItem[] = [
             UserRole.ORG_ADMIN,
             UserRole.TENANT_SUPER_ADMIN,
             UserRole.INTEGRATION_ADMIN,
+        ],
+    },
+    {
+        title: "Customer Service",
+        href: "/customer-service-dashboard",
+        icon: Phone,
+        roles: [
+            UserRole.ORG_ADMIN,
+            UserRole.TENANT_SUPER_ADMIN,
         ],
     },
     {
@@ -130,111 +162,8 @@ const navigationItems: NavItem[] = [
             UserRole.RESOURCE_MANAGER,
         ],
     },
-    {
-        title: "Reporting Studio",
-        href: "/reporting-studio",
-        icon: Sparkles,
-        roles: Object.values(UserRole),
-        children: [
-            {
-                title: "Data Sources",
-                href: "/reporting-studio/data-sources",
-                icon: Database,
-                roles: Object.values(UserRole),
-            },
-            {
-                title: "Datasets",
-                href: "/reporting-studio/datasets",
-                icon: FileStack,
-                roles: Object.values(UserRole),
-            },
-            {
-                title: "Visualizations",
-                href: "/reporting-studio/visualizations",
-                icon: BarChart3,
-                roles: Object.values(UserRole),
-            },
-            {
-                title: "Query Builder",
-                href: "/reporting-studio/query-builder",
-                icon: Code,
-                roles: Object.values(UserRole),
-            },
-            {
-                title: "Dashboards",
-                href: "/reporting-studio/dashboards",
-                icon: LayoutGrid,
-                roles: Object.values(UserRole),
-            },
-            {
-                title: "Transformations",
-                href: "/reporting-studio/transformations",
-                icon: Beaker,
-                roles: Object.values(UserRole),
-            },
-        ],
-    },
-    {
-        title: "Communication",
-        href: "/communication",
-        icon: MessageSquare,
-        roles: Object.values(UserRole),
-        children: [
-            {
-                title: "Chat box",
-                href: "/collaborate",
-                icon: MessageSquare,
-                roles: Object.values(UserRole),
-            },
-        ],
-    },
-    {
-        title: "Planet AI",
-        href: "/planet-ai",
-        icon: Bot,
-        roles: Object.values(UserRole),
-        children: [
-            {
-                title: "AI Assistant",
-                href: "/ai-assistant",
-                icon: Bot,
-                roles: Object.values(UserRole),
-            },
-            {
-                title: "AI Tools",
-                href: "/ai-tools",
-                icon: Sparkles,
-                roles: Object.values(UserRole),
-            },
-        ],
-    },
-    {
-        title: "Documentation",
-        href: "/docs",
-        icon: BookOpen,
-        roles: Object.values(UserRole),
-    },
-    {
-        title: "Beta Program",
-        href: "/beta",
-        icon: Package,
-        roles: Object.values(UserRole),
-    },
 ]
 
-const scheduleNavItem: NavItem = {
-    title: "Schedule",
-    href: "/schedule",
-    icon: CalendarDays,
-    roles: Object.values(UserRole),
-}
-
-const academyNavItem: NavItem = {
-    title: "Academy",
-    href: "/academy",
-    icon: GraduationCap,
-    roles: Object.values(UserRole),
-}
 
 const collaborateNavItem: NavItem = {
     title: "Collaborate",
@@ -244,91 +173,882 @@ const collaborateNavItem: NavItem = {
 }
 
 
-const adminNavItem: NavItem = {
-    title: "Admin",
-    href: "/admin",
-    icon: Settings,
-    roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.INTEGRATION_ADMIN],
-    children: [
-        {
-            title: "Organization",
-            href: "/admin/organization",
-            icon: Users,
-            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
-        },
-        {
-            title: "Domain Verification",
-            href: "/admin/domain-verification",
-            icon: Shield,
-            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN],
-        },
-        {
-            title: "Tutorials",
-            href: "/admin/tutorials",
-            icon: GraduationCap,
-            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN],
-        },
-        {
-            title: "SSO Settings",
-            href: "/admin/sso-settings",
-            icon: Shield,
-            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
-        },
-        {
-            title: "Security",
-            href: "/admin/security",
-            icon: Shield,
-            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN],
-        },
-        {
-            title: "Permissions",
-            href: "/admin/permissions",
-            icon: Shield,
-            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
-        },
-        {
-            title: "Data Governance",
-            href: "/admin/governance",
-            icon: Database,
-            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.COMPLIANCE_AUDITOR],
-        },
-        {
-            title: "Integrations",
-            href: "/admin/integrations",
-            icon: Plug,
-            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
-        },
-        {
-            title: "Grid Editor",
-            href: "/grids",
-            icon: FileSpreadsheet,
-            roles: [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN],
-        },
-        {
-            title: "Audit Log",
-            href: "/admin/audit",
-            icon: FileText,
-            roles: [
-                UserRole.PLATFORM_OWNER,
-                UserRole.TENANT_SUPER_ADMIN,
-                UserRole.COMPLIANCE_AUDITOR,
-                UserRole.INTEGRATION_ADMIN,
-            ],
-        },
-        {
-            title: "Widget Defaults",
-            href: "/admin/widget-defaults",
-            icon: LayoutGrid,
-            roles: [UserRole.PLATFORM_OWNER],
-        },
-    ],
-}
+// Admin navigation moved to Settings page - see app/settings/page.tsx
 
 const platformAdminNavItem: NavItem = {
     title: "Platform Admin",
     href: "/platform-admin",
     icon: Shield,
     roles: [UserRole.PLATFORM_OWNER],
+}
+
+// Calendar Schedule Widget Component
+function CalendarScheduleWidget() {
+    const user = useAuthStore((state) => state.user)
+    const [selectedDate, setSelectedDate] = useState(new Date())
+    const [currentMonth, setCurrentMonth] = useState(() => {
+        const date = new Date()
+        return new Date(date.getFullYear(), date.getMonth(), 1)
+    })
+    const [tasks, setTasks] = useState<any[]>([])
+    const [loadingTasks, setLoadingTasks] = useState(false)
+    const [tasksSidebarOpen, setTasksSidebarOpen] = useState(false)
+    const calendarRef = useRef<HTMLDivElement>(null)
+    const [calendarHeight, setCalendarHeight] = useState<number>(0)
+    const [selectedTask, setSelectedTask] = useState<any>(null)
+    const [agendaDialogOpen, setAgendaDialogOpen] = useState(false)
+    const [chatDialogOpen, setChatDialogOpen] = useState(false)
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [taskComments, setTaskComments] = useState<any[]>([])
+    const [newComment, setNewComment] = useState('')
+    const [isAddingComment, setIsAddingComment] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [taskFiles, setTaskFiles] = useState<any[]>([])
+    const [loadingFiles, setLoadingFiles] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const { toast } = useToast()
+
+    // Fetch tasks and calls for the selected date
+    useEffect(() => {
+        const fetchTasksForDate = async () => {
+            if (!user?.id) {
+                setTasks([])
+                return
+            }
+
+            try {
+                setLoadingTasks(true)
+                
+                // Fetch tasks and calls in parallel
+                const [tasksResponse, callsResponse] = await Promise.all([
+                    fetch('/api/tasks?includeCreated=true'),
+                    fetch('/api/calls')
+                ])
+                
+                const allItems: any[] = []
+                
+                // Process tasks
+                if (tasksResponse.ok) {
+                    const data = await tasksResponse.json()
+                    const allTasks = data.tasks || []
+                    
+                    // Filter tasks by selected date and convert to unified format
+                    const selectedDateStart = new Date(selectedDate)
+                    selectedDateStart.setHours(0, 0, 0, 0)
+                    const selectedDateEnd = new Date(selectedDate)
+                    selectedDateEnd.setHours(23, 59, 59, 999)
+                    
+                    allTasks.forEach((task: any) => {
+                        if (task.dueDate) {
+                            const taskDate = new Date(task.dueDate)
+                            if (taskDate >= selectedDateStart && taskDate <= selectedDateEnd) {
+                                allItems.push({
+                                    ...task,
+                                    type: 'task',
+                                    displayDate: task.dueDate,
+                                })
+                            }
+                        }
+                    })
+                }
+                
+                // Process calls (scheduled meetings)
+                if (callsResponse.ok) {
+                    const data = await callsResponse.json()
+                    const allCalls = data.calls || []
+                    
+                    // Filter calls by selected date and convert to unified format
+                    const selectedDateStart = new Date(selectedDate)
+                    selectedDateStart.setHours(0, 0, 0, 0)
+                    const selectedDateEnd = new Date(selectedDate)
+                    selectedDateEnd.setHours(23, 59, 59, 999)
+                    
+                    allCalls.forEach((call: any) => {
+                        if (call.scheduledAt) {
+                            const callDate = new Date(call.scheduledAt)
+                            if (callDate >= selectedDateStart && callDate <= selectedDateEnd) {
+                                allItems.push({
+                                    id: call.id,
+                                    title: call.title || 'Untitled Meeting',
+                                    description: call.description,
+                                    dueDate: call.scheduledAt, // Use scheduledAt as dueDate for display
+                                    displayDate: call.scheduledAt,
+                                    createdBy: call.createdBy,
+                                    type: 'call',
+                                    call: call, // Keep original call data
+                                    estimatedHours: null, // Calls don't have estimated hours
+                                })
+                            }
+                        }
+                    })
+                }
+                
+                // Sort by displayDate/time
+                allItems.sort((a: any, b: any) => {
+                    const dateA = new Date(a.displayDate).getTime()
+                    const dateB = new Date(b.displayDate).getTime()
+                    return dateA - dateB
+                })
+                
+                setTasks(allItems)
+            } catch (error) {
+                console.error('Error fetching tasks and calls:', error)
+                setTasks([])
+            } finally {
+                setLoadingTasks(false)
+            }
+        }
+
+        fetchTasksForDate()
+    }, [selectedDate, user?.id])
+
+    // Update calendar height when it changes
+    useEffect(() => {
+        const updateHeight = () => {
+            if (calendarRef.current) {
+                setCalendarHeight(calendarRef.current.offsetHeight)
+            }
+        }
+        updateHeight()
+        window.addEventListener('resize', updateHeight)
+        return () => window.removeEventListener('resize', updateHeight)
+    }, [currentMonth, selectedDate])
+
+    // Open tasks sidebar when date is selected
+    const handleDateSelect = (date: Date) => {
+        setSelectedDate(date)
+        setTasksSidebarOpen(true)
+    }
+
+    // Handle Agenda icon click
+    const handleAgendaClick = async (task: any) => {
+        setSelectedTask(task)
+        setAgendaDialogOpen(true)
+        // Only fetch files for tasks, not calls
+        if (task.type !== 'call') {
+            await fetchFiles(task.id)
+        } else {
+            setTaskFiles([])
+        }
+    }
+
+    // Fetch files for a task
+    const fetchFiles = async (taskId: string) => {
+        try {
+            setLoadingFiles(true)
+            const response = await fetch(`/api/tasks/${taskId}/files`)
+            if (response.ok) {
+                const data = await response.json()
+                setTaskFiles(data.files || [])
+            }
+        } catch (error) {
+            console.error('Error fetching files:', error)
+            setTaskFiles([])
+        } finally {
+            setLoadingFiles(false)
+        }
+    }
+
+    // Handle Chat icon click
+    const handleChatClick = async (task: any) => {
+        setSelectedTask(task)
+        setChatDialogOpen(true)
+        await fetchComments(task.id)
+    }
+
+    // Fetch comments for a task
+    const fetchComments = async (taskId: string) => {
+        try {
+            const response = await fetch(`/api/tasks/${taskId}/comments`)
+            if (response.ok) {
+                const data = await response.json()
+                setTaskComments(data.comments || [])
+            }
+        } catch (error) {
+            console.error('Error fetching comments:', error)
+        }
+    }
+
+    // Add comment
+    const handleAddComment = async () => {
+        if (!selectedTask || !newComment.trim()) return
+
+        try {
+            setIsAddingComment(true)
+            const response = await fetch(`/api/tasks/${selectedTask.id}/comments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: newComment.trim() }),
+            })
+
+            if (response.ok) {
+                setNewComment('')
+                await fetchComments(selectedTask.id)
+                // Comment added successfully - no toast notification needed
+            } else {
+                throw new Error('Failed to add comment')
+            }
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: "Failed to add comment. Please try again.",
+                variant: "destructive",
+            })
+        } finally {
+            setIsAddingComment(false)
+        }
+    }
+
+    // Handle Upload icon click
+    const handleUploadClick = (task: any) => {
+        setSelectedTask(task)
+        fileInputRef.current?.click()
+    }
+
+    // Handle file upload
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file || !selectedTask) return
+
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+
+            const response = await fetch(`/api/tasks/${selectedTask.id}/files`, {
+                method: 'POST',
+                body: formData,
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                // File uploaded successfully - refresh files list if agenda dialog is open
+                if (agendaDialogOpen && selectedTask) {
+                    await fetchFiles(selectedTask.id)
+                }
+            } else {
+                const error = await response.json()
+                throw new Error(error.error || 'Failed to upload file')
+            }
+
+            // Reset file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ''
+            }
+        } catch (error: any) {
+            toast({
+                title: "Upload failed",
+                description: error.message || "Failed to upload file. Please try again.",
+                variant: "destructive",
+            })
+        }
+    }
+
+    // Handle Delete icon click
+    const handleDeleteClick = (task: any) => {
+        setSelectedTask(task)
+        setDeleteDialogOpen(true)
+    }
+
+    // Refresh tasks and calls list
+    const refreshTasks = async () => {
+        if (!user?.id) {
+            setTasks([])
+            return
+        }
+
+        try {
+            setLoadingTasks(true)
+            
+            // Fetch tasks and calls in parallel
+            const [tasksResponse, callsResponse] = await Promise.all([
+                fetch('/api/tasks?includeCreated=true'),
+                fetch('/api/calls')
+            ])
+            
+            const allItems: any[] = []
+            
+            // Process tasks
+            if (tasksResponse.ok) {
+                const data = await tasksResponse.json()
+                const allTasks = data.tasks || []
+                
+                const selectedDateStart = new Date(selectedDate)
+                selectedDateStart.setHours(0, 0, 0, 0)
+                const selectedDateEnd = new Date(selectedDate)
+                selectedDateEnd.setHours(23, 59, 59, 999)
+                
+                allTasks.forEach((task: any) => {
+                    if (task.dueDate) {
+                        const taskDate = new Date(task.dueDate)
+                        if (taskDate >= selectedDateStart && taskDate <= selectedDateEnd) {
+                            allItems.push({
+                                ...task,
+                                type: 'task',
+                                displayDate: task.dueDate,
+                            })
+                        }
+                    }
+                })
+            }
+            
+            // Process calls
+            if (callsResponse.ok) {
+                const data = await callsResponse.json()
+                const allCalls = data.calls || []
+                
+                const selectedDateStart = new Date(selectedDate)
+                selectedDateStart.setHours(0, 0, 0, 0)
+                const selectedDateEnd = new Date(selectedDate)
+                selectedDateEnd.setHours(23, 59, 59, 999)
+                
+                allCalls.forEach((call: any) => {
+                    if (call.scheduledAt) {
+                        const callDate = new Date(call.scheduledAt)
+                        if (callDate >= selectedDateStart && callDate <= selectedDateEnd) {
+                            allItems.push({
+                                id: call.id,
+                                title: call.title || 'Untitled Meeting',
+                                description: call.description,
+                                dueDate: call.scheduledAt,
+                                displayDate: call.scheduledAt,
+                                createdBy: call.createdBy,
+                                type: 'call',
+                                call: call,
+                                estimatedHours: null,
+                            })
+                        }
+                    }
+                })
+            }
+            
+            // Sort by displayDate/time
+            allItems.sort((a: any, b: any) => {
+                const dateA = new Date(a.displayDate).getTime()
+                const dateB = new Date(b.displayDate).getTime()
+                return dateA - dateB
+            })
+            
+            setTasks(allItems)
+        } catch (error) {
+            console.error('Error fetching tasks and calls:', error)
+        } finally {
+            setLoadingTasks(false)
+        }
+    }
+
+    // Confirm delete
+    const handleConfirmDelete = async () => {
+        if (!selectedTask) return
+
+        try {
+            setIsDeleting(true)
+            
+            // Determine if this is a call or task
+            const isCall = selectedTask.type === 'call'
+            const apiEndpoint = isCall 
+                ? `/api/calls/${selectedTask.id}`
+                : `/api/tasks/${selectedTask.id}`
+            
+            const response = await fetch(apiEndpoint, {
+                method: 'DELETE',
+            })
+
+            if (response.ok) {
+                toast({
+                    title: "Meeting deleted",
+                    description: "The meeting has been deleted successfully.",
+                })
+                setDeleteDialogOpen(false)
+                setSelectedTask(null)
+                await refreshTasks()
+            } else {
+                throw new Error('Failed to delete')
+            }
+        } catch (error) {
+            toast({
+                title: "Delete failed",
+                description: "Failed to delete meeting. Please try again.",
+                variant: "destructive",
+            })
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'DONE':
+            case 'COMPLETE':
+                return 'text-green-600'
+            case 'IN_PROGRESS':
+            case 'IN PROGRESS':
+                return 'text-blue-600'
+            case 'OVERDUE':
+            case 'PRO IS LATE':
+                return 'text-red-600'
+            case 'TODO':
+            case 'SCHEDULED':
+                return 'text-gray-600'
+            default:
+                return 'text-gray-600'
+        }
+    }
+
+    const formatTime = (dateString: string) => {
+        const date = new Date(dateString)
+        const hours = date.getHours()
+        const minutes = date.getMinutes()
+        const ampm = hours >= 12 ? 'pm' : 'am'
+        const displayHours = hours % 12 || 12
+        return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`
+    }
+
+    const formatDuration = (estimatedHours: number | null | undefined) => {
+        if (!estimatedHours) return ''
+        if (estimatedHours < 1) {
+            const minutes = Math.round(estimatedHours * 60)
+            return `${minutes} min`
+        }
+        if (estimatedHours === 1) return '1 hr'
+        return `${estimatedHours} hrs`
+    }
+
+    const formatAssigneeName = (assignee: any) => {
+        if (!assignee) return 'Unassigned'
+        if (assignee.name) return assignee.name
+        if (assignee.firstName || assignee.lastName) {
+            return `${assignee.firstName || ''} ${assignee.lastName || ''}`.trim()
+        }
+        return 'Unassigned'
+    }
+
+    const formatCreatorName = (createdBy: any) => {
+        if (!createdBy) return 'Unknown'
+        if (createdBy.name) return createdBy.name
+        if (createdBy.firstName || createdBy.lastName) {
+            return `${createdBy.firstName || ''} ${createdBy.lastName || ''}`.trim()
+        }
+        return 'Unknown'
+    }
+
+    const getMonthDates = () => {
+        const year = currentMonth.getFullYear()
+        const month = currentMonth.getMonth()
+        const firstDay = new Date(year, month, 1)
+        const lastDay = new Date(year, month + 1, 0)
+        const daysInMonth = lastDay.getDate()
+        const startingDayOfWeek = firstDay.getDay()
+
+        const dates: (Date | null)[] = []
+        
+        // Add empty cells for days before the first day of the month
+        for (let i = 0; i < startingDayOfWeek; i++) {
+            dates.push(null)
+        }
+        
+        // Add all days of the current month
+        for (let day = 1; day <= daysInMonth; day++) {
+            dates.push(new Date(year, month, day))
+        }
+        
+        // Fill remaining cells to always have 6 rows (42 cells = 6 rows × 7 days)
+        const totalCells = 42
+        const currentCells = dates.length
+        for (let i = currentCells; i < totalCells; i++) {
+            dates.push(null)
+        }
+        
+        return dates
+    }
+
+    const monthDates = getMonthDates()
+    const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    const selectedDateString = selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+
+    return (
+        <div className="relative px-1 space-y-3" ref={calendarRef}>
+            {/* Date Picker Header */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                    <button
+                        onClick={() => {
+                            const newDate = new Date(currentMonth)
+                            newDate.setMonth(newDate.getMonth() - 1)
+                            setCurrentMonth(newDate)
+                        }}
+                        className="p-1 hover:bg-accent rounded"
+                    >
+                        <ChevronLeft className="h-3 w-3" />
+                    </button>
+                    <span className="text-xs font-semibold">{monthName}</span>
+                    <button
+                        onClick={() => {
+                            const newDate = new Date(currentMonth)
+                            newDate.setMonth(newDate.getMonth() + 1)
+                            setCurrentMonth(newDate)
+                        }}
+                        className="p-1 hover:bg-accent rounded"
+                    >
+                        <ChevronRight className="h-3 w-3" />
+                    </button>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7 gap-0.5 text-[10px]">
+                    {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
+                        <div key={idx} className="text-center text-muted-foreground font-medium py-1">
+                            {day}
+                        </div>
+                    ))}
+                    {monthDates.map((date, idx) => {
+                        if (!date) {
+                            return <div key={`empty-${idx}`} className="h-7" />
+                        }
+                        const isSelected = date.toDateString() === selectedDate.toDateString()
+                        const isToday = date.toDateString() === new Date().toDateString()
+                        
+                        return (
+                            <button
+                                key={idx}
+                                onClick={() => handleDateSelect(date)}
+                                className={cn(
+                                    "h-7 rounded text-[10px] flex items-center justify-center transition-colors",
+                                    isSelected && "bg-primary text-primary-foreground",
+                                    !isSelected && isToday && "border border-primary",
+                                    !isSelected && !isToday && "hover:bg-accent"
+                                )}
+                            >
+                                {date.getDate()}
+                            </button>
+                        )
+                    })}
+                </div>
+            </div>
+
+            {/* Tasks Sidebar - slides out smoothly */}
+            <aside
+                className={cn(
+                    "absolute right-0 top-0 w-[380px] bg-card border border-border rounded-lg shadow-xl transition-all duration-500 ease-in-out z-50 overflow-hidden",
+                    tasksSidebarOpen 
+                        ? "translate-x-full opacity-100 pointer-events-auto" 
+                        : "translate-x-0 opacity-0 pointer-events-none"
+                )}
+                style={{ 
+                    height: calendarHeight > 0 ? `${calendarHeight}px` : 'auto',
+                    transform: tasksSidebarOpen ? 'translateX(calc(100% + 0.5rem))' : 'translateX(0)'
+                }}
+            >
+                <div className="flex h-full flex-col">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-3 border-b">
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold truncate">Meetings for {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</h3>
+                            <p className="text-xs text-muted-foreground">
+                                {tasks.length} {tasks.length === 1 ? 'meeting' : 'meetings'}
+                            </p>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setTasksSidebarOpen(false)}
+                            className="h-7 w-7 flex-shrink-0"
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    {/* Tasks List */}
+                    <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                        {loadingTasks ? (
+                            <div className="text-center text-xs text-muted-foreground py-4">
+                                Loading...
+                            </div>
+                        ) : tasks.length === 0 ? (
+                            <div className="text-center text-xs text-muted-foreground py-4">
+                                No meetings
+                            </div>
+                        ) : (
+                            tasks.map((task) => {
+                                const taskTime = task.dueDate ? formatTime(task.dueDate) : ''
+                                const duration = formatDuration(task.estimatedHours)
+                                const creatorName = formatCreatorName((task as any).createdBy || task.assignee)
+                                
+                                return (
+                                    <div
+                                        key={task.id}
+                                        className="p-3 border border-border rounded-lg hover:bg-accent/50 transition-colors space-y-2"
+                                    >
+                                        {/* Meeting Name */}
+                                        <div className="text-sm font-semibold text-foreground">
+                                            {task.title}
+                                        </div>
+                                        
+                                        {/* Time and Duration */}
+                                        <div className="flex items-center gap-2 text-xs">
+                                            {taskTime && (
+                                                <div className="flex items-center gap-1">
+                                                    <Clock className="h-3 w-3 text-muted-foreground" />
+                                                    <span className="font-medium">{taskTime}</span>
+                                                </div>
+                                            )}
+                                            {duration && (
+                                                <div className="flex items-center gap-1 text-muted-foreground">
+                                                    <span>({duration})</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Set up by */}
+                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                            <span>Set up by:</span>
+                                            <span className="font-medium">{creatorName}</span>
+                                        </div>
+                                        
+                                        {/* Action Icons */}
+                                        <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/50">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7"
+                                                title="Agenda"
+                                                onClick={() => handleAgendaClick(task)}
+                                            >
+                                                <ClipboardList className="h-3.5 w-3.5" />
+                                            </Button>
+                                            {/* Only show Chat and Upload for tasks, not calls */}
+                                            {task.type !== 'call' && (
+                                                <>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7"
+                                                        title="Chat"
+                                                        onClick={() => handleChatClick(task)}
+                                                    >
+                                                        <MessageCircle className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7"
+                                                        title="Upload Documents"
+                                                        onClick={() => handleUploadClick(task)}
+                                                    >
+                                                        <Upload className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </>
+                                            )}
+                                            {/* Show Start Call button - use call participants if it's a call */}
+                                            {task.type === 'call' && task.call?.participants ? (
+                                                <StartCallButton
+                                                    participantIds={task.call.participants
+                                                        .filter((p: any) => p.userId !== user?.id)
+                                                        .map((p: any) => p.userId)}
+                                                    title={task.title}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7"
+                                                />
+                                            ) : (
+                                                <StartCallButton
+                                                    participantIds={task.assigneeId ? [task.assigneeId] : []}
+                                                    title={task.title}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7"
+                                                />
+                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                title="Delete"
+                                                onClick={() => handleDeleteClick(task)}
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )
+                            })
+                        )}
+                    </div>
+                </div>
+            </aside>
+
+            {/* Hidden file input for uploads */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileUpload}
+                multiple={false}
+            />
+
+            {/* Agenda Dialog */}
+            <Dialog open={agendaDialogOpen} onOpenChange={setAgendaDialogOpen}>
+                <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Meeting Agenda</DialogTitle>
+                        <DialogDescription>
+                            {selectedTask?.title}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto space-y-4 py-4">
+                        {/* Agenda Description */}
+                        <div>
+                            <label className="text-sm font-semibold mb-2 block">Agenda</label>
+                            <Textarea
+                                value={selectedTask?.description || ''}
+                                readOnly
+                                className="min-h-[150px]"
+                                placeholder="No agenda available for this meeting."
+                            />
+                        </div>
+
+                        {/* Uploaded Files Section */}
+                        <div className="border-t pt-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <label className="text-sm font-semibold">Uploaded Documents</label>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleUploadClick(selectedTask)}
+                                    className="h-7 text-xs"
+                                >
+                                    <Upload className="h-3 w-3 mr-1" />
+                                    Upload
+                                </Button>
+                            </div>
+                            {loadingFiles ? (
+                                <div className="text-center text-sm text-muted-foreground py-4">
+                                    Loading files...
+                                </div>
+                            ) : taskFiles.length === 0 ? (
+                                <div className="text-center text-sm text-muted-foreground py-4 border border-dashed rounded-lg">
+                                    No files uploaded yet
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {taskFiles.map((file: any, index: number) => (
+                                        <div
+                                            key={index}
+                                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium truncate">
+                                                        {file.fileName || 'Unknown file'}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {(file.fileSize / 1024).toFixed(1)} KB
+                                                        {file.uploadedAt && (
+                                                            <> • {new Date(file.uploadedAt).toLocaleDateString()}</>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 flex-shrink-0"
+                                                onClick={() => window.open(file.fileUrl, '_blank')}
+                                                title="Download file"
+                                            >
+                                                <Download className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Chat/Comments Dialog */}
+            <Dialog open={chatDialogOpen} onOpenChange={setChatDialogOpen}>
+                <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Chat - {selectedTask?.title}</DialogTitle>
+                        <DialogDescription>
+                            Discussion for this meeting
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto space-y-4 py-4">
+                        {taskComments.length === 0 ? (
+                            <div className="text-center text-sm text-muted-foreground py-8">
+                                No comments yet. Start the conversation!
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {taskComments.map((comment: any) => (
+                                    <div key={comment.id} className="border rounded-lg p-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-sm font-semibold">
+                                                {comment.user?.name || `${comment.user?.firstName || ''} ${comment.user?.lastName || ''}`.trim() || 'Unknown'}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {new Date(comment.createdAt).toLocaleString()}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm">{comment.content}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <div className="border-t pt-4 space-y-2">
+                        <Textarea
+                            placeholder="Type your message..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            rows={3}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.ctrlKey) {
+                                    handleAddComment()
+                                }
+                            }}
+                        />
+                        <div className="flex justify-between items-center">
+                            <span className="text-xs text-muted-foreground">
+                                Press Ctrl+Enter to send
+                            </span>
+                            <Button
+                                onClick={handleAddComment}
+                                disabled={!newComment.trim() || isAddingComment}
+                            >
+                                {isAddingComment ? 'Sending...' : 'Send'}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Meeting?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete "{selectedTask?.title}"? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleConfirmDelete}
+                            disabled={isDeleting}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isDeleting ? 'Deleting...' : 'Delete'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    )
 }
 
 export function Sidebar() {
@@ -340,7 +1060,6 @@ export function Sidebar() {
     const toggleSidebarCollapse = useUIStore((state) => state.toggleSidebarCollapse)
     const { getTerm } = useWorkflowTerminology()
     const [expandedPrograms, setExpandedPrograms] = useState<Record<string, boolean>>({})
-    const [expandedAdmin, setExpandedAdmin] = useState(false)
     const [expandedOtherProjects, setExpandedOtherProjects] = useState(false)
     const [expandedCommunication, setExpandedCommunication] = useState(false)
     const [expandedPlanetAI, setExpandedPlanetAI] = useState(false)
@@ -442,7 +1161,7 @@ export function Sidebar() {
                 // Mobile: slide in from left, Desktop: always visible
                 "md:translate-x-0",
                 sidebarOpen ? "translate-x-0" : "-translate-x-full",
-                sidebarCollapsed ? "w-14" : "w-52"
+                sidebarCollapsed ? "w-14" : "w-56"
             )}
             >
                 <div className="flex h-full flex-col px-2 py-4">
@@ -465,11 +1184,23 @@ export function Sidebar() {
                     <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
                         {filteredItems.map((item, index) => {
                             const Icon = item.icon
-                            // Special handling for Finance - should be active on /finance-dashboard and all /workflows/finance/ pages
+                            // Determine if nav item is active
                             let isActive = false
                             if (item.href === "/finance-dashboard") {
-                                isActive = pathname === "/finance-dashboard" || pathname.startsWith("/workflows/finance/")
+                                // Finance should be active on /finance-dashboard and all its sub-pages, plus /workflows/finance/ pages
+                                isActive = pathname === "/finance-dashboard" || 
+                                          pathname.startsWith("/finance-dashboard/") ||
+                                          pathname.startsWith("/workflows/finance/")
+                            } else if (item.href === "/product-management") {
+                                // Projects should be active on /product-management and all its sub-pages
+                                const productManagementSubPages = ["/roadmap", "/projects", "/releases", "/sprints", "/backlog", "/dependencies", "/teams"]
+                                isActive = pathname === "/product-management" || 
+                                          pathname.startsWith("/product-management/") ||
+                                          productManagementSubPages.some(subPage => 
+                                              pathname === subPage || pathname.startsWith(subPage + "/")
+                                          )
                             } else {
+                                // For all other sections, check if pathname matches or starts with the href
                                 isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                             }
 
@@ -580,7 +1311,7 @@ export function Sidebar() {
 
                                                         // Regular static children
                                                         const childTitle = child.title === "Project Dashboard"
-                                                            ? `${getTerm('project')} Dashboard`
+                                                            ? `${getTerm('project')} Pinboard`
                                                             : child.title
                                                         return (
                                                             <Link
@@ -861,121 +1592,49 @@ export function Sidebar() {
                         })}
                     </nav>
 
-                    {/* Schedule Tab - Just above Academy */}
-                    {user && (isSuperUser || scheduleNavItem.roles.includes(effectiveRole)) && (
-                        <div className={cn("pt-2 border-t border-border/50", !sidebarCollapsed && "mt-auto")}>
+                    {/* Discussions Section */}
+                    {user && (
+                        <div className={cn("pt-2 border-t border-border/50 mt-auto")}>
                             <Link
-                                href={scheduleNavItem.href}
+                                href="/collaborate"
                                 onClick={handleLinkClick}
                                 className={cn(
                                     "flex items-center gap-2.5 py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
                                     sidebarCollapsed ? "justify-center" : "",
-                                    pathname === scheduleNavItem.href || pathname.startsWith(scheduleNavItem.href + "/")
+                                    pathname === "/collaborate" || pathname.startsWith("/collaborate/")
                                         ? "bg-primary text-primary-foreground shadow-sm"
                                         : "text-foreground hover:bg-accent/70"
                                 )}
-                                title={sidebarCollapsed ? scheduleNavItem.title : undefined}
+                                title={sidebarCollapsed ? "Discussions" : undefined}
                             >
-                                <CalendarDays className="h-4 w-4" />
-                                {!sidebarCollapsed && <span>{scheduleNavItem.title}</span>}
+                                <MessageSquare className="h-4 w-4" />
+                                {!sidebarCollapsed && "Discussions"}
                             </Link>
                         </div>
                     )}
 
-                    {/* Academy Tab - Between Schedule and Admin */}
-                    {user && (isSuperUser || academyNavItem.roles.includes(effectiveRole)) && (
-                        <div className={cn("pt-2 border-t border-border/50", !sidebarCollapsed && "mt-auto")}>
-                            <Link
-                                href={academyNavItem.href}
-                                onClick={handleLinkClick}
-                                className={cn(
-                                    "flex items-center gap-2.5 py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
-                                    sidebarCollapsed ? "justify-center" : "",
-                                    pathname === academyNavItem.href || pathname.startsWith(academyNavItem.href + "/")
-                                        ? "bg-primary text-primary-foreground shadow-sm"
-                                        : "text-foreground hover:bg-accent/70"
-                                )}
-                                title={sidebarCollapsed ? academyNavItem.title : undefined}
-                            >
-                                <GraduationCap className="h-4 w-4" />
-                                {!sidebarCollapsed && <span>{academyNavItem.title}</span>}
-                            </Link>
-                        </div>
-                    )}
-
-
-                    {/* Admin Tab - Sticky at the bottom */}
-                    {user && (isSuperUser || adminNavItem.roles.includes(user.role)) && (
-                        <div className="pt-2 border-t border-border/50">
+                    {/* Calendar/Schedule Widget Section */}
+                    {user && (
+                        <div className={cn("pt-2 border-t border-border/50")}>
                             {sidebarCollapsed ? (
-                                <Link
-                                    href={adminNavItem.href}
-                                    onClick={handleLinkClick}
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={toggleSidebarCollapse}
                                     className={cn(
-                                        "flex items-center justify-center py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
-                                        pathname.includes(adminNavItem.href)
-                                            ? "bg-primary text-primary-foreground shadow-sm"
-                                            : "text-foreground hover:bg-accent/50"
+                                        "flex items-center justify-center py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1 w-full",
+                                        "text-foreground hover:bg-accent/50"
                                     )}
-                                    title={adminNavItem.title}
+                                    title="Calendar"
                                 >
-                                    <Settings className="h-4 w-4" />
-                                </Link>
+                                    <CalendarDays className="h-4 w-4" />
+                                </Button>
                             ) : (
-                                <>
-                                    <div
-                                        className={cn(
-                                            "flex items-center justify-between py-2 px-3 text-xs font-medium transition-all rounded-md -mx-1",
-                                            pathname.includes(adminNavItem.href) && !pathname.includes(adminNavItem.href + "/")
-                                                ? "bg-primary text-primary-foreground shadow-sm"
-                                                : "text-foreground hover:bg-accent/50"
-                                        )}
-                                        onClick={() => setExpandedAdmin(!expandedAdmin)}
-                                    >
-                                        <div className="flex items-center gap-2.5">
-                                            <Settings className="h-4 w-4" />
-                                            <span>{adminNavItem.title}</span>
-                                        </div>
-                                        <ChevronDown
-                                            className={cn(
-                                                "h-3.5 w-3.5 transition-transform flex-shrink-0",
-                                                expandedAdmin && "rotate-180"
-                                            )}
-                                        />
-                                    </div>
-
-                                    {/* Admin children */}
-                                    {expandedAdmin && (
-                                        <div className="space-y-1">
-                                            {adminNavItem.children
-                                                ?.filter((child) => isSuperUser || child.roles.includes(user.role))
-                                                .map((child) => {
-                                                    const ChildIcon = child.icon
-                                                    const isChildActive =
-                                                        pathname === child.href || pathname.startsWith(child.href + "/")
-
-                                                    return (
-                                                        <Link
-                                                            key={child.href}
-                                                            href={child.href}
-                                                            className={cn(
-                                                                "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
-                                                                isChildActive
-                                                                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                                            )}
-                                                        >
-                                                            <ChildIcon className="h-3.5 w-3.5" />
-                                                            {child.title}
-                                                        </Link>
-                                                    )
-                                                })}
-                                        </div>
-                                    )}
-                                </>
+                                <CalendarScheduleWidget />
                             )}
                         </div>
                     )}
+
 
                     {/* Platform Admin Tab - Last tab (god-mode) */}
                     {user && (isSuperUser || platformAdminNavItem.roles.includes(user.role)) && (

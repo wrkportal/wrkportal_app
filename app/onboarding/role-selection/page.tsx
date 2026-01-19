@@ -63,7 +63,7 @@ const userRoles = [
     label: 'MIS',
     description: 'Management Information Systems',
     workflowType: 'GENERAL',
-    landingPage: '/my-work',
+    landingPage: '/wrkboard',
   },
 ]
 
@@ -99,7 +99,7 @@ const roleMapping: Record<string, { workflowType: string; landingPage: string }>
   },
   'mis': {
     workflowType: 'GENERAL',
-    landingPage: '/my-work',
+    landingPage: '/wrkboard',
   },
 }
 
@@ -151,7 +151,7 @@ export default function RoleSelectionPage() {
         
         if (hasSelectedRole) {
           console.log('[Role Selection Page] ✅ User has already selected role, redirecting to landing page')
-          router.replace(authenticatedUser.landingPage || '/my-work')
+          router.replace(authenticatedUser.landingPage || '/wrkboard')
           return
         } else {
           console.log('[Role Selection Page] ❌ User has NOT selected role, showing role selection form')

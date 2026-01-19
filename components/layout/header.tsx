@@ -17,13 +17,16 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuthStore } from "@/stores/authStore"
 import { useUIStore } from "@/stores/uiStore"
-import { Bell, Menu, Settings, LogOut, User, UserPlus } from "lucide-react"
+import { Bell, Menu, Settings, LogOut, User, UserPlus, Moon, Sun, Brain } from "lucide-react"
 import { getInitials } from "@/lib/utils"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { FeedbackButton } from "@/components/feedback/feedback-button"
 import { HelpDialog } from "@/components/help/help-dialog"
 import { SearchBar } from "@/components/layout/search-bar"
-import { AIDataQueryWidget } from "@/components/ai/ai-data-query-widget"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { InviteUserModal } from "@/components/invite-user-modal"
 import { canInviteUsers } from "@/lib/permissions"
 import { WorkspaceType, UserRole, GroupRole } from "@/types"
@@ -35,6 +38,7 @@ export function Header() {
     const router = useRouter()
     const [alertsCount, setAlertsCount] = useState(0)
     const [inviteModalOpen, setInviteModalOpen] = useState(false)
+    const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
 
     // Fetch alerts count
     useEffect(() => {
@@ -59,6 +63,59 @@ export function Header() {
         } catch (error) {
             // Silently handle errors - notification system might not be set up
             setAlertsCount(0)
+        }
+    }
+
+    // Theme management
+    useEffect(() => {
+        const root = window.document.documentElement
+        const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null
+        
+        if (savedTheme) {
+            setTheme(savedTheme)
+        }
+
+        const applyTheme = (currentTheme: 'light' | 'dark' | 'system') => {
+            root.classList.remove('light', 'dark')
+
+            if (currentTheme === 'system') {
+                const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+                    ? 'dark'
+                    : 'light'
+                root.classList.add(systemTheme)
+            } else {
+                root.classList.add(currentTheme)
+            }
+        }
+
+        applyTheme(savedTheme || 'system')
+
+        // Listen for system theme changes
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+        const handleChange = () => {
+            if (theme === 'system') {
+                applyTheme('system')
+            }
+        }
+
+        mediaQuery.addEventListener('change', handleChange)
+        return () => mediaQuery.removeEventListener('change', handleChange)
+    }, [theme])
+
+    const setAndSaveTheme = (newTheme: 'light' | 'dark' | 'system') => {
+        setTheme(newTheme)
+        localStorage.setItem('theme', newTheme)
+
+        const root = window.document.documentElement
+        root.classList.remove('light', 'dark')
+
+        if (newTheme === 'system') {
+            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+            root.classList.add(systemTheme)
+        } else {
+            root.classList.add(newTheme)
         }
     }
 
@@ -91,7 +148,7 @@ export function Header() {
                     <Menu className="h-5 w-5" />
                 </Button>
 
-                <Link href="/" className="flex items-center space-x-2 shrink-0">
+                <Link href="/" className="flex items-center shrink-0">
                     <Image 
                         src="/logo.png" 
                         alt="wrkportal.com" 
@@ -99,10 +156,8 @@ export function Header() {
                         height={40}
                         className="h-8 w-auto"
                         priority
+                        unoptimized
                     />
-                    <span className="text-lg font-semibold text-foreground hidden sm:inline-block">
-                        wrkportal.com
-                    </span>
                 </Link>
 
                 {/* Centered Search Bar */}
@@ -110,10 +165,28 @@ export function Header() {
                     <SearchBar />
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                    <ThemeToggle />
-                    <FeedbackButton />
+                <div className="flex items-center gap-1 shrink-0">
                     <HelpDialog />
+                    
+                    {/* AI Assistant Button */}
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    onClick={() => router.push("/ai-assistant")}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9"
+                                    aria-label="AI Assistant"
+                                >
+                                    <Brain className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>AI Assistant</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                     
                     {/* Invite Button */}
                     {user && canInviteUsers(
@@ -121,14 +194,24 @@ export function Header() {
                         user?.role as UserRole,
                         user?.groupRole as GroupRole | undefined
                     ) && (
-                        <Button
-                            onClick={() => setInviteModalOpen(true)}
-                            variant="outline"
-                            size="sm"
-                        >
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Invite
-                        </Button>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        onClick={() => setInviteModalOpen(true)}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9"
+                                        aria-label="Invite user"
+                                    >
+                                        <UserPlus className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Invite</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     )}
                     
                     {user ? (
@@ -184,6 +267,20 @@ export function Header() {
                                     <DropdownMenuItem onClick={() => router.push("/settings")}>
                                         <Settings className="mr-2 h-4 w-4" />
                                         <span>Settings</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuLabel>Theme</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => setAndSaveTheme('light')}>
+                                        <Sun className="mr-2 h-4 w-4" />
+                                        <span>Light</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setAndSaveTheme('dark')}>
+                                        <Moon className="mr-2 h-4 w-4" />
+                                        <span>Dark</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setAndSaveTheme('system')}>
+                                        <span className="mr-2 h-4 w-4 inline-flex items-center justify-center">💻</span>
+                                        <span>System</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={handleLogout}>

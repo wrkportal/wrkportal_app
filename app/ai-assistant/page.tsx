@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Bot, Send, Loader2, Sparkles, Plus, MessageSquare, Trash2, Edit2, Check, X, MoreVertical, LayoutDashboard } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Bot, Send, Loader2, Sparkles, Plus, MessageSquare, Trash2, Edit2, Check, X, MoreVertical, LayoutDashboard, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -71,6 +72,7 @@ const defaultLayouts: Layouts = {
 }
 
 export default function AIAssistantPage() {
+  const router = useRouter()
   const [chats, setChats] = useState<Chat[]>([])
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -673,6 +675,15 @@ export default function AIAssistantPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/ai-tools')}
+              className="flex items-center gap-2"
+            >
+              <Wrench className="h-4 w-4" />
+              <span className="hidden sm:inline">AI Tools</span>
+            </Button>
+
             <SaveDefaultLayoutButton
               pageKey="ai-assistant"
               getCurrentLayout={() => ({ widgets, layouts })}

@@ -25,6 +25,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
 
     // Check if current page is a dashboard page (full-width layout)
     const isDashboardPage =
+        pathname?.startsWith('/wrkboard') ||
         pathname?.startsWith('/finance-dashboard') ||
         pathname?.startsWith('/workflows/finance') ||
         pathname?.startsWith('/product-management') ||
@@ -36,17 +37,18 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         pathname?.startsWith('/dependencies') ||
         pathname?.startsWith('/teams') ||
         pathname?.startsWith('/operations-dashboard') ||
+        pathname?.startsWith('/developer-dashboard') ||
         pathname?.startsWith('/it-dashboard') ||
+        pathname?.startsWith('/customer-service-dashboard') ||
         pathname?.startsWith('/recruitment-dashboard') ||
         pathname?.startsWith('/sales-dashboard') ||
-        pathname?.startsWith('/schedule') ||
-        pathname?.startsWith('/reporting-studio') ||
-        pathname?.startsWith('/reporting-engine')
+        pathname?.startsWith('/reporting-engine') ||
+        pathname?.startsWith('/collaborate')
 
-    // Redirect logged-in users from root path to /my-work
+    // Redirect logged-in users from root path to /wrkboard
     useEffect(() => {
         if (user && pathname === '/') {
-            router.push('/my-work')
+            router.push('/wrkboard')
         }
     }, [user, pathname, router])
 
@@ -63,8 +65,9 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
                 <Sidebar />
 
                 <main
-                    className={`transition-all duration-300 pt-4 sm:pt-6 lg:pt-8 ${sidebarCollapsed ? 'md:pl-14' : 'md:pl-52'
-                        }`}
+                    className={`transition-all duration-300 pt-16 h-screen ${
+                        sidebarCollapsed ? 'md:pl-14' : 'md:pl-56'
+                    }`}
                 >
                     {children}
                 </main>
@@ -82,7 +85,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
                 <Sidebar />
 
                 <div
-                    className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'md:pl-14' : 'md:pl-52'
+                    className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'md:pl-14' : 'md:pl-56'
                         }`}
                     style={{ height: 'calc(100vh - 4rem)' }}
                 >

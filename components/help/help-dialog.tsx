@@ -20,6 +20,12 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { HelpCircle, Search, Book, Video, MessageCircle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface HelpArticle {
   id: string
@@ -169,14 +175,20 @@ export function HelpDialog({ page, section }: HelpDialogProps) {
   const categories = Array.from(new Set(helpArticles.map((a) => a.category)))
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2" aria-label="Open help dialog">
-          <HelpCircle className="h-4 w-4" aria-hidden="true" />
-          Help
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
+    <TooltipProvider>
+      <Tooltip>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Open help dialog">
+                <HelpCircle className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Help</p>
+          </TooltipContent>
+          <DialogContent className="max-w-4xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Help & Documentation</DialogTitle>
           <DialogDescription>
@@ -276,8 +288,10 @@ export function HelpDialog({ page, section }: HelpDialogProps) {
             </ScrollArea>
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+          </DialogContent>
+        </Dialog>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 

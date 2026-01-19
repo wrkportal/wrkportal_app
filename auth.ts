@@ -16,6 +16,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           prompt: 'select_account',
           access_type: 'offline',
           response_type: 'code',
+          // Note: The application name shown in the OAuth prompt is configured
+          // in Google Cloud Console > APIs & Services > OAuth consent screen
+          // Update the "App name" there to change what users see (e.g., "wrkportal.com")
         },
       },
     }),

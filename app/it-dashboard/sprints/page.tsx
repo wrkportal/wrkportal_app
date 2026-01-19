@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ITPageLayout } from '@/components/it/it-page-layout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -98,80 +98,94 @@ const COLORS = ['#9333ea', '#ec4899', '#f59e0b', '#10b981', '#ef4444']
 
 export default function SprintsPage() {
   const [activeTab, setActiveTab] = useState('planning')
-  const [sprints] = useState<Sprint[]>([
-    {
-      id: 'SPRINT-001',
-      name: 'Sprint 24.12',
-      startDate: '2024-12-09',
-      endDate: '2024-12-23',
-      status: 'ACTIVE',
-      team: 'Development Team Alpha',
-      velocity: 42,
-      plannedPoints: 45,
-      completedPoints: 28,
-    },
-    {
-      id: 'SPRINT-002',
-      name: 'Sprint 24.13',
-      startDate: '2024-12-24',
-      endDate: '2025-01-06',
-      status: 'PLANNED',
-      team: 'Development Team Alpha',
-      velocity: 0,
-      plannedPoints: 40,
-      completedPoints: 0,
-    },
-  ])
-
-  const [userStories] = useState<UserStory[]>([
-    {
-      id: 'US-001',
-      title: 'User Authentication Enhancement',
-      description: 'Add two-factor authentication for enhanced security',
-      sprintId: 'SPRINT-001',
-      priority: 'HIGH',
-      storyPoints: 8,
-      status: 'IN_PROGRESS',
-      assignee: 'John Doe',
-      tags: ['backend', 'security'],
-    },
-    {
-      id: 'US-002',
-      title: 'Dashboard Performance Optimization',
-      description: 'Optimize dashboard loading time to under 2 seconds',
-      sprintId: 'SPRINT-001',
-      priority: 'MEDIUM',
-      storyPoints: 5,
-      status: 'TO_DO',
-      assignee: 'Jane Smith',
-      tags: ['frontend', 'performance'],
-    },
-  ])
-
-  const [activeSprint] = useState({
-    sprintId: 'SPRINT-001',
-    sprintName: 'Sprint 24.12',
-    totalPoints: 45,
-    completedPoints: 28,
-    remainingPoints: 17,
-    teamMembers: 5,
-    completedStories: 8,
-    inProgressStories: 5,
-    todoStories: 3,
+  const [sprints, setSprints] = useState<Sprint[]>([])
+  const [userStories, setUserStories] = useState<UserStory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeSprint, setActiveSprint] = useState({
+    sprintId: '',
+    sprintName: '',
+    totalPoints: 0,
+    completedPoints: 0,
+    remainingPoints: 0,
+    teamMembers: 0,
+    completedStories: 0,
+    inProgressStories: 0,
+    todoStories: 0,
   })
+  const [burndownData, setBurndownData] = useState<any[]>([])
 
-  const [burndownData] = useState([
-    { day: 'Day 1', remaining: 45, ideal: 45 },
-    { day: 'Day 2', remaining: 42, ideal: 40 },
-    { day: 'Day 3', remaining: 40, ideal: 35 },
-    { day: 'Day 4', remaining: 38, ideal: 30 },
-    { day: 'Day 5', remaining: 35, ideal: 25 },
-    { day: 'Day 6', remaining: 33, ideal: 20 },
-    { day: 'Day 7', remaining: 30, ideal: 15 },
-    { day: 'Day 8', remaining: 28, ideal: 10 },
-    { day: 'Day 9', remaining: 28, ideal: 5 },
-    { day: 'Day 10', remaining: 28, ideal: 0 },
-  ])
+  useEffect(() => {
+    fetchSprints()
+  }, [])
+
+  const fetchSprints = async () => {
+    try {
+      setLoading(true)
+      // Fetch sprints for IT projects
+      const response = await fetch('/api/sprints?status=all')
+      if (!response.ok) throw new Error('Failed to fetch sprints')
+      const data = await response.json()
+      
+      // Filter for IT-related sprints (from SOFTWARE_DEVELOPMENT projects)
+      const itSprints = (data.sprints || []).map((sprint: any) => ({
+        id: sprint.id,
+        name: sprint.name,
+        startDate: sprint.startDate ? sprint.startDate.split('T')[0] : '',
+        endDate: sprint.endDate ? sprint.endDate.split('T')[0] : '',
+        status: sprint.status,
+        team: sprint.project?.name || 'Unassigned',
+        velocity: sprint.velocity || 0,
+        plannedPoints: sprint.storyPoints || 0,
+        completedPoints: sprint.completedStoryPoints || 0,
+      }))
+      
+      setSprints(itSprints)
+      
+      // Get active sprint
+      const active = itSprints.find((s: Sprint) => s.status === 'ACTIVE')
+      if (active) {
+        // Fetch tasks for active sprint
+        const tasksResponse = await fetch(`/api/tasks?sprintId=${active.id}`)
+        if (tasksResponse.ok) {
+          const tasksData = await tasksResponse.json()
+          const stories = (tasksData.tasks || []).map((task: any) => ({
+            id: task.id,
+            title: task.title,
+            description: task.description || '',
+            sprintId: task.sprintId,
+            priority: task.priority || 'MEDIUM',
+            storyPoints: task.estimatedHours || 0,
+            status: task.status,
+            assignee: task.assignee?.name || null,
+            tags: [],
+          }))
+          setUserStories(stories)
+          
+          const completed = stories.filter((s: UserStory) => s.status === 'DONE').length
+          const inProgress = stories.filter((s: UserStory) => s.status === 'IN_PROGRESS').length
+          const todo = stories.filter((s: UserStory) => s.status === 'TO_DO').length
+          
+          setActiveSprint({
+            sprintId: active.id,
+            sprintName: active.name,
+            totalPoints: active.plannedPoints,
+            completedPoints: active.completedPoints,
+            remainingPoints: active.plannedPoints - active.completedPoints,
+            teamMembers: 0, // Would need to fetch from project team
+            completedStories: completed,
+            inProgressStories: inProgress,
+            todoStories: todo,
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching sprints:', error)
+      setSprints([])
+      setUserStories([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const sprintStats = {
     active: sprints.filter(s => s.status === 'ACTIVE').length,

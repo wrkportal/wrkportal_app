@@ -11,7 +11,7 @@ export default function HomePage() {
 
     useEffect(() => {
         const checkUserAndRedirect = async () => {
-            console.log('[HomePage] Starting check...', { isHydrated })
+            console.log('[HomePage] Starting check - will redirect to my-work page if authenticated...', { isHydrated })
             
             if (!isHydrated) {
                 console.log('[HomePage] Waiting for hydration...')
@@ -60,9 +60,9 @@ export default function HomePage() {
                     return
                 }
                 
-                // User has completed onboarding - redirect to their landing page
-                const landingPage = authenticatedUser.landingPage || '/my-work'
-                console.log('[HomePage] ✅ User has selected role, redirecting to landing page:', landingPage)
+                // User has completed onboarding - redirect to their landing page (usually /wrkboard)
+                const landingPage = authenticatedUser.landingPage || '/wrkboard'
+                console.log('[HomePage] ✅ User has selected role, redirecting to wrkboard page (or custom landing):', landingPage)
                 // Only redirect if we're on the home page (not already on the landing page)
                 if (window.location.pathname === '/') {
                   window.location.href = landingPage

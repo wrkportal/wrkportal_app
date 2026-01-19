@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ITPageLayout } from '@/components/it/it-page-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -71,19 +71,35 @@ interface User {
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 'USR-001',
-      name: 'John Doe',
-      email: 'john.doe@company.com',
-      department: 'IT',
-      role: 'IT Administrator',
-      status: 'ACTIVE',
-      lastLogin: '2024-12-15T09:30:00',
-      accountCreated: '2023-01-15',
-      accessLevel: 'ADMIN',
-      phone: '+1-555-0100',
-    },
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [userStats, setUserStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    pending: 0,
+  })
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/it/users')
+      if (!response.ok) throw new Error('Failed to fetch users')
+      const data = await response.json()
+      setUsers(data.users || [])
+      setUserStats(data.stats || { total: 0, active: 0, inactive: 0, pending: 0 })
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      setUsers([])
+      setUserStats({ total: 0, active: 0, inactive: 0, pending: 0 })
+    } finally {
+      setLoading(false)
+    }
+  }
     {
       id: 'USR-002',
       name: 'Jane Smith',
@@ -313,7 +329,7 @@ export default function UsersPage() {
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="IT">IT</SelectItem>
+                        <SelectItem value="IT">Services</SelectItem>
                         <SelectItem value="Finance">Finance</SelectItem>
                         <SelectItem value="HR">HR</SelectItem>
                         <SelectItem value="Sales">Sales</SelectItem>

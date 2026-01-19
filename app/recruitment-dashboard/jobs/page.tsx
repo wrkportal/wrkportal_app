@@ -136,88 +136,15 @@ export default function JobsPage() {
   const fetchJobs = async () => {
     try {
       setLoading(true)
-      // Mock data
-      const mockJobs: Job[] = [
-        {
-          id: '1',
-          jobCode: 'JOB-2024-001',
-          title: 'Senior Software Engineer',
-          department: 'Engineering',
-          location: 'San Francisco, CA',
-          type: 'FULL_TIME',
-          status: 'OPEN',
-          candidateCount: 24,
-          salaryRange: '$120k - $180k',
-          commission: null,
-          benefits: 'Health, Dental, Vision, 401k, PTO',
-          postedDate: new Date().toISOString(),
-          expiryDate: null,
-          description: 'We are looking for a senior software engineer with strong experience in full-stack development...',
-          responsibilities: 'Design and develop scalable web applications, Lead technical discussions, Mentor junior developers',
-          qualifications: 'Bachelor\'s degree in Computer Science, 5+ years of experience',
-          requiredSkills: ['JavaScript', 'React', 'Node.js', 'SQL'],
-          preferredSkills: ['TypeScript', 'AWS', 'Docker'],
-          experienceMin: 5,
-          experienceMax: 10,
-          educationLevel: 'BACHELORS',
-          certifications: [],
-          languages: ['English'],
-          numberOfPositions: 2,
-          hiringManager: 'John Smith',
-          assignedRecruiter: 'Jane Doe',
-          priority: 'HIGH',
-          expectedStartDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-          applicationDeadline: null,
-          workSchedule: 'Monday-Friday, 9 AM - 5 PM',
-          travelRequired: false,
-          travelPercentage: null,
-          remoteType: 'HYBRID',
-          internalNotes: 'Urgent hire, need to fill quickly',
-          postingChannels: ['LinkedIn', 'Indeed', 'Company Website'],
-          applicationQuestions: [],
-        },
-        {
-          id: '2',
-          jobCode: 'JOB-2024-002',
-          title: 'Product Manager',
-          department: 'Product',
-          location: 'Remote',
-          type: 'FULL_TIME',
-          status: 'OPEN',
-          candidateCount: 18,
-          salaryRange: '$100k - $150k',
-          commission: '10% bonus',
-          benefits: 'Health, Dental, Vision, Stock Options',
-          postedDate: new Date().toISOString(),
-          expiryDate: null,
-          description: 'Join our product team to drive innovation...',
-          responsibilities: 'Define product roadmap, Work with engineering teams, Conduct user research',
-          qualifications: 'MBA preferred, 3+ years product management experience',
-          requiredSkills: ['Product Management', 'Agile', 'Analytics'],
-          preferredSkills: ['SQL', 'Figma'],
-          experienceMin: 3,
-          experienceMax: 7,
-          educationLevel: 'BACHELORS',
-          certifications: [],
-          languages: ['English'],
-          numberOfPositions: 1,
-          hiringManager: 'Sarah Johnson',
-          assignedRecruiter: 'Mike Wilson',
-          priority: 'MEDIUM',
-          expectedStartDate: null,
-          applicationDeadline: null,
-          workSchedule: 'Flexible',
-          travelRequired: true,
-          travelPercentage: 20,
-          remoteType: 'REMOTE',
-          internalNotes: null,
-          postingChannels: ['LinkedIn', 'Company Website'],
-          applicationQuestions: [],
-        },
-      ]
-      setJobs(mockJobs)
+      const response = await fetch('/api/recruitment/jobs')
+      if (!response.ok) {
+        throw new Error('Failed to fetch jobs')
+      }
+      const data = await response.json()
+      setJobs(data.jobs || [])
     } catch (error) {
       console.error('Error fetching jobs:', error)
+      setJobs([])
     } finally {
       setLoading(false)
     }
@@ -225,20 +152,16 @@ export default function JobsPage() {
 
   const handleCreateJob = async () => {
     try {
-      const newJob: Job = {
-        id: Date.now().toString(),
+      const jobData = {
         jobCode: formData.jobCode || null,
         title: formData.title,
         department: formData.department,
         location: formData.location,
         type: formData.type,
         status: formData.status,
-        candidateCount: 0,
         salaryRange: formData.salaryRange || null,
         commission: formData.commission || null,
         benefits: formData.benefits || null,
-        postedDate: new Date().toISOString(),
-        expiryDate: formData.applicationDeadline || null,
         description: formData.description || null,
         responsibilities: formData.responsibilities || null,
         qualifications: formData.qualifications || null,
@@ -261,9 +184,21 @@ export default function JobsPage() {
         remoteType: formData.remoteType,
         internalNotes: formData.internalNotes || null,
         postingChannels: formData.postingChannels,
-        applicationQuestions: [],
       }
-      setJobs([...jobs, newJob])
+
+      const response = await fetch('/api/recruitment/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(jobData),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create job')
+      }
+
+      const data = await response.json()
+      setJobs([...jobs, { ...data.job, candidateCount: 0, postedDate: new Date().toISOString(), expiryDate: data.job.applicationDeadline, applicationQuestions: [] }])
       setIsDialogOpen(false)
       // Reset form
       setFormData({

@@ -94,37 +94,30 @@ export default function AssetsPage() {
   const fetchAssets = async () => {
     try {
       setLoading(true)
-      const mockAssets: Asset[] = [
-        {
-          id: '1',
-          assetTag: 'AST-001',
-          name: 'Laptop Dell XPS 15',
-          category: 'IT Equipment',
-          status: 'IN_USE',
-          location: 'Building A, Floor 2',
-          purchaseDate: new Date(Date.now() - 365 * 86400000).toISOString(),
-          purchaseCost: '$1,500',
-          currentValue: '$1,200',
-          assignedTo: 'John Smith',
-          warrantyExpiry: new Date(Date.now() + 365 * 86400000).toISOString(),
-        },
-        {
-          id: '2',
-          assetTag: 'AST-002',
-          name: 'Office Desk',
-          category: 'Furniture',
-          status: 'AVAILABLE',
-          location: 'Storage Room',
-          purchaseDate: new Date(Date.now() - 180 * 86400000).toISOString(),
-          purchaseCost: '$400',
-          currentValue: '$350',
-          assignedTo: '',
-          warrantyExpiry: null,
-        },
-      ]
-      setAssets(mockAssets)
+      const response = await fetch('/api/operations/resources/assets')
+      if (response.ok) {
+        const data = await response.json()
+        // Transform API data to match component interface
+        const transformedAssets = (data.assets || []).map((asset: any) => ({
+          id: asset.id,
+          assetTag: asset.serialNumber || `AST-${asset.id.slice(-6)}`,
+          name: asset.name,
+          category: asset.category || 'Uncategorized',
+          status: asset.status === 'ASSIGNED' ? 'IN_USE' : asset.status || 'AVAILABLE',
+          location: asset.location || 'N/A',
+          purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString() : null,
+          purchaseCost: asset.purchaseCost ? `$${Number(asset.purchaseCost).toLocaleString()}` : '$0',
+          currentValue: asset.currentValue ? `$${Number(asset.currentValue).toLocaleString()}` : '$0',
+          assignedTo: asset.assignedTo?.name || '',
+          warrantyExpiry: asset.warrantyExpiry ? new Date(asset.warrantyExpiry).toISOString() : null,
+        }))
+        setAssets(transformedAssets)
+      } else {
+        setAssets([])
+      }
     } catch (error) {
       console.error('Error fetching assets:', error)
+      setAssets([])
     } finally {
       setLoading(false)
     }

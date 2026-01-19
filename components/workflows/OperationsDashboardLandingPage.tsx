@@ -12,6 +12,46 @@ import { Settings, TrendingUp, Users, CheckCircle2, Clock, AlertTriangle, BarCha
 export default function OperationsDashboardLandingPage() {
   const user = useAuthStore((state) => state.user)
   const router = useRouter()
+  const [stats, setStats] = useState({
+    activeProcesses: 0,
+    efficiency: 0,
+    teamMembers: 0,
+    compliance: 0,
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/operations/dashboard/stats')
+        if (response.ok) {
+          const data = await response.json()
+          // Calculate active processes from work orders
+          const workOrdersResponse = await fetch('/api/operations/work-orders')
+          let activeProcesses = 0
+          if (workOrdersResponse.ok) {
+            const woData = await workOrdersResponse.json()
+            activeProcesses = woData.workOrders?.filter((wo: any) => 
+              ['OPEN', 'SCHEDULED', 'IN_PROGRESS'].includes(wo.status)
+            ).length || 0
+          }
+          
+          setStats({
+            activeProcesses,
+            efficiency: data.capacityUtilization || 0,
+            teamMembers: data.totalResources || 0,
+            compliance: data.complianceRate || 0,
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching operations stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStats()
+  }, [])
 
   return (
     <div className="space-y-6 p-6">
@@ -32,7 +72,11 @@ export default function OperationsDashboardLandingPage() {
             <Settings className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            {loading ? (
+              <div className="text-2xl font-bold">...</div>
+            ) : (
+              <div className="text-2xl font-bold">{stats.activeProcesses}</div>
+            )}
             <p className="text-xs text-muted-foreground">Running operations</p>
           </CardContent>
         </Card>
@@ -43,7 +87,11 @@ export default function OperationsDashboardLandingPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">87%</div>
+            {loading ? (
+              <div className="text-2xl font-bold">...</div>
+            ) : (
+              <div className="text-2xl font-bold">{stats.efficiency}%</div>
+            )}
             <p className="text-xs text-muted-foreground">Process efficiency</p>
           </CardContent>
         </Card>
@@ -54,7 +102,11 @@ export default function OperationsDashboardLandingPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
+            {loading ? (
+              <div className="text-2xl font-bold">...</div>
+            ) : (
+              <div className="text-2xl font-bold">{stats.teamMembers}</div>
+            )}
             <p className="text-xs text-muted-foreground">Operations team</p>
           </CardContent>
         </Card>
@@ -65,7 +117,11 @@ export default function OperationsDashboardLandingPage() {
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">98%</div>
+            {loading ? (
+              <div className="text-2xl font-bold">...</div>
+            ) : (
+              <div className="text-2xl font-bold">{stats.compliance}%</div>
+            )}
             <p className="text-xs text-muted-foreground">Compliance rate</p>
           </CardContent>
         </Card>
@@ -80,7 +136,10 @@ export default function OperationsDashboardLandingPage() {
           <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
             <div className="text-center">
               <Settings className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Operations dashboard coming soon</p>
+              <p className="text-muted-foreground mb-4">Operations dashboard coming soon</p>
+              <Button onClick={() => router.push('/operations-dashboard')}>
+                Go to Full Dashboard
+              </Button>
             </div>
           </div>
         </CardContent>

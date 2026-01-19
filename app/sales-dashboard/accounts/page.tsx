@@ -31,9 +31,10 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Building2, Plus, Search, Eye, Edit, Trash2, Users, Briefcase, DollarSign, TrendingUp, Activity, Target } from 'lucide-react'
+import { Building2, Plus, Search, Eye, Edit, Trash2, Users, Briefcase, DollarSign, TrendingUp, Activity, Target, Upload, FileSpreadsheet, Download, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { SalesPageLayout } from '@/components/sales/sales-page-layout'
+import { ColumnMappingDialog, ACCOUNT_STANDARD_FIELDS } from '@/components/sales/lead-column-mapping-dialog'
 import {
   ResponsiveContainer,
   PieChart,
@@ -81,6 +82,13 @@ export default function AccountsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadResults, setUploadResults] = useState<any>(null)
+  const [mappingDialogOpen, setMappingDialogOpen] = useState(false)
+  const [fileColumns, setFileColumns] = useState<string[]>([])
+  const [sampleRows, setSampleRows] = useState<Record<string, any>[]>([])
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
   
   // Dashboard metrics
   const totalAccounts = accounts.length
@@ -136,6 +144,10 @@ export default function AccountsPage() {
   useEffect(() => {
     if (searchParams?.get('create') === 'true') {
       setIsDialogOpen(true)
+    }
+    // Auto-open upload dialog if ?upload=true
+    if (searchParams?.get('upload') === 'true') {
+      setUploadDialogOpen(true)
     }
   }, [searchParams])
 
@@ -199,6 +211,92 @@ export default function AccountsPage() {
       }
     } catch (error) {
       console.error('Error creating account:', error)
+    }
+  }
+
+  const handleFileSelect = async (file: File) => {
+    try {
+      setUploading(true)
+      const previewFormData = new FormData()
+      previewFormData.append('file', file)
+      const previewResponse = await fetch('/api/sales/accounts/upload/preview', {
+        method: 'POST',
+        body: previewFormData,
+      })
+      const previewResult = await previewResponse.json()
+      if (previewResponse.ok && previewResult.success) {
+        setFileColumns(previewResult.columns)
+        setSampleRows(previewResult.sampleRows || [])
+        setPendingFile(file)
+        setMappingDialogOpen(true)
+        setUploadDialogOpen(false)
+      } else {
+        alert(previewResult.error || 'Failed to preview file')
+      }
+    } catch (error: any) {
+      console.error('Error previewing file:', error)
+      alert('Failed to preview file. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleMappingConfirm = async (mapping: Record<string, string>) => {
+    if (!pendingFile) return
+    try {
+      setUploading(true)
+      setMappingDialogOpen(false)
+      setUploadResults(null)
+      const formData = new FormData()
+      formData.append('file', pendingFile)
+      formData.append('mapping', JSON.stringify(mapping))
+      const response = await fetch('/api/sales/accounts/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      const result = await response.json()
+      if (response.ok) {
+        setUploadResults(result)
+        fetchAccounts()
+        setPendingFile(null)
+        setFileColumns([])
+        setSampleRows([])
+      } else {
+        setUploadResults({
+          success: false,
+          error: result.error || 'Failed to upload accounts',
+          summary: { total: 0, successful: 0, failed: 1, duplicates: 0 },
+        })
+      }
+    } catch (error: any) {
+      console.error('Error uploading file:', error)
+      setUploadResults({
+        success: false,
+        error: error.message || 'Failed to upload accounts',
+        summary: { total: 0, successful: 0, failed: 1, duplicates: 0 },
+      })
+    } finally {
+      setUploading(false)
+      setUploadDialogOpen(true)
+    }
+  }
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await fetch('/api/sales/accounts/template')
+      if (!response.ok) throw new Error('Failed to download template')
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'account-upload-template.xlsx'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error: any) {
+      console.error('Error downloading template:', error)
+      alert('Failed to download template. Please try again.')
     }
   }
 
@@ -344,13 +442,18 @@ export default function AccountsPage() {
         
         {/* Existing Content */}
         <div className="flex items-center justify-between">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Account
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setUploadDialogOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Upload Accounts
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Account
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Account</DialogTitle>
@@ -463,7 +566,141 @@ export default function AccountsPage() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      <ColumnMappingDialog
+        open={mappingDialogOpen}
+        onOpenChange={setMappingDialogOpen}
+        columns={fileColumns}
+        sampleRows={sampleRows}
+        onConfirm={handleMappingConfirm}
+        loading={uploading}
+        standardFields={ACCOUNT_STANDARD_FIELDS}
+      />
+
+      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Upload Accounts from Excel/CSV</DialogTitle>
+            <DialogDescription>
+              Upload multiple accounts at once using an Excel (.xlsx, .xls) or CSV file. 
+              Required columns: Name. 
+              Optional columns: Type, Industry, Website, Phone, Email, Annual Revenue, Number of Employees, Description, Status, Rating.
+            </DialogDescription>
+          </DialogHeader>
+
+          {!uploadResults ? (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="text-sm font-semibold">Upload File</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Select an Excel or CSV file with account data
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadTemplate}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Template
+                </Button>
+              </div>
+
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
+                <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <div className="space-y-2">
+                  <Label htmlFor="file-upload-account" className="cursor-pointer">
+                    <span className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                      Click to select a file
+                    </span>
+                    <span className="text-sm text-muted-foreground ml-2">or drag and drop</span>
+                  </Label>
+                  <Input
+                    id="file-upload-account"
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        handleFileSelect(file)
+                      }
+                    }}
+                    disabled={uploading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    CSV, XLS, or XLSX files only
+                  </p>
+                </div>
+              </div>
+
+              {uploading && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-3" />
+                  <span className="text-sm text-muted-foreground">Processing file...</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              <div className={`rounded-lg p-4 ${uploadResults.success ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800'}`}>
+                <div className="flex items-start gap-3">
+                  {uploadResults.success ? (
+                    <Users className="h-5 w-5 text-green-600 mt-0.5" />
+                  ) : (
+                    <Edit className="h-5 w-5 text-red-600 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <h4 className={`font-semibold mb-1 ${uploadResults.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                      {uploadResults.success ? 'Upload Complete' : 'Upload Failed'}
+                    </h4>
+                    {uploadResults.summary && (
+                      <div className="text-sm space-y-1">
+                        <p>Total rows: {uploadResults.summary.total}</p>
+                        <p className="text-green-700 dark:text-green-300">
+                          ✓ Successfully imported: {uploadResults.summary.successful}
+                        </p>
+                        {uploadResults.summary.failed > 0 && (
+                          <p className="text-red-700 dark:text-red-300">
+                            ✗ Failed: {uploadResults.summary.failed}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {uploadResults.error && (
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-2">{uploadResults.error}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setUploadDialogOpen(false)
+                    setUploadResults(null)
+                  }}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    setUploadResults(null)
+                  }}
+                >
+                  Upload Another File
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Filters */}
       <Card>
@@ -580,7 +817,7 @@ export default function AccountsPage() {
           )}
         </CardContent>
       </Card>
-      </div>
+    </div>
     </SalesPageLayout>
   )
 }

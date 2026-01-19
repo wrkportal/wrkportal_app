@@ -76,34 +76,19 @@ export default function EmployeesPage() {
   const fetchEmployees = async () => {
     try {
       setLoading(true)
-      // Mock data
-      const mockEmployees: Employee[] = [
-        {
-          id: '1',
-          name: 'Alice Johnson',
-          email: 'alice.johnson@company.com',
-          phone: '+1234567890',
-          department: 'Engineering',
-          position: 'Senior Software Engineer',
-          location: 'San Francisco, CA',
-          hireDate: new Date(Date.now() - 365 * 86400000 * 2).toISOString(),
-          status: 'ACTIVE',
-        },
-        {
-          id: '2',
-          name: 'Bob Williams',
-          email: 'bob.williams@company.com',
-          phone: '+1234567891',
-          department: 'Product',
-          position: 'Product Manager',
-          location: 'Remote',
-          hireDate: new Date(Date.now() - 365 * 86400000).toISOString(),
-          status: 'ACTIVE',
-        },
-      ]
-      setEmployees(mockEmployees)
+      const params = new URLSearchParams()
+      if (departmentFilter !== 'all') {
+        params.append('department', departmentFilter)
+      }
+      const response = await fetch(`/api/recruitment/employees?${params.toString()}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch employees')
+      }
+      const data = await response.json()
+      setEmployees(data.employees || [])
     } catch (error) {
       console.error('Error fetching employees:', error)
+      setEmployees([])
     } finally {
       setLoading(false)
     }
@@ -111,15 +96,28 @@ export default function EmployeesPage() {
 
   const handleAddEmployee = async () => {
     try {
-      const newEmployee: Employee = {
-        id: Date.now().toString(),
-        ...formData,
+      const employeeData = {
+        name: formData.name,
+        email: formData.email,
         phone: formData.phone || null,
+        department: formData.department,
+        position: formData.position,
         location: formData.location || null,
-        hireDate: new Date().toISOString(),
-        status: 'ACTIVE',
       }
-      setEmployees([...employees, newEmployee])
+
+      const response = await fetch('/api/recruitment/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(employeeData),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create employee')
+      }
+
+      const data = await response.json()
+      setEmployees([...employees, data.employee])
       setAddDialogOpen(false)
       setFormData({ name: '', email: '', phone: '', department: '', position: '', location: '' })
     } catch (error) {
@@ -133,8 +131,8 @@ export default function EmployeesPage() {
   }
 
   const handleDeactivateEmployee = (employee: Employee) => {
-    setEmployees(employees.map(e => 
-      e.id === employee.id 
+    setEmployees(employees.map(e =>
+      e.id === employee.id
         ? { ...e, status: e.status === 'ACTIVE' ? 'INACTIVE' as any : 'ACTIVE' as any }
         : e
     ))
@@ -155,9 +153,9 @@ export default function EmployeesPage() {
     departments: Array.from(new Set(employees.map((e) => e.department))).length,
     avgTenure: employees.length > 0
       ? employees.reduce((sum, e) => {
-          const tenure = (Date.now() - new Date(e.hireDate).getTime()) / (365 * 86400000)
-          return sum + tenure
-        }, 0) / employees.length
+        const tenure = (Date.now() - new Date(e.hireDate).getTime()) / (365 * 86400000)
+        return sum + tenure
+      }, 0) / employees.length
       : 0,
   }
 

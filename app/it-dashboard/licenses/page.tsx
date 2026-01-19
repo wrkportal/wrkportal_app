@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ITPageLayout } from '@/components/it/it-page-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -75,29 +75,48 @@ interface License {
 const COLORS = ['#9333ea', '#10b981', '#f59e0b', '#ef4444']
 
 export default function LicensesPage() {
-  const [licenses] = useState<License[]>([
-    {
-      id: 'LIC-001',
-      software: 'Microsoft Office 365',
-      vendor: 'Microsoft',
-      licenseType: 'Subscription',
-      totalLicenses: 500,
-      usedLicenses: 485,
-      expiryDate: '2025-12-31',
-      status: 'ACTIVE',
-      cost: 15000,
-      renewalDate: '2025-11-01',
-    },
-    {
-      id: 'LIC-002',
-      software: 'Adobe Creative Suite',
-      vendor: 'Adobe',
-      licenseType: 'Subscription',
-      totalLicenses: 50,
-      usedLicenses: 48,
-      expiryDate: '2025-06-30',
-      status: 'ACTIVE',
-      cost: 25000,
+  const [licenses, setLicenses] = useState<License[]>([])
+  const [loading, setLoading] = useState(true)
+  const [licenseStats, setLicenseStats] = useState({
+    total: 0,
+    active: 0,
+    expiringSoon: 0,
+    expired: 0,
+    totalCost: 0,
+  })
+
+  useEffect(() => {
+    fetchLicenses()
+  }, [])
+
+  const fetchLicenses = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/it/licenses')
+      if (!response.ok) throw new Error('Failed to fetch licenses')
+      const data = await response.json()
+      setLicenses(data.licenses || [])
+      setLicenseStats(data.stats || {
+        total: 0,
+        active: 0,
+        expiringSoon: 0,
+        expired: 0,
+        totalCost: 0,
+      })
+    } catch (error) {
+      console.error('Error fetching licenses:', error)
+      setLicenses([])
+      setLicenseStats({
+        total: 0,
+        active: 0,
+        expiringSoon: 0,
+        expired: 0,
+        totalCost: 0,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
       renewalDate: '2025-05-01',
     },
     {

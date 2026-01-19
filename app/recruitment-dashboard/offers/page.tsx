@@ -78,32 +78,15 @@ export default function OffersPage() {
   const fetchOffers = async () => {
     try {
       setLoading(true)
-      // Mock data
-      const mockOffers: Offer[] = [
-        {
-          id: '1',
-          candidateName: 'John Doe',
-          jobTitle: 'Software Engineer',
-          offerAmount: '$120,000',
-          status: 'PENDING',
-          extendedDate: new Date().toISOString(),
-          responseDate: null,
-          notes: 'Waiting for candidate response',
-        },
-        {
-          id: '2',
-          candidateName: 'Jane Smith',
-          jobTitle: 'Product Manager',
-          offerAmount: '$150,000',
-          status: 'ACCEPTED',
-          extendedDate: new Date(Date.now() - 172800000).toISOString(),
-          responseDate: new Date(Date.now() - 86400000).toISOString(),
-          notes: 'Candidate accepted',
-        },
-      ]
-      setOffers(mockOffers)
+      const response = await fetch('/api/recruitment/offers')
+      if (!response.ok) {
+        throw new Error('Failed to fetch offers')
+      }
+      const data = await response.json()
+      setOffers(data.offers || [])
     } catch (error) {
       console.error('Error fetching offers:', error)
+      setOffers([])
     } finally {
       setLoading(false)
     }
@@ -111,14 +94,27 @@ export default function OffersPage() {
 
   const handleCreateOffer = async () => {
     try {
-      const newOffer: Offer = {
-        id: Date.now().toString(),
-        ...formData,
-        extendedDate: new Date().toISOString(),
-        responseDate: null,
+      const offerData = {
+        candidateName: formData.candidateName,
+        jobTitle: formData.jobTitle,
+        offerAmount: formData.offerAmount,
+        status: formData.status,
         notes: formData.notes || null,
       }
-      setOffers([...offers, newOffer])
+
+      const response = await fetch('/api/recruitment/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(offerData),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create offer')
+      }
+
+      const data = await response.json()
+      setOffers([...offers, data.offer])
       setIsDialogOpen(false)
       setFormData({
         candidateName: '',
@@ -140,8 +136,8 @@ export default function OffersPage() {
   const handleAcceptOffer = async () => {
     if (!selectedOffer) return
     try {
-      setOffers(offers.map(o => 
-        o.id === selectedOffer.id 
+      setOffers(offers.map(o =>
+        o.id === selectedOffer.id
           ? { ...o, status: 'ACCEPTED' as any, responseDate: new Date().toISOString() }
           : o
       ))
@@ -155,8 +151,8 @@ export default function OffersPage() {
   const handleRejectOffer = async () => {
     if (!selectedOffer) return
     try {
-      setOffers(offers.map(o => 
-        o.id === selectedOffer.id 
+      setOffers(offers.map(o =>
+        o.id === selectedOffer.id
           ? { ...o, status: 'REJECTED' as any, responseDate: new Date().toISOString() }
           : o
       ))
@@ -399,7 +395,7 @@ export default function OffersPage() {
                             </DropdownMenuItem>
                             {offer.status === 'PENDING' && (
                               <>
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   onClick={() => {
                                     setSelectedOffer(offer)
                                     setAcceptDialogOpen(true)
@@ -408,7 +404,7 @@ export default function OffersPage() {
                                   <CheckCircle className="mr-2 h-4 w-4" />
                                   Mark as Accepted
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   onClick={() => {
                                     setSelectedOffer(offer)
                                     setRejectDialogOpen(true)
@@ -418,7 +414,7 @@ export default function OffersPage() {
                                   Mark as Rejected
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   onClick={() => {
                                     setSelectedOffer(offer)
                                     setWithdrawDialogOpen(true)

@@ -2,7 +2,7 @@
  * AI Budget Forecasting Service
  */
 
-import { extractStructuredData } from '../openai-service'
+import { extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { BudgetForecast, ThresholdAlert, CostOptimization } from '@/types/ai'
 import { Budget, Project } from '@/types'

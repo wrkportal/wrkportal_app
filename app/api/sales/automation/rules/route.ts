@@ -62,6 +62,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Check automation tier limits before creating
+    const { canCreateAutomation, getAutomationLimitInfo } = await import('@/lib/utils/tier-utils')
+    const canCreate = await canCreateAutomation(session.user.id)
+    
+    if (!canCreate) {
+      const limitInfo = await getAutomationLimitInfo(session.user.id)
+      const tier = await (await import('@/lib/utils/tier-utils')).getUserTier(session.user.id)
+      
+      return NextResponse.json(
+        {
+          error: 'Automation limit reached',
+          message: tier === 'free' 
+            ? 'Free tier allows 10 automations per month. Upgrade to Starter or higher to increase your automation limits.'
+            : `You've reached your automation limit (${limitInfo.limit}/month). Upgrade to increase your limits.`,
+          upgradeRequired: true,
+          limitInfo: {
+            currentCount: limitInfo.currentCount,
+            limit: limitInfo.limit,
+            remaining: limitInfo.remaining,
+          },
+        },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const {
       name,

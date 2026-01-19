@@ -2,7 +2,7 @@
  * Intelligent Task Assignment Service
  */
 
-import { extractStructuredData } from '../openai-service'
+import { extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { TaskAssignmentRecommendation, TaskAssignmentAnalysis } from '@/types/ai'
 import { Task, User, Skill } from '@/types'

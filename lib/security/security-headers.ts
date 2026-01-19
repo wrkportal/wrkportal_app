@@ -3,6 +3,8 @@
  * Adds security headers to responses
  */
 
+import { NextResponse } from 'next/server'
+
 export interface SecurityHeaders {
   'Content-Security-Policy'?: string
   'X-Frame-Options'?: string
@@ -32,27 +34,21 @@ export const defaultSecurityHeaders: SecurityHeaders = {
  * Apply security headers to response
  */
 export function applySecurityHeaders(
-  response: Response,
+  response: Response | NextResponse,
   customHeaders?: Partial<SecurityHeaders>
-): Response {
-  const headers = new Headers(response.headers)
-
+): Response | NextResponse {
   // Merge custom headers with defaults
   const securityHeaders = { ...defaultSecurityHeaders, ...customHeaders }
 
   // Apply all security headers
   for (const [key, value] of Object.entries(securityHeaders)) {
     if (value) {
-      headers.set(key, value)
+      response.headers.set(key, value)
     }
   }
 
-  // Create new response with security headers
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  })
+  // Return the same response type (NextResponse or Response)
+  return response
 }
 
 /**

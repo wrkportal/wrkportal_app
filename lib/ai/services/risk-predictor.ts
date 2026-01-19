@@ -2,7 +2,7 @@
  * AI Risk Prediction Service
  */
 
-import { extractStructuredData } from '../openai-service'
+import { extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { RiskPrediction, RiskAnalysisResult } from '@/types/ai'
 import { Project, Task, Budget } from '@/types'

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ITPageLayout } from '@/components/it/it-page-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -47,55 +47,47 @@ interface NetworkDevice {
 }
 
 export default function NetworksPage() {
-  const [devices] = useState<NetworkDevice[]>([
-    {
-      id: 'NET-001',
-      name: 'Main Router',
-      type: 'Router',
-      ipAddress: '192.168.1.1',
-      status: 'ONLINE',
-      uptime: 99.8,
-      bandwidthUsage: 68,
-      location: 'Server Room',
-    },
-    {
-      id: 'NET-002',
-      name: 'Core Switch - Floor 1',
-      type: 'Switch',
-      ipAddress: '192.168.1.10',
-      status: 'ONLINE',
-      uptime: 99.5,
-      bandwidthUsage: 45,
-      location: 'Floor 1 - Network Closet',
-    },
-    {
-      id: 'NET-003',
-      name: 'Core Switch - Floor 2',
-      type: 'Switch',
-      ipAddress: '192.168.1.11',
-      status: 'ONLINE',
-      uptime: 99.9,
-      bandwidthUsage: 52,
-      location: 'Floor 2 - Network Closet',
-    },
-    {
-      id: 'NET-004',
-      name: 'Wireless Access Point - Lobby',
-      type: 'Access Point',
-      ipAddress: '192.168.1.20',
-      status: 'ONLINE',
-      uptime: 98.5,
-      bandwidthUsage: 35,
-      location: 'Lobby',
-    },
-  ])
+  const [devices, setDevices] = useState<NetworkDevice[]>([])
+  const [loading, setLoading] = useState(true)
+  const [networkStats, setNetworkStats] = useState({
+    totalDevices: 0,
+    onlineDevices: 0,
+    offlineDevices: 0,
+    avgUptime: 0,
+    totalBandwidth: 0,
+  })
 
-  const networkStats = {
-    totalDevices: devices.length,
-    onlineDevices: devices.filter(d => d.status === 'ONLINE').length,
-    offlineDevices: devices.filter(d => d.status === 'OFFLINE').length,
-    avgUptime: devices.reduce((sum, d) => sum + d.uptime, 0) / devices.length,
-    totalBandwidth: devices.reduce((sum, d) => sum + d.bandwidthUsage, 0),
+  useEffect(() => {
+    fetchNetworkDevices()
+  }, [])
+
+  const fetchNetworkDevices = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/it/networks')
+      if (!response.ok) throw new Error('Failed to fetch network devices')
+      const data = await response.json()
+      setDevices(data.devices || [])
+      setNetworkStats(data.stats || {
+        totalDevices: 0,
+        onlineDevices: 0,
+        offlineDevices: 0,
+        avgUptime: 0,
+        totalBandwidth: 0,
+      })
+    } catch (error) {
+      console.error('Error fetching network devices:', error)
+      setDevices([])
+      setNetworkStats({
+        totalDevices: 0,
+        onlineDevices: 0,
+        offlineDevices: 0,
+        avgUptime: 0,
+        totalBandwidth: 0,
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const bandwidthData = [

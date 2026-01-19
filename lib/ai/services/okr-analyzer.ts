@@ -2,7 +2,7 @@
  * Smart OKR Analysis Service
  */
 
-import { extractStructuredData } from '../openai-service'
+import { extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { OKRAnalysis } from '@/types/ai'
 import { Goal, KeyResult } from '@/types'

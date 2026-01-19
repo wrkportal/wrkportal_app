@@ -22,11 +22,11 @@ export function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Apply rate limiting for API routes
-  if (pathname.startsWith('/api/')) {
+  // Apply rate limiting for API routes (but exclude session checks)
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/session')) {
     const identifier = getRateLimitIdentifier(request, { useIP: true })
     
-    // Stricter rate limiting for auth endpoints
+    // Stricter rate limiting for auth endpoints (except session which is read-only)
     const preset = pathname.startsWith('/api/auth') ? 'auth' : 'api'
     const rateLimitResult = checkRateLimit(identifier, preset)
     
@@ -37,10 +37,10 @@ export function middleware(request: NextRequest) {
   }
 
   // Create response
-  let response = NextResponse.next()
+  const response = NextResponse.next()
 
   // Apply security headers to all responses
-  response = applySecurityHeaders(response)
+  applySecurityHeaders(response)
 
   // Allow public paths
   if (publicPaths.some(path => pathname.startsWith(path))) {

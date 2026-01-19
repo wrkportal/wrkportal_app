@@ -116,43 +116,108 @@ interface WorkOrderInventory {
 
 export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [inventory, setInventory] = useState<InventoryItem[]>([
-    { id: '1', item: 'Office Supplies - Paper', category: 'SUPPLIES', quantity: 500, location: 'Warehouse A', status: 'IN_STOCK', reorderLevel: 200, notes: 'Main stock for Q1 2025', workOrderId: null, assignedTo: null },
-    { id: '2', item: 'IT Equipment - Laptops', category: 'EQUIPMENT', quantity: 25, location: 'Storage Room B', status: 'LOW_STOCK', reorderLevel: 30, notes: 'Pending upgrade allocation', workOrderId: 'WO-123', assignedTo: 'IT Team' },
-    { id: '3', item: 'Safety Equipment - Helmets', category: 'SAFETY', quantity: 150, location: 'Warehouse A', status: 'IN_STOCK', reorderLevel: 50, notes: 'Compliant with safety standards', workOrderId: null, assignedTo: null },
-    { id: '4', item: 'Cleaning Supplies', category: 'SUPPLIES', quantity: 45, location: 'Storage Room C', status: 'IN_STOCK', reorderLevel: 30, notes: 'Regular maintenance stock', workOrderId: 'WO-456', assignedTo: 'Facilities Team' },
-  ])
+  const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const [distribution, setDistribution] = useState([
-    { location: 'Warehouse A', items: 120, value: 45000, utilization: 85 },
-    { location: 'Storage Room B', items: 45, value: 12000, utilization: 60 },
-    { location: 'Storage Room C', items: 30, value: 8000, utilization: 40 },
-  ])
+  const [distribution, setDistribution] = useState<any[]>([])
 
-  const [distributionHistory, setDistributionHistory] = useState<DistributionRecord[]>([
-    { id: '1', itemId: '2', itemName: 'IT Equipment - Laptops', fromLocation: 'Warehouse A', toLocation: 'Storage Room B', quantity: 5, date: '2024-12-10', workOrderId: 'WO-123', notes: 'Allocated for new employee onboarding', status: 'COMPLETED' },
-    { id: '2', itemId: '4', itemName: 'Cleaning Supplies', fromLocation: 'Warehouse A', toLocation: 'Storage Room C', quantity: 20, date: '2024-12-12', workOrderId: 'WO-456', notes: 'Monthly restocking', status: 'COMPLETED' },
-    { id: '3', itemId: '1', itemName: 'Office Supplies - Paper', fromLocation: 'Warehouse A', toLocation: 'Storage Room B', quantity: 50, date: '2024-12-15', notes: 'Redistribution for better access', status: 'PENDING' },
-  ])
+  const [distributionHistory, setDistributionHistory] = useState<DistributionRecord[]>([])
 
-  const [workOrderInventory, setWorkOrderInventory] = useState<WorkOrderInventory[]>([
-    {
-      workOrderId: 'WO-123',
-      workOrderName: 'New Employee Equipment Setup',
-      items: [
-        { itemId: '2', itemName: 'IT Equipment - Laptops', quantity: 5, assignedDate: '2024-12-10' },
-      ],
-      status: 'IN_PROGRESS'
-    },
-    {
-      workOrderId: 'WO-456',
-      workOrderName: 'Facility Maintenance - Q4',
-      items: [
-        { itemId: '4', itemName: 'Cleaning Supplies', quantity: 20, assignedDate: '2024-12-12' },
-      ],
-      status: 'ACTIVE'
-    },
-  ])
+  const [workOrderInventory, setWorkOrderInventory] = useState<WorkOrderInventory[]>([])
+
+  useEffect(() => {
+    fetchInventory()
+    fetchDistributionHistory()
+    fetchDistribution()
+  }, [activeTab])
+
+  const fetchDistribution = async () => {
+    try {
+      // TODO: Create distribution summary API endpoint
+      // For now, calculate from inventory items
+      const response = await fetch('/api/operations/inventory')
+      if (response.ok) {
+        const data = await response.json()
+        // Group by location and calculate stats
+        const locationMap = new Map<string, { items: number, value: number }>()
+        ;(data.items || []).forEach((item: any) => {
+          const loc = item.location || 'Unknown'
+          const current = locationMap.get(loc) || { items: 0, value: 0 }
+          locationMap.set(loc, {
+            items: current.items + 1,
+            value: current.value + (item.unitCost ? Number(item.unitCost) * Number(item.quantity) : 0),
+          })
+        })
+        const distributionData = Array.from(locationMap.entries()).map(([location, stats]) => ({
+          location,
+          items: stats.items,
+          value: stats.value,
+          utilization: 0, // Would need capacity data to calculate
+        }))
+        setDistribution(distributionData)
+      } else {
+        setDistribution([])
+      }
+    } catch (error) {
+      console.error('Error fetching distribution:', error)
+      setDistribution([])
+    }
+  }
+
+  const fetchInventory = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/operations/inventory')
+      if (!response.ok) {
+        throw new Error('Failed to fetch inventory')
+      }
+      const data = await response.json()
+      
+      // Transform API data to match component interface
+      const transformedInventory: InventoryItem[] = (data.items || []).map((item: any) => ({
+        id: item.id,
+        item: item.itemName,
+        category: item.category,
+        quantity: item.quantity,
+        location: item.location,
+        status: item.status,
+        reorderLevel: item.reorderLevel,
+        notes: item.notes || undefined,
+        workOrderId: null, // Can be enhanced to fetch from distributions
+        assignedTo: null, // Can be enhanced
+      }))
+      
+      setInventory(transformedInventory)
+    } catch (error) {
+      console.error('Error fetching inventory:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchDistributionHistory = async () => {
+    try {
+      const response = await fetch('/api/operations/inventory/distribution-history')
+      if (response.ok) {
+        const data = await response.json()
+        const transformed: DistributionRecord[] = (data.distributions || []).map((dist: any) => ({
+          id: dist.id,
+          itemId: dist.itemId,
+          itemName: dist.item?.itemName || dist.itemId,
+          fromLocation: dist.fromLocation,
+          toLocation: dist.toLocation,
+          quantity: dist.quantity,
+          date: new Date(dist.date).toISOString().split('T')[0],
+          workOrderId: dist.workOrderId || undefined,
+          notes: dist.notes || undefined,
+          status: dist.status,
+        }))
+        setDistributionHistory(transformed)
+      }
+    } catch (error) {
+      console.error('Error fetching distribution history:', error)
+    }
+  }
 
   const [distributeDialogOpen, setDistributeDialogOpen] = useState(false)
   const [redistributeDialogOpen, setRedistributeDialogOpen] = useState(false)
@@ -171,45 +236,62 @@ export default function InventoryPage() {
     notes: '',
   })
 
-  const categoryData = [
-    { name: 'Supplies', value: 545 },
-    { name: 'Equipment', value: 25 },
-    { name: 'Safety', value: 150 },
-    { name: 'Tools', value: 80 },
-  ]
+  // Calculate category and status data from inventory
+  const categoryData = inventory.reduce((acc, item) => {
+    const existing = acc.find(c => c.name === item.category)
+    if (existing) {
+      existing.value += item.quantity
+    } else {
+      acc.push({ name: item.category, value: item.quantity })
+    }
+    return acc
+  }, [] as Array<{ name: string; value: number }>)
 
-  const statusData = [
-    { name: 'In Stock', value: 680 },
-    { name: 'Low Stock', value: 25 },
-    { name: 'Out of Stock', value: 5 },
-  ]
+  const statusData = inventory.reduce((acc, item) => {
+    const statusName = item.status === 'IN_STOCK' ? 'In Stock' : 
+                      item.status === 'LOW_STOCK' ? 'Low Stock' : 
+                      'Out of Stock'
+    const existing = acc.find(s => s.name === statusName)
+    if (existing) {
+      existing.value += 1
+    } else {
+      acc.push({ name: statusName, value: 1 })
+    }
+    return acc
+  }, [] as Array<{ name: string; value: number }>)
 
-  const handleDistribute = () => {
+  const handleDistribute = async () => {
     if (selectedItem && distributionForm.quantity && distributionForm.toLocation) {
-      const newDistribution: DistributionRecord = {
-        id: Date.now().toString(),
-        itemId: selectedItem.id,
-        itemName: selectedItem.item,
-        fromLocation: selectedItem.location,
-        toLocation: distributionForm.toLocation,
-        quantity: parseInt(distributionForm.quantity),
-        date: new Date().toISOString().split('T')[0],
-        workOrderId: distributionForm.workOrderId || undefined,
-        notes: distributionForm.notes || undefined,
-        status: 'PENDING',
+      try {
+        const response = await fetch('/api/operations/inventory/distribute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            itemId: selectedItem.id,
+            fromLocation: selectedItem.location,
+            toLocation: distributionForm.toLocation,
+            quantity: parseInt(distributionForm.quantity),
+            workOrderId: distributionForm.workOrderId || undefined,
+            notes: distributionForm.notes || undefined,
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to distribute inventory')
+        }
+
+        // Refresh inventory and distribution history
+        await fetchInventory()
+        await fetchDistributionHistory()
+        
+        setDistributeDialogOpen(false)
+        setDistributionForm({ itemId: '', fromLocation: '', toLocation: '', quantity: '', workOrderId: '', notes: '' })
+        setSelectedItem(null)
+      } catch (error) {
+        console.error('Error distributing inventory:', error)
+        alert(error instanceof Error ? error.message : 'Failed to distribute inventory')
       }
-      setDistributionHistory([newDistribution, ...distributionHistory])
-      
-      // Update inventory
-      setInventory(inventory.map(item => 
-        item.id === selectedItem.id 
-          ? { ...item, quantity: item.quantity - parseInt(distributionForm.quantity) }
-          : item
-      ))
-      
-      setDistributeDialogOpen(false)
-      setDistributionForm({ itemId: '', fromLocation: '', toLocation: '', quantity: '', workOrderId: '', notes: '' })
-      setSelectedItem(null)
     }
   }
 
@@ -234,16 +316,32 @@ export default function InventoryPage() {
     }
   }
 
-  const handleSaveNotes = () => {
+  const handleSaveNotes = async () => {
     if (selectedItem && notesForm.notes) {
-      setInventory(inventory.map(item => 
-        item.id === selectedItem.id 
-          ? { ...item, notes: notesForm.notes }
-          : item
-      ))
-      setNotesDialogOpen(false)
-      setNotesForm({ itemId: '', notes: '' })
-      setSelectedItem(null)
+      try {
+        const response = await fetch(`/api/operations/inventory/${selectedItem.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            notes: notesForm.notes,
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to update notes')
+        }
+
+        // Refresh inventory
+        await fetchInventory()
+        
+        setNotesDialogOpen(false)
+        setNotesForm({ itemId: '', notes: '' })
+        setSelectedItem(null)
+      } catch (error) {
+        console.error('Error saving notes:', error)
+        alert(error instanceof Error ? error.message : 'Failed to save notes')
+      }
     }
   }
 

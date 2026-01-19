@@ -2,12 +2,13 @@
  * AI Project Assistant with Function Calling
  */
 
-import { generateFunctionCall, generateChatCompletion } from '../openai-service'
+import { generateFunctionCall, generateChatCompletion, ChatTool } from '../ai-service'
 import { PROMPTS } from '../prompts'
+import { convertOpenAIMessage, convertOpenAITools } from '../compat'
 import type OpenAI from 'openai'
 
-// Define available functions for the AI assistant
-export const ASSISTANT_FUNCTIONS: OpenAI.Chat.ChatCompletionTool[] = [
+// Define available functions for the AI assistant (using ChatTool type for compatibility)
+export const ASSISTANT_FUNCTIONS: ChatTool[] = [
   {
     type: 'function',
     function: {
@@ -292,6 +293,207 @@ export const ASSISTANT_FUNCTIONS: OpenAI.Chat.ChatCompletionTool[] = [
       },
     },
   },
+  // Sales-specific functions
+  {
+    type: 'function',
+    function: {
+      name: 'schedule_meeting',
+      description: 'Schedule a meeting or call with a client, lead, or contact. Use this when user asks to schedule, book, or set up a meeting.',
+      parameters: {
+        type: 'object',
+        properties: {
+          subject: {
+            type: 'string',
+            description: 'Meeting subject/title',
+          },
+          description: {
+            type: 'string',
+            description: 'Meeting description or agenda',
+          },
+          dueDate: {
+            type: 'string',
+            description: 'Meeting date and time in ISO format (e.g., 2024-01-15T14:00:00Z)',
+          },
+          duration: {
+            type: 'number',
+            description: 'Meeting duration in minutes (default: 30)',
+          },
+          type: {
+            type: 'string',
+            enum: ['MEETING', 'CALL', 'EMAIL', 'TASK'],
+            description: 'Activity type - use MEETING for in-person, CALL for phone/video calls',
+          },
+          leadId: {
+            type: 'string',
+            description: 'ID of the lead if meeting is with a lead',
+          },
+          contactId: {
+            type: 'string',
+            description: 'ID of the contact if meeting is with a contact',
+          },
+          accountId: {
+            type: 'string',
+            description: 'ID of the account if meeting is with an account',
+          },
+          opportunityId: {
+            type: 'string',
+            description: 'ID of the opportunity if meeting is related to a deal',
+          },
+          location: {
+            type: 'string',
+            description: 'Meeting location (for in-person meetings) or video call link',
+          },
+        },
+        required: ['subject', 'dueDate'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_opportunity',
+      description: 'Create a new sales opportunity (deal). Use this when user asks to add a new deal, opportunity, or sales prospect.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Opportunity name (e.g., "Q1 Enterprise Deal with Acme Corp")',
+          },
+          description: {
+            type: 'string',
+            description: 'Opportunity description',
+          },
+          amount: {
+            type: 'number',
+            description: 'Deal amount/value',
+          },
+          stage: {
+            type: 'string',
+            enum: ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION', 'CLOSED_WON', 'CLOSED_LOST'],
+            description: 'Sales stage',
+          },
+          probability: {
+            type: 'number',
+            description: 'Win probability percentage (0-100)',
+          },
+          expectedCloseDate: {
+            type: 'string',
+            description: 'Expected close date in ISO format',
+          },
+          accountId: {
+            type: 'string',
+            description: 'Associated account ID',
+          },
+          leadId: {
+            type: 'string',
+            description: 'Associated lead ID if converted from lead',
+          },
+        },
+        required: ['name'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_my_schedule',
+      description: "Get the user's schedule/calendar for a specific day. Shows meetings, calls, and activities scheduled for that day.",
+      parameters: {
+        type: 'object',
+        properties: {
+          date: {
+            type: 'string',
+            description: 'Date in ISO format (YYYY-MM-DD). If not provided, uses today.',
+          },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_my_priorities',
+      description: "Get the user's priorities - high priority tasks, overdue items, and important activities that need attention.",
+      parameters: {
+        type: 'object',
+        properties: {
+          includeOverdue: {
+            type: 'boolean',
+            description: 'Include overdue tasks and activities',
+          },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_leads',
+      description: 'List sales leads. Can search by name, company, or email.',
+      parameters: {
+        type: 'object',
+        properties: {
+          search: {
+            type: 'string',
+            description: 'Search term to find leads by name, company, or email',
+          },
+          status: {
+            type: 'string',
+            enum: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'],
+            description: 'Filter by lead status',
+          },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_contacts',
+      description: 'List sales contacts. Can search by name or email.',
+      parameters: {
+        type: 'object',
+        properties: {
+          search: {
+            type: 'string',
+            description: 'Search term to find contacts by name or email',
+          },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_opportunities',
+      description: 'List sales opportunities (deals). Can filter by stage or search by name.',
+      parameters: {
+        type: 'object',
+        properties: {
+          search: {
+            type: 'string',
+            description: 'Search term to find opportunities by name',
+          },
+          stage: {
+            type: 'string',
+            enum: ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION', 'CLOSED_WON', 'CLOSED_LOST'],
+            description: 'Filter by sales stage',
+          },
+          status: {
+            type: 'string',
+            enum: ['OPEN', 'CLOSED'],
+            description: 'Filter by opportunity status',
+          },
+        },
+        required: [],
+      },
+    },
+  },
 ]
 
 /**
@@ -299,9 +501,9 @@ export const ASSISTANT_FUNCTIONS: OpenAI.Chat.ChatCompletionTool[] = [
  * Keep the system message and the most recent exchanges
  */
 function trimConversationHistory(
-  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  messages: Array<{ role: string; content: string }>,
   maxMessages: number = 10
-): OpenAI.Chat.ChatCompletionMessageParam[] {
+): Array<{ role: string; content: string }> {
   // Always keep system message
   const systemMessage = messages[0]?.role === 'system' ? messages[0] : null
   const conversationMessages = systemMessage ? messages.slice(1) : messages
@@ -321,7 +523,12 @@ function trimConversationHistory(
  */
 export async function chatWithAssistant(
   messages: OpenAI.Chat.ChatCompletionMessageParam[],
-  availableFunctions?: Record<string, Function>
+  availableFunctions?: Record<string, Function>,
+  options?: {
+    model?: string
+    temperature?: number
+    maxTokens?: number
+  }
 ): Promise<{ message: string; functionCalls?: any[] }> {
   // Add system prompt if not present
   if (messages[0]?.role !== 'system') {
@@ -334,7 +541,11 @@ export async function chatWithAssistant(
   // Trim conversation history to prevent token overflow
   const trimmedMessages = trimConversationHistory(messages, 10)
 
-  const completion = await generateFunctionCall(trimmedMessages, ASSISTANT_FUNCTIONS)
+  const completion = await generateFunctionCall(trimmedMessages, ASSISTANT_FUNCTIONS, {
+    model: options?.model,
+    temperature: options?.temperature,
+    maxTokens: options?.maxTokens,
+  })
 
   const responseMessage = completion.choices[0]?.message
 
@@ -375,7 +586,11 @@ export async function chatWithAssistant(
     }
 
     // Get final response after function calls
-    const finalCompletion = await generateChatCompletion(trimmedMessages)
+    const finalCompletion = await generateChatCompletion(trimmedMessages, {
+      model: options?.model,
+      temperature: options?.temperature ?? 0.7,
+      maxTokens: options?.maxTokens,
+    })
     const finalMessage = finalCompletion.choices[0]?.message?.content || ''
 
     return {

@@ -1,0 +1,160 @@
+/**
+ * Jenkins Pipeline Configuration
+ * 
+ * Copy this file to Jenkinsfile in your repository root
+ * This pipeline will automatically trigger on code changes
+ * and send webhook events to your Developer Dashboard
+ */
+
+pipeline {
+    agent any
+    
+    environment {
+        // Dashboard webhook configuration
+        WEBHOOK_URL = 'https://your-domain.com/api/developer/webhooks/jenkins'
+        WEBHOOK_TOKEN = credentials('webhook-token') // Store token in Jenkins credentials
+        
+        // Build information
+        NODE_VERSION = '18'
+        BUILD_TIMESTAMP = "${currentBuild.timeInMillis}"
+    }
+    
+    options {
+        // Build retention
+        buildDiscarder(logRotator(numToKeepStr: '30'))
+        
+        // Timeout
+        timeout(time: 30, unit: 'MINUTES')
+        
+        // Retry on failure
+        retry(2)
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.GIT_COMMIT = sh(
+                        script: 'git rev-parse HEAD',
+                        returnStdout: true
+                    ).trim()
+                    env.GIT_BRANCH = sh(
+                        script: 'git rev-parse --abbrev-ref HEAD',
+                        returnStdout: true
+                    ).trim()
+                }
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                sh '''
+                    echo "📦 Installing dependencies..."
+                    npm ci
+                    
+                    echo "🔨 Building application..."
+                    npm run build
+                '''
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                sh '''
+                    echo "🧪 Running tests..."
+                    npm test || true
+                    
+                    echo "🔍 Running linter..."
+                    npm run lint || true
+                '''
+            }
+        }
+        
+        stage('Deploy to Development') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                sh '''
+                    echo "🚀 Deploying to Development environment..."
+                    echo "Branch: ${GIT_BRANCH}"
+                    echo "Commit: ${GIT_COMMIT}"
+                    # Add your deployment script here
+                    # Example: docker push, kubectl apply, etc.
+                '''
+            }
+        }
+        
+        stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    // Optional: Require approval for production deployments
+                    // input message: 'Deploy to Production?', ok: 'Deploy'
+                }
+                sh '''
+                    echo "🚀 Deploying to Production environment..."
+                    echo "Branch: ${GIT_BRANCH}"
+                    echo "Commit: ${GIT_COMMIT}"
+                    # Add your deployment script here
+                    # Example: docker push, kubectl apply, etc.
+                '''
+            }
+        }
+    }
+    
+    post {
+        always {
+            script {
+                // Send webhook to dashboard
+                def buildStatus = currentBuild.result ?: 'SUCCESS'
+                def buildPhase = currentBuild.currentResult ?: 'COMPLETED'
+                def duration = currentBuild.duration ?: 0
+                
+                sh """
+                    curl -X POST ${WEBHOOK_URL} \\
+                        -H "Content-Type: application/json" \\
+                        -H "X-Jenkins-Token: ${WEBHOOK_TOKEN}" \\
+                        -H "Authorization: Bearer ${WEBHOOK_TOKEN}" \\
+                        -d '{
+                            "build": {
+                                "number": ${BUILD_NUMBER},
+                                "phase": "${buildPhase}",
+                                "status": "${buildStatus}",
+                                "url": "${BUILD_URL}",
+                                "full_url": "${BUILD_URL}",
+                                "scm": {
+                                    "commit": "${env.GIT_COMMIT}",
+                                    "branch": ["${env.GIT_BRANCH}"]
+                                },
+                                "timestamp": ${BUILD_TIMESTAMP},
+                                "duration": ${duration}
+                            },
+                            "name": "${JOB_NAME}",
+                            "fullName": "${JOB_FULL_NAME}",
+                            "url": "${JOB_URL}",
+                            "displayName": "${BUILD_DISPLAY_NAME}",
+                            "result": "${buildStatus}",
+                            "duration": ${duration},
+                            "timestamp": ${BUILD_TIMESTAMP}
+                        }' || echo "Webhook failed (non-critical)"
+                """
+            }
+        }
+        
+        success {
+            echo "✅ Build successful!"
+        }
+        
+        failure {
+            echo "❌ Build failed!"
+        }
+        
+        unstable {
+            echo "⚠️ Build unstable!"
+        }
+    }
+}

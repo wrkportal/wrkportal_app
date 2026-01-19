@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ITPageLayout } from '@/components/it/it-page-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,9 +39,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { 
-  Plus, 
-  Search, 
+import {
+  Plus,
+  Search,
   Book,
   FileText,
   Video,
@@ -65,52 +65,27 @@ interface Documentation {
 }
 
 export default function DocumentationPage() {
-  const [docs] = useState<Documentation[]>([
-    {
-      id: 'DOC-001',
-      title: 'Server Setup Guide',
-      category: 'Infrastructure',
-      type: 'Guide',
-      author: 'John Doe',
-      createdDate: '2024-01-15',
-      lastUpdated: '2024-11-20',
-      views: 245,
-      tags: ['server', 'setup', 'infrastructure'],
-    },
-    {
-      id: 'DOC-002',
-      title: 'Network Troubleshooting Procedures',
-      category: 'Networking',
-      type: 'Procedure',
-      author: 'Jane Smith',
-      createdDate: '2024-03-10',
-      lastUpdated: '2024-12-01',
-      views: 189,
-      tags: ['network', 'troubleshooting'],
-    },
-    {
-      id: 'DOC-003',
-      title: 'Security Best Practices',
-      category: 'Security',
-      type: 'Policy',
-      author: 'Bob Wilson',
-      createdDate: '2024-02-20',
-      lastUpdated: '2024-10-15',
-      views: 312,
-      tags: ['security', 'policy', 'best-practices'],
-    },
-    {
-      id: 'DOC-004',
-      title: 'User Account Management Video',
-      category: 'User Management',
-      type: 'Video',
-      author: 'Alice Brown',
-      createdDate: '2024-05-05',
-      lastUpdated: '2024-05-05',
-      views: 156,
-      tags: ['users', 'accounts', 'video'],
-    },
-  ])
+  const [docs, setDocs] = useState<Documentation[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchDocumentation()
+  }, [])
+
+  const fetchDocumentation = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/it/documentation')
+      if (!response.ok) throw new Error('Failed to fetch documentation')
+      const data = await response.json()
+      setDocs(data.documentation || [])
+    } catch (error) {
+      console.error('Error fetching documentation:', error)
+      setDocs([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -143,9 +118,9 @@ export default function DocumentationPage() {
   }
 
   return (
-    <ITPageLayout 
-      title="Documentation & Knowledge Base" 
-      description="IT documentation, guides, and knowledge base articles"
+    <ITPageLayout
+      title="Documentation & Knowledge Base"
+      description="Documentation, guides, and knowledge base articles"
     >
       <div className="space-y-6">
         {/* Stats Cards */}

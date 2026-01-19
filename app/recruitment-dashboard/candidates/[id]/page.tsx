@@ -111,8 +111,12 @@ export default function CandidateDetailPage() {
     notes: '',
   })
   const [statusData, setStatusData] = useState({ newStatus: '' })
-  const [emailData, setEmailData] = useState({ subject: '', body: '' })
+  const [emailData, setEmailData] = useState({ subject: '', body: '', templateId: '' })
   const [notesData, setNotesData] = useState({ notes: '' })
+  const [timeline, setTimeline] = useState<any[]>([])
+  const [timelineLoading, setTimelineLoading] = useState(false)
+  const [emailTemplates, setEmailTemplates] = useState<any[]>([])
+  const [emailTemplateDialogOpen, setEmailTemplateDialogOpen] = useState(false)
 
   const candidateStages = [
     { id: 'APPLIED', label: 'Applied' },
@@ -124,6 +128,8 @@ export default function CandidateDetailPage() {
 
   useEffect(() => {
     fetchCandidate()
+    fetchTimeline()
+    fetchEmailTemplates()
   }, [candidateId])
 
   useEffect(() => {
@@ -147,47 +153,68 @@ export default function CandidateDetailPage() {
   const fetchCandidate = async () => {
     try {
       setLoading(true)
-      // Mock data - replace with API call
-      const mockCandidates: Candidate[] = [
-        {
-          id: '1',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@example.com',
-          phone: '+1234567890',
-          linkedin: 'linkedin.com/in/johndoe',
-          position: 'Software Engineer',
-          status: 'INTERVIEW',
-          source: 'LINKEDIN',
-          experience: 5,
-          rating: 'HIGH',
-          resume: null,
-          notes: 'Strong technical background',
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'jane.smith@example.com',
-          phone: '+1234567891',
-          linkedin: 'linkedin.com/in/janesmith',
-          position: 'Product Manager',
-          status: 'OFFER',
-          source: 'REFERRAL',
-          experience: 7,
-          rating: 'HIGH',
-          resume: null,
-          notes: 'Excellent communication skills',
-          createdAt: new Date().toISOString(),
-        },
-      ]
-      const foundCandidate = mockCandidates.find(c => c.id === candidateId)
+      const response = await fetch(`/api/recruitment/candidates`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch candidate')
+      }
+      const data = await response.json()
+      const foundCandidate = data.candidates?.find((c: Candidate) => c.id === candidateId)
       setCandidate(foundCandidate || null)
     } catch (error) {
       console.error('Error fetching candidate:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchTimeline = async () => {
+    try {
+      setTimelineLoading(true)
+      const response = await fetch(`/api/recruitment/candidates/${candidateId}/timeline`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch timeline')
+      }
+      const data = await response.json()
+      setTimeline(data.timeline || [])
+    } catch (error) {
+      console.error('Error fetching timeline:', error)
+      setTimeline([])
+    } finally {
+      setTimelineLoading(false)
+    }
+  }
+
+  const fetchEmailTemplates = async () => {
+    try {
+      const response = await fetch('/api/recruitment/email-templates')
+      if (!response.ok) {
+        throw new Error('Failed to fetch email templates')
+      }
+      const data = await response.json()
+      setEmailTemplates(data.templates || [])
+    } catch (error) {
+      console.error('Error fetching email templates:', error)
+      setEmailTemplates([])
+    }
+  }
+
+  const addTimelineActivity = async (type: string, title: string, description?: string, metadata?: any) => {
+    try {
+      const response = await fetch(`/api/recruitment/candidates/${candidateId}/timeline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          title,
+          description,
+          metadata,
+        }),
+      })
+      if (response.ok) {
+        fetchTimeline()
+      }
+    } catch (error) {
+      console.error('Error adding timeline activity:', error)
     }
   }
 
@@ -289,8 +316,14 @@ export default function CandidateDetailPage() {
   const handleSubmitStatusChange = async () => {
     if (!candidate) return
     try {
-      // TODO: Update status via API
+      const oldStatus = candidate.status
       setCandidate({ ...candidate, status: statusData.newStatus as any })
+      await addTimelineActivity(
+        'STATUS_CHANGE',
+        'Status Updated',
+        `Status changed from ${oldStatus} to ${statusData.newStatus}`,
+        { oldStatus, newStatus: statusData.newStatus }
+      )
       setStatusDialogOpen(false)
     } catch (error) {
       console.error('Error changing status:', error)
@@ -304,12 +337,49 @@ export default function CandidateDetailPage() {
 
   const handleSubmitEmail = async () => {
     try {
-      // TODO: Send email via API
+      if (!candidate) return
+
+      const response = await fetch('/api/recruitment/email-templates', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateId: emailData.templateId || null,
+          candidateId: candidate.id,
+          variables: {
+            candidateName: `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() || candidate.email,
+            companyName: 'Your Company',
+            positionName: candidate.position || 'Position',
+            recruiterName: 'Recruiter',
+            ...(emailData.subject ? { subject: emailData.subject } : {}),
+            ...(emailData.body ? { body: emailData.body } : {}),
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send email')
+      }
+
+      await addTimelineActivity('EMAIL_SENT', 'Email Sent', `Email sent to ${candidate.email}`, {
+        subject: emailData.subject,
+      })
+
       setEmailDialogOpen(false)
-      setEmailData({ subject: '', body: '' })
+      setEmailData({ subject: '', body: '', templateId: '' })
     } catch (error) {
       console.error('Error sending email:', error)
+      alert('Failed to send email')
     }
+  }
+
+  const handleUseTemplate = (template: any) => {
+    setEmailData({
+      subject: template.subject,
+      body: template.body,
+      templateId: template.id,
+    })
+    setEmailTemplateDialogOpen(false)
+    setEmailDialogOpen(true)
   }
 
   const handleAddNotes = () => {
@@ -320,8 +390,13 @@ export default function CandidateDetailPage() {
   const handleSubmitNotes = async () => {
     if (!candidate) return
     try {
-      // TODO: Update notes via API
       setCandidate({ ...candidate, notes: notesData.notes || null })
+      await addTimelineActivity(
+        'NOTE_ADDED',
+        'Notes Updated',
+        notesData.notes || 'Notes cleared',
+        {}
+      )
       setNotesDialogOpen(false)
     } catch (error) {
       console.error('Error updating notes:', error)
@@ -439,9 +514,13 @@ export default function CandidateDetailPage() {
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Add Notes
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setEmailTemplateDialogOpen(true)}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send Email (Template)
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSendEmail}>
                   <Mail className="mr-2 h-4 w-4" />
-                  Send Email
+                  Send Custom Email
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleDownloadResume} disabled={!candidate?.resume}>
@@ -515,9 +594,10 @@ export default function CandidateDetailPage() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="notes">Notes</TabsTrigger>
           </TabsList>
@@ -588,6 +668,69 @@ export default function CandidateDetailPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Timeline Tab */}
+          <TabsContent value="timeline" className="space-y-4 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Activity Timeline</CardTitle>
+                <CardDescription>
+                  View all activities and interactions with this candidate
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {timelineLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Loading timeline...
+                  </div>
+                ) : timeline.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No activities yet
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {timeline.map((activity, index) => (
+                      <div
+                        key={activity.id}
+                        className="flex gap-4 pb-4 border-b last:border-0"
+                      >
+                        <div className="flex flex-col items-center">
+                          <div className="w-2 h-2 rounded-full bg-primary mt-1" />
+                          {index < timeline.length - 1 && (
+                            <div className="w-px h-full bg-border mt-2" />
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">{activity.title}</p>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(activity.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                          {activity.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {activity.description}
+                            </p>
+                          )}
+                          {activity.actor && (
+                            <p className="text-xs text-muted-foreground">
+                              by {activity.actor.name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Contact Tab */}
@@ -1028,9 +1171,47 @@ export default function CandidateDetailPage() {
           </DialogContent>
         </Dialog>
 
+        {/* Email Templates Dialog */}
+        <Dialog open={emailTemplateDialogOpen} onOpenChange={setEmailTemplateDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Select Email Template</DialogTitle>
+              <DialogDescription>
+                Choose a template to send to {candidate?.email}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              {emailTemplates.map((template) => (
+                <Card
+                  key={template.id}
+                  className="cursor-pointer hover:bg-accent"
+                  onClick={() => handleUseTemplate(template)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{template.name}</p>
+                        <p className="text-sm text-muted-foreground">{template.subject}</p>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        Use Template
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setEmailTemplateDialogOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Send Email Dialog */}
         <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Send Email</DialogTitle>
               <DialogDescription>
@@ -1038,6 +1219,13 @@ export default function CandidateDetailPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              {emailData.templateId && (
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="text-sm text-muted-foreground">
+                    Using template. You can customize the content below.
+                  </p>
+                </div>
+              )}
               <div>
                 <Label htmlFor="email-subject">Subject *</Label>
                 <Input
@@ -1053,9 +1241,12 @@ export default function CandidateDetailPage() {
                   id="email-body"
                   value={emailData.body}
                   onChange={(e) => setEmailData({ ...emailData, body: e.target.value })}
-                  rows={8}
+                  rows={10}
                   required
                 />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Variables: {'{{candidateName}}'}, {'{{companyName}}'}, {'{{positionName}}'}, etc.
+                </p>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>

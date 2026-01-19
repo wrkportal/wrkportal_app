@@ -88,38 +88,15 @@ export default function InterviewsPage() {
   const fetchInterviews = async () => {
     try {
       setLoading(true)
-      // Mock data
-      const mockInterviews: Interview[] = [
-        {
-          id: '1',
-          candidateId: '1',
-          candidateName: 'John Doe',
-          jobTitle: 'Software Engineer',
-          interviewer: 'Jane Smith',
-          type: 'VIDEO',
-          status: 'SCHEDULED',
-          scheduledDate: new Date(Date.now() + 86400000).toISOString(),
-          duration: 60,
-          location: 'Zoom',
-          notes: null,
-        },
-        {
-          id: '2',
-          candidateId: '2',
-          candidateName: 'Jane Smith',
-          jobTitle: 'Product Manager',
-          interviewer: 'Bob Johnson',
-          type: 'ONSITE',
-          status: 'COMPLETED',
-          scheduledDate: new Date(Date.now() - 86400000).toISOString(),
-          duration: 90,
-          location: 'Office',
-          notes: 'Strong candidate',
-        },
-      ]
-      setInterviews(mockInterviews)
+      const response = await fetch('/api/recruitment/interviews')
+      if (!response.ok) {
+        throw new Error('Failed to fetch interviews')
+      }
+      const data = await response.json()
+      setInterviews(data.interviews || [])
     } catch (error) {
       console.error('Error fetching interviews:', error)
+      setInterviews([])
     } finally {
       setLoading(false)
     }
@@ -127,15 +104,32 @@ export default function InterviewsPage() {
 
   const handleCreateInterview = async () => {
     try {
-      const newInterview: Interview = {
-        id: Date.now().toString(),
+      const interviewData = {
         candidateId: '1', // TODO: Get actual candidate ID from candidate selection
-        ...formData,
+        candidateName: formData.candidateName,
+        jobTitle: formData.jobTitle,
+        interviewer: formData.interviewer,
+        type: formData.type,
+        status: formData.status,
+        scheduledDate: formData.scheduledDate,
         duration: parseInt(formData.duration),
         location: formData.location || null,
         notes: formData.notes || null,
       }
-      setInterviews([...interviews, newInterview])
+
+      const response = await fetch('/api/recruitment/interviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(interviewData),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create interview')
+      }
+
+      const data = await response.json()
+      setInterviews([...interviews, data.interview])
       setIsDialogOpen(false)
       setFormData({
         candidateName: '',
@@ -173,8 +167,8 @@ export default function InterviewsPage() {
     if (!selectedInterview) return
     try {
       const dateTime = formData.scheduledDate ? new Date(formData.scheduledDate).toISOString() : selectedInterview.scheduledDate
-      setInterviews(interviews.map(i => 
-        i.id === selectedInterview.id 
+      setInterviews(interviews.map(i =>
+        i.id === selectedInterview.id
           ? { ...i, scheduledDate: dateTime, duration: parseInt(formData.duration), location: formData.location || null }
           : i
       ))
@@ -194,8 +188,8 @@ export default function InterviewsPage() {
   const handleSaveFeedback = async () => {
     if (!selectedInterview) return
     try {
-      setInterviews(interviews.map(i => 
-        i.id === selectedInterview.id 
+      setInterviews(interviews.map(i =>
+        i.id === selectedInterview.id
           ? { ...i, notes: feedbackData.notes, status: 'COMPLETED' as any }
           : i
       ))
@@ -209,8 +203,8 @@ export default function InterviewsPage() {
   const handleCancelInterview = async () => {
     if (!selectedInterview) return
     try {
-      setInterviews(interviews.map(i => 
-        i.id === selectedInterview.id 
+      setInterviews(interviews.map(i =>
+        i.id === selectedInterview.id
           ? { ...i, status: 'CANCELLED' as any }
           : i
       ))
@@ -222,8 +216,8 @@ export default function InterviewsPage() {
   }
 
   const handleMarkComplete = (interview: Interview) => {
-    setInterviews(interviews.map(i => 
-      i.id === interview.id 
+    setInterviews(interviews.map(i =>
+      i.id === interview.id
         ? { ...i, status: 'COMPLETED' as any }
         : i
     ))
@@ -456,9 +450,9 @@ export default function InterviewsPage() {
                   {filteredInterviews.map((interview) => (
                     <TableRow key={interview.id}>
                       <TableCell className="font-medium">
-                        <Link 
-                          href={`/recruitment-dashboard/candidates/${interview.candidateId}`} 
-                          className="hover:underline" 
+                        <Link
+                          href={`/recruitment-dashboard/candidates/${interview.candidateId}`}
+                          className="hover:underline"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {interview.candidateName}
@@ -510,7 +504,7 @@ export default function InterviewsPage() {
                                   <MessageSquare className="mr-2 h-4 w-4" />
                                   Add Feedback
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   onClick={() => {
                                     setSelectedInterview(interview)
                                     setCancelDialogOpen(true)

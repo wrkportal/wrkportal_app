@@ -35,6 +35,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Helper to safely query Prisma models that might not exist
+    const safeQuery = async <T>(
+      queryFn: () => Promise<T>,
+      defaultValue: T
+    ): Promise<T> => {
+      try {
+        return await queryFn()
+      } catch (error: any) {
+        // Check if it's a Prisma error about missing model
+        if (
+          error?.code === 'P2001' ||
+          error?.message?.includes('does not exist') ||
+          error?.message?.includes('Unknown model') ||
+          error?.message?.includes('model does not exist')
+        ) {
+          console.warn('Prisma model not found, using default value:', error.message)
+          return defaultValue
+        }
+        throw error
+      }
+    }
+
     const { searchParams } = new URL(req.url)
     const projectId = searchParams.get('projectId')
     const status = searchParams.get('status')
@@ -84,41 +106,73 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const tasks = await prisma.task.findMany({
-      where: whereClause,
-      include: {
-        project: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
+    const tasks = await safeQuery(
+      () => prisma.task.findMany({
+        where: whereClause,
+        include: {
+          project: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          assignee: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              name: true,
+              email: true,
+              image: true,
+            },
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            name: true,
-            email: true,
-            image: true,
-          },
+        orderBy: {
+          dueDate: 'asc',
         },
-      },
-      orderBy: {
-        dueDate: 'asc',
-      },
+      }),
+      [] as any[]
+    )
+
+    // Extract dependencyId from tags for each task
+    const tasksWithDependencies = tasks.map((task) => {
+      let dependencyId: string | undefined = undefined
+      try {
+        const dependencyTag = task.tags?.find((tag: any) => typeof tag === 'string' && tag.startsWith('dependency:'))
+        if (dependencyTag && typeof dependencyTag === 'string') {
+          dependencyId = String(dependencyTag).replace('dependency:', '')
+        }
+      } catch (err) {
+        // Silently ignore dependency extraction errors for individual tasks
+        console.error('Error extracting dependency from task tags:', err)
+      }
+      
+      return {
+        ...task,
+        dependencyId: dependencyId,
+        predecessorId: dependencyId,
+      }
     })
 
     return NextResponse.json({ 
-      tasks,
-      totalCount: tasks.length,
+      tasks: tasksWithDependencies,
+      totalCount: tasksWithDependencies.length,
       success: true,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching tasks:', error)
+    const errorMessage = error?.message || 'Internal server error'
+    const errorDetails = process.env.NODE_ENV === 'development' 
+      ? { message: errorMessage, stack: error?.stack } 
+      : { message: errorMessage }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Failed to fetch tasks',
+        message: errorMessage,
+        details: errorDetails,
+      },
       { status: 500 }
     )
   }
@@ -155,12 +209,33 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
 
+    // Handle dependencyId/predecessorId by storing in tags (temporary solution)
+    // TODO: Add proper dependencyId field to Task schema
+    let tags: string[] = Array.isArray(updateData.tags) 
+      ? updateData.tags.filter((t: any) => typeof t === 'string')
+      : (Array.isArray(existingTask.tags) 
+          ? existingTask.tags.filter((t: any) => typeof t === 'string')
+          : [])
+    const dependencyId = updateData.dependencyId || updateData.predecessorId
+    
+    if (dependencyId !== undefined) {
+      // Remove old dependency tag
+      tags = tags.filter((tag: string) => typeof tag === 'string' && !tag.startsWith('dependency:'))
+      if (dependencyId && typeof dependencyId === 'string') {
+        tags.push(`dependency:${dependencyId}`)
+      }
+    }
+    
+    // Remove dependencyId and predecessorId from updateData since they don't exist in schema
+    const { dependencyId: _, predecessorId: __, ...dataToUpdate } = updateData
+
     // Update task
     const task = await prisma.task.update({
       where: { id: taskId },
       data: {
-        ...updateData,
-        dueDate: updateData.dueDate ? new Date(updateData.dueDate) : undefined,
+        ...dataToUpdate,
+        tags: tags,
+        dueDate: dataToUpdate.dueDate ? new Date(dataToUpdate.dueDate) : undefined,
       },
       include: {
         project: {
@@ -179,6 +254,20 @@ export async function PATCH(req: NextRequest) {
         },
       },
     })
+    
+    // Add dependencyId to the response for frontend use
+    try {
+      const tagsArray = Array.isArray(task.tags) ? task.tags : []
+      const dependencyTag = tagsArray.find((tag: any) => typeof tag === 'string' && tag.startsWith('dependency:'))
+      if (dependencyTag && typeof dependencyTag === 'string') {
+        const dependencyId = String(dependencyTag).replace('dependency:', '')
+        (task as any).dependencyId = dependencyId
+        (task as any).predecessorId = dependencyId
+      }
+    } catch (err) {
+      // Silently ignore dependency extraction errors
+      console.error('Error extracting dependency from tags:', err)
+    }
 
     return NextResponse.json({ task })
   } catch (error) {

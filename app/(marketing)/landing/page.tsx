@@ -76,18 +76,32 @@ const markAsVisited = () => {
 
 // Animated Background Component
 const AnimatedBackground = () => {
+    const [dots, setDots] = useState<Array<{ left: number; top: number; delay: number; duration: number }>>([])
+
+    useEffect(() => {
+        // Generate random values only on client side to avoid hydration mismatch
+        setDots(
+            Array.from({ length: 50 }, () => ({
+                left: Math.random() * 100,
+                top: Math.random() * 100,
+                delay: Math.random() * 3,
+                duration: 2 + Math.random() * 2,
+            }))
+        )
+    }, [])
+
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-950 via-indigo-950 to-black opacity-90"></div>
-            {[...Array(50)].map((_, i) => (
+            {dots.map((dot, i) => (
                 <div
                     key={i}
                     className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30 animate-pulse"
                     style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 3}s`,
-                        animationDuration: `${2 + Math.random() * 2}s`,
+                        left: `${dot.left}%`,
+                        top: `${dot.top}%`,
+                        animationDelay: `${dot.delay}s`,
+                        animationDuration: `${dot.duration}s`,
                     }}
                 />
             ))}
@@ -469,49 +483,82 @@ export default function LandingPage() {
             name: "Free",
             price: billingPeriod === 'monthly' ? "$0" : "$0",
             period: "month",
-            description: "Perfect for individuals getting started",
+            description: "Perfect for individuals and small teams getting started",
             features: [
-                "Limited words per month",
-                "Generate AI images",
-                "Text To Speech",
-                "AI Code Generator",
-                "AI-powered Chat",
-                "Speech to Text",
-                "Basic Support",
+                "Up to 10 users",
+                "1 project",
+                "100 MB storage",
+                "10 automations/month",
+                "Basic support",
+                "All core features",
             ],
             popular: false,
             cta: "Get Started",
         },
         {
             name: "Starter",
-            price: billingPeriod === 'monthly' ? "$29" : "$278",
-            period: billingPeriod === 'monthly' ? "month" : "year",
+            price: billingPeriod === 'monthly' ? "$8" : "$76",
+            period: billingPeriod === 'monthly' ? "user/month" : "user/year",
             description: "Best for growing teams and small businesses",
             features: [
-                "Extended word limit",
-                "Generate multiple AI images",
-                "Extended Text To Speech",
-                "Extended AI Code Generator",
-                "AI-powered Chat",
-                "Unlimited Speech to Text",
-                "24/7 Support",
+                "Up to 10 users",
+                "100 projects",
+                "20 GB storage",
+                "100 automations/month",
+                "Email support",
+                "All Starter features",
+            ],
+            popular: false,
+            cta: "Start Free Trial",
+        },
+        {
+            name: "Professional",
+            price: billingPeriod === 'monthly' ? "$15" : "$144",
+            period: billingPeriod === 'monthly' ? "user/month" : "user/year",
+            description: "For professional teams that need AI-powered insights",
+            features: [
+                "Up to 50 users",
+                "Unlimited projects",
+                "50 GB storage",
+                "250 automations/month",
+                "50 AI queries/month (GPT-3.5)",
+                "Priority email support",
             ],
             popular: true,
             cta: "Start Free Trial",
         },
         {
-            name: "Enterprise",
-            price: billingPeriod === 'monthly' ? "$125" : "$1200",
-            period: billingPeriod === 'monthly' ? "month" : "year",
-            description: "For large organizations with advanced needs",
+            name: "Business",
+            price: billingPeriod === 'monthly' ? "$25" : "$240",
+            period: billingPeriod === 'monthly' ? "user/month" : "user/year",
+            description: "For organizations that need premium AI and enterprise infrastructure",
             features: [
-                "Unlimited words",
-                "Generate extensive AI images",
-                "Extended Text To Speech",
-                "Extended AI Code Generator",
-                "Unlimited AI-powered Chat",
-                "Unlimited Speech to Text",
-                "24/7 Priority Support",
+                "Unlimited users",
+                "Unlimited projects",
+                "250 GB storage",
+                "Unlimited automations",
+                "500 AI queries/month (GPT-4 Turbo)",
+                "AWS Aurora database (HIPAA/FedRAMP available)",
+                "24/7 priority support",
+            ],
+            popular: false,
+            cta: "Start Free Trial",
+        },
+        {
+            name: "Enterprise",
+            price: "Custom",
+            period: "",
+            description: "For large organizations with advanced security and compliance needs",
+            features: [
+                "Unlimited users",
+                "Unlimited projects",
+                "Unlimited storage",
+                "Unlimited automations",
+                "Unlimited AI queries (GPT-4 Turbo)",
+                "AWS Aurora multi-AZ (HIPAA/FedRAMP)",
+                "Dedicated account manager",
+                "Custom integrations",
+                "SLA guarantee",
             ],
             popular: false,
             cta: "Contact Sales",
@@ -1021,7 +1068,7 @@ export default function LandingPage() {
                         </div>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
                         {pricingPlans.map((plan, index) => (
                             <Card
                                 key={index}

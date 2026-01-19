@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ITPageLayout } from '@/components/it/it-page-layout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -116,86 +116,54 @@ const COLORS = ['#9333ea', '#10b981', '#ef4444', '#f59e0b']
 
 export default function DevelopmentPage() {
   const [activeTab, setActiveTab] = useState('repository')
-  const [repositories] = useState<Repository[]>([
-    {
-      id: 'REPO-001',
-      name: 'workportal-frontend',
-      description: 'Main frontend application',
-      branch: 'main',
-      lastCommit: 'feat: Add IT dashboard',
-      commits: 1247,
-      contributors: 8,
-      language: 'TypeScript',
-      updatedAt: '2024-12-15T10:30:00',
-    },
-    {
-      id: 'REPO-002',
-      name: 'workportal-backend',
-      description: 'Backend API and services',
-      branch: 'develop',
-      lastCommit: 'fix: Resolve auth token expiration',
-      commits: 892,
-      contributors: 6,
-      language: 'Python',
-      updatedAt: '2024-12-15T09:15:00',
-    },
-  ])
+  const [repositories, setRepositories] = useState<Repository[]>([])
+  const [pullRequests, setPullRequests] = useState<PullRequest[]>([])
+  const [deployments, setDeployments] = useState<Deployment[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const [pullRequests] = useState<PullRequest[]>([
-    {
-      id: 'PR-001',
-      title: 'feat: Add IT dashboard with sprint planning',
-      author: 'John Doe',
-      sourceBranch: 'feature/it-dashboard',
-      targetBranch: 'develop',
-      status: 'OPEN',
-      approvals: 1,
-      comments: 3,
-      createdAt: '2024-12-14T10:00:00',
-      filesChanged: 25,
-      additions: 1200,
-      deletions: 150,
-    },
-    {
-      id: 'PR-002',
-      title: 'fix: Resolve authentication token expiration',
-      author: 'Jane Smith',
-      sourceBranch: 'fix/auth-token',
-      targetBranch: 'main',
-      status: 'APPROVED',
-      approvals: 1,
-      comments: 1,
-      createdAt: '2024-12-13T14:20:00',
-      filesChanged: 8,
-      additions: 80,
-      deletions: 45,
-    },
-  ])
+  useEffect(() => {
+    fetchRepositories()
+    fetchPullRequests()
+    fetchDeployments()
+  }, [activeTab])
 
-  const [deployments] = useState<Deployment[]>([
-    {
-      id: 'DEP-001',
-      environment: 'Production',
-      application: 'workportal-frontend',
-      version: 'v2.4.1',
-      branch: 'main',
-      status: 'SUCCESS',
-      deployedBy: 'John Doe',
-      deployedAt: '2024-12-15T10:00:00',
-      duration: 420,
-    },
-    {
-      id: 'DEP-002',
-      environment: 'Staging',
-      application: 'workportal-backend',
-      version: 'v2.4.2',
-      branch: 'develop',
-      status: 'SUCCESS',
-      deployedBy: 'Jane Smith',
-      deployedAt: '2024-12-15T08:30:00',
-      duration: 380,
-    },
-  ])
+  const fetchRepositories = async () => {
+    try {
+      const response = await fetch('/api/it/repositories')
+      if (!response.ok) throw new Error('Failed to fetch repositories')
+      const data = await response.json()
+      setRepositories(data.repositories || [])
+    } catch (error) {
+      console.error('Error fetching repositories:', error)
+      setRepositories([])
+    }
+  }
+
+  const fetchPullRequests = async () => {
+    try {
+      const response = await fetch('/api/it/pull-requests')
+      if (!response.ok) throw new Error('Failed to fetch pull requests')
+      const data = await response.json()
+      setPullRequests(data.pullRequests || [])
+    } catch (error) {
+      console.error('Error fetching pull requests:', error)
+      setPullRequests([])
+    }
+  }
+
+  const fetchDeployments = async () => {
+    try {
+      const response = await fetch('/api/it/deployments')
+      if (!response.ok) throw new Error('Failed to fetch deployments')
+      const data = await response.json()
+      setDeployments(data.deployments || [])
+    } catch (error) {
+      console.error('Error fetching deployments:', error)
+      setDeployments([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const devStats = {
     totalRepos: repositories.length,

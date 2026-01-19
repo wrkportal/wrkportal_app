@@ -2,7 +2,7 @@
  * Anomaly Detection Service
  */
 
-import { extractStructuredData } from '../openai-service'
+import { extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { Anomaly, AnomalyDetectionResult } from '@/types/ai'
 

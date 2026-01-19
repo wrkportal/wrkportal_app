@@ -16,34 +16,6 @@ export interface FeatureFlag {
  * In production, these would be stored in database or environment variables
  */
 export const featureFlags: Record<string, FeatureFlag> = {
-  // Reporting Studio Features
-  'reporting-studio': {
-    key: 'reporting-studio',
-    enabled: true,
-    description: 'Reporting Studio main feature',
-  },
-  'schedules': {
-    key: 'schedules',
-    enabled: true,
-    description: 'Report scheduling feature',
-  },
-  'transformations': {
-    key: 'transformations',
-    enabled: true,
-    description: 'Data transformation builder',
-  },
-  'marketplace': {
-    key: 'marketplace',
-    enabled: true,
-    description: 'Template marketplace',
-    beta: true,
-  },
-  'grid-editor': {
-    key: 'grid-editor',
-    enabled: true,
-    description: 'Excel-like grid editor',
-    beta: true,
-  },
 
   // Beta Features
   'ai-insights': {

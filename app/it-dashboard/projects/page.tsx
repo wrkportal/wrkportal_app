@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ITPageLayout } from '@/components/it/it-page-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -67,44 +67,27 @@ interface Project {
 }
 
 export default function ProjectsPage() {
-  const [projects] = useState<Project[]>([
-    {
-      id: 'PROJ-001',
-      name: 'Server Migration to Cloud',
-      description: 'Migrate on-premise servers to AWS cloud infrastructure',
-      status: 'IN_PROGRESS',
-      priority: 'HIGH',
-      startDate: '2024-11-01',
-      endDate: '2025-02-28',
-      progress: 65,
-      manager: 'John Doe',
-      teamMembers: ['Jane Smith', 'Bob Wilson'],
-    },
-    {
-      id: 'PROJ-002',
-      name: 'Network Infrastructure Upgrade',
-      description: 'Upgrade network switches and routers to support increased bandwidth',
-      status: 'PLANNING',
-      priority: 'MEDIUM',
-      startDate: '2025-01-15',
-      endDate: '2025-04-30',
-      progress: 15,
-      manager: 'Jane Smith',
-      teamMembers: ['Bob Wilson'],
-    },
-    {
-      id: 'PROJ-003',
-      name: 'Security Audit & Compliance',
-      description: 'Conduct comprehensive security audit and ensure compliance with regulations',
-      status: 'COMPLETED',
-      priority: 'HIGH',
-      startDate: '2024-09-01',
-      endDate: '2024-12-15',
-      progress: 100,
-      manager: 'John Doe',
-      teamMembers: ['Alice Brown', 'Jane Smith'],
-    },
-  ])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchProjects = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/it/projects')
+      if (!response.ok) throw new Error('Failed to fetch projects')
+      const data = await response.json()
+      setProjects(data.projects || [])
+    } catch (error) {
+      console.error('Error fetching projects:', error)
+      setProjects([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchProjects()
+  }, [fetchProjects])
 
   const projectStats = {
     total: projects.length,
@@ -143,8 +126,8 @@ export default function ProjectsPage() {
 
   return (
     <ITPageLayout 
-      title="IT Projects" 
-      description="Manage IT projects, initiatives, and deployments"
+      title="Projects" 
+      description="Manage projects, initiatives, and deployments"
     >
       <div className="space-y-6">
         {/* Stats Cards */}
@@ -196,7 +179,7 @@ export default function ProjectsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>IT Projects</CardTitle>
+                <CardTitle>Projects</CardTitle>
                 <CardDescription>
                   {projects.length} project(s) tracked
                 </CardDescription>
@@ -212,7 +195,7 @@ export default function ProjectsPage() {
                   <DialogHeader>
                     <DialogTitle>Create New Project</DialogTitle>
                     <DialogDescription>
-                      Add a new IT project to track
+                      Add a new project to track
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">

@@ -2,7 +2,7 @@
  * Semantic Search Service using Embeddings
  */
 
-import { generateEmbedding, generateEmbeddings } from '../openai-service'
+import { generateEmbedding, generateEmbeddings } from '../ai-service'
 import { Project, Task, Comment } from '@/types'
 
 interface SearchableItem {

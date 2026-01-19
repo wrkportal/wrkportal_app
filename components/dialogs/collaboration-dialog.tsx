@@ -14,7 +14,7 @@ import { useAuthStore } from '@/stores/authStore'
 interface CollaborationDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    onSuccess?: () => void
+    onSuccess?: (collaboration?: any) => void
 }
 
 interface OnboardedUser {
@@ -116,7 +116,7 @@ export function CollaborationDialog({ open, onOpenChange, onSuccess }: Collabora
             if (response.ok) {
                 const result = await response.json()
                 console.log('Collaboration created:', result)
-                onSuccess?.()
+                onSuccess?.(result.collaboration)
                 handleClose()
             } else {
                 const error = await response.json()

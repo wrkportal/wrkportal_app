@@ -47,6 +47,8 @@ import {
   Plus,
   Users,
   Target,
+  Upload,
+  Building2,
 } from 'lucide-react'
 import { SalesPageLayout } from '@/components/sales/sales-page-layout'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -73,6 +75,8 @@ interface Lead {
   rating: string
   score: number
   description: string | null
+  nextContactDate: string | null
+  customFields?: Record<string, any> | null
   createdAt: string
   updatedAt: string
   assignedTo: {
@@ -112,6 +116,9 @@ export default function LeadDetailPage() {
   const [activeTab, setActiveTab] = useState('overview')
   const [noteText, setNoteText] = useState('')
   const [creatingNote, setCreatingNote] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [nextContactDateTemp, setNextContactDateTemp] = useState<string>('')
+  const [savingNextContactDate, setSavingNextContactDate] = useState(false)
   
   // Dialog states
   const [noteDialogOpen, setNoteDialogOpen] = useState(false)
@@ -135,6 +142,14 @@ export default function LeadDetailPage() {
       fetchLead()
     }
   }, [leadId])
+
+  useEffect(() => {
+    if (lead?.nextContactDate) {
+      setNextContactDateTemp(new Date(lead.nextContactDate).toISOString().slice(0, 16))
+    } else {
+      setNextContactDateTemp('')
+    }
+  }, [lead?.nextContactDate])
 
   const fetchLead = async () => {
     try {
@@ -207,6 +222,32 @@ export default function LeadDetailPage() {
     })
   }
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!leadId || !lead) return
+
+    setUpdatingStatus(true)
+    try {
+      const response = await fetch(`/api/sales/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (response.ok) {
+        const updatedLead = await response.json()
+        setLead({ ...lead, status: updatedLead.status })
+      } else {
+        console.error('Failed to update lead status')
+        alert('Failed to update lead status. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error updating lead status:', error)
+      alert('Error updating lead status. Please try again.')
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
   const handleOpenEmail = () => {
     if (lead?.email) {
       window.location.href = `mailto:${lead.email}`
@@ -244,6 +285,18 @@ export default function LeadDetailPage() {
       COLD: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     }
     return <Badge className={colors[rating]}>{rating}</Badge>
+  }
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      NEW: 'New',
+      CONTACTED: 'Contacted',
+      QUALIFIED: 'Qualified',
+      CONVERTED: 'Converted',
+      UNQUALIFIED: 'Unqualified',
+      NURTURING: 'Nurturing',
+    }
+    return labels[status] || status
   }
 
   const formatDate = (dateString: string) => {
@@ -424,7 +477,27 @@ export default function LeadDetailPage() {
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Lead Status</Label>
-                      <div className="text-sm mt-1">{getStatusBadge(lead.status)}</div>
+                      <div className="text-sm mt-1">
+                        <Select
+                          value={lead.status}
+                          onValueChange={handleStatusChange}
+                          disabled={updatingStatus}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue>
+                              {updatingStatus ? 'Updating...' : getStatusLabel(lead.status)}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="NEW">New</SelectItem>
+                            <SelectItem value="CONTACTED">Contacted</SelectItem>
+                            <SelectItem value="QUALIFIED">Qualified</SelectItem>
+                            <SelectItem value="CONVERTED">Converted</SelectItem>
+                            <SelectItem value="UNQUALIFIED">Unqualified</SelectItem>
+                            <SelectItem value="NURTURING">Nurturing</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Rating</Label>
@@ -446,7 +519,80 @@ export default function LeadDetailPage() {
                       <Label className="text-xs text-muted-foreground">Create date</Label>
                       <div className="text-sm mt-1">{formatDate(lead.createdAt)}</div>
                     </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Next Contact Date</Label>
+                      <div className="relative mt-1">
+                        <Input
+                          type="datetime-local"
+                          value={nextContactDateTemp}
+                          onChange={(e) => setNextContactDateTemp(e.target.value)}
+                          className="pr-20"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2 text-xs"
+                          onClick={async () => {
+                            setSavingNextContactDate(true)
+                            let newDate: string | null = null
+                            if (nextContactDateTemp && nextContactDateTemp.trim() !== '') {
+                              try {
+                                const dateObj = new Date(nextContactDateTemp)
+                                if (!isNaN(dateObj.getTime())) {
+                                  newDate = dateObj.toISOString()
+                                }
+                              } catch (error) {
+                                console.error('Invalid date:', error)
+                              }
+                            }
+                            try {
+                              const response = await fetch(`/api/sales/leads/${leadId}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ nextContactDate: newDate }),
+                              })
+                            if (response.ok) {
+                              const updatedLead = await response.json()
+                              setLead({ ...lead, nextContactDate: updatedLead.nextContactDate })
+                              // Trigger a custom event to refresh tasks in the sales dashboard
+                              if (typeof window !== 'undefined') {
+                                window.dispatchEvent(new CustomEvent('refreshSalesTasks'))
+                              }
+                            } else {
+                              const errorData = await response.json().catch(() => ({}))
+                              console.error('Error updating next contact date:', errorData)
+                              alert(errorData.error || 'Failed to update next contact date')
+                            }
+                            } catch (error) {
+                              console.error('Error updating next contact date:', error)
+                            } finally {
+                              setSavingNextContactDate(false)
+                            }
+                          }}
+                          disabled={savingNextContactDate}
+                        >
+                          {savingNextContactDate ? '...' : 'OK'}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Custom Fields Section */}
+                  {lead.customFields && Object.keys(lead.customFields).length > 0 && (
+                    <div className="mt-6 pt-6 border-t">
+                      <h3 className="text-lg font-semibold mb-4">Custom Fields</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        {Object.entries(lead.customFields).map(([key, value]) => (
+                          <div key={key}>
+                            <Label className="text-xs text-muted-foreground">{key}</Label>
+                            <div className="text-sm mt-1 break-words">
+                              {String(value) || '--'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -590,20 +736,60 @@ export default function LeadDetailPage() {
             {/* Related Records */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Companies (0)</CardTitle>
+                <CardTitle className="text-base">Accounts (0)</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full mb-2"
-                  onClick={() => router.push('/sales-dashboard/accounts?create=true')}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add
-                </Button>
+                <div className="flex gap-2 mb-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => router.push('/sales-dashboard/accounts?create=true')}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => router.push('/sales-dashboard/accounts?upload=true')}
+                    title="Upload Accounts"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   See the businesses or organizations associated with this lead.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Contacts (0)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2 mb-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => router.push('/sales-dashboard/contacts?create=true')}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => router.push('/sales-dashboard/contacts?upload=true')}
+                    title="Upload Contacts"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Manage contacts associated with this lead.
                 </p>
               </CardContent>
             </Card>
@@ -613,15 +799,25 @@ export default function LeadDetailPage() {
                 <CardTitle className="text-base">Opportunities (0)</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full mb-2"
-                  onClick={() => router.push(`/sales-dashboard/opportunities?create=true&leadId=${leadId}`)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add
-                </Button>
+                <div className="flex gap-2 mb-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => router.push(`/sales-dashboard/opportunities?create=true&leadId=${leadId}`)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => router.push('/sales-dashboard/opportunities?upload=true')}
+                    title="Upload Opportunities"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Track the revenue opportunities associated with this lead.
                 </p>
@@ -633,15 +829,25 @@ export default function LeadDetailPage() {
                 <CardTitle className="text-base">Quotes (0)</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full mb-2"
-                  onClick={() => router.push('/sales-dashboard/quotes?create=true')}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add
-                </Button>
+                <div className="flex gap-2 mb-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => router.push('/sales-dashboard/quotes/new')}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled
+                    title="Quote upload coming soon"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Track the sales documents associated with this lead.
                 </p>

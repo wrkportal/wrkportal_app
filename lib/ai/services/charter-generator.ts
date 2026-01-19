@@ -2,7 +2,7 @@
  * AI Project Charter Generator
  */
 
-import { generateChatCompletion, extractStructuredData } from '../openai-service'
+import { generateChatCompletion, extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { ProjectCharter } from '@/types/ai'
 
