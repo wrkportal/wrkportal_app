@@ -171,6 +171,51 @@ export async function hybridSearch(
 }
 
 /**
+ * Perform semantic search with context object
+ * Wrapper function for semanticSearch that accepts a search context
+ */
+export async function performSemanticSearch(
+  searchContext: {
+    query: string
+    projects?: Array<{ title: string; content: string; type: string; metadata?: Record<string, any> }>
+    tasks?: Array<{ title: string; content: string; type: string; metadata?: Record<string, any> }>
+    comments?: Array<{ title: string; content: string; type: string; metadata?: Record<string, any> }>
+  },
+  topK: number = 10
+): Promise<Array<SearchableItem & { score: number }>> {
+  // Convert search context to searchable items
+  const items: SearchableItem[] = [
+    ...(searchContext.projects || []).map(p => ({
+      id: `project-${p.title}`,
+      type: 'project' as const,
+      title: p.title,
+      content: p.content,
+      metadata: p.metadata,
+    })),
+    ...(searchContext.tasks || []).map(t => ({
+      id: `task-${t.title}`,
+      type: 'task' as const,
+      title: t.title,
+      content: t.content,
+      metadata: t.metadata,
+    })),
+    ...(searchContext.comments || []).map(c => ({
+      id: `comment-${c.title}`,
+      type: 'comment' as const,
+      title: c.title,
+      content: c.content,
+      metadata: c.metadata,
+    })),
+  ]
+
+  // Generate embeddings for items if they don't have them
+  const itemsWithEmbeddings = await generateItemEmbeddings(items)
+
+  // Perform semantic search
+  return semanticSearch(searchContext.query, itemsWithEmbeddings, topK)
+}
+
+/**
  * Find similar items based on an existing item
  */
 export async function findSimilarItems(
