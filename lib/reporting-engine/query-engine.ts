@@ -6,17 +6,29 @@
 import { prisma } from '@/lib/prisma'
 import { buildRLSFilter, type RLSEvaluationContext } from '@/lib/security/rls-engine'
 // DuckDB is optional - will fallback to PostgreSQL if not available
+// Use dynamic import to avoid static analysis issues with Turbopack
 let DuckDB: any = null
-// Use dynamic require to avoid build-time errors
-if (typeof window === 'undefined' && typeof require !== 'undefined') {
+
+async function initializeDuckDB() {
+  if (typeof window !== 'undefined') return // Only in Node.js
+  if (DuckDB !== null) return // Already initialized
+  
   try {
-    // Only try to require in Node.js environment at runtime
-    const duckdbModule = 'duckdb'
-    DuckDB = require(duckdbModule)
+    const duckdbModule = await import('duckdb').catch(() => null)
+    DuckDB = duckdbModule?.default ?? duckdbModule ?? null
   } catch (error) {
     // DuckDB not available, will use PostgreSQL
     DuckDB = null
   }
+}
+
+// Initialize on first use (lazy initialization)
+let duckdbInitPromise: Promise<void> | null = null
+function ensureDuckDBInitialized() {
+  if (!duckdbInitPromise) {
+    duckdbInitPromise = initializeDuckDB()
+  }
+  return duckdbInitPromise
 }
 
 export interface Query {
@@ -59,9 +71,17 @@ export interface QueryOptions {
 export class QueryEngine {
   private db: DuckDB.Database | null = null
   private connection: DuckDB.Connection | null = null
+  private duckdbInitialized = false
 
   constructor() {
-    // Initialize DuckDB connection (optional)
+    // DuckDB will be initialized lazily on first use
+  }
+
+  private async ensureDuckDB() {
+    if (this.duckdbInitialized) return
+    await ensureDuckDBInitialized()
+    this.duckdbInitialized = true
+    
     if (DuckDB) {
       try {
         this.db = new DuckDB.Database(':memory:')
@@ -69,8 +89,6 @@ export class QueryEngine {
       } catch (error) {
         console.warn('DuckDB not available, falling back to PostgreSQL')
       }
-    } else {
-      console.warn('DuckDB module not installed, using PostgreSQL only')
     }
   }
 
@@ -259,7 +277,8 @@ export class QueryEngine {
     tenantId: string,
     timeout: number
   ): Promise<{ columns: string[]; rows: any[][]; rowCount: number }> {
-    // Try DuckDB first (faster for analytics)
+    // Try DuckDB first (faster for analytics) - initialize if needed
+    await this.ensureDuckDB()
     if (this.connection) {
       try {
         return await this.executeDuckDB(sql)

@@ -66,6 +66,7 @@ const nextConfig = {
     }
     
     // Make optional native dependencies external - don't bundle them
+    // DuckDB is now handled via dynamic import, but we still externalize it for safety
     // This allows the code to use dynamic imports without failing the build
     if (isServer) {
       config.externals = config.externals || []
@@ -87,6 +88,17 @@ const nextConfig = {
           }
           callback()
         })
+      } else {
+        // Handle case where externals is an object or other type
+        config.externals = [
+          ...(Array.isArray(config.externals) ? config.externals : []),
+          ({ request }, callback) => {
+            if (request === 'mongodb' || request === 'duckdb') {
+              return callback(null, `commonjs ${request}`)
+            }
+            callback()
+          },
+        ]
       }
     }
     
