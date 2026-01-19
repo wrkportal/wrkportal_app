@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { searchProjectDataForAI } from '@/lib/ai/data-access'
-import { performSemanticSearch } from '@/lib/ai/services/semantic-search'
+import { performSemanticSearch } from '@/lib/ai/services'
 
 export async function POST(request: NextRequest) {
   try {

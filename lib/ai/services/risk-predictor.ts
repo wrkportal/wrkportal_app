@@ -177,6 +177,3 @@ export async function generateRiskPrediction(data: {
     daysUntilDeadline: 30,
   })
 }
-
-// Explicit export to ensure it's recognized by static analysis
-export { generateRiskPrediction }

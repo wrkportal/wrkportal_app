@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getRisksForAI, getProjectDataForAI } from '@/lib/ai/data-access'
-import { generateRiskPrediction } from '@/lib/ai/services/risk-predictor'
+import { generateRiskPrediction } from '@/lib/ai/services'
 
 export async function POST(request: NextRequest) {
   try {

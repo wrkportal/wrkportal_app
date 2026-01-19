@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getTeamMembersForAI } from '@/lib/ai/data-access'
-import { assignTasks } from '@/lib/ai/services/task-assignment'
+import { assignTasks } from '@/lib/ai/services'
 
 export async function POST(request: NextRequest) {
   try {
