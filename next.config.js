@@ -65,7 +65,7 @@ const nextConfig = {
       }
     }
     
-    // Make mongodb an external dependency - don't bundle it
+    // Make optional native dependencies external - don't bundle them
     // This allows the code to use dynamic imports without failing the build
     if (isServer) {
       config.externals = config.externals || []
@@ -74,16 +74,16 @@ const nextConfig = {
         config.externals = [
           originalExternals,
           ({ request }, callback) => {
-            if (request === 'mongodb') {
-              return callback(null, 'commonjs mongodb')
+            if (request === 'mongodb' || request === 'duckdb') {
+              return callback(null, `commonjs ${request}`)
             }
             callback()
           },
         ]
       } else if (Array.isArray(config.externals)) {
         config.externals.push(({ request }, callback) => {
-          if (request === 'mongodb') {
-            return callback(null, 'commonjs mongodb')
+          if (request === 'mongodb' || request === 'duckdb') {
+            return callback(null, `commonjs ${request}`)
           }
           callback()
         })

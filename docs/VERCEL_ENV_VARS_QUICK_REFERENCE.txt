@@ -1,0 +1,63 @@
+===========================================
+VERCEL ENVIRONMENT VARIABLES - QUICK REFERENCE
+===========================================
+
+REQUIRED (Minimum 4):
+-------------------
+DATABASE_URL=postgresql://neondb_owner:npg_SnpI8CJtT4Xz@ep-royal-frost-ahzg2vyw-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+INFRASTRUCTURE_MODE=neon
+
+NEXTAUTH_URL=https://your-app.vercel.app
+(Update after first deployment with actual Vercel URL)
+
+NEXTAUTH_SECRET=generate-32-character-random-secret
+(Generate at: https://generate-secret.vercel.app/32)
+
+
+RECOMMENDED (Email Configuration):
+----------------------------------
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=wrkportal26@gmail.com
+EMAIL_PASSWORD=your-gmail-app-password
+EMAIL_FROM=noreply@wrkportal.com
+
+
+OPTIONAL (Google OAuth):
+-----------------------
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+
+OPTIONAL (AI Features):
+----------------------
+AI_PROVIDER=azure-openai
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+AZURE_OPENAI_API_KEY=your-azure-openai-api-key
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment-name-from-azure
+# Note: This is the DEPLOYMENT NAME from Azure Portal, NOT the model name
+# Example: If your deployment is named "gpt-4o-prod", use: gpt-4o-prod
+AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME=your-embedding-deployment-name
+
+
+OPTIONAL (Reporting Studio):
+---------------------------
+REPORTING_STUDIO_ENCRYPTION_KEY=generate-32-character-key
+
+
+===========================================
+INSTRUCTIONS:
+===========================================
+
+1. Go to Vercel → Your Project → Settings → Environment Variables
+2. Add each variable above
+3. Select "All Environments" (Production, Preview, Development)
+4. For NEXTAUTH_SECRET: Generate at https://generate-secret.vercel.app/32
+5. For EMAIL_PASSWORD: Get Gmail App Password from Google Account settings
+6. After first deployment, update NEXTAUTH_URL with your actual Vercel URL
+7. Redeploy if needed
+
+===========================================

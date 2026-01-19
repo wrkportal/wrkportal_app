@@ -7,10 +7,16 @@ import { prisma } from '@/lib/prisma'
 import { buildRLSFilter, type RLSEvaluationContext } from '@/lib/security/rls-engine'
 // DuckDB is optional - will fallback to PostgreSQL if not available
 let DuckDB: any = null
-try {
-  DuckDB = require('duckdb')
-} catch (error) {
-  // DuckDB not available, will use PostgreSQL
+// Use dynamic require to avoid build-time errors
+if (typeof window === 'undefined' && typeof require !== 'undefined') {
+  try {
+    // Only try to require in Node.js environment at runtime
+    const duckdbModule = 'duckdb'
+    DuckDB = require(duckdbModule)
+  } catch (error) {
+    // DuckDB not available, will use PostgreSQL
+    DuckDB = null
+  }
 }
 
 export interface Query {
