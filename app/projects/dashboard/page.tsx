@@ -1606,7 +1606,6 @@ export default function ProjectDashboardPage() {
       </Tabs>
         </>
       )}
-      </div>
     </div>
   )
 }
