@@ -131,3 +131,53 @@ export function calculateOKRHealth(
   return { score, status }
 }
 
+/**
+ * Analyze OKR Progress (wrapper for analyzeOKR with simplified interface)
+ */
+export async function analyzeOKRProgress(data: {
+  objectiveName: string
+  objectiveDescription?: string
+  keyResults: string
+  currentMetrics?: string
+  timeframe?: string
+}): Promise<any> {
+  // This is a simplified version - in production, you'd want to fetch full OKR data
+  const mockGoal: Goal = {
+    id: 'temp',
+    title: data.objectiveName,
+    description: data.objectiveDescription || '',
+    quarter: data.timeframe || 'Q1',
+    year: new Date().getFullYear(),
+    status: 'ACTIVE',
+    tenantId: '',
+    ownerId: '',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    startDate: new Date(),
+    endDate: new Date(),
+  }
+
+  const mockKeyResults: KeyResult[] = data.keyResults.split('\n').map((kr, idx) => ({
+    id: `kr-${idx}`,
+    goalId: 'temp',
+    title: kr.split(':')[0] || `KR ${idx + 1}`,
+    description: '',
+    startValue: 0,
+    currentValue: 0,
+    targetValue: 100,
+    unit: '',
+    weight: 100,
+    confidence: 5,
+    status: 'IN_PROGRESS',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }))
+
+  return analyzeOKR({
+    goal: mockGoal,
+    keyResults: mockKeyResults,
+    daysRemaining: 90,
+    linkedTasksCompleted: 0,
+    linkedTasksTotal: 0,
+  })
+}

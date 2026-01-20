@@ -94,49 +94,6 @@ export default function DeploymentsPage() {
       setLoading(false)
     }
   }
-    {
-      id: 'DEP-002',
-      environment: 'Staging',
-      application: 'workportal-backend',
-      version: 'v2.4.2',
-      branch: 'develop',
-      status: 'SUCCESS',
-      deployedBy: 'Jane Smith',
-      deployedAt: '2024-12-15T08:30:00',
-      duration: 380,
-      buildNumber: '1248',
-      commitHash: 'def456',
-      rollbackAvailable: true,
-    },
-    {
-      id: 'DEP-003',
-      environment: 'Production',
-      application: 'workportal-api',
-      version: 'v2.3.9',
-      branch: 'main',
-      status: 'FAILED',
-      deployedBy: 'Bob Wilson',
-      deployedAt: '2024-12-14T16:20:00',
-      duration: 1250,
-      buildNumber: '1245',
-      commitHash: 'ghi789',
-      rollbackAvailable: true,
-    },
-    {
-      id: 'DEP-004',
-      environment: 'Development',
-      application: 'workportal-frontend',
-      version: 'v2.4.0',
-      branch: 'feature/new-dashboard',
-      status: 'IN_PROGRESS',
-      deployedBy: 'Alice Brown',
-      deployedAt: '2024-12-15T09:45:00',
-      duration: 0,
-      buildNumber: '1249',
-      commitHash: 'jkl012',
-      rollbackAvailable: false,
-    },
-  ])
 
   // Use stats from API
   const deploymentTrendData = [

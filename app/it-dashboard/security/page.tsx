@@ -142,26 +142,6 @@ export default function SecurityPage() {
       setLoading(false)
     }
   }
-    {
-      id: 'ALERT-002',
-      type: 'Malware Detected',
-      severity: 'CRITICAL',
-      description: 'Potential malware detected on workstation',
-      source: 'WS-IT-042',
-      detectedAt: '2024-12-15T07:15:00',
-      status: 'IN_PROGRESS',
-    },
-    {
-      id: 'ALERT-003',
-      type: 'Unauthorized Access',
-      severity: 'MEDIUM',
-      description: 'Unusual access pattern detected',
-      source: '192.168.1.100',
-      detectedAt: '2024-12-14T16:20:00',
-      status: 'RESOLVED',
-      resolvedAt: '2024-12-14T17:45:00',
-    },
-  ])
 
   const [vulnerabilities] = useState<Vulnerability[]>([
     {

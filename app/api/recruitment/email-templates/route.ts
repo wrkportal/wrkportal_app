@@ -259,14 +259,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
+    const requestBody = await request.json()
     const sendSchema = z.object({
       templateId: z.string(),
       candidateId: z.string(),
       variables: z.record(z.string()),
     })
 
-    const validatedData = sendSchema.parse(body)
+    const validatedData = sendSchema.parse(requestBody)
 
     // Get template
     const defaultTemplates = [

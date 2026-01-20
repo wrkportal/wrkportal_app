@@ -100,41 +100,6 @@ export default function UsersPage() {
       setLoading(false)
     }
   }
-    {
-      id: 'USR-002',
-      name: 'Jane Smith',
-      email: 'jane.smith@company.com',
-      department: 'Finance',
-      role: 'Financial Analyst',
-      status: 'ACTIVE',
-      lastLogin: '2024-12-15T08:15:00',
-      accountCreated: '2023-03-20',
-      accessLevel: 'USER',
-      phone: '+1-555-0101',
-    },
-    {
-      id: 'USR-003',
-      name: 'Bob Wilson',
-      email: 'bob.wilson@company.com',
-      department: 'IT',
-      role: 'IT Support',
-      status: 'ACTIVE',
-      lastLogin: '2024-12-14T16:45:00',
-      accountCreated: '2023-05-10',
-      accessLevel: 'SUPPORT',
-    },
-    {
-      id: 'USR-004',
-      name: 'Alice Brown',
-      email: 'alice.brown@company.com',
-      department: 'HR',
-      role: 'HR Manager',
-      status: 'INACTIVE',
-      lastLogin: '2024-11-20T14:20:00',
-      accountCreated: '2022-08-05',
-      accessLevel: 'USER',
-    },
-  ])
 
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')

@@ -117,33 +117,6 @@ export default function LicensesPage() {
       setLoading(false)
     }
   }
-      renewalDate: '2025-05-01',
-    },
-    {
-      id: 'LIC-003',
-      software: 'Windows Server License',
-      vendor: 'Microsoft',
-      licenseType: 'Perpetual',
-      totalLicenses: 10,
-      usedLicenses: 8,
-      expiryDate: 'N/A',
-      status: 'ACTIVE',
-      cost: 5000,
-      renewalDate: 'N/A',
-    },
-    {
-      id: 'LIC-004',
-      software: 'Antivirus Enterprise',
-      vendor: 'Symantec',
-      licenseType: 'Annual',
-      totalLicenses: 520,
-      usedLicenses: 520,
-      expiryDate: '2025-03-15',
-      status: 'EXPIRING_SOON',
-      cost: 8000,
-      renewalDate: '2025-02-01',
-    },
-  ])
 
   const licenseStats = {
     total: licenses.length,
