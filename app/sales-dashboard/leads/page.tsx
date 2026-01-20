@@ -45,7 +45,6 @@ import {
 import { UserPlus, Search, Filter, Plus, Eye, Edit, Trash2, CheckCircle2, CheckCircle, Circle, TrendingUp, Users, Target, Clock, Bell, BellOff, Settings, Upload, FileSpreadsheet, Loader2, Download, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { SalesPageLayout } from '@/components/sales/sales-page-layout'
 import { LeadScoringConfigDialog } from '@/components/sales/lead-scoring-config-dialog'
 import { ColumnMappingDialog } from '@/components/sales/lead-column-mapping-dialog'
