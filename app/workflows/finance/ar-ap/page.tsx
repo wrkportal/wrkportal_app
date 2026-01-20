@@ -1,9 +1,11 @@
 'use client'
 
+import { Suspense } from 'react'
 import { FinanceNavBar } from '@/components/finance/finance-nav-bar'
 import { ARAPTab } from '@/components/finance/ar-ap-tab'
+import { Loader2 } from 'lucide-react'
 
-export default function ARAPPage() {
+function ARAPPageInner() {
   return (
     <div className="min-h-screen bg-background text-foreground flex w-full">
       <main className="flex-1 flex flex-col w-full">
@@ -19,3 +21,14 @@ export default function ARAPPage() {
   )
 }
 
+export default function ARAPPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <ARAPPageInner />
+    </Suspense>
+  )
+}

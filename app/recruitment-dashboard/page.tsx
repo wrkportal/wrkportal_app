@@ -225,7 +225,7 @@ const defaultLayouts: Layouts = {
   ],
 }
 
-export default function RecruitmentDashboardPage() {
+function RecruitmentDashboardPageInner() {
   const user = useAuthStore((state) => state.user)
   const [stats, setStats] = useState<DashboardStats>({
     totalCandidates: 0,
@@ -3614,5 +3614,17 @@ export default function RecruitmentDashboardPage() {
         />
       </Suspense>
     </RecruitmentPageLayout>
+  )
+}
+
+export default function RecruitmentDashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading dashboard...</div>
+      </div>
+    }>
+      <RecruitmentDashboardPageInner />
+    </Suspense>
   )
 }

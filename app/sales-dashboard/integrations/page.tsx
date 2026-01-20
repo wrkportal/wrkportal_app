@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -43,7 +44,7 @@ import { useToast } from '@/hooks/use-toast'
 import { FieldMappingEditor } from '@/components/sales/field-mapping-editor'
 import { OAuthConnectionWizard } from '@/components/sales/oauth-connection-wizard'
 
-export default function IntegrationsPage() {
+function IntegrationsPageInner() {
   const user = useAuthStore((state) => state.user)
   const { toast } = useToast()
   const [webhookUrl, setWebhookUrl] = useState('')
@@ -614,6 +615,18 @@ async function captureLead() {
         </TabsContent>
       </Tabs>
     </SalesPageLayout>
+  )
+}
+
+export default function IntegrationsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <IntegrationsPageInner />
+    </Suspense>
   )
 }
 

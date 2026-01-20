@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { SalesPageLayout } from '@/components/sales/sales-page-layout'
+import { Loader2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -59,7 +60,7 @@ interface Report {
   updatedAt: string
 }
 
-export default function SalesReportsPage() {
+function SalesReportsPageInner() {
   const { toast } = useToast()
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
@@ -298,3 +299,14 @@ export default function SalesReportsPage() {
   )
 }
 
+export default function SalesReportsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <SalesReportsPageInner />
+    </Suspense>
+  )
+}

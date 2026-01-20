@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { SalesPageLayout } from '@/components/sales/sales-page-layout'
+import { Loader2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -42,7 +43,7 @@ interface AutomationRule {
   }
 }
 
-export default function AutomationPage() {
+function AutomationPageInner() {
   const [rules, setRules] = useState<AutomationRule[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -156,71 +157,71 @@ export default function AutomationPage() {
               Visual Builder
             </Button>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setEditingRule(null)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Rule
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingRule ? 'Edit Automation Rule' : 'Create Automation Rule'}
-                </DialogTitle>
-                <DialogDescription>
-                  Configure trigger conditions and actions for your automation
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Rule Name</Label>
-                  <Input placeholder="e.g., Auto-assign high-scoring leads" />
-                </div>
-                <div>
-                  <Label>Description</Label>
-                  <Textarea placeholder="Describe what this rule does..." />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+              <DialogTrigger asChild>
+                <Button onClick={() => setEditingRule(null)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Rule
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingRule ? 'Edit Automation Rule' : 'Create Automation Rule'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Configure trigger conditions and actions for your automation
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
                   <div>
-                    <Label>Trigger</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select trigger" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="LEAD_CREATED">Lead Created</SelectItem>
-                        <SelectItem value="LEAD_STATUS_CHANGED">Lead Status Changed</SelectItem>
-                        <SelectItem value="OPPORTUNITY_CREATED">Opportunity Created</SelectItem>
-                        <SelectItem value="QUOTE_SENT">Quote Sent</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Rule Name</Label>
+                    <Input placeholder="e.g., Auto-assign high-scoring leads" />
                   </div>
                   <div>
-                    <Label>Action</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select action" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ASSIGN_LEAD">Assign Lead</SelectItem>
-                        <SelectItem value="SEND_EMAIL">Send Email</SelectItem>
-                        <SelectItem value="CREATE_TASK">Create Task</SelectItem>
-                        <SelectItem value="NOTIFY_USER">Notify User</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Description</Label>
+                    <Textarea placeholder="Describe what this rule does..." />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Trigger</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select trigger" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LEAD_CREATED">Lead Created</SelectItem>
+                          <SelectItem value="LEAD_STATUS_CHANGED">Lead Status Changed</SelectItem>
+                          <SelectItem value="OPPORTUNITY_CREATED">Opportunity Created</SelectItem>
+                          <SelectItem value="QUOTE_SENT">Quote Sent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Action</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select action" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ASSIGN_LEAD">Assign Lead</SelectItem>
+                          <SelectItem value="SEND_EMAIL">Send Email</SelectItem>
+                          <SelectItem value="CREATE_TASK">Create Task</SelectItem>
+                          <SelectItem value="NOTIFY_USER">Notify User</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={() => setDialogOpen(false)}>
+                      {editingRule ? 'Update' : 'Create'} Rule
+                    </Button>
                   </div>
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={() => setDialogOpen(false)}>
-                    {editingRule ? 'Update' : 'Create'} Rule
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -515,7 +516,7 @@ function ExecutionHistoryDialog({ ruleId, onClose }: { ruleId: string; onClose: 
                           <Badge
                             variant={
                               exec.status === 'SUCCESS' ? 'default' :
-                              exec.status === 'FAILED' ? 'destructive' : 'secondary'
+                                exec.status === 'FAILED' ? 'destructive' : 'secondary'
                             }
                           >
                             {exec.status}
@@ -559,7 +560,7 @@ function TemplatesDialog({ onClose, onSelectTemplate }: { onClose: () => void; o
       const params = new URLSearchParams()
       if (category !== 'all') params.append('category', category)
       if (search) params.append('search', search)
-      
+
       const response = await fetch(`/api/sales/automation/templates?${params}`)
       if (response.ok) {
         const data = await response.json()
@@ -661,3 +662,14 @@ function TemplatesDialog({ onClose, onSelectTemplate }: { onClose: () => void; o
   )
 }
 
+export default function AutomationPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <AutomationPageInner />
+    </Suspense>
+  )
+}

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -51,7 +52,7 @@ interface Onboarding {
   tasks: OnboardingTask[]
 }
 
-export default function OnboardingPage() {
+function OnboardingPageInner() {
   const [onboardings, setOnboardings] = useState<Onboarding[]>([])
   const [loading, setLoading] = useState(true)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
@@ -383,3 +384,14 @@ export default function OnboardingPage() {
   )
 }
 
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <OnboardingPageInner />
+    </Suspense>
+  )
+}

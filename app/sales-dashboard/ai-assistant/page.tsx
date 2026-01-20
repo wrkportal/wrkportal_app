@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import { Bot, Send, Loader2, Sparkles, Plus, MessageSquare, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,7 +23,7 @@ interface Chat {
   updatedAt: Date
 }
 
-export default function SalesAIAssistantPage() {
+function SalesAIAssistantPageInner() {
   const [chats, setChats] = useState<Chat[]>([])
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -291,3 +291,14 @@ export default function SalesAIAssistantPage() {
   )
 }
 
+export default function SalesAIAssistantPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <SalesAIAssistantPageInner />
+    </Suspense>
+  )
+}

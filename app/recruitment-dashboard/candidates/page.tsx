@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -81,7 +82,7 @@ const candidateStages = [
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#a28dff']
 
-export default function CandidatesPage() {
+function CandidatesPageInner() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -168,7 +169,7 @@ export default function CandidatesPage() {
         page: 1,
         limit: 100,
       }
-      
+
       if (searchFilters.query) searchParams.query = searchFilters.query
       if (searchFilters.status) searchParams.status = searchFilters.status
       if (searchFilters.source) searchParams.source = searchFilters.source
@@ -1398,3 +1399,14 @@ export default function CandidatesPage() {
   )
 }
 
+export default function CandidatesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <CandidatesPageInner />
+    </Suspense>
+  )
+}

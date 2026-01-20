@@ -184,7 +184,7 @@ const defaultSalesWidgets: Widget[] = [
   { id: 'canvas', type: 'canvas', visible: false },
 ]
 
-export default function SalesDashboardPage() {
+function SalesDashboardPageInner() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [salesData, setSalesData] = useState<SalesData>({
@@ -4350,5 +4350,17 @@ export default function SalesDashboardPage() {
       />
 
     </SalesPageLayout>
+  )
+}
+
+export default function SalesDashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading dashboard...</div>
+      </div>
+    }>
+      <SalesDashboardPageInner />
+    </Suspense>
   )
 }

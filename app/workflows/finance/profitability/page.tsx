@@ -1,9 +1,11 @@
 'use client'
 
+import { Suspense } from 'react'
 import { FinanceNavBar } from '@/components/finance/finance-nav-bar'
 import { ProfitabilityTab } from '@/components/finance/profitability-tab'
+import { Loader2 } from 'lucide-react'
 
-export default function ProfitabilityPage() {
+function ProfitabilityPageInner() {
   return (
     <div className="min-h-screen bg-background text-foreground flex w-full">
       <main className="flex-1 flex flex-col w-full">
@@ -19,3 +21,14 @@ export default function ProfitabilityPage() {
   )
 }
 
+export default function ProfitabilityPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <ProfitabilityPageInner />
+    </Suspense>
+  )
+}

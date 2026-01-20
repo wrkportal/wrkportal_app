@@ -1,9 +1,11 @@
 'use client'
 
+import { Suspense } from 'react'
 import { FinanceNavBar } from '@/components/finance/finance-nav-bar'
 import { ForecastsTab } from '@/components/finance/forecasts-tab'
+import { Loader2 } from 'lucide-react'
 
-export default function ForecastsPage() {
+function ForecastsPageInner() {
   return (
     <div className="min-h-screen bg-background text-foreground flex w-full">
       <main className="flex-1 flex flex-col w-full">
@@ -19,4 +21,14 @@ export default function ForecastsPage() {
   )
 }
 
-
+export default function ForecastsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <ForecastsPageInner />
+    </Suspense>
+  )
+}

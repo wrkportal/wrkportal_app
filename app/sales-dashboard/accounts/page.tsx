@@ -822,3 +822,14 @@ function AccountsInner() {
   )
 }
 
+export default function AccountsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading accounts...</div>
+      </div>
+    }>
+      <AccountsInner />
+    </Suspense>
+  )
+}

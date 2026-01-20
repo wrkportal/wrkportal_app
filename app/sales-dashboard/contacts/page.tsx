@@ -613,3 +613,14 @@ function ContactsInner() {
   )
 }
 
+export default function ContactsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading contacts...</div>
+      </div>
+    }>
+      <ContactsInner />
+    </Suspense>
+  )
+}

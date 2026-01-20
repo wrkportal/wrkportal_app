@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { SalesPageLayout } from '@/components/sales/sales-page-layout'
+import { Loader2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -46,7 +47,7 @@ interface AttributionSummary {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658']
 
-export default function AttributionAnalysisPage() {
+function AttributionAnalysisPageInner() {
   const { toast } = useToast()
   const [results, setResults] = useState<AttributionResult[]>([])
   const [summary, setSummary] = useState<AttributionSummary>({})
@@ -320,3 +321,14 @@ export default function AttributionAnalysisPage() {
   )
 }
 
+export default function AttributionAnalysisPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <AttributionAnalysisPageInner />
+    </Suspense>
+  )
+}

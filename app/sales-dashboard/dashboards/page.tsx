@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { SalesPageLayout } from '@/components/sales/sales-page-layout'
+import { Loader2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -44,7 +45,7 @@ interface Dashboard {
   updatedAt: string
 }
 
-export default function SalesDashboardsPage() {
+function SalesDashboardsPageInner() {
   const { toast } = useToast()
   const [dashboards, setDashboards] = useState<Dashboard[]>([])
   const [loading, setLoading] = useState(true)
@@ -366,3 +367,14 @@ export default function SalesDashboardsPage() {
   )
 }
 
+export default function SalesDashboardsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <SalesDashboardsPageInner />
+    </Suspense>
+  )
+}

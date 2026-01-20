@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -31,13 +32,13 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { 
-  FileText, 
-  Plus, 
-  Search, 
-  Eye, 
-  Download, 
-  DollarSign, 
+import {
+  FileText,
+  Plus,
+  Search,
+  Eye,
+  Download,
+  DollarSign,
   Calendar,
   CheckCircle2,
   XCircle,
@@ -58,6 +59,8 @@ interface Invoice {
   invoiceDate: string
   dueDate: string
   totalAmount: number
+  subtotal?: number
+  taxAmount?: number
   currency: string
   status: string
   paymentStatus: string
@@ -84,7 +87,7 @@ interface Invoice {
   }>
 }
 
-export default function SalesInvoicesPage() {
+function SalesInvoicesPageInner() {
   const router = useRouter()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
@@ -119,7 +122,7 @@ export default function SalesInvoicesPage() {
       if (response.ok) {
         const data = await response.json()
         let invoicesList = data.invoices || []
-        
+
         // Filter by payment status if needed
         if (paymentStatusFilter !== 'all') {
           invoicesList = invoicesList.filter((inv: Invoice) => {
@@ -383,14 +386,14 @@ export default function SalesInvoicesPage() {
                         </TableCell>
                         <TableCell>
                           {invoice.salesQuote ? (
-                            <Link 
+                            <Link
                               href={`/sales-dashboard/quotes/${invoice.salesQuote.id}`}
                               className="text-blue-600 hover:underline text-sm"
                             >
                               Quote: {invoice.salesQuote.quoteNumber}
                             </Link>
                           ) : invoice.salesOrder ? (
-                            <Link 
+                            <Link
                               href={`/sales-dashboard/orders`}
                               className="text-blue-600 hover:underline text-sm"
                             >
@@ -493,7 +496,7 @@ export default function SalesInvoicesPage() {
                       <span className="text-muted-foreground">Subtotal:</span>
                       <span>{formatCurrency(Number(selectedInvoice.subtotal || selectedInvoice.totalAmount), selectedInvoice.currency)}</span>
                     </div>
-                    {selectedInvoice.taxAmount > 0 && (
+                    {(selectedInvoice.taxAmount ?? 0) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Tax:</span>
                         <span>{formatCurrency(Number(selectedInvoice.taxAmount), selectedInvoice.currency)}</span>
@@ -660,3 +663,14 @@ export default function SalesInvoicesPage() {
   )
 }
 
+export default function SalesInvoicesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <SalesInvoicesPageInner />
+    </Suspense>
+  )
+}

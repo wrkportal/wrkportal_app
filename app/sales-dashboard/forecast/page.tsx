@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -65,7 +66,7 @@ function getCurrentPeriod() {
   return `${year}-${month}`
 }
 
-export default function ForecastPage() {
+function ForecastPageInner() {
   const { toast } = useToast()
   const [forecasts, setForecasts] = useState<ForecastItem[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -742,9 +743,19 @@ export default function ForecastPage() {
         </Dialog>
       </div>
     </SalesPageLayout>
-
   )
+}
 
+export default function ForecastPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <ForecastPageInner />
+    </Suspense>
+  )
 }
 
 function generatePeriods() {

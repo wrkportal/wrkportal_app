@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -52,7 +53,7 @@ interface LineItem {
   totalPrice: number
 }
 
-export default function NewQuotePage() {
+function NewQuotePageInner() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const { toast } = useToast()
@@ -185,8 +186,8 @@ export default function NewQuotePage() {
         productId: defaultProduct.id,
         productName: defaultProduct.name,
         quantity: 1,
-        unitPrice: parseFloat(defaultProduct.unitPrice.toString()),
-        totalPrice: parseFloat(defaultProduct.unitPrice.toString()),
+        unitPrice: parseFloat(defaultProduct.price.toString()),
+        totalPrice: parseFloat(defaultProduct.price.toString()),
       },
     ])
   }
@@ -203,9 +204,9 @@ export default function NewQuotePage() {
       const product = products.find((p) => p.id === value)
       if (product) {
         updated[index].productName = product.name
-        updated[index].unitPrice = parseFloat(product.unitPrice.toString())
+        updated[index].unitPrice = parseFloat(product.price.toString())
         updated[index].totalPrice =
-          updated[index].quantity * parseFloat(product.unitPrice.toString())
+          updated[index].quantity * parseFloat(product.price.toString())
       }
     } else if (field === 'quantity' || field === 'unitPrice') {
       updated[index].totalPrice = updated[index].quantity * updated[index].unitPrice
@@ -216,7 +217,7 @@ export default function NewQuotePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.name) {
       toast({
         title: 'Error',
@@ -630,3 +631,14 @@ export default function NewQuotePage() {
   )
 }
 
+export default function NewQuotePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <NewQuotePageInner />
+    </Suspense>
+  )
+}

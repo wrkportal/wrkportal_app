@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -57,7 +58,7 @@ interface Interview {
   notes: string | null
 }
 
-export default function InterviewsPage() {
+function InterviewsPageInner() {
   const router = useRouter()
   const [interviews, setInterviews] = useState<Interview[]>([])
   const [loading, setLoading] = useState(true)
@@ -637,3 +638,14 @@ export default function InterviewsPage() {
   )
 }
 
+export default function InterviewsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    }>
+      <InterviewsPageInner />
+    </Suspense>
+  )
+}
