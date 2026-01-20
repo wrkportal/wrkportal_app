@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,7 +13,7 @@ import { ContactSupportDialog } from '@/components/contact-support-dialog'
 let globalVerificationInProgress = false
 const verificationRequestCache = new Map<string, Promise<any>>()
 
-export default function VerifyEmailPage() {
+function VerifyEmailInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
@@ -262,3 +262,38 @@ export default function VerifyEmailPage() {
   )
 }
 
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 p-4">
+        <Card className="w-full max-w-md border border-slate-200 bg-white shadow-xl">
+          <CardHeader className="space-y-1 pb-4 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <Image 
+                src="/logo.png" 
+                alt="wrkportal.com Logo" 
+                width={110} 
+                height={33}
+                className="h-7 w-auto object-contain"
+              />
+            </div>
+            <CardTitle className="text-2xl font-bold text-slate-900">
+              Email Verification
+            </CardTitle>
+            <CardDescription className="text-slate-600">
+              Verifying your email address...
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="h-12 w-12 animate-spin text-purple-600 mb-4" />
+              <p className="text-slate-600 text-sm">Please wait while we verify your email...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <VerifyEmailInner />
+    </Suspense>
+  )
+}
