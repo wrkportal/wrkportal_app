@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -61,7 +61,7 @@ interface Contact {
   }
 }
 
-export default function ContactsPage() {
+function ContactsInner() {
   const searchParams = useSearchParams()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [accounts, setAccounts] = useState<Array<{ id: string; name: string }>>([])

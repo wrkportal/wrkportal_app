@@ -97,7 +97,7 @@ const leadStages = [
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#a28dff']
 
-export default function LeadsPage() {
+function LeadsInner() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const searchParams = useSearchParams()
@@ -2300,5 +2300,17 @@ export default function LeadsPage() {
         </Dialog>
       </div >
     </SalesPageLayout >
+  )
+}
+
+export default function LeadsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading leads...</div>
+      </div>
+    }>
+      <LeadsInner />
+    </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -105,7 +105,7 @@ interface Account {
   name: string
 }
 
-export default function OpportunitiesPage() {
+function OpportunitiesInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [opportunities, setOpportunities] = useState<Opportunity[]>([])
@@ -1658,5 +1658,17 @@ export default function OpportunitiesPage() {
         </DialogContent>
       </Dialog>
     </SalesPageLayout>
+  )
+}
+
+export default function OpportunitiesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading opportunities...</div>
+      </div>
+    }>
+      <OpportunitiesInner />
+    </Suspense>
   )
 }

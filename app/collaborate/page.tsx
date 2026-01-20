@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -127,7 +127,7 @@ interface CollaborationFile {
   uploadedAt: string
 }
 
-export default function CollaboratePage() {
+function CollaborateInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const user = useAuthStore((state) => state.user)
@@ -1249,6 +1249,18 @@ export default function CollaboratePage() {
         />
       )}
     </div>
+  )
+}
+
+export default function CollaboratePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading collaboration...</div>
+      </div>
+    }>
+      <CollaborateInner />
+    </Suspense>
   )
 }
 

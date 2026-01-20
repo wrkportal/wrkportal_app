@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -59,7 +59,7 @@ interface Widget {
   visible: boolean
 }
 
-export default function ProjectDashboardPage() {
+function ProjectDashboardInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const user = useAuthStore((state) => state.user)
@@ -1607,6 +1607,18 @@ export default function ProjectDashboardPage() {
         </>
       )}
     </div>
+  )
+}
+
+export default function ProjectDashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-muted-foreground">Loading dashboard...</div>
+      </div>
+    }>
+      <ProjectDashboardInner />
+    </Suspense>
   )
 }
 
