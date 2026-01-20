@@ -291,7 +291,6 @@ export default function ProjectDetailPage() {
                     <ClosureTab project={project} />
                 </TabsContent>
             </Tabs>
-            </div>
         </div>
     )
 }

@@ -165,7 +165,7 @@ export default function ProjectDashboardPage() {
   useEffect(() => {
     // Always run - no loading check needed for instant load
     const widgetParam = searchParams?.get('widget')
-      if (widgetParam) {
+    if (widgetParam) {
         console.log('Processing widget from URL:', widgetParam, 'for workflow:', currentWorkflowType)
         // Check if widget is available for current workflow
         const availableWidgets = getAvailableWidgets(currentWorkflowType)
@@ -263,7 +263,6 @@ export default function ProjectDashboardPage() {
             router.replace(url.pathname + url.search)
           }, 1500) // Give time for state to update and widget to render
         }
-      }
     }
   }, [searchParams, currentWorkflowType, router, isLoading])
 
