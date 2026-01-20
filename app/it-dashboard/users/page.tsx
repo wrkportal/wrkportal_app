@@ -113,12 +113,7 @@ export default function UsersPage() {
     phone: '',
   })
 
-  const userStats = {
-    total: users.length,
-    active: users.filter(u => u.status === 'ACTIVE').length,
-    inactive: users.filter(u => u.status === 'INACTIVE').length,
-    pending: users.filter(u => u.status === 'PENDING').length,
-  }
+  // Use userStats from state (fetched from API)
 
   const handleCreateUser = () => {
     const newUser: User = {

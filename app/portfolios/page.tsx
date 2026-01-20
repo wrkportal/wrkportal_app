@@ -136,8 +136,6 @@ export default function PortfoliosPage() {
                         </Card>
                     )
                 })}
-            </div>
-
                 </div>
             )}
 

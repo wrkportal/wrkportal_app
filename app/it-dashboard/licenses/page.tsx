@@ -118,13 +118,7 @@ export default function LicensesPage() {
     }
   }
 
-  const licenseStats = {
-    total: licenses.length,
-    active: licenses.filter(l => l.status === 'ACTIVE').length,
-    expiringSoon: licenses.filter(l => l.status === 'EXPIRING_SOON').length,
-    expired: licenses.filter(l => l.status === 'EXPIRED').length,
-    totalCost: licenses.reduce((sum, l) => sum + l.cost, 0),
-  }
+  // Use licenseStats from state (fetched from API)
 
   const statusData = [
     { name: 'Active', value: licenseStats.active },

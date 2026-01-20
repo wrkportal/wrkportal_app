@@ -267,120 +267,124 @@ async function exportPDF(
   projectId: string | null,
   tenantId: string
 ) {
-  return new Promise<NextResponse>((resolve, reject) => {
-    const chunks: Buffer[] = []
-    const doc = new PDFDocument({ margin: 50 })
+  return new Promise<NextResponse>(async (resolve, reject) => {
+    try {
+      const chunks: Buffer[] = []
+      const doc = new PDFDocument({ margin: 50 })
 
-    doc.on('data', (chunk) => chunks.push(chunk))
-    doc.on('end', () => {
-      const buffer = Buffer.concat(chunks)
-      const filename = `finance-${type.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`
+      doc.on('data', (chunk) => chunks.push(chunk))
+      doc.on('end', () => {
+        const buffer = Buffer.concat(chunks)
+        const filename = `finance-${type.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`
 
-      resolve(
-        new NextResponse(buffer, {
-          headers: {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename="${filename}"`,
-          },
-        })
-      )
-    })
-    doc.on('error', reject)
-
-    // Header
-    doc.fontSize(20).text('Finance Report', { align: 'center' })
-    doc.fontSize(12).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' })
-    doc.moveDown(2)
-
-  switch (type) {
-    case 'BUDGET': {
-      const where: any = { tenantId }
-      if (id) where.id = id
-      if (projectId) where.projectId = projectId
-
-      const budgets = await prisma.budget.findMany({
-        where,
-        include: {
-          project: { select: { name: true, code: true } },
-          program: { select: { name: true, code: true } },
-          categories: true,
-        },
-      })
-
-      doc.fontSize(16).text('Budget Report', { underline: true })
-      doc.moveDown()
-
-      budgets.forEach((b, idx) => {
-        if (idx > 0) doc.addPage()
-
-        doc.fontSize(14).text(b.name, { bold: true })
-        doc.fontSize(10)
-        doc.text(`Project: ${b.project?.name || b.program?.name || 'N/A'}`)
-        doc.text(`Type: ${b.type} | Status: ${b.status}`)
-        doc.text(`Total: ${b.currency} ${Number(b.totalAmount).toLocaleString()}`)
-        doc.text(`Spent: ${b.currency} ${Number(b.spentAmount).toLocaleString()}`)
-        doc.text(`Remaining: ${b.currency} ${(Number(b.totalAmount) - Number(b.spentAmount)).toLocaleString()}`)
-        doc.moveDown()
-
-        if (b.categories.length > 0) {
-          doc.text('Categories:', { bold: true })
-          b.categories.forEach((cat) => {
-            doc.text(
-              `  • ${cat.name}: ${b.currency} ${Number(cat.allocatedAmount).toLocaleString()} (${Number(cat.percentage)}%)`,
-              { indent: 20 }
-            )
+        resolve(
+          new NextResponse(buffer, {
+            headers: {
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': `attachment; filename="${filename}"`,
+            },
           })
+        )
+      })
+      doc.on('error', reject)
+
+      // Header
+      doc.fontSize(20).text('Finance Report', { align: 'center' })
+      doc.fontSize(12).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' })
+      doc.moveDown(2)
+
+      switch (type) {
+        case 'BUDGET': {
+          const where: any = { tenantId }
+          if (id) where.id = id
+          if (projectId) where.projectId = projectId
+
+          const budgets = await prisma.budget.findMany({
+            where,
+            include: {
+              project: { select: { name: true, code: true } },
+              program: { select: { name: true, code: true } },
+              categories: true,
+            },
+          })
+
+          doc.fontSize(16).text('Budget Report', { underline: true })
+          doc.moveDown()
+
+          budgets.forEach((b, idx) => {
+            if (idx > 0) doc.addPage()
+
+            doc.fontSize(14).text(b.name, { bold: true })
+            doc.fontSize(10)
+            doc.text(`Project: ${b.project?.name || b.program?.name || 'N/A'}`)
+            doc.text(`Type: ${b.type} | Status: ${b.status}`)
+            doc.text(`Total: ${b.currency} ${Number(b.totalAmount).toLocaleString()}`)
+            doc.text(`Spent: ${b.currency} ${Number(b.spentAmount).toLocaleString()}`)
+            doc.text(`Remaining: ${b.currency} ${(Number(b.totalAmount) - Number(b.spentAmount)).toLocaleString()}`)
+            doc.moveDown()
+
+            if (b.categories.length > 0) {
+              doc.text('Categories:', { bold: true })
+              b.categories.forEach((cat) => {
+                doc.text(
+                  `  • ${cat.name}: ${b.currency} ${Number(cat.allocatedAmount).toLocaleString()} (${Number(cat.percentage)}%)`,
+                  { indent: 20 }
+                )
+              })
+            }
+          })
+
+          break
         }
-      })
 
-      break
+        case 'INVOICE': {
+          const where: any = { tenantId }
+          if (id) where.id = id
+          if (projectId) where.projectId = projectId
+
+          const invoices = await prisma.invoice.findMany({
+            where,
+            include: {
+              project: { select: { name: true, code: true } },
+              lineItems: true,
+              payments: true,
+            },
+          })
+
+          doc.fontSize(16).text('Invoice Report', { underline: true })
+          doc.moveDown()
+
+          invoices.forEach((inv, idx) => {
+            if (idx > 0) doc.addPage()
+
+            doc.fontSize(14).text(`Invoice #${inv.invoiceNumber}`, { bold: true })
+            doc.fontSize(10)
+            doc.text(`Client: ${inv.clientName}`)
+            doc.text(`Project: ${inv.project?.name || 'N/A'}`)
+            doc.text(`Issue Date: ${inv.invoiceDate.toISOString().split('T')[0]}`)
+            doc.text(`Due Date: ${inv.dueDate.toISOString().split('T')[0]}`)
+            doc.text(`Status: ${inv.status}`)
+            doc.moveDown()
+
+            const paid = inv.payments.reduce((sum, p) => sum + Number(p.amount), 0)
+            doc.text(`Subtotal: ${inv.currency} ${Number(inv.subtotal).toLocaleString()}`)
+            doc.text(`Tax: ${inv.currency} ${Number(inv.tax).toLocaleString()}`)
+            doc.text(`Total: ${inv.currency} ${Number(inv.total).toLocaleString()}`)
+            doc.text(`Paid: ${inv.currency} ${paid.toLocaleString()}`)
+            doc.text(`Balance: ${inv.currency} ${(Number(inv.total) - paid).toLocaleString()}`)
+          })
+
+          break
+        }
+
+        default:
+          doc.text(`PDF export for ${type} is not yet implemented.`)
+      }
+
+      doc.end()
+    } catch (error) {
+      reject(error)
     }
-
-    case 'INVOICE': {
-      const where: any = { tenantId }
-      if (id) where.id = id
-      if (projectId) where.projectId = projectId
-
-      const invoices = await prisma.invoice.findMany({
-        where,
-        include: {
-          project: { select: { name: true, code: true } },
-          lineItems: true,
-          payments: true,
-        },
-      })
-
-      doc.fontSize(16).text('Invoice Report', { underline: true })
-      doc.moveDown()
-
-      invoices.forEach((inv, idx) => {
-        if (idx > 0) doc.addPage()
-
-        doc.fontSize(14).text(`Invoice #${inv.invoiceNumber}`, { bold: true })
-        doc.fontSize(10)
-        doc.text(`Client: ${inv.clientName}`)
-        doc.text(`Project: ${inv.project?.name || 'N/A'}`)
-        doc.text(`Issue Date: ${inv.invoiceDate.toISOString().split('T')[0]}`)
-        doc.text(`Due Date: ${inv.dueDate.toISOString().split('T')[0]}`)
-        doc.text(`Status: ${inv.status}`)
-        doc.moveDown()
-
-        const paid = inv.payments.reduce((sum, p) => sum + Number(p.amount), 0)
-        doc.text(`Subtotal: ${inv.currency} ${Number(inv.subtotal).toLocaleString()}`)
-        doc.text(`Tax: ${inv.currency} ${Number(inv.tax).toLocaleString()}`)
-        doc.text(`Total: ${inv.currency} ${Number(inv.total).toLocaleString()}`)
-        doc.text(`Paid: ${inv.currency} ${paid.toLocaleString()}`)
-        doc.text(`Balance: ${inv.currency} ${(Number(inv.total) - paid).toLocaleString()}`)
-      })
-
-      break
-    }
-
-    default:
-      doc.text(`PDF export for ${type} is not yet implemented.`)
-  }
-
-    doc.end()
   })
 }
 
