@@ -3,9 +3,16 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20.acacia',
-})
+// Lazy initialization of Stripe client to avoid build errors when API key is missing
+function getStripeClient(): Stripe | null {
+  const apiKey = process.env.STRIPE_SECRET_KEY
+  if (!apiKey) {
+    return null
+  }
+  return new Stripe(apiKey, {
+    apiVersion: '2024-11-20.acacia',
+  })
+}
 
 // Plan pricing configuration (matches landing page)
 const PLAN_PRICING = {
@@ -37,17 +44,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid billing period' }, { status: 400 })
     }
 
-    // Check if Stripe is configured
-    if (!process.env.STRIPE_SECRET_KEY) {
-      return NextResponse.json(
-        {
-          error: 'Payment gateway not configured',
-          message: 'Stripe API key not found. Please configure STRIPE_SECRET_KEY in environment variables.',
-        },
-        { status: 503 }
-      )
-    }
-
     // Get user
     let user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -55,6 +51,18 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // Get Stripe client
+    const stripe = getStripeClient()
+    if (!stripe) {
+      return NextResponse.json(
+        {
+          error: 'Payment gateway not configured',
+          message: 'Stripe API key not found. Please configure STRIPE_SECRET_KEY in environment variables.',
+        },
+        { status: 503 }
+      )
     }
 
     // Get or create Stripe customer

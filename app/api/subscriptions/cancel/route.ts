@@ -3,22 +3,22 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20.acacia',
-})
+// Lazy initialization of Stripe client to avoid build errors when API key is missing
+function getStripeClient(): Stripe | null {
+  const apiKey = process.env.STRIPE_SECRET_KEY
+  if (!apiKey) {
+    return null
+  }
+  return new Stripe(apiKey, {
+    apiVersion: '2024-11-20.acacia',
+  })
+}
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    if (!process.env.STRIPE_SECRET_KEY) {
-      return NextResponse.json(
-        { error: 'Payment gateway not configured' },
-        { status: 503 }
-      )
     }
 
     const user = await prisma.user.findUnique({
@@ -33,6 +33,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'No active subscription found' },
         { status: 400 }
+      )
+    }
+
+    // Get Stripe client
+    const stripe = getStripeClient()
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Payment gateway not configured' },
+        { status: 503 }
       )
     }
 

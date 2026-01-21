@@ -3,9 +3,16 @@ import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20.acacia',
-})
+// Lazy initialization of Stripe client to avoid build errors when API key is missing
+function getStripeClient(): Stripe | null {
+  const apiKey = process.env.STRIPE_SECRET_KEY
+  if (!apiKey) {
+    return null
+  }
+  return new Stripe(apiKey, {
+    apiVersion: '2024-11-20.acacia',
+  })
+}
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
 
@@ -20,6 +27,12 @@ export async function POST(request: NextRequest) {
   if (!webhookSecret) {
     console.error('STRIPE_WEBHOOK_SECRET is not configured')
     return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+  }
+
+  // Get Stripe client
+  const stripe = getStripeClient()
+  if (!stripe) {
+    return NextResponse.json({ error: 'Payment gateway not configured' }, { status: 503 })
   }
 
   let event: Stripe.Event
