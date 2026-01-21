@@ -1,0 +1,3 @@
+-- This migration was marked as failed and is being resolved
+-- The functionality is covered by migration 20260101155716_add_custom_fields_to_sales_lead
+-- This file exists only to allow Prisma to resolve the failed migration status
