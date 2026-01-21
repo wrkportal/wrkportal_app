@@ -1,9 +1,7 @@
-import type { Config } from 'prisma'
-
-export default {
+module.exports = {
   datasources: {
     db: {
       url: process.env.DATABASE_URL,
     },
   },
-} satisfies Config
+}
