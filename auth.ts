@@ -88,16 +88,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === 'google' && profile) {
         try {
           const email = user.email!
+          if (!email) {
+            console.error('[OAuth] No email provided in user object')
+            return false
+          }
+
           const domain = email.split('@')[1]
 
           // Check if user already exists
           let existingUser = await prisma.user.findUnique({
-            where: { email },
+            where: { email: email.toLowerCase() },
             include: { tenant: true },
           })
 
           if (existingUser) {
             // User exists, allow sign in
+            console.log(`[OAuth] Existing user found: ${email}, allowing sign in`)
             return true
           }
 
@@ -123,7 +129,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // Create the user
           await prisma.user.create({
             data: {
-              email: email,
+              email: email.toLowerCase(),
               name: profile.name || email,
               firstName: (profile as any).given_name || profile.name?.split(' ')[0] || '',
               lastName: (profile as any).family_name || profile.name?.split(' ')[1] || '',
@@ -136,8 +142,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           console.log(`[OAuth] Created new user: ${email} with role: ${userRole}`)
           return true
-        } catch (error) {
-          console.error('[OAuth] Error creating user:', error)
+        } catch (error: any) {
+          console.error('[OAuth] Error in signIn callback:', {
+            error: error.message,
+            stack: error.stack,
+            code: error.code,
+            name: error.name,
+          })
+          // Don't block sign-in for existing users if there's a database error
+          // Try to check if user exists one more time
+          try {
+            const email = user.email!
+            const existingUser = await prisma.user.findUnique({
+              where: { email: email.toLowerCase() },
+            })
+            if (existingUser) {
+              console.log('[OAuth] User exists despite error, allowing sign in')
+              return true
+            }
+          } catch (checkError) {
+            console.error('[OAuth] Error checking existing user:', checkError)
+          }
           return false
         }
       }
