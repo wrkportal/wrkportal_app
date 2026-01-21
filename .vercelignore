@@ -53,12 +53,10 @@ electron-builder.config.js
 electron/
 
 # Large data files
-# Note: Migration files (*.sql in prisma/migrations/) are required for deployment
-# Only exclude database dump files, not migration files
+# Note: *.sql is NOT excluded because Prisma migration files are required for deployment
+# Migration files in prisma/migrations/ are needed for prisma migrate deploy
 *.db
 *.sqlite
-# Exclude SQL dumps but NOT Prisma migrations
-# prisma/migrations/**/*.sql files are needed for prisma migrate deploy
 
 # Git
 .git/
