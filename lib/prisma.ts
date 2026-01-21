@@ -18,9 +18,10 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    // In Prisma 7+, connection URL is passed via adapter or accelerateUrl
-    // For direct connection, use the connection string from environment
-    // The prisma.config.ts file handles the URL for migrations
+    // Prisma 7+ requires adapter or accelerateUrl for direct database connection
+    adapter: {
+      url: process.env.DATABASE_URL!,
+    },
     log:
       process.env.NODE_ENV === 'development'
         ? ['error', 'warn']
