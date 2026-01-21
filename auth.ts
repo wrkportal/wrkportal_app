@@ -86,31 +86,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account, profile }) {
       // Handle Google OAuth sign-in
       if (account?.provider === 'google' && profile) {
+        const email = user.email!
+        if (!email) {
+          console.error('[OAuth] No email provided in user object')
+          return false
+        }
+
         try {
-          const email = user.email!
-          if (!email) {
-            console.error('[OAuth] No email provided in user object')
-            return false
-          }
-
           const domain = email.split('@')[1]
+          const emailLower = email.toLowerCase()
 
-          // Check if user already exists
+          // Check if user already exists (use simpler query first)
           let existingUser = await prisma.user.findUnique({
-            where: { email: email.toLowerCase() },
-            include: { tenant: true },
+            where: { email: emailLower },
+            select: { id: true, email: true, tenantId: true }, // Minimal fields for faster query
           })
 
           if (existingUser) {
             // User exists, allow sign in
-            console.log(`[OAuth] Existing user found: ${email}, allowing sign in`)
+            console.log(`[OAuth] ✅ Existing user found: ${email}, allowing sign in`)
             return true
           }
+
+          console.log(`[OAuth] New user detected: ${email}, creating account...`)
 
           // User doesn't exist, create new user with tenant
           // Check if organization for this domain already exists
           let tenant = await prisma.tenant.findFirst({
             where: { domain },
+            select: { id: true, name: true }, // Only select needed fields
           })
 
           let userRole: 'ORG_ADMIN' | 'TEAM_MEMBER' = 'TEAM_MEMBER'
@@ -119,17 +123,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             // Create new organization, user becomes ORG_ADMIN
             tenant = await prisma.tenant.create({
               data: {
-                name: `${profile.name}'s Organization`,
+                name: `${profile.name || email}'s Organization`,
                 domain: domain,
               },
             })
             userRole = 'ORG_ADMIN'
+            console.log(`[OAuth] Created new tenant: ${tenant.name}`)
           }
 
           // Create the user
           await prisma.user.create({
             data: {
-              email: email.toLowerCase(),
+              email: emailLower,
               name: profile.name || email,
               firstName: (profile as any).given_name || profile.name?.split(' ')[0] || '',
               lastName: (profile as any).family_name || profile.name?.split(' ')[1] || '',
@@ -140,7 +145,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             },
           })
 
-          console.log(`[OAuth] Created new user: ${email} with role: ${userRole}`)
+          console.log(`[OAuth] ✅ Created new user: ${email} with role: ${userRole}`)
           return true
         } catch (error: any) {
           console.error('[OAuth] Error in signIn callback:', {
@@ -148,21 +153,51 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             stack: error.stack,
             code: error.code,
             name: error.name,
+            email: user.email,
           })
+          
           // Don't block sign-in for existing users if there's a database error
-          // Try to check if user exists one more time
+          // Try to check if user exists one more time with a simpler query
           try {
             const email = user.email!
+            console.log('[OAuth] Attempting fallback user check for:', email)
+            
+            // Try a simpler query without include
             const existingUser = await prisma.user.findUnique({
               where: { email: email.toLowerCase() },
+              select: { id: true, email: true }, // Only select minimal fields
             })
+            
             if (existingUser) {
-              console.log('[OAuth] User exists despite error, allowing sign in')
+              console.log('[OAuth] ✅ User exists despite error, allowing sign in')
               return true
             }
-          } catch (checkError) {
-            console.error('[OAuth] Error checking existing user:', checkError)
+            
+            console.log('[OAuth] ⚠️ User does not exist, but error occurred. Checking if this is a database connection issue...')
+            
+            // If it's a database connection error, we should still allow sign-in
+            // Google has already authenticated the user, so we trust that
+            if (error.code === 'P1001' || error.code === 'P1017' || error.message?.includes('connection')) {
+              console.log('[OAuth] ⚠️ Database connection error detected. Allowing sign-in to proceed.')
+              return true
+            }
+            
+          } catch (checkError: any) {
+            console.error('[OAuth] Error in fallback user check:', {
+              error: checkError.message,
+              code: checkError.code,
+            })
+            
+            // If even the fallback check fails, it's likely a database issue
+            // In this case, we should allow the sign-in since Google has authenticated
+            if (checkError.code === 'P1001' || checkError.code === 'P1017') {
+              console.log('[OAuth] ⚠️ Database connection error in fallback. Allowing sign-in.')
+              return true
+            }
           }
+          
+          // Only deny if we're certain the user doesn't exist AND it's not a connection error
+          console.error('[OAuth] ❌ Denying sign-in due to error')
           return false
         }
       }
