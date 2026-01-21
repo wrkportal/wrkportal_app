@@ -96,13 +96,28 @@ export default function SignupPage() {
 
     const handleGoogleSignIn = async () => {
         setLoading(true)
+        setError('')
         try {
+            // Use current origin to ensure correct redirect
+            const callbackUrl = typeof window !== 'undefined' 
+                ? `${window.location.origin}/`
+                : '/'
+            
+            console.log('🔍 Google Sign-In - Callback URL:', callbackUrl)
+            console.log('🔍 Google Sign-In - Current Origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A')
+            
             await signIn('google', {
-                callbackUrl: '/',
+                callbackUrl: callbackUrl,
+                redirect: true,
             })
-        } catch (error) {
-            console.error('Google Sign-In error:', error)
-            setError('Failed to sign in with Google. Please try again.')
+        } catch (error: any) {
+            console.error('❌ Google Sign-In error:', error)
+            // Don't set loading to false if redirect is happening
+            if (error?.message?.includes('redirect')) {
+                // Redirect is happening, don't show error
+                return
+            }
+            setError('Failed to sign in with Google. Please check your browser console for details.')
             setLoading(false)
         }
     }
