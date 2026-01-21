@@ -47,17 +47,17 @@ export const metadata: Metadata = {
     authors: [{ name: "wrkportal.com Team" }],
     creator: "wrkportal.com",
     publisher: "wrkportal.com",
-    metadataBase: new URL('https://www.managerbook.in'),
+    metadataBase: new URL('https://www.wrkportal.com'),
     openGraph: {
         type: 'website',
         locale: 'en_US',
-        url: 'https://www.managerbook.in',
+        url: 'https://www.wrkportal.com',
         title: 'wrkportal.com - AI-Powered Project Management Platform',
         description: 'wrkportal.com - Comprehensive project management with AI-powered features, OKR tracking, advanced reporting tools, business intelligence, and team collaboration.',
         siteName: 'wrkportal.com',
         images: [
             {
-                url: 'https://www.managerbook.in/logo.png',
+                url: 'https://www.wrkportal.com/logo.png',
                 width: 1200,
                 height: 630,
                 alt: 'wrkportal.com Logo',
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'wrkportal.com - AI-Powered Project Management Platform',
         description: 'wrkportal.com - Comprehensive project management with AI-powered features, OKR tracking, advanced reporting tools, business intelligence, and team collaboration.',
-        images: ['https://www.managerbook.in/logo.png'],
+        images: ['https://www.wrkportal.com/logo.png'],
         creator: '@wrkportal.com',
     },
     robots: {
@@ -118,19 +118,19 @@ export default function RootLayout({
                             "@type": "Organization",
                             "name": "wrkportal.com",
                             "alternateName": "Work Portal",
-                            "url": "https://www.managerbook.in",
-                            "logo": "https://www.managerbook.in/logo.png",
+                            "url": "https://www.wrkportal.com",
+                            "logo": "https://www.wrkportal.com/logo.png",
                             "description": "wrkportal.com is a professional project management platform with AI-powered features, OKR tracking, advanced reporting tools, and team collaboration.",
                             "sameAs": [
                                 // Add your social media profiles here
-                                // "https://www.facebook.com/managerbook",
-                                // "https://twitter.com/managerbook",
-                                // "https://www.linkedin.com/company/managerbook"
+                                // "https://www.facebook.com/wrkportal",
+                                // "https://twitter.com/wrkportal",
+                                // "https://www.linkedin.com/company/wrkportal"
                             ],
                             "contactPoint": {
                                 "@type": "ContactPoint",
                                 "contactType": "customer support",
-                                "url": "https://www.managerbook.in/contact"
+                                "url": "https://www.wrkportal.com/contact"
                             }
                         })
                     }}
@@ -145,10 +145,10 @@ export default function RootLayout({
                             "@context": "https://schema.org",
                             "@type": "WebSite",
                             "name": "wrkportal.com",
-                            "url": "https://www.managerbook.in",
+                            "url": "https://www.wrkportal.com",
                             "potentialAction": {
                                 "@type": "SearchAction",
-                                "target": "https://www.managerbook.in/search?q={search_term_string}",
+                                "target": "https://www.wrkportal.com/search?q={search_term_string}",
                                 "query-input": "required name=search_term_string"
                             }
                         })
