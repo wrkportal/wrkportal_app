@@ -6,7 +6,7 @@ import { Shield, Mail, Lock, Eye, Database, Globe, Calendar } from "lucide-react
 import Link from "next/link"
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "January 1, 2025" // [CUSTOMIZE: Update this date]
+  const lastUpdated = "January 1, 2026" // [CUSTOMIZE: Update this date]
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -31,7 +31,7 @@ export default function PrivacyPolicyPage() {
             {/* Introduction */}
             <section className="mb-8">
               <p className="text-base leading-relaxed text-muted-foreground">
-                ManagerBook ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our project management platform and services (the "Service").
+                wrkportal.com ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our project management platform and services (the "Service").
               </p>
             </section>
 
@@ -98,7 +98,7 @@ export default function PrivacyPolicyPage() {
                   <h3 className="text-lg font-semibold mb-3">1.3 Information from Third Parties</h3>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
                     <li><strong>SSO Providers:</strong> When you sign in with Google or other providers, we receive basic profile information</li>
-                    <li><strong>Integration Partners:</strong> Data from third-party tools you connect to ManagerBook</li>
+                    <li><strong>Integration Partners:</strong> Data from third-party tools you connect to wrkportal.com</li>
                   </ul>
                 </div>
               </div>
@@ -240,7 +240,7 @@ export default function PrivacyPolicyPage() {
 
               <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <p className="text-sm">
-                  To exercise your rights, contact us at <a href="mailto:privacy@managerbook.in" className="text-blue-600 hover:underline">privacy@managerbook.in</a>
+                  To exercise your rights, contact us at <a href="mailto:privacy@wrkportal.com" className="text-blue-600 hover:underline">privacy@wrkportal.com</a>
                 </p>
               </div>
             </section>
@@ -336,9 +336,9 @@ export default function PrivacyPolicyPage() {
 
                 <div className="p-6 bg-slate-50 dark:bg-slate-900 rounded-lg border">
                   <div className="space-y-2">
-                    <p className="font-semibold">ManagerBook Privacy Team</p>
-                    <p className="text-muted-foreground">Email: <a href="mailto:privacy@managerbook.in" className="text-blue-600 hover:underline">privacy@managerbook.in</a></p>
-                    <p className="text-muted-foreground">Website: <a href="https://www.managerbook.in" className="text-blue-600 hover:underline">www.managerbook.in</a></p>
+                    <p className="font-semibold">wrkportal.com Privacy Team</p>
+                    <p className="text-muted-foreground">Email: <a href="mailto:privacy@wrkportal.com" className="text-blue-600 hover:underline">privacy@wrkportal.com</a></p>
+                    <p className="text-muted-foreground">Website: <a href="https://www.wrkportal.com" className="text-blue-600 hover:underline">www.wrkportal.com</a></p>
                   </div>
                 </div>
 

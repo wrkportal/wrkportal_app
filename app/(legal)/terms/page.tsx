@@ -6,8 +6,8 @@ import { FileText, AlertTriangle, CheckCircle2, Scale, Ban, Calendar } from "luc
 import Link from "next/link"
 
 export default function TermsOfServicePage() {
-  const lastUpdated = "January 1, 2025" // [CUSTOMIZE: Update this date]
-  const effectiveDate = "January 1, 2025" // [CUSTOMIZE: Update this date]
+  const lastUpdated = "January 1, 2026" // [CUSTOMIZE: Update this date]
+  const effectiveDate = "January 1, 2026" // [CUSTOMIZE: Update this date]
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -32,7 +32,7 @@ export default function TermsOfServicePage() {
             {/* Introduction */}
             <section className="mb-8">
               <p className="text-base leading-relaxed text-muted-foreground">
-                These Terms of Service ("Terms", "Agreement") govern your access to and use of the ManagerBook platform and services (the "Service") operated by ManagerBook ("we," "us," or "our").
+                These Terms of Service ("Terms", "Agreement") govern your access to and use of the wrkportal.com platform and services (the "Service") operated by wrkportal.com ("we," "us," or "our").
               </p>
               <p className="text-base leading-relaxed text-muted-foreground mt-4">
                 <strong>By accessing or using the Service, you agree to be bound by these Terms.</strong> If you do not agree to these Terms, you may not access or use the Service.
@@ -92,7 +92,7 @@ export default function TermsOfServicePage() {
               <h2 className="text-2xl font-bold mb-4">2. Service Description</h2>
 
               <p className="text-muted-foreground mb-4">
-                ManagerBook provides a cloud-based project management platform that includes:
+                wrkportal.com provides a comprehensive business management platform that includes:
               </p>
 
               <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
@@ -235,7 +235,7 @@ export default function TermsOfServicePage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-3">6.1 Our Intellectual Property</h3>
                   <p className="text-muted-foreground">
-                    The Service, including its software, design, text, graphics, logos, and other content (excluding User Content), is owned by ManagerBook and protected by copyright, trademark, and other intellectual property laws.
+                    The Service, including its software, design, text, graphics, logos, and other content (excluding User Content), is owned by wrkportal.com and protected by copyright, trademark, and other intellectual property laws.
                   </p>
                 </div>
 
@@ -249,7 +249,7 @@ export default function TermsOfServicePage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-3">6.3 Trademarks</h3>
                   <p className="text-muted-foreground">
-                    "ManagerBook" and related logos are trademarks. You may not use our trademarks without our prior written permission.
+                    "wrkportal.com" and related logos are trademarks. You may not use our trademarks without our prior written permission.
                   </p>
                 </div>
               </div>
@@ -374,7 +374,7 @@ export default function TermsOfServicePage() {
 
               <div className="p-4 bg-slate-100 dark:bg-slate-900 rounded-lg border">
                 <p className="text-muted-foreground mb-4">
-                  <strong>TO THE MAXIMUM EXTENT PERMITTED BY LAW, MANAGERBOOK SHALL NOT BE LIABLE FOR:</strong>
+                  <strong>TO THE MAXIMUM EXTENT PERMITTED BY LAW, WRKPORTAL.COM SHALL NOT BE LIABLE FOR:</strong>
                 </p>
 
                 <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
@@ -401,7 +401,7 @@ export default function TermsOfServicePage() {
               <h2 className="text-2xl font-bold mb-4">11. Indemnification</h2>
 
               <p className="text-muted-foreground">
-                You agree to indemnify, defend, and hold harmless ManagerBook and its officers, directors, employees, and agents from any claims, losses, damages, liabilities, and expenses (including legal fees) arising from:
+                You agree to indemnify, defend, and hold harmless wrkportal.com and its officers, directors, employees, and agents from any claims, losses, damages, liabilities, and expenses (including legal fees) arising from:
               </p>
 
               <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4 mt-4">
@@ -459,7 +459,7 @@ export default function TermsOfServicePage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-3">13.2 Entire Agreement</h3>
                   <p className="text-muted-foreground">
-                    These Terms, together with our Privacy Policy, constitute the entire agreement between you and ManagerBook.
+                    These Terms, together with our Privacy Policy, constitute the entire agreement between you and wrkportal.com.
                   </p>
                 </div>
 
@@ -499,9 +499,9 @@ export default function TermsOfServicePage() {
 
                 <div className="p-6 bg-slate-50 dark:bg-slate-900 rounded-lg border">
                   <div className="space-y-2">
-                    <p className="font-semibold">ManagerBook Legal Team</p>
-                    <p className="text-muted-foreground">Email: <a href="mailto:legal@managerbook.in" className="text-purple-600 hover:underline">legal@managerbook.in</a></p>
-                    <p className="text-muted-foreground">Website: <a href="https://www.managerbook.in" className="text-purple-600 hover:underline">www.managerbook.in</a></p>
+                    <p className="font-semibold">wrkportal.com Legal Team</p>
+                    <p className="text-muted-foreground">Email: <a href="mailto:legal@wrkportal.com" className="text-purple-600 hover:underline">legal@wrkportal.com</a></p>
+                    <p className="text-muted-foreground">Website: <a href="https://www.wrkportal.com" className="text-purple-600 hover:underline">www.wrkportal.com</a></p>
                   </div>
                 </div>
               </div>
@@ -512,7 +512,7 @@ export default function TermsOfServicePage() {
             {/* Acknowledgment */}
             <div className="p-6 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
               <p className="text-sm text-center">
-                <strong>By using ManagerBook, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.</strong>
+                <strong>By using wrkportal.com, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.</strong>
               </p>
             </div>
           </CardContent>

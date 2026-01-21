@@ -331,12 +331,45 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     )
-  } catch (error) {
-    console.error('Signup error:', error)
+  } catch (error: any) {
+    console.error('❌ Signup error:', error)
+    console.error('❌ Error stack:', error?.stack)
+    console.error('❌ Error code:', error?.code)
+    console.error('❌ Error name:', error?.name)
+    
+    // Provide more specific error messages based on error type
+    let errorMessage = 'An error occurred during signup'
+    let errorDetails = error instanceof Error ? error.message : 'Unknown error'
+    
+    // Prisma-specific errors
+    if (error?.code === 'P2002') {
+      errorMessage = 'A record with this information already exists'
+      errorDetails = error.meta?.target 
+        ? `Duplicate entry for: ${error.meta.target.join(', ')}`
+        : error.message
+    } else if (error?.code === 'P2003') {
+      errorMessage = 'Invalid reference in database'
+      errorDetails = error.meta?.field_name 
+        ? `Invalid reference: ${error.meta.field_name}`
+        : error.message
+    } else if (error?.code === 'P1001' || error?.code === 'P1017') {
+      errorMessage = 'Database connection error'
+      errorDetails = 'Unable to connect to the database. Please try again later.'
+    } else if (error?.code === 'P2025') {
+      errorMessage = 'Record not found'
+      errorDetails = error.message
+    }
+    
     return NextResponse.json(
       {
-        error: 'An error occurred during signup',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
+        details: errorDetails,
+        code: error?.code || 'UNKNOWN',
+        // Include additional context for debugging (only in development)
+        ...(process.env.NODE_ENV === 'development' && {
+          stack: error?.stack,
+          name: error?.name,
+        }),
       },
       { status: 500 }
     )

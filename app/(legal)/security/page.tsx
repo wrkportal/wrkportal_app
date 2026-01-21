@@ -6,7 +6,7 @@ import { Shield, Lock, Eye, Database, Server, Key, AlertTriangle, CheckCircle2, 
 import Link from "next/link"
 
 export default function SecurityPage() {
-  const lastUpdated = "January 1, 2025" // [CUSTOMIZE: Update this date]
+  const lastUpdated = "January 1, 2026" // [CUSTOMIZE: Update this date]
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -31,7 +31,7 @@ export default function SecurityPage() {
             {/* Introduction */}
             <section className="mb-8">
               <p className="text-base leading-relaxed text-muted-foreground">
-                Security is fundamental to everything we do at ManagerBook. We implement industry best practices and continuously monitor and improve our security posture to protect your data.
+                Security is fundamental to everything we do at wrkportal.com. We implement industry best practices and continuously monitor and improve our security posture to protect your data.
               </p>
             </section>
 
@@ -468,7 +468,7 @@ export default function SecurityPage() {
                   If you discover a security vulnerability, please report it responsibly:
                 </p>
                 <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4 mb-4">
-                  <li>Email us at: <a href="mailto:security@managerbook.in" className="text-green-600 hover:underline font-semibold">security@managerbook.in</a></li>
+                  <li>Email us at: <a href="mailto:security@wrkportal.com" className="text-green-600 hover:underline font-semibold">security@wrkportal.com</a></li>
                   <li>Provide detailed information about the vulnerability</li>
                   <li>Give us reasonable time to address the issue</li>
                   <li>Do not exploit the vulnerability beyond verification</li>
@@ -495,10 +495,10 @@ export default function SecurityPage() {
 
                 <div className="p-6 bg-slate-50 dark:bg-slate-900 rounded-lg border">
                   <div className="space-y-2">
-                    <p className="font-semibold">ManagerBook Security Team</p>
-                    <p className="text-muted-foreground">Security Issues: <a href="mailto:security@managerbook.in" className="text-green-600 hover:underline">security@managerbook.in</a></p>
-                    <p className="text-muted-foreground">General Inquiries: <a href="mailto:support@managerbook.in" className="text-green-600 hover:underline">support@managerbook.in</a></p>
-                    <p className="text-muted-foreground">Website: <a href="https://www.managerbook.in" className="text-green-600 hover:underline">www.managerbook.in</a></p>
+                    <p className="font-semibold">wrkportal.com Security Team</p>
+                    <p className="text-muted-foreground">Security Issues: <a href="mailto:security@wrkportal.com" className="text-green-600 hover:underline">security@wrkportal.com</a></p>
+                    <p className="text-muted-foreground">General Inquiries: <a href="mailto:support@wrkportal.com" className="text-green-600 hover:underline">support@wrkportal.com</a></p>
+                    <p className="text-muted-foreground">Website: <a href="https://www.wrkportal.com" className="text-green-600 hover:underline">www.wrkportal.com</a></p>
                   </div>
                 </div>
 

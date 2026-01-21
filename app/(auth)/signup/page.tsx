@@ -168,9 +168,9 @@ export default function SignupPage() {
                             <Image 
                                 src="/logo.png" 
                                 alt="wrkportal.com Logo" 
-                                width={110} 
-                                height={33}
-                                className="h-7 w-auto object-contain"
+                                width={160} 
+                                height={48}
+                                className="h-12 w-auto object-contain"
                             />
                         </div>
                         <p className="text-slate-600 text-xs sm:text-sm">Create Your Account</p>

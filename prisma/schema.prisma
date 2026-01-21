@@ -31,6 +31,12 @@ model User {
   lastLogin                      DateTime?
   resetToken                     String?
   resetTokenExpiry               DateTime?
+  stripeCustomerId               String?                            @unique
+  stripeSubscriptionId           String?                            @unique
+  subscriptionStatus             String?                            // active, canceled, past_due, etc.
+  subscriptionTier               String?                            // free, starter, professional, business, enterprise
+  subscriptionStartDate          DateTime?
+  subscriptionEndDate            DateTime?
   createdAt                      DateTime                           @default(now())
   updatedAt                      DateTime                           @updatedAt
   groupRole                      GroupRole?

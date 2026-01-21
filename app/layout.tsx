@@ -84,14 +84,14 @@ export const metadata: Metadata = {
     },
     icons: {
         icon: [
-            { url: '/logo.png', type: 'image/png', sizes: '32x32' },
-            { url: '/logo.png', type: 'image/png', sizes: '192x192' },
-            { url: '/logo.png', type: 'image/png', sizes: '512x512' },
+            { url: '/favicon.PNG', type: 'image/png', sizes: '32x32' },
+            { url: '/favicon.PNG', type: 'image/png', sizes: '192x192' },
+            { url: '/favicon.PNG', type: 'image/png', sizes: '512x512' },
         ],
         apple: [
-            { url: '/logo.png', sizes: '180x180', type: 'image/png' },
+            { url: '/favicon.PNG', sizes: '180x180', type: 'image/png' },
         ],
-        shortcut: '/logo.png',
+        shortcut: '/favicon.PNG',
     },
     manifest: '/manifest.json',
     // verification: {
@@ -107,6 +107,7 @@ export default function RootLayout({
     return (
         <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
             <head>
+                <link rel="icon" href="/favicon.PNG" type="image/png" />
                 {/* Organization Schema for Google */}
                 <Script
                     id="organization-schema"
