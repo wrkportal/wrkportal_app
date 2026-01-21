@@ -32,7 +32,31 @@ Your app is live at: `https://www.wrkportal.com`
 2. Select your project
 3. Go to **APIs & Services** → **Credentials**
 4. Click on your OAuth 2.0 Client ID
-5. Under **Authorized redirect URIs**, add these EXACT URLs:
+
+#### A. Authorized JavaScript Origins
+
+Under **Authorized JavaScript origins**, add these EXACT URLs (base domain only, NO paths):
+
+```
+https://www.wrkportal.com
+https://wrkportal.com
+```
+
+**Important for JavaScript Origins**:
+- ✅ Use base domain only (no paths like `/api/auth`)
+- ✅ Include `https://` protocol
+- ✅ Include BOTH `www` and non-`www` versions if you use both
+- ❌ NO trailing slashes
+- ❌ NO paths (just the domain)
+
+**If you're still testing locally**, you can also add:
+```
+http://localhost:3000
+```
+
+#### B. Authorized Redirect URIs
+
+Under **Authorized redirect URIs**, add these EXACT URLs:
 
 ```
 https://www.wrkportal.com/api/auth/callback/google
