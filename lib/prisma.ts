@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -15,13 +17,14 @@ const globalForPrisma = globalThis as unknown as {
  * Example DATABASE_URL:
  * postgresql://user:password@host:port/database?connection_limit=10&pool_timeout=5
  */
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg(pool)
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    // Prisma 7+ requires adapter or accelerateUrl for direct database connection
-    adapter: {
-      url: process.env.DATABASE_URL!,
-    },
+    // Prisma 7+ requires adapter for direct database connection
+    adapter: adapter,
     log:
       process.env.NODE_ENV === 'development'
         ? ['error', 'warn']
