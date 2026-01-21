@@ -4,6 +4,8 @@ import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
+  pool: Pool | undefined
+  adapter: PrismaPg | undefined
 }
 
 /**
@@ -17,21 +19,39 @@ const globalForPrisma = globalThis as unknown as {
  * Example DATABASE_URL:
  * postgresql://user:password@host:port/database?connection_limit=10&pool_timeout=5
  */
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-const adapter = new PrismaPg(pool)
+function getPrismaClient() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is not set')
+  }
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    // Prisma 7+ requires adapter for direct database connection
-    adapter: adapter,
-    log:
-      process.env.NODE_ENV === 'development'
-        ? ['error', 'warn']
-        : ['error'],
-    // Connection pooling is handled automatically by Prisma via DATABASE_URL
-    // Ensure your DATABASE_URL includes pool parameters for optimal performance
-  })
+  // Reuse pool and adapter across requests in serverless environment
+  if (!globalForPrisma.pool) {
+    globalForPrisma.pool = new Pool({ 
+      connectionString: process.env.DATABASE_URL,
+      // Optimize for serverless - use connection pooling from DATABASE_URL
+      // Don't set max here, let the connection string parameters handle it
+    })
+  }
+
+  if (!globalForPrisma.adapter) {
+    globalForPrisma.adapter = new PrismaPg(globalForPrisma.pool)
+  }
+
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient({
+      // Prisma 7+ requires adapter for direct database connection
+      adapter: globalForPrisma.adapter,
+      log:
+        process.env.NODE_ENV === 'development'
+          ? ['error', 'warn']
+          : ['error'],
+    })
+  }
+
+  return globalForPrisma.prisma
+}
+
+export const prisma = getPrismaClient()
 
 // Handle connection errors gracefully with retry logic
 if (process.env.NODE_ENV !== 'production') {
