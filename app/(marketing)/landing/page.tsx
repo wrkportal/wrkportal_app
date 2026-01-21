@@ -554,11 +554,11 @@ export default function LandingPage() {
     const faqs = [
         {
             question: "What Is wrkportal.com AI-Powered Platform?",
-            answer: "wrkportal.com is an advanced AI-powered business platform that combines intelligent automation with comprehensive management tools. It uses machine learning to predict risks, optimize resources, and automate decision-making, helping teams deliver projects faster and more efficiently across Project Management, Sales, Finance, Operations, Recruitment, IT, and Customer Service."
+            answer: "wrkportal.com is an advanced AI-powered business platform that combines intelligent automation with comprehensive management tools. It uses machine learning to predict risks, optimize resources, and automate decision-making, helping teams deliver projects faster and more efficiently across Project Management, Sales, Finance, Ops Management, Recruitment, IT, and Customer Service."
         },
         {
             question: "What platforms does wrkportal.com support?",
-            answer: "wrkportal.com is a comprehensive business platform supporting Project Management, Sales & CRM, Finance & Accounting, Operations, Recruitment & HR, IT & Development, and Customer Service - all in one unified platform."
+            answer: "wrkportal.com is a comprehensive business platform supporting Project Management, Sales & CRM, Finance & Accounting, Ops Management, Recruitment & HR, IT & Development, and Customer Service - all in one unified platform."
         },
         {
             question: "Is there a limitation on how much content I can generate?",
@@ -574,7 +574,7 @@ export default function LandingPage() {
         },
         {
             question: "Is it helpful for different business functions?",
-            answer: "Absolutely! wrkportal.com is designed for Project Managers, Sales Teams, Finance Departments, Operations Managers, HR Teams, IT Departments, and Customer Service Teams. The AI-powered features help automate routine tasks, predict potential issues, and provide actionable insights that make management more efficient and effective across all business functions."
+            answer: "Absolutely! wrkportal.com is designed for Project Managers, Sales Teams, Finance Departments, Ops Managers, HR Teams, IT Departments, and Customer Service Teams. The AI-powered features help automate routine tasks, predict potential issues, and provide actionable insights that make management more efficient and effective across all business functions."
         },
     ]
 
@@ -597,7 +597,8 @@ export default function LandingPage() {
                                 <img
                                     src="/logo.png"
                                     alt="wrkportal.com"
-                                    className="relative h-12 w-12 rounded-xl object-cover"
+                                    className="relative h-12 w-12 rounded-xl object-contain"
+                                    style={{ mixBlendMode: 'normal' }}
                                 />
                             </div>
                         </div>
@@ -662,7 +663,7 @@ export default function LandingPage() {
                                         "Project Management",
                                         "Sales & CRM",
                                         "Finance & Accounting",
-                                        "Operations",
+                                        "Ops Management",
                                         "Recruitment & HR",
                                         "IT & Development",
                                         "Customer Service"
@@ -674,7 +675,7 @@ export default function LandingPage() {
 
                         {/* Subheadline */}
                         <p className="text-xl sm:text-2xl md:text-3xl text-purple-200 mb-4 max-w-4xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                            The all-in-one platform for Project Management, Sales, Finance, Operations, Recruitment, IT, and Customer Service
+                            The all-in-one platform for Project Management, Sales, Finance, Ops Management, Recruitment, IT, and Customer Service
                             <span className="block mt-2 text-lg text-purple-300">
                                 Everything your business needs, powered by AI
                             </span>
@@ -995,7 +996,7 @@ export default function LandingPage() {
                             { icon: Briefcase, title: "Project Management", description: "Complete project lifecycle management with planning, execution, tracking, and delivery." },
                             { icon: TrendingUp, title: "Sales & CRM", description: "Lead management, opportunity tracking, pipeline visualization, and sales forecasting." },
                             { icon: DollarSign, title: "Finance & Accounting", description: "Budget management, invoicing, expense tracking, financial reporting, and profitability analysis." },
-                            { icon: Activity, title: "Operations", description: "Process automation, workflow management, resource allocation, and operational dashboards." },
+                            { icon: Activity, title: "Ops Management", description: "Process automation, workflow management, resource allocation, and operational dashboards." },
                             { icon: UserCheck, title: "Recruitment & HR", description: "Job posting, candidate management, interview scheduling, onboarding, and employee tracking." },
                             { icon: Cpu, title: "IT & Development", description: "Issue tracking, sprint planning, release management, and IT service management." },
                             { icon: MessageSquare, title: "Customer Service", description: "Ticket management, customer interaction tracking, SLA monitoring, and support analytics." },
@@ -1208,7 +1209,8 @@ export default function LandingPage() {
                                     <img
                                         src="/logo.png"
                                         alt="wrkportal.com"
-                                        className="relative h-12 w-12 rounded-xl object-cover"
+                                        className="relative h-12 w-12 rounded-xl object-contain"
+                                        style={{ mixBlendMode: 'normal' }}
                                     />
                                 </div>
                             </div>

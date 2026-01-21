@@ -67,14 +67,22 @@ export default function SignupPage() {
             const data = await response.json()
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to create account')
+                // Show detailed error message
+                const errorMessage = data.details || data.error || 'Failed to create account'
+                console.error('Signup error:', {
+                    status: response.status,
+                    error: data.error,
+                    details: data.details,
+                    code: data.code,
+                })
+                throw new Error(errorMessage)
             }
 
             // Show verification message instead of auto-signing in
             setUserEmail(formData.email)
             setShowVerificationMessage(true)
             setLoading(false)
-            
+
             // Store emailSent status for display
             if (data.emailSent === false) {
                 setError('Account created, but verification email could not be sent. Please use the "Resend Verification Email" option on the login page.')
@@ -89,7 +97,7 @@ export default function SignupPage() {
     const handleGoogleSignIn = async () => {
         setLoading(true)
         try {
-            await signIn('google', { 
+            await signIn('google', {
                 callbackUrl: '/',
             })
         } catch (error) {
@@ -165,10 +173,10 @@ export default function SignupPage() {
                     {/* Logo/Brand */}
                     <div className="text-center mb-3 sm:mb-4">
                         <div className="flex items-center justify-center gap-2 mb-1.5">
-                            <Image 
-                                src="/logo.png" 
-                                alt="wrkportal.com Logo" 
-                                width={160} 
+                            <Image
+                                src="/logo.png"
+                                alt="wrkportal.com Logo"
+                                width={160}
                                 height={48}
                                 className="h-12 w-auto object-contain"
                             />
@@ -184,347 +192,347 @@ export default function SignupPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-2.5 sm:space-y-3 px-3 sm:px-4 pb-3 sm:pb-4">
-                        {/* Google Sign In */}
-                        <Button
-                            variant="outline"
-                            className="w-full border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm h-8 sm:h-9"
-                            onClick={handleGoogleSignIn}
-                            disabled={loading}
-                        >
-                            <Chrome className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                            Continue with Google
-                        </Button>
+                            {/* Google Sign In */}
+                            <Button
+                                variant="outline"
+                                className="w-full border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm h-8 sm:h-9"
+                                onClick={handleGoogleSignIn}
+                                disabled={loading}
+                            >
+                                <Chrome className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                Continue with Google
+                            </Button>
 
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <Separator className="bg-slate-200" />
-                            </div>
-                            <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
-                                <span className="bg-white px-2 text-slate-500">
-                                    Or sign up with email
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Error Message */}
-                        {error && (
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-red-700 bg-red-50 border border-red-200 p-2.5 sm:p-3 rounded-lg">
-                                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Verification Message */}
-                        {showVerificationMessage && (
-                            <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <div className="flex items-start gap-3">
-                                    <Mail className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                                    <div className="flex-1 space-y-2">
-                                        <h3 className="text-sm font-semibold text-blue-900">
-                                            {error ? 'Account Created - Email Issue' : 'Check Your Email'}
-                                        </h3>
-                                        {error ? (
-                                            <>
-                                                <p className="text-xs sm:text-sm text-blue-800">
-                                                    Your account <strong>{userEmail}</strong> has been created successfully!
-                                                </p>
-                                                <p className="text-xs sm:text-sm text-orange-800 bg-orange-50 border border-orange-200 p-2 rounded">
-                                                    ⚠️ However, the verification email could not be sent. This may be due to email configuration issues.
-                                                </p>
-                                                <p className="text-xs text-blue-700">
-                                                    Please go to the login page and use the "Resend Verification Email" button after attempting to sign in.
-                                                </p>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <p className="text-xs sm:text-sm text-blue-800">
-                                                    We've sent a verification link to <strong>{userEmail}</strong>. 
-                                                    Please click the link in the email to verify your account.
-                                                </p>
-                                                <p className="text-xs text-blue-700">
-                                                    Didn't receive the email? Check your spam folder or click "Resend Link" below.
-                                                </p>
-                                                
-                                                {/* Resend success message */}
-                                                {resendSuccess && (
-                                                    <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 p-2 rounded">
-                                                        <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                                                        <span>Verification email sent successfully! Please check your inbox.</span>
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Resend error message */}
-                                                {resendError && (
-                                                    <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 border border-red-200 p-2 rounded">
-                                                        <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                                                        <span>{resendError}</span>
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                    <Separator className="bg-slate-200" />
                                 </div>
-                                <div className="space-y-2">
-                                    {!error && (
-                                        <Button
-                                            type="button"
-                                            onClick={handleResendVerification}
-                                            disabled={resendLoading}
-                                            className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm h-8 sm:h-9 disabled:opacity-50"
-                                        >
-                                            {resendLoading ? (
+                                <div className="relative flex justify-center text-[10px] sm:text-xs uppercase">
+                                    <span className="bg-white px-2 text-slate-500">
+                                        Or sign up with email
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Error Message */}
+                            {error && (
+                                <div className="flex items-center gap-2 text-xs sm:text-sm text-red-700 bg-red-50 border border-red-200 p-2.5 sm:p-3 rounded-lg">
+                                    <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                                    {error}
+                                </div>
+                            )}
+
+                            {/* Verification Message */}
+                            {showVerificationMessage && (
+                                <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="flex items-start gap-3">
+                                        <Mail className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1 space-y-2">
+                                            <h3 className="text-sm font-semibold text-blue-900">
+                                                {error ? 'Account Created - Email Issue' : 'Check Your Email'}
+                                            </h3>
+                                            {error ? (
                                                 <>
-                                                    <Mail className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-pulse" />
-                                                    Sending...
+                                                    <p className="text-xs sm:text-sm text-blue-800">
+                                                        Your account <strong>{userEmail}</strong> has been created successfully!
+                                                    </p>
+                                                    <p className="text-xs sm:text-sm text-orange-800 bg-orange-50 border border-orange-200 p-2 rounded">
+                                                        ⚠️ However, the verification email could not be sent. This may be due to email configuration issues.
+                                                    </p>
+                                                    <p className="text-xs text-blue-700">
+                                                        Please go to the login page and use the "Resend Verification Email" button after attempting to sign in.
+                                                    </p>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Mail className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                                                    Resend Link
+                                                    <p className="text-xs sm:text-sm text-blue-800">
+                                                        We've sent a verification link to <strong>{userEmail}</strong>.
+                                                        Please click the link in the email to verify your account.
+                                                    </p>
+                                                    <p className="text-xs text-blue-700">
+                                                        Didn't receive the email? Check your spam folder or click "Resend Link" below.
+                                                    </p>
+
+                                                    {/* Resend success message */}
+                                                    {resendSuccess && (
+                                                        <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 p-2 rounded">
+                                                            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                                                            <span>Verification email sent successfully! Please check your inbox.</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Resend error message */}
+                                                    {resendError && (
+                                                        <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 border border-red-200 p-2 rounded">
+                                                            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                                            <span>{resendError}</span>
+                                                        </div>
+                                                    )}
                                                 </>
                                             )}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {!error && (
+                                            <Button
+                                                type="button"
+                                                onClick={handleResendVerification}
+                                                disabled={resendLoading}
+                                                className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm h-8 sm:h-9 disabled:opacity-50"
+                                            >
+                                                {resendLoading ? (
+                                                    <>
+                                                        <Mail className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-pulse" />
+                                                        Sending...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Mail className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                                        Resend Link
+                                                    </>
+                                                )}
+                                            </Button>
+                                        )}
+                                        <Button
+                                            type="button"
+                                            onClick={() => router.push('/login')}
+                                            variant="outline"
+                                            className="w-full border-blue-300 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm h-8 sm:h-9"
+                                        >
+                                            Go to Login
                                         </Button>
-                                    )}
-                                    <Button
-                                        type="button"
-                                        onClick={() => router.push('/login')}
-                                        variant="outline"
-                                        className="w-full border-blue-300 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm h-8 sm:h-9"
-                                    >
-                                        Go to Login
+                                        {error && (
+                                            <p className="text-xs text-center text-blue-700">
+                                                On the login page, enter your email and password, then click "Resend Verification Email" if needed.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Signup Form */}
+                            {!showVerificationMessage && (
+                                <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="firstName" className="text-xs sm:text-sm text-slate-700">First Name</Label>
+                                            <Input
+                                                id="firstName"
+                                                name="firstName"
+                                                type="text"
+                                                placeholder="John"
+                                                value={formData.firstName}
+                                                onChange={handleChange}
+                                                required
+                                                disabled={loading}
+                                                autoComplete="given-name"
+                                                className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="lastName" className="text-xs sm:text-sm text-slate-700">Last Name</Label>
+                                            <Input
+                                                id="lastName"
+                                                name="lastName"
+                                                type="text"
+                                                placeholder="Doe"
+                                                value={formData.lastName}
+                                                onChange={handleChange}
+                                                required
+                                                disabled={loading}
+                                                autoComplete="family-name"
+                                                className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Workspace Type Selection */}
+                                    <div className="space-y-2">
+                                        <Label className="text-xs sm:text-sm text-slate-700">What are you setting up?</Label>
+                                        <RadioGroup
+                                            value={formData.workspaceType}
+                                            onValueChange={(value) => setFormData({ ...formData, workspaceType: value as WorkspaceType })}
+                                            className="grid grid-cols-2 gap-2"
+                                            disabled={loading}
+                                        >
+                                            <div>
+                                                <RadioGroupItem value={WorkspaceType.ORGANIZATION} id="organization" className="peer sr-only" />
+                                                <Label
+                                                    htmlFor="organization"
+                                                    className="flex flex-col items-center justify-between rounded-md border-2 border-slate-200 bg-white p-3 hover:bg-slate-50 hover:border-purple-300 peer-data-[state=checked]:border-purple-600 peer-data-[state=checked]:bg-purple-50 cursor-pointer transition-all"
+                                                >
+                                                    <Building2 className="mb-2 h-5 w-5 text-slate-600 peer-data-[state=checked]:text-purple-600" />
+                                                    <div className="text-center">
+                                                        <div className="text-xs sm:text-sm font-semibold text-slate-700">Organization</div>
+                                                        <div className="text-[10px] sm:text-xs text-slate-500 mt-1">For companies & enterprises</div>
+                                                    </div>
+                                                </Label>
+                                            </div>
+                                            <div>
+                                                <RadioGroupItem value={WorkspaceType.GROUP} id="group" className="peer sr-only" />
+                                                <Label
+                                                    htmlFor="group"
+                                                    className="flex flex-col items-center justify-between rounded-md border-2 border-slate-200 bg-white p-3 hover:bg-slate-50 hover:border-purple-300 peer-data-[state=checked]:border-purple-600 peer-data-[state=checked]:bg-purple-50 cursor-pointer transition-all"
+                                                >
+                                                    <Users className="mb-2 h-5 w-5 text-slate-600 peer-data-[state=checked]:text-purple-600" />
+                                                    <div className="text-center">
+                                                        <div className="text-xs sm:text-sm font-semibold text-slate-700">Group</div>
+                                                        <div className="text-[10px] sm:text-xs text-slate-500 mt-1">For teams & freelancers</div>
+                                                    </div>
+                                                </Label>
+                                            </div>
+                                        </RadioGroup>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="organizationName" className="text-xs sm:text-sm text-slate-700">
+                                            {formData.workspaceType === WorkspaceType.ORGANIZATION ? 'Organization Name' : 'Group Name'}
+                                        </Label>
+                                        <div className="relative">
+                                            {formData.workspaceType === WorkspaceType.ORGANIZATION ? (
+                                                <Building2 className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
+                                            ) : (
+                                                <Users className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
+                                            )}
+                                            <Input
+                                                id="organizationName"
+                                                name="organizationName"
+                                                type="text"
+                                                placeholder="Acme Inc"
+                                                value={formData.organizationName}
+                                                onChange={handleChange}
+                                                className="pl-8 sm:pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
+                                                required
+                                                disabled={loading}
+                                                autoComplete="organization"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="email" className="text-xs sm:text-sm text-slate-700">Email</Label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
+                                            <Input
+                                                id="email"
+                                                name="email"
+                                                type="email"
+                                                placeholder="name@company.com"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                className="pl-8 sm:pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
+                                                required
+                                                disabled={loading}
+                                                autoComplete="email"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="password" className="text-xs sm:text-sm text-slate-700">Password</Label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
+                                            <Input
+                                                id="password"
+                                                name="password"
+                                                type="password"
+                                                placeholder="••••••••"
+                                                value={formData.password}
+                                                onChange={handleChange}
+                                                className="pl-8 sm:pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
+                                                required
+                                                disabled={loading}
+                                                autoComplete="new-password"
+                                            />
+                                        </div>
+                                        {strength && formData.password && (
+                                            <div className="space-y-1.5 text-xs">
+                                                <div className="flex gap-1">
+                                                    {[1, 2, 3, 4].map((level) => (
+                                                        <div
+                                                            key={level}
+                                                            className={`h-1 flex-1 rounded ${level <= strength.strength
+                                                                ? strength.strength <= 2
+                                                                    ? 'bg-red-500'
+                                                                    : strength.strength === 3
+                                                                        ? 'bg-amber-500'
+                                                                        : 'bg-green-500'
+                                                                : 'bg-slate-200'
+                                                                }`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <div className="space-y-0.5 text-slate-600">
+                                                    <div
+                                                        className={`flex items-center gap-1 text-[10px] sm:text-xs ${strength.hasLength ? 'text-green-600' : ''}`}
+                                                    >
+                                                        <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                                        At least 8 characters
+                                                    </div>
+                                                    <div
+                                                        className={`flex items-center gap-1 text-[10px] sm:text-xs ${strength.hasNumber ? 'text-green-600' : ''}`}
+                                                    >
+                                                        <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                                        Contains a number
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="confirmPassword" className="text-xs sm:text-sm text-slate-700">Confirm Password</Label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
+                                            <Input
+                                                id="confirmPassword"
+                                                name="confirmPassword"
+                                                type="password"
+                                                placeholder="••••••••"
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                                className="pl-8 sm:pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
+                                                required
+                                                disabled={loading}
+                                                autoComplete="new-password"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <Button type="submit" className="w-full text-xs sm:text-sm h-8 sm:h-9 bg-purple-600 hover:bg-purple-700" disabled={loading}>
+                                        {loading ? 'Creating account...' : 'Create account'}
                                     </Button>
-                                    {error && (
-                                        <p className="text-xs text-center text-blue-700">
-                                            On the login page, enter your email and password, then click "Resend Verification Email" if needed.
-                                        </p>
-                                    )}
+                                </form>
+                            )}
+
+                            {/* Sign In Link */}
+                            {!showVerificationMessage && (
+                                <div className="text-center text-xs sm:text-sm">
+                                    <span className="text-slate-600">
+                                        Already have an account?{' '}
+                                    </span>
+                                    <Link
+                                        href="/login"
+                                        className="text-purple-600 hover:text-purple-700 font-medium hover:underline"
+                                    >
+                                        Sign in
+                                    </Link>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </CardContent>
+                    </Card>
 
-                        {/* Signup Form */}
-                        {!showVerificationMessage && (
-                        <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="firstName" className="text-xs sm:text-sm text-slate-700">First Name</Label>
-                                    <Input
-                                        id="firstName"
-                                        name="firstName"
-                                        type="text"
-                                        placeholder="John"
-                                        value={formData.firstName}
-                                        onChange={handleChange}
-                                        required
-                                        disabled={loading}
-                                        autoComplete="given-name"
-                                        className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="lastName" className="text-xs sm:text-sm text-slate-700">Last Name</Label>
-                                    <Input
-                                        id="lastName"
-                                        name="lastName"
-                                        type="text"
-                                        placeholder="Doe"
-                                        value={formData.lastName}
-                                        onChange={handleChange}
-                                        required
-                                        disabled={loading}
-                                        autoComplete="family-name"
-                                        className="bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Workspace Type Selection */}
-                            <div className="space-y-2">
-                                <Label className="text-xs sm:text-sm text-slate-700">What are you setting up?</Label>
-                                <RadioGroup
-                                    value={formData.workspaceType}
-                                    onValueChange={(value) => setFormData({ ...formData, workspaceType: value as WorkspaceType })}
-                                    className="grid grid-cols-2 gap-2"
-                                    disabled={loading}
-                                >
-                                    <div>
-                                        <RadioGroupItem value={WorkspaceType.ORGANIZATION} id="organization" className="peer sr-only" />
-                                        <Label
-                                            htmlFor="organization"
-                                            className="flex flex-col items-center justify-between rounded-md border-2 border-slate-200 bg-white p-3 hover:bg-slate-50 hover:border-purple-300 peer-data-[state=checked]:border-purple-600 peer-data-[state=checked]:bg-purple-50 cursor-pointer transition-all"
-                                        >
-                                            <Building2 className="mb-2 h-5 w-5 text-slate-600 peer-data-[state=checked]:text-purple-600" />
-                                            <div className="text-center">
-                                                <div className="text-xs sm:text-sm font-semibold text-slate-700">Organization</div>
-                                                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">For companies & enterprises</div>
-                                            </div>
-                                        </Label>
-                                    </div>
-                                    <div>
-                                        <RadioGroupItem value={WorkspaceType.GROUP} id="group" className="peer sr-only" />
-                                        <Label
-                                            htmlFor="group"
-                                            className="flex flex-col items-center justify-between rounded-md border-2 border-slate-200 bg-white p-3 hover:bg-slate-50 hover:border-purple-300 peer-data-[state=checked]:border-purple-600 peer-data-[state=checked]:bg-purple-50 cursor-pointer transition-all"
-                                        >
-                                            <Users className="mb-2 h-5 w-5 text-slate-600 peer-data-[state=checked]:text-purple-600" />
-                                            <div className="text-center">
-                                                <div className="text-xs sm:text-sm font-semibold text-slate-700">Group</div>
-                                                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">For teams & freelancers</div>
-                                            </div>
-                                        </Label>
-                                    </div>
-                                </RadioGroup>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="organizationName" className="text-xs sm:text-sm text-slate-700">
-                                    {formData.workspaceType === WorkspaceType.ORGANIZATION ? 'Organization Name' : 'Group Name'}
-                                </Label>
-                                <div className="relative">
-                                    {formData.workspaceType === WorkspaceType.ORGANIZATION ? (
-                                        <Building2 className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
-                                    ) : (
-                                        <Users className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
-                                    )}
-                                    <Input
-                                        id="organizationName"
-                                        name="organizationName"
-                                        type="text"
-                                        placeholder="Acme Inc"
-                                        value={formData.organizationName}
-                                        onChange={handleChange}
-                                        className="pl-8 sm:pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
-                                        required
-                                        disabled={loading}
-                                        autoComplete="organization"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="email" className="text-xs sm:text-sm text-slate-700">Email</Label>
-                                <div className="relative">
-                                    <Mail className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
-                                    <Input
-                                        id="email"
-                                        name="email"
-                                        type="email"
-                                        placeholder="name@company.com"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        className="pl-8 sm:pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
-                                        required
-                                        disabled={loading}
-                                        autoComplete="email"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="password" className="text-xs sm:text-sm text-slate-700">Password</Label>
-                                <div className="relative">
-                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
-                                    <Input
-                                        id="password"
-                                        name="password"
-                                        type="password"
-                                        placeholder="••••••••"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        className="pl-8 sm:pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
-                                        required
-                                        disabled={loading}
-                                        autoComplete="new-password"
-                                    />
-                                </div>
-                                {strength && formData.password && (
-                                    <div className="space-y-1.5 text-xs">
-                                        <div className="flex gap-1">
-                                            {[1, 2, 3, 4].map((level) => (
-                                                <div
-                                                    key={level}
-                                                    className={`h-1 flex-1 rounded ${level <= strength.strength
-                                                        ? strength.strength <= 2
-                                                            ? 'bg-red-500'
-                                                            : strength.strength === 3
-                                                                ? 'bg-amber-500'
-                                                                : 'bg-green-500'
-                                                        : 'bg-slate-200'
-                                                        }`}
-                                                />
-                                            ))}
-                                        </div>
-                                        <div className="space-y-0.5 text-slate-600">
-                                            <div
-                                                className={`flex items-center gap-1 text-[10px] sm:text-xs ${strength.hasLength ? 'text-green-600' : ''}`}
-                                            >
-                                                <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                                                At least 8 characters
-                                            </div>
-                                            <div
-                                                className={`flex items-center gap-1 text-[10px] sm:text-xs ${strength.hasNumber ? 'text-green-600' : ''}`}
-                                            >
-                                                <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                                                Contains a number
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="confirmPassword" className="text-xs sm:text-sm text-slate-700">Confirm Password</Label>
-                                <div className="relative">
-                                    <Lock className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
-                                    <Input
-                                        id="confirmPassword"
-                                        name="confirmPassword"
-                                        type="password"
-                                        placeholder="••••••••"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                        className="pl-8 sm:pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm h-8 sm:h-9"
-                                        required
-                                        disabled={loading}
-                                        autoComplete="new-password"
-                                    />
-                                </div>
-                            </div>
-
-                            <Button type="submit" className="w-full text-xs sm:text-sm h-8 sm:h-9 bg-purple-600 hover:bg-purple-700" disabled={loading}>
-                                {loading ? 'Creating account...' : 'Create account'}
-                            </Button>
-                        </form>
-                        )}
-
-                        {/* Sign In Link */}
-                        {!showVerificationMessage && (
-                        <div className="text-center text-xs sm:text-sm">
-                            <span className="text-slate-600">
-                                Already have an account?{' '}
-                            </span>
-                            <Link
-                                href="/login"
-                                className="text-purple-600 hover:text-purple-700 font-medium hover:underline"
-                            >
-                                Sign in
-                            </Link>
-                        </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Footer */}
-                <p className="text-center text-[10px] sm:text-xs text-slate-500 mt-3 sm:mt-4">
-                    By creating an account, you agree to our{' '}
-                    <Link href="/terms" className="underline hover:text-slate-700">
-                        Terms
-                    </Link>
-                    {' and '}
-                    <Link href="/privacy" className="underline hover:text-slate-700">
-                        Privacy Policy
-                    </Link>
-                </p>
+                    {/* Footer */}
+                    <p className="text-center text-[10px] sm:text-xs text-slate-500 mt-3 sm:mt-4">
+                        By creating an account, you agree to our{' '}
+                        <Link href="/terms" className="underline hover:text-slate-700">
+                            Terms
+                        </Link>
+                        {' and '}
+                        <Link href="/privacy" className="underline hover:text-slate-700">
+                            Privacy Policy
+                        </Link>
+                    </p>
                 </div>
             </div>
 
@@ -533,7 +541,7 @@ export default function SignupPage() {
                 {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500 rounded-full filter blur-3xl opacity-20"></div>
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500 rounded-full filter blur-3xl opacity-20"></div>
-                
+
                 <div className="relative z-10 max-w-md text-white space-y-8">
                     <div className="space-y-4">
                         <h1 className="text-4xl font-bold leading-tight">
