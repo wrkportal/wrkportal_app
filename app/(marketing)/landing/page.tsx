@@ -593,11 +593,11 @@ export default function LandingPage() {
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex h-20 items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="relative flex h-12 w-12 items-center justify-center">
+                            <div className="relative flex h-36 w-36 items-center justify-center">
                                 <img
                                     src="/logo.png"
                                     alt="wrkportal.com"
-                                    className="relative h-12 w-12 rounded-xl object-contain"
+                                    className="relative h-36 w-36 rounded-xl object-contain"
                                     style={{ mixBlendMode: 'normal' }}
                                 />
                             </div>
@@ -1205,11 +1205,11 @@ export default function LandingPage() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
                         <div className="md:col-span-2">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="relative flex h-12 w-12 items-center justify-center">
+                                <div className="relative flex h-36 w-36 items-center justify-center">
                                     <img
                                         src="/logo.png"
                                         alt="wrkportal.com"
-                                        className="relative h-12 w-12 rounded-xl object-contain"
+                                        className="relative h-36 w-36 rounded-xl object-contain"
                                         style={{ mixBlendMode: 'normal' }}
                                     />
                                 </div>
