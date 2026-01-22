@@ -133,7 +133,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // Use upsert to make user creation idempotent (eliminates race conditions)
           if (tenant) {
             try {
-              await prisma.user.upsert({
+              const upsertedUser = await prisma.user.upsert({
                 where: { email: emailLower },
                 update: {
                   // Update user info if they already exist
@@ -154,7 +154,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   emailVerified: new Date(),
                 },
               })
-              console.log(`[OAuth] ✅ User upserted: ${email} with role: ${userRole}`)
+              console.log(`[OAuth] ✅ User upserted:`, {
+                id: upsertedUser.id,
+                email: upsertedUser.email,
+                name: upsertedUser.name,
+                tenantId: upsertedUser.tenantId,
+                role: upsertedUser.role,
+                createdAt: upsertedUser.createdAt,
+                // Log database connection info (masked)
+                databaseUrl: process.env.DATABASE_URL 
+                  ? `${process.env.DATABASE_URL.split('@')[0]}@***` 
+                  : 'NOT SET',
+              })
+              
+              // Verify user was actually created
+              const verifyUser = await prisma.user.findUnique({
+                where: { id: upsertedUser.id },
+                select: { id: true, email: true },
+              })
+              console.log(`[OAuth] Verification query:`, verifyUser ? '✅ User found in DB' : '❌ User NOT found in DB')
             } catch (userError: any) {
               console.error('[OAuth] Error upserting user:', {
                 error: userError.message,

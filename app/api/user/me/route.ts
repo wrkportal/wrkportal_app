@@ -174,6 +174,13 @@ export async function GET(req: NextRequest) {
           
           // Create user with retry
           if (tenant) {
+            console.log('[ME] Creating user with data:', {
+              email: emailLower,
+              name: session.user.name || emailLower,
+              tenantId: tenant.id,
+              role: 'ORG_ADMIN',
+            })
+            
             user = await withRetry(() =>
               prisma.user.create({
                 data: {
@@ -210,7 +217,26 @@ export async function GET(req: NextRequest) {
                 },
               })
             )
-            console.log('[ME] ✅ User created successfully:', emailLower)
+            
+            console.log('[ME] ✅ User created successfully:', {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              tenantId: user.tenantId,
+              role: user.role,
+              createdAt: user.createdAt,
+              // Log database connection info (masked for security)
+              databaseUrl: process.env.DATABASE_URL 
+                ? `${process.env.DATABASE_URL.split('@')[0]}@***` 
+                : 'NOT SET',
+            })
+            
+            // Verify user was actually created by querying again
+            const verifyUser = await prisma.user.findUnique({
+              where: { id: user.id },
+              select: { id: true, email: true },
+            })
+            console.log('[ME] Verification query result:', verifyUser ? '✅ User found in DB' : '❌ User NOT found in DB')
           }
         } catch (createError: any) {
           console.error('[ME] User creation failed:', createError.message)
