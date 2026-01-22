@@ -218,11 +218,57 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             } else {
               // 🔥 FIX #3: JWT callback must tolerate missing DB rows
               // User might not exist yet due to DB errors during signIn callback
-              // Use OAuth-provided data as fallback
-              console.warn('[JWT] User not found in DB, using OAuth-provided data:', user.email)
-              token.email = user.email
-              token.name = user.name
-              // User creation will happen on next page load or API call
+              // Attempt to create user now (idempotent upsert)
+              console.warn('[JWT] User not found in DB, attempting to create:', user.email)
+              try {
+                const emailLower = user.email!.toLowerCase()
+                const domain = emailLower.split('@')[1]
+                
+                // Get or create tenant
+                let tenant = await prisma.tenant.findFirst({
+                  where: { domain },
+                  select: { id: true },
+                })
+                
+                if (!tenant) {
+                  tenant = await prisma.tenant.create({
+                    data: {
+                      name: `${user.name || emailLower}'s Organization`,
+                      domain: domain,
+                    },
+                  })
+                }
+                
+                // Upsert user (idempotent)
+                const createdUser = await prisma.user.upsert({
+                  where: { email: emailLower },
+                  update: {
+                    emailVerified: new Date(),
+                  },
+                  create: {
+                    email: emailLower,
+                    name: user.name || emailLower,
+                    firstName: (user as any).firstName || '',
+                    lastName: (user as any).lastName || '',
+                    image: user.image,
+                    tenantId: tenant.id,
+                    role: 'ORG_ADMIN', // First user becomes admin
+                    emailVerified: new Date(),
+                  },
+                })
+                
+                token.id = createdUser.id
+                token.email = createdUser.email
+                token.role = createdUser.role
+                token.tenantId = createdUser.tenantId
+                console.log('[JWT] ✅ User created successfully:', emailLower)
+              } catch (createError: any) {
+                // If creation fails, log but don't block - user will be created on next API call
+                console.error('[JWT] Failed to create user, will retry on next request:', createError.message)
+                token.email = user.email
+                token.name = user.name
+                // token.id remains undefined - API routes will handle this
+              }
             }
           } catch (error: any) {
             // Database error - use OAuth-provided data as fallback
