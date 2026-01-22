@@ -170,11 +170,7 @@ export const useAuthStore = create<AuthState>()(
 )
 
 // Fetch authenticated user from API with cache busting
-export async function fetchAuthenticatedUser(
-  forceRefresh = false,
-  retryCount = 0,
-  maxRetries = 2
-): Promise<User | null> {
+export async function fetchAuthenticatedUser(forceRefresh = false): Promise<User | null> {
   try {
     // Add cache busting parameter to ensure fresh data
     const cacheBuster = forceRefresh ? `?t=${Date.now()}` : ''
@@ -185,44 +181,24 @@ export async function fetchAuthenticatedUser(
         'Pragma': 'no-cache',
       },
     })
+    
     if (response.ok) {
       const data = await response.json()
       
-      // Handle USER_NOT_PROVISIONED status (user is being created)
-      if (data.status === 'USER_NOT_PROVISIONED') {
-        if (retryCount < maxRetries) {
-          console.log(`[AuthStore] User not provisioned yet, retrying (${retryCount + 1}/${maxRetries}):`, data.email)
-          // Retry after a short delay with exponential backoff
-          await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)))
-          return fetchAuthenticatedUser(true, retryCount + 1, maxRetries)
-        } else {
-          console.warn('[AuthStore] User not provisioned after max retries, returning null')
-          return null
-        }
-      }
-      
-      // Handle ERROR status
-      if (data.status === 'ERROR') {
-        console.error('[AuthStore] Error fetching user:', data.message)
-        return null
-      }
-      
-      // Normal case: user exists
       if (data.user) {
-        console.log('[AuthStore] Fetched user from API:', {
-          id: data.user.id,
-          email: data.user.email,
-          primaryWorkflowType: data.user.primaryWorkflowType,
-          landingPage: data.user.landingPage,
-          role: data.user.role,
-        })
         return data.user
       }
       
-      // No user in response
-      console.warn('[AuthStore] No user in API response:', data)
+      console.warn('[AuthStore] No user in API response')
       return null
     }
+    
+    // 404 means user doesn't exist (shouldn't happen if OAuth worked)
+    if (response.status === 404) {
+      console.error('[AuthStore] User not found - OAuth sign-in may have failed')
+      return null
+    }
+    
     return null
   } catch (error) {
     console.error('Error fetching authenticated user:', error)

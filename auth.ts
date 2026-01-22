@@ -89,130 +89,135 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = user.email!
         if (!email) {
           console.error('[OAuth] No email provided in user object')
-          return false
+          return false // Security: Deny if no email
+        }
+
+        const emailLower = email.toLowerCase()
+        const domain = emailLower.split('@')[1]
+
+        // Retry helper for Neon cold starts
+        const withRetry = async <T>(
+          operation: () => Promise<T>,
+          retries = 3,
+          delay = 1000
+        ): Promise<T> => {
+          for (let i = 0; i < retries; i++) {
+            try {
+              return await operation()
+            } catch (error: any) {
+              const isConnectionError =
+                error?.code === 'P1001' ||
+                error?.code === 'P1017' ||
+                error?.message?.includes('connection') ||
+                error?.message?.includes('timeout')
+              
+              if (isConnectionError && i < retries - 1) {
+                console.warn(`[OAuth] DB connection error (attempt ${i + 1}/${retries}), retrying...`)
+                await new Promise(resolve => setTimeout(resolve, delay * (i + 1)))
+                continue
+              }
+              throw error
+            }
+          }
+          throw new Error('Operation failed after retries')
         }
 
         try {
-          const domain = email.split('@')[1]
-          const emailLower = email.toLowerCase()
-
-          // Get or create tenant for this domain (idempotent)
-          let tenant = await prisma.tenant.findFirst({
-            where: { domain },
-            select: { id: true, name: true },
-          })
+          // Step 1: Get or create tenant (with retry for cold starts)
+          let tenant = await withRetry(() =>
+            prisma.tenant.findFirst({
+              where: { domain },
+              select: { id: true, name: true },
+            })
+          )
 
           let userRole: 'ORG_ADMIN' | 'TEAM_MEMBER' = 'TEAM_MEMBER'
 
           if (!tenant) {
-            // Create new organization, user becomes ORG_ADMIN
+            // Create tenant with retry
             try {
-              tenant = await prisma.tenant.create({
-                data: {
-                  name: `${profile.name || email}'s Organization`,
-                  domain: domain,
-                },
-              })
+              tenant = await withRetry(() =>
+                prisma.tenant.create({
+                  data: {
+                    name: `${profile.name || email}'s Organization`,
+                    domain: domain,
+                  },
+                  select: { id: true, name: true },
+                })
+              )
               userRole = 'ORG_ADMIN'
-              console.log(`[OAuth] Created new tenant: ${tenant.name}`)
+              console.log(`[OAuth] ✅ Created tenant: ${tenant.name}`)
             } catch (tenantError: any) {
-              // If tenant creation fails, try to find it again (race condition)
-              tenant = await prisma.tenant.findFirst({
-                where: { domain },
-                select: { id: true, name: true },
-              })
+              // Race condition: another request might have created it
+              tenant = await withRetry(() =>
+                prisma.tenant.findFirst({
+                  where: { domain },
+                  select: { id: true, name: true },
+                })
+              )
               if (!tenant) {
-                console.error('[OAuth] Failed to create or find tenant:', tenantError.message)
-                // Still allow sign-in, tenant creation can happen later
-                console.log('[OAuth] ⚠️ Allowing sign-in despite tenant creation error')
-                return true
+                console.error('[OAuth] ❌ Failed to create or find tenant:', tenantError.message)
+                return false // Security: Deny sign-in if tenant creation fails
               }
             }
           }
 
-          // Use upsert to make user creation idempotent (eliminates race conditions)
-          if (tenant) {
-            try {
-              const upsertedUser = await prisma.user.upsert({
-                where: { email: emailLower },
-                update: {
-                  // Update user info if they already exist
-                  name: profile.name || email,
-                  firstName: (profile as any).given_name || profile.name?.split(' ')[0] || undefined,
-                  lastName: (profile as any).family_name || profile.name?.split(' ')[1] || undefined,
-                  image: (profile as any).picture || user.image || undefined,
-                  emailVerified: new Date(), // Mark as verified on OAuth login
-                },
-                create: {
-                  email: emailLower,
-                  name: profile.name || email,
-                  firstName: (profile as any).given_name || profile.name?.split(' ')[0] || '',
-                  lastName: (profile as any).family_name || profile.name?.split(' ')[1] || '',
-                  image: (profile as any).picture || user.image,
-                  tenantId: tenant.id,
-                  role: userRole,
-                  emailVerified: new Date(),
-                },
-              })
-              console.log(`[OAuth] ✅ User upserted:`, {
-                id: upsertedUser.id,
-                email: upsertedUser.email,
-                name: upsertedUser.name,
-                tenantId: upsertedUser.tenantId,
-                role: upsertedUser.role,
-                createdAt: upsertedUser.createdAt,
-                // Log database connection info (masked)
-                databaseUrl: process.env.DATABASE_URL 
-                  ? `${process.env.DATABASE_URL.split('@')[0]}@***` 
-                  : 'NOT SET',
-              })
-              
-              // Verify user was actually created
-              const verifyUser = await prisma.user.findUnique({
-                where: { id: upsertedUser.id },
-                select: { id: true, email: true },
-              })
-              console.log(`[OAuth] Verification query:`, verifyUser ? '✅ User found in DB' : '❌ User NOT found in DB')
-            } catch (userError: any) {
-              console.error('[OAuth] Error upserting user:', {
-                error: userError.message,
-                code: userError.code,
+          // Step 2: Create or update user (with retry for cold starts)
+          // This is the SINGLE source of truth for user creation
+          const upsertedUser = await withRetry(() =>
+            prisma.user.upsert({
+              where: { email: emailLower },
+              update: {
+                // Update existing user
+                name: profile.name || email,
+                firstName: (profile as any).given_name || profile.name?.split(' ')[0] || undefined,
+                lastName: (profile as any).family_name || profile.name?.split(' ')[1] || undefined,
+                image: (profile as any).picture || user.image || undefined,
+                emailVerified: new Date(),
+              },
+              create: {
+                // Create new user
                 email: emailLower,
-              })
-              // Still allow sign-in - user creation can be retried later
-              console.log('[OAuth] ⚠️ Allowing sign-in despite user creation error')
-              return true
-            }
+                name: profile.name || email,
+                firstName: (profile as any).given_name || profile.name?.split(' ')[0] || '',
+                lastName: (profile as any).family_name || profile.name?.split(' ')[1] || '',
+                image: (profile as any).picture || user.image,
+                tenantId: tenant.id,
+                role: userRole,
+                emailVerified: new Date(),
+              },
+            })
+          )
+
+          // Step 3: Verify user was created (security check)
+          const verifyUser = await prisma.user.findUnique({
+            where: { id: upsertedUser.id },
+            select: { id: true, email: true, tenantId: true },
+          })
+
+          if (!verifyUser) {
+            console.error('[OAuth] ❌ User creation verification failed')
+            return false // Security: Deny if verification fails
           }
 
-          return true
+          console.log(`[OAuth] ✅ User created/updated successfully:`, {
+            id: upsertedUser.id,
+            email: upsertedUser.email,
+            tenantId: upsertedUser.tenantId,
+            role: upsertedUser.role,
+          })
+
+          return true // Allow sign-in only if user exists in DB
         } catch (error: any) {
-          console.error('[OAuth] Error in signIn callback:', {
+          console.error('[OAuth] ❌ Error in signIn callback:', {
             error: error.message,
-            stack: error.stack,
             code: error.code,
-            name: error.name,
-            email: user.email,
-            databaseUrl: process.env.DATABASE_URL ? 'SET' : 'MISSING',
+            email: emailLower,
           })
           
-          // 🔥 FIX #1: NEVER deny OAuth sign-in on DB errors
-          // OAuth should authenticate identity, DB logic should run after login, not block it
-          // Google has already authenticated the user, so we trust that identity
-          console.error('[OAuth] ⚠️ OAuth error occurred, but allowing sign-in to avoid lockout')
-          console.error('[OAuth] ⚠️ User will be created/updated on next successful DB operation')
-          
-          // Log specific error details for debugging
-          if (error.code === 'P2021') {
-            console.error('[OAuth] P2021: Table does not exist - check migrations and Prisma Client generation')
-          } else if (error.code === 'P1001' || error.code === 'P1017') {
-            console.error('[OAuth] Database connection error - may be Neon cold start')
-          } else if (error.code === 'P2002') {
-            console.error('[OAuth] Unique constraint violation - likely race condition (upsert should handle this)')
-          }
-          
-          // Always allow sign-in - OAuth has authenticated the user
-          return true
+          // Security: Deny sign-in if user creation fails
+          // This ensures user always exists in DB before allowing access
+          return false
         }
       }
 
@@ -221,82 +226,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, trigger, session }) {
       // Initial sign in
       if (user) {
-        // For OAuth, fetch full user data from database
+        // For OAuth, user MUST exist in DB (created in signIn callback)
+        // Security: Only allow sign-in if user exists in database
         if (user.email) {
-          try {
-            const dbUser = await prisma.user.findUnique({
-              where: { email: user.email },
-            })
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            select: {
+              id: true,
+              email: true,
+              role: true,
+              tenantId: true,
+            },
+          })
 
-            if (dbUser) {
-              token.id = dbUser.id
-              token.email = dbUser.email
-              token.role = dbUser.role
-              token.tenantId = dbUser.tenantId
-            } else {
-              // 🔥 FIX #3: JWT callback must tolerate missing DB rows
-              // User might not exist yet due to DB errors during signIn callback
-              // Attempt to create user now (idempotent upsert)
-              console.warn('[JWT] User not found in DB, attempting to create:', user.email)
-              try {
-                const emailLower = user.email!.toLowerCase()
-                const domain = emailLower.split('@')[1]
-                
-                // Get or create tenant
-                let tenant = await prisma.tenant.findFirst({
-                  where: { domain },
-                  select: { id: true },
-                })
-                
-                if (!tenant) {
-                  tenant = await prisma.tenant.create({
-                    data: {
-                      name: `${user.name || emailLower}'s Organization`,
-                      domain: domain,
-                    },
-                  })
-                }
-                
-                // Upsert user (idempotent)
-                const createdUser = await prisma.user.upsert({
-                  where: { email: emailLower },
-                  update: {
-                    emailVerified: new Date(),
-                  },
-                  create: {
-                    email: emailLower,
-                    name: user.name || emailLower,
-                    firstName: (user as any).firstName || '',
-                    lastName: (user as any).lastName || '',
-                    image: user.image,
-                    tenantId: tenant.id,
-                    role: 'ORG_ADMIN', // First user becomes admin
-                    emailVerified: new Date(),
-                  },
-                })
-                
-                token.id = createdUser.id
-                token.email = createdUser.email
-                token.role = createdUser.role
-                token.tenantId = createdUser.tenantId
-                console.log('[JWT] ✅ User created successfully:', emailLower)
-              } catch (createError: any) {
-                // If creation fails, log but don't block - user will be created on next API call
-                console.error('[JWT] Failed to create user, will retry on next request:', createError.message)
-                token.email = user.email
-                token.name = user.name
-                // token.id remains undefined - API routes will handle this
-              }
-            }
-          } catch (error: any) {
-            // Database error - use OAuth-provided data as fallback
-            console.error('[JWT] Error fetching user from DB, using OAuth data:', error.message)
-            token.email = user.email
-            token.name = user.name
+          if (dbUser) {
+            // User exists - set token data
+            token.id = dbUser.id
+            token.email = dbUser.email
+            token.role = dbUser.role
+            token.tenantId = dbUser.tenantId
+          } else {
+            // Security: User should have been created in signIn callback
+            // If not found, this is an error state
+            console.error('[JWT] ❌ User not found in DB - should have been created in signIn callback:', user.email)
+            // Don't set token.id - this will cause API routes to return 401
+            // This ensures security: no access without valid DB user
           }
         } else {
           // For credentials, user data is already complete
-          // These values are guaranteed by the credentials authorize function
           token.id = user.id!
           token.email = user.email!
           token.role = (user as any).role
