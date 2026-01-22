@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import { WorkspaceType } from '@/types'
 
 export default function SignupPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -32,6 +33,14 @@ export default function SignupPage() {
     const [resendLoading, setResendLoading] = useState(false)
     const [resendSuccess, setResendSuccess] = useState(false)
     const [resendError, setResendError] = useState('')
+
+    // Check for OAuth errors in URL
+    useEffect(() => {
+        const errorParam = searchParams.get('error')
+        if (errorParam === 'AccessDenied') {
+            setError('Account creation failed. This may be due to a temporary database issue. Please try again in a moment.')
+        }
+    }, [searchParams])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({

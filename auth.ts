@@ -209,14 +209,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           return true // Allow sign-in only if user exists in DB
         } catch (error: any) {
+          // Detailed error logging for debugging
           console.error('[OAuth] ❌ Error in signIn callback:', {
             error: error.message,
             code: error.code,
+            name: error.name,
             email: emailLower,
+            domain: domain,
+            stack: error.stack,
+            // Database connection info
+            databaseUrl: process.env.DATABASE_URL ? 'SET' : 'MISSING',
           })
+          
+          // Log specific error types for better debugging
+          if (error.code === 'P2021') {
+            console.error('[OAuth] ❌ Table does not exist - migrations may not be applied')
+          } else if (error.code === 'P1001' || error.code === 'P1017') {
+            console.error('[OAuth] ❌ Database connection failed - may be Neon cold start (retries exhausted)')
+          } else if (error.code === 'P2002') {
+            console.error('[OAuth] ❌ Unique constraint violation - user may already exist (upsert should handle this)')
+          } else if (error.message?.includes('timeout')) {
+            console.error('[OAuth] ❌ Database operation timed out - Neon may be cold')
+          }
           
           // Security: Deny sign-in if user creation fails
           // This ensures user always exists in DB before allowing access
+          // User will see "AccessDenied" error and can try again
           return false
         }
       }
