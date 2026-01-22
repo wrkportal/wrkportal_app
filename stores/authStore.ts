@@ -26,6 +26,7 @@ const roleScreenAccess: Record<UserRole, number[]> = {
   [UserRole.CLIENT_STAKEHOLDER]: [1, 3, 4, 12, 15],
   [UserRole.COMPLIANCE_AUDITOR]: [1, 15, 22],
   [UserRole.INTEGRATION_ADMIN]: [1, 17, 19, 20, 21, 22],
+  [UserRole.PLATFORM_OWNER]: [1, 15, 18, 19, 20, 21, 22], // Same as TENANT_SUPER_ADMIN
 }
 
 // Permission matrix per role
@@ -105,6 +106,17 @@ const rolePermissions: Record<UserRole, Record<string, string[]>> = {
     webhooks: ['READ', 'CREATE', 'UPDATE', 'DELETE'],
     'api-keys': ['READ', 'CREATE', 'DELETE'],
   },
+  [UserRole.PLATFORM_OWNER]: {
+    '*': [
+      'READ',
+      'CREATE',
+      'UPDATE',
+      'DELETE',
+      'APPROVE',
+      'EXPORT',
+      'CONFIGURE',
+    ],
+  },
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -171,12 +183,36 @@ export async function fetchAuthenticatedUser(forceRefresh = false): Promise<User
     })
     if (response.ok) {
       const data = await response.json()
-      console.log('[AuthStore] Fetched user from API:', {
-        email: data.user?.email,
-        primaryWorkflowType: data.user?.primaryWorkflowType,
-        landingPage: data.user?.landingPage
-      })
-      return data.user
+      
+      // Handle USER_NOT_PROVISIONED status (user is being created)
+      if (data.status === 'USER_NOT_PROVISIONED') {
+        console.log('[AuthStore] User not provisioned yet, will retry:', data.email)
+        // Retry after a short delay
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        return fetchAuthenticatedUser(true) // Retry once
+      }
+      
+      // Handle ERROR status
+      if (data.status === 'ERROR') {
+        console.error('[AuthStore] Error fetching user:', data.message)
+        return null
+      }
+      
+      // Normal case: user exists
+      if (data.user) {
+        console.log('[AuthStore] Fetched user from API:', {
+          id: data.user.id,
+          email: data.user.email,
+          primaryWorkflowType: data.user.primaryWorkflowType,
+          landingPage: data.user.landingPage,
+          role: data.user.role,
+        })
+        return data.user
+      }
+      
+      // No user in response
+      console.warn('[AuthStore] No user in API response:', data)
+      return null
     }
     return null
   } catch (error) {
