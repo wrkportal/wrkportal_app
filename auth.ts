@@ -96,56 +96,77 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const domain = email.split('@')[1]
           const emailLower = email.toLowerCase()
 
-          // Check if user already exists (use simpler query first)
-          let existingUser = await prisma.user.findUnique({
-            where: { email: emailLower },
-            select: { id: true, email: true, tenantId: true }, // Minimal fields for faster query
-          })
-
-          if (existingUser) {
-            // User exists, allow sign in
-            console.log(`[OAuth] ✅ Existing user found: ${email}, allowing sign in`)
-            return true
-          }
-
-          console.log(`[OAuth] New user detected: ${email}, creating account...`)
-
-          // User doesn't exist, create new user with tenant
-          // Check if organization for this domain already exists
+          // Get or create tenant for this domain (idempotent)
           let tenant = await prisma.tenant.findFirst({
             where: { domain },
-            select: { id: true, name: true }, // Only select needed fields
+            select: { id: true, name: true },
           })
 
           let userRole: 'ORG_ADMIN' | 'TEAM_MEMBER' = 'TEAM_MEMBER'
 
           if (!tenant) {
             // Create new organization, user becomes ORG_ADMIN
-            tenant = await prisma.tenant.create({
-              data: {
-                name: `${profile.name || email}'s Organization`,
-                domain: domain,
-              },
-            })
-            userRole = 'ORG_ADMIN'
-            console.log(`[OAuth] Created new tenant: ${tenant.name}`)
+            try {
+              tenant = await prisma.tenant.create({
+                data: {
+                  name: `${profile.name || email}'s Organization`,
+                  domain: domain,
+                },
+              })
+              userRole = 'ORG_ADMIN'
+              console.log(`[OAuth] Created new tenant: ${tenant.name}`)
+            } catch (tenantError: any) {
+              // If tenant creation fails, try to find it again (race condition)
+              tenant = await prisma.tenant.findFirst({
+                where: { domain },
+                select: { id: true, name: true },
+              })
+              if (!tenant) {
+                console.error('[OAuth] Failed to create or find tenant:', tenantError.message)
+                // Still allow sign-in, tenant creation can happen later
+                console.log('[OAuth] ⚠️ Allowing sign-in despite tenant creation error')
+                return true
+              }
+            }
           }
 
-          // Create the user
-          await prisma.user.create({
-            data: {
-              email: emailLower,
-              name: profile.name || email,
-              firstName: (profile as any).given_name || profile.name?.split(' ')[0] || '',
-              lastName: (profile as any).family_name || profile.name?.split(' ')[1] || '',
-              image: (profile as any).picture || user.image,
-              tenantId: tenant.id,
-              role: userRole,
-              emailVerified: new Date(),
-            },
-          })
+          // Use upsert to make user creation idempotent (eliminates race conditions)
+          if (tenant) {
+            try {
+              await prisma.user.upsert({
+                where: { email: emailLower },
+                update: {
+                  // Update user info if they already exist
+                  name: profile.name || email,
+                  firstName: (profile as any).given_name || profile.name?.split(' ')[0] || undefined,
+                  lastName: (profile as any).family_name || profile.name?.split(' ')[1] || undefined,
+                  image: (profile as any).picture || user.image || undefined,
+                  emailVerified: new Date(), // Mark as verified on OAuth login
+                },
+                create: {
+                  email: emailLower,
+                  name: profile.name || email,
+                  firstName: (profile as any).given_name || profile.name?.split(' ')[0] || '',
+                  lastName: (profile as any).family_name || profile.name?.split(' ')[1] || '',
+                  image: (profile as any).picture || user.image,
+                  tenantId: tenant.id,
+                  role: userRole,
+                  emailVerified: new Date(),
+                },
+              })
+              console.log(`[OAuth] ✅ User upserted: ${email} with role: ${userRole}`)
+            } catch (userError: any) {
+              console.error('[OAuth] Error upserting user:', {
+                error: userError.message,
+                code: userError.code,
+                email: emailLower,
+              })
+              // Still allow sign-in - user creation can be retried later
+              console.log('[OAuth] ⚠️ Allowing sign-in despite user creation error')
+              return true
+            }
+          }
 
-          console.log(`[OAuth] ✅ Created new user: ${email} with role: ${userRole}`)
           return true
         } catch (error: any) {
           console.error('[OAuth] Error in signIn callback:', {
@@ -157,75 +178,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             databaseUrl: process.env.DATABASE_URL ? 'SET' : 'MISSING',
           })
           
-          // Handle P2021 (table not found) - this might be a Prisma Client generation issue
+          // 🔥 FIX #1: NEVER deny OAuth sign-in on DB errors
+          // OAuth should authenticate identity, DB logic should run after login, not block it
+          // Google has already authenticated the user, so we trust that identity
+          console.error('[OAuth] ⚠️ OAuth error occurred, but allowing sign-in to avoid lockout')
+          console.error('[OAuth] ⚠️ User will be created/updated on next successful DB operation')
+          
+          // Log specific error details for debugging
           if (error.code === 'P2021') {
-            console.error('[OAuth] ❌ P2021 Error: Table does not exist. This usually means:')
-            console.error('  1. Prisma Client needs to be regenerated (run: npx prisma generate)')
-            console.error('  2. Database migrations need to be applied (run: npx prisma migrate deploy)')
-            console.error('  3. DATABASE_URL might be pointing to wrong database')
-            console.error('  4. Table name case mismatch (PostgreSQL is case-sensitive for quoted identifiers)')
-            
-            // Try a direct connection test
-            try {
-              await prisma.$queryRaw`SELECT 1 as test`
-              console.log('[OAuth] ✅ Database connection works, but table query fails')
-            } catch (connError: any) {
-              console.error('[OAuth] ❌ Database connection also fails:', connError.message)
-            }
-            
-            // Don't allow sign-in if table doesn't exist - user won't be able to use the app anyway
-            return false
+            console.error('[OAuth] P2021: Table does not exist - check migrations and Prisma Client generation')
+          } else if (error.code === 'P1001' || error.code === 'P1017') {
+            console.error('[OAuth] Database connection error - may be Neon cold start')
+          } else if (error.code === 'P2002') {
+            console.error('[OAuth] Unique constraint violation - likely race condition (upsert should handle this)')
           }
           
-          // Don't block sign-in for existing users if there's a database error
-          // Try to check if user exists one more time with a simpler query
-          try {
-            const email = user.email!
-            console.log('[OAuth] Attempting fallback user check for:', email)
-            
-            // Try a simpler query without include
-            const existingUser = await prisma.user.findUnique({
-              where: { email: email.toLowerCase() },
-              select: { id: true, email: true }, // Only select minimal fields
-            })
-            
-            if (existingUser) {
-              console.log('[OAuth] ✅ User exists despite error, allowing sign in')
-              return true
-            }
-            
-            console.log('[OAuth] ⚠️ User does not exist, but error occurred. Checking if this is a database connection issue...')
-            
-            // If it's a database connection error, we should still allow sign-in
-            // Google has already authenticated the user, so we trust that
-            if (error.code === 'P1001' || error.code === 'P1017' || error.message?.includes('connection')) {
-              console.log('[OAuth] ⚠️ Database connection error detected. Allowing sign-in to proceed.')
-              return true
-            }
-            
-          } catch (checkError: any) {
-            console.error('[OAuth] Error in fallback user check:', {
-              error: checkError.message,
-              code: checkError.code,
-            })
-            
-            // If even the fallback check fails, it's likely a database issue
-            // In this case, we should allow the sign-in since Google has authenticated
-            if (checkError.code === 'P1001' || checkError.code === 'P1017') {
-              console.log('[OAuth] ⚠️ Database connection error in fallback. Allowing sign-in.')
-              return true
-            }
-            
-            // Also handle P2021 in fallback
-            if (checkError.code === 'P2021') {
-              console.error('[OAuth] ❌ P2021 in fallback - table does not exist')
-              return false
-            }
-          }
-          
-          // Only deny if we're certain the user doesn't exist AND it's not a connection error
-          console.error('[OAuth] ❌ Denying sign-in due to error')
-          return false
+          // Always allow sign-in - OAuth has authenticated the user
+          return true
         }
       }
 
@@ -236,20 +205,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         // For OAuth, fetch full user data from database
         if (user.email) {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: user.email },
-          })
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { email: user.email },
+            })
 
-          if (dbUser) {
-            token.id = dbUser.id
-            token.email = dbUser.email
-            token.role = dbUser.role
-            token.tenantId = dbUser.tenantId
+            if (dbUser) {
+              token.id = dbUser.id
+              token.email = dbUser.email
+              token.role = dbUser.role
+              token.tenantId = dbUser.tenantId
+            } else {
+              // 🔥 FIX #3: JWT callback must tolerate missing DB rows
+              // User might not exist yet due to DB errors during signIn callback
+              // Use OAuth-provided data as fallback
+              console.warn('[JWT] User not found in DB, using OAuth-provided data:', user.email)
+              token.email = user.email
+              token.name = user.name
+              // User creation will happen on next page load or API call
+            }
+          } catch (error: any) {
+            // Database error - use OAuth-provided data as fallback
+            console.error('[JWT] Error fetching user from DB, using OAuth data:', error.message)
+            token.email = user.email
+            token.name = user.name
           }
         } else {
           // For credentials, user data is already complete
-          token.id = user.id
-          token.email = user.email
+          // These values are guaranteed by the credentials authorize function
+          token.id = user.id!
+          token.email = user.email!
           token.role = (user as any).role
           token.tenantId = (user as any).tenantId
         }
