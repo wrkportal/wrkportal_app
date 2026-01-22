@@ -154,7 +154,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             code: error.code,
             name: error.name,
             email: user.email,
+            databaseUrl: process.env.DATABASE_URL ? 'SET' : 'MISSING',
           })
+          
+          // Handle P2021 (table not found) - this might be a Prisma Client generation issue
+          if (error.code === 'P2021') {
+            console.error('[OAuth] ❌ P2021 Error: Table does not exist. This usually means:')
+            console.error('  1. Prisma Client needs to be regenerated (run: npx prisma generate)')
+            console.error('  2. Database migrations need to be applied (run: npx prisma migrate deploy)')
+            console.error('  3. DATABASE_URL might be pointing to wrong database')
+            console.error('  4. Table name case mismatch (PostgreSQL is case-sensitive for quoted identifiers)')
+            
+            // Try a direct connection test
+            try {
+              await prisma.$queryRaw`SELECT 1 as test`
+              console.log('[OAuth] ✅ Database connection works, but table query fails')
+            } catch (connError: any) {
+              console.error('[OAuth] ❌ Database connection also fails:', connError.message)
+            }
+            
+            // Don't allow sign-in if table doesn't exist - user won't be able to use the app anyway
+            return false
+          }
           
           // Don't block sign-in for existing users if there's a database error
           // Try to check if user exists one more time with a simpler query
@@ -193,6 +214,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (checkError.code === 'P1001' || checkError.code === 'P1017') {
               console.log('[OAuth] ⚠️ Database connection error in fallback. Allowing sign-in.')
               return true
+            }
+            
+            // Also handle P2021 in fallback
+            if (checkError.code === 'P2021') {
+              console.error('[OAuth] ❌ P2021 in fallback - table does not exist')
+              return false
             }
           }
           
