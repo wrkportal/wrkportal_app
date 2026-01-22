@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -14,9 +14,22 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Mail, Lock, User, Building2, Chrome, AlertCircle, CheckCircle2, Users } from 'lucide-react'
 import { WorkspaceType } from '@/types'
 
-export default function SignupPage() {
-    const router = useRouter()
+// Component to handle OAuth error from URL params - wrapped in Suspense
+function OAuthErrorHandler({ onError }: { onError: (error: string) => void }) {
     const searchParams = useSearchParams()
+    
+    useEffect(() => {
+        const errorParam = searchParams.get('error')
+        if (errorParam === 'AccessDenied') {
+            onError('Account creation failed. This may be due to a temporary database issue. Please try again in a moment.')
+        }
+    }, [searchParams, onError])
+    
+    return null
+}
+
+function SignupPageContent({ initialError = '', onErrorChange }: { initialError?: string; onErrorChange?: (error: string) => void }) {
+    const router = useRouter()
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -26,7 +39,7 @@ export default function SignupPage() {
         organizationName: '',
         workspaceType: WorkspaceType.ORGANIZATION,
     })
-    const [error, setError] = useState('')
+    const [error, setError] = useState(initialError)
     const [loading, setLoading] = useState(false)
     const [showVerificationMessage, setShowVerificationMessage] = useState(false)
     const [userEmail, setUserEmail] = useState('')
@@ -34,13 +47,12 @@ export default function SignupPage() {
     const [resendSuccess, setResendSuccess] = useState(false)
     const [resendError, setResendError] = useState('')
 
-    // Check for OAuth errors in URL
+    // Sync error state from parent
     useEffect(() => {
-        const errorParam = searchParams.get('error')
-        if (errorParam === 'AccessDenied') {
-            setError('Account creation failed. This may be due to a temporary database issue. Please try again in a moment.')
+        if (initialError) {
+            setError(initialError)
         }
-    }, [searchParams])
+    }, [initialError])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -52,15 +64,20 @@ export default function SignupPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
+        onErrorChange?.('')
 
         // Validation
         if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match')
+            const errMsg = 'Passwords do not match'
+            setError(errMsg)
+            onErrorChange?.(errMsg)
             return
         }
 
         if (formData.password.length < 8) {
-            setError('Password must be at least 8 characters')
+            const errMsg = 'Password must be at least 8 characters'
+            setError(errMsg)
+            onErrorChange?.(errMsg)
             return
         }
 
@@ -94,10 +111,14 @@ export default function SignupPage() {
 
             // Store emailSent status for display
             if (data.emailSent === false) {
-                setError('Account created, but verification email could not be sent. Please use the "Resend Verification Email" option on the login page.')
+                const errMsg = 'Account created, but verification email could not be sent. Please use the "Resend Verification Email" option on the login page.'
+                setError(errMsg)
+                onErrorChange?.(errMsg)
             }
         } catch (error: any) {
-            setError(error.message || 'An error occurred. Please try again.')
+            const errMsg = error.message || 'An error occurred. Please try again.'
+            setError(errMsg)
+            onErrorChange?.(errMsg)
         } finally {
             setLoading(false)
         }
@@ -106,6 +127,7 @@ export default function SignupPage() {
     const handleGoogleSignIn = async () => {
         setLoading(true)
         setError('')
+        onErrorChange?.('')
         try {
             // Use current origin to ensure correct redirect
             const callbackUrl = typeof window !== 'undefined' 
@@ -126,7 +148,9 @@ export default function SignupPage() {
                 // Redirect is happening, don't show error
                 return
             }
-            setError('Failed to sign in with Google. Please check your browser console for details.')
+            const errMsg = 'Failed to sign in with Google. Please check your browser console for details.'
+            setError(errMsg)
+            onErrorChange?.(errMsg)
             setLoading(false)
         }
     }
@@ -623,5 +647,18 @@ export default function SignupPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function SignupPage() {
+    const [error, setError] = useState('')
+    
+    return (
+        <>
+            <Suspense fallback={null}>
+                <OAuthErrorHandler onError={setError} />
+            </Suspense>
+            <SignupPageContent initialError={error} onErrorChange={setError} />
+        </>
     )
 }

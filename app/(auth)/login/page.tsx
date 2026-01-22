@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -13,9 +13,22 @@ import { Separator } from '@/components/ui/separator'
 import { Mail, Lock, Chrome, AlertCircle, Building2, MailCheck, Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 
-export default function LoginPage() {
-    const router = useRouter()
+// Component to handle OAuth error from URL params
+function OAuthErrorHandler({ onError }: { onError: (error: string) => void }) {
     const searchParams = useSearchParams()
+    
+    useEffect(() => {
+        const errorParam = searchParams.get('error')
+        if (errorParam === 'AccessDenied') {
+            onError('Account creation failed. This may be due to a temporary database issue. Please try again in a moment.')
+        }
+    }, [searchParams, onError])
+    
+    return null
+}
+
+function LoginPageContent() {
+    const router = useRouter()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -25,14 +38,6 @@ export default function LoginPage() {
     const [showResendVerification, setShowResendVerification] = useState(false)
     const [resendLoading, setResendLoading] = useState(false)
     const [resendSuccess, setResendSuccess] = useState(false)
-
-    // Check for OAuth errors in URL
-    useEffect(() => {
-        const errorParam = searchParams.get('error')
-        if (errorParam === 'AccessDenied') {
-            setError('Account creation failed. This may be due to a temporary database issue. Please try again in a moment.')
-        }
-    }, [searchParams])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -452,3 +457,15 @@ export default function LoginPage() {
     )
 }
 
+export default function LoginPage() {
+    const [error, setError] = useState('')
+    
+    return (
+        <>
+            <Suspense fallback={null}>
+                <OAuthErrorHandler onError={setError} />
+            </Suspense>
+            <LoginPageContent initialError={error} onErrorChange={setError} />
+        </>
+    )
+}
