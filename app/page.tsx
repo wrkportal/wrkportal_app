@@ -15,35 +15,49 @@ export default function HomePage() {
                 return // Wait for store to hydrate
             }
 
-            // Always fetch fresh user data from API to avoid cache issues
-            const authenticatedUser = await fetchAuthenticatedUser(true) // Force refresh
-            
-            if (authenticatedUser) {
-                // Update store with fresh data
-                setUser(authenticatedUser)
-                
-                // Check if user has selected a role previously
-                const hasSelectedRole = authenticatedUser.primaryWorkflowType && 
-                                       authenticatedUser.primaryWorkflowType !== null && 
-                                       authenticatedUser.primaryWorkflowType !== '' &&
-                                       authenticatedUser.primaryWorkflowType !== undefined
-                
-                if (!hasSelectedRole) {
-                    // User hasn't selected a role - redirect to role selection
-                    window.location.href = '/onboarding/role-selection'
-                    return
-                }
-                
-                // User has completed onboarding - redirect to their landing page
-                const landingPage = authenticatedUser.landingPage || '/wrkboard'
-                window.location.href = landingPage
-            } else {
-                // Not logged in - redirect to landing page which now shows at root
-                // Since landing page is now at /landing and root will show it
+            // Add timeout to prevent infinite loading
+            const timeoutId = setTimeout(() => {
+                console.warn('[HomePage] Timeout waiting for user, redirecting to landing page')
+                setIsChecking(false)
                 router.replace('/landing')
+            }, 10000) // 10 second timeout
+
+            try {
+                // Always fetch fresh user data from API to avoid cache issues
+                const authenticatedUser = await fetchAuthenticatedUser(true) // Force refresh
+                
+                clearTimeout(timeoutId) // Clear timeout if we got a response
+                
+                if (authenticatedUser) {
+                    // Update store with fresh data
+                    setUser(authenticatedUser)
+                    
+                    // Check if user has selected a role previously
+                    const hasSelectedRole = authenticatedUser.primaryWorkflowType && 
+                                           authenticatedUser.primaryWorkflowType !== null && 
+                                           authenticatedUser.primaryWorkflowType !== '' &&
+                                           authenticatedUser.primaryWorkflowType !== undefined
+                    
+                    if (!hasSelectedRole) {
+                        // User hasn't selected a role - redirect to role selection
+                        window.location.href = '/onboarding/role-selection'
+                        return
+                    }
+                    
+                    // User has completed onboarding - redirect to their landing page
+                    const landingPage = authenticatedUser.landingPage || '/wrkboard'
+                    window.location.href = landingPage
+                } else {
+                    // Not logged in or user creation failed - redirect to landing page
+                    router.replace('/landing')
+                }
+            } catch (error) {
+                console.error('[HomePage] Error checking user:', error)
+                clearTimeout(timeoutId)
+                router.replace('/landing')
+            } finally {
+                setIsChecking(false)
             }
-            
-            setIsChecking(false)
         }
 
         checkUserAndRedirect()

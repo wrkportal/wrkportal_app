@@ -170,7 +170,11 @@ export const useAuthStore = create<AuthState>()(
 )
 
 // Fetch authenticated user from API with cache busting
-export async function fetchAuthenticatedUser(forceRefresh = false): Promise<User | null> {
+export async function fetchAuthenticatedUser(
+  forceRefresh = false,
+  retryCount = 0,
+  maxRetries = 2
+): Promise<User | null> {
   try {
     // Add cache busting parameter to ensure fresh data
     const cacheBuster = forceRefresh ? `?t=${Date.now()}` : ''
@@ -186,10 +190,15 @@ export async function fetchAuthenticatedUser(forceRefresh = false): Promise<User
       
       // Handle USER_NOT_PROVISIONED status (user is being created)
       if (data.status === 'USER_NOT_PROVISIONED') {
-        console.log('[AuthStore] User not provisioned yet, will retry:', data.email)
-        // Retry after a short delay
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        return fetchAuthenticatedUser(true) // Retry once
+        if (retryCount < maxRetries) {
+          console.log(`[AuthStore] User not provisioned yet, retrying (${retryCount + 1}/${maxRetries}):`, data.email)
+          // Retry after a short delay with exponential backoff
+          await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)))
+          return fetchAuthenticatedUser(true, retryCount + 1, maxRetries)
+        } else {
+          console.warn('[AuthStore] User not provisioned after max retries, returning null')
+          return null
+        }
       }
       
       // Handle ERROR status
