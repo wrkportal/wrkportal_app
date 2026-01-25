@@ -22,11 +22,15 @@ export function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // Apply rate limiting for API routes (but exclude session checks)
-  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/session')) {
+  // Apply rate limiting for API routes (but exclude session checks and debug endpoint)
+  if (
+    pathname.startsWith('/api/') && 
+    !pathname.startsWith('/api/auth/session') &&
+    !pathname.startsWith('/api/auth/debug')
+  ) {
     const identifier = getRateLimitIdentifier(request, { useIP: true })
     
-    // Stricter rate limiting for auth endpoints (except session which is read-only)
+    // Stricter rate limiting for auth endpoints (except session and debug which are read-only)
     const preset = pathname.startsWith('/api/auth') ? 'auth' : 'api'
     const rateLimitResult = checkRateLimit(identifier, preset)
     
