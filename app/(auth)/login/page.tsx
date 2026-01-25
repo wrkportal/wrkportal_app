@@ -87,10 +87,10 @@ function LoginPageContent({ initialError = '', onErrorChange }: { initialError?:
                     console.log('[Login] Cleared localStorage cache')
                 }
 
-                // Force a hard navigation to clear any cached data
-                // This ensures the home page will fetch fresh user data
-                console.log('[Login] Redirecting to home page...')
-                window.location.href = '/'
+                // Force a hard navigation to wrkboard directly
+                // This avoids the race condition with session establishment
+                console.log('[Login] Redirecting to wrkboard...')
+                window.location.href = '/wrkboard'
             }
         } catch (error) {
             setError('An error occurred. Please try again.')
@@ -109,7 +109,7 @@ function LoginPageContent({ initialError = '', onErrorChange }: { initialError?:
             console.log('Calling signIn with google provider...')
             // Use signIn from next-auth/react for proper OAuth flow
             await signIn('google', {
-                callbackUrl: '/',
+                callbackUrl: '/wrkboard',
                 redirect: true, // Will redirect on success
             })
 
@@ -150,14 +150,14 @@ function LoginPageContent({ initialError = '', onErrorChange }: { initialError?:
             } else if (data.ssoProvider === 'OIDC') {
                 // Use NextAuth with OIDC provider
                 const result = await signIn('oidc', {
-                    callbackUrl: '/',
+                    callbackUrl: '/wrkboard',
                     redirect: true,
                     tenant: data.tenantId,
                 })
             } else if (data.ssoProvider === 'AZURE_AD') {
                 // Use NextAuth with Azure AD
                 const result = await signIn('azure-ad', {
-                    callbackUrl: '/',
+                    callbackUrl: '/wrkboard',
                     redirect: true,
                     tenant: data.tenantId,
                 })

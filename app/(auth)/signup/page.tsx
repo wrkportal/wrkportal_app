@@ -131,8 +131,8 @@ function SignupPageContent({ initialError = '', onErrorChange }: { initialError?
         try {
             // Use current origin to ensure correct redirect
             const callbackUrl = typeof window !== 'undefined' 
-                ? `${window.location.origin}/`
-                : '/'
+                ? `${window.location.origin}/wrkboard`
+                : '/wrkboard'
             
             console.log('🔍 Google Sign-In - Callback URL:', callbackUrl)
             console.log('🔍 Google Sign-In - Current Origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A')
