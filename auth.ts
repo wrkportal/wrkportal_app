@@ -167,10 +167,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.log('[OAuth] STEP 2.1: Tenant not found, creating new tenant...')
             try {
               tenant = await withRetry(
-                () => prisma.tenant.create({
+                () => (prisma as any).tenant.create({
                   data: {
                     name: `${profile.name || email}'s Organization`,
                     domain: domain,
+                    // Only include fields that exist in database
+                    // ssoEnabled and other fields with defaults will be handled by database defaults
                   },
                   select: { id: true, name: true },
                 }),
