@@ -91,11 +91,11 @@ const AnimatedBackground = () => {
 
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-950 via-indigo-950 to-black opacity-90"></div>
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-50 via-indigo-50 to-white opacity-90"></div>
             {dots.map((dot, i) => (
                 <div
                     key={i}
-                    className="absolute w-1 h-1 bg-purple-400 rounded-full opacity-30 animate-pulse"
+                    className="absolute w-1 h-1 bg-purple-500 rounded-full opacity-40 animate-pulse shadow-lg shadow-purple-400"
                     style={{
                         left: `${dot.left}%`,
                         top: `${dot.top}%`,
@@ -111,9 +111,9 @@ const AnimatedBackground = () => {
 // Floating Glow Orbs
 const FloatingOrb = ({ delay = 0, size = 200, x = 50, y = 50, color = "purple" }: { delay?: number; size?: number; x?: number; y?: number; color?: string }) => {
     const colorClasses = {
-        purple: "bg-purple-500/20",
-        pink: "bg-pink-500/20",
-        blue: "bg-blue-500/20",
+        purple: "bg-purple-200/60 shadow-lg shadow-purple-300/50",
+        pink: "bg-pink-200/60 shadow-lg shadow-pink-300/50",
+        blue: "bg-blue-200/60 shadow-lg shadow-blue-300/50",
     }
     return (
         <div
@@ -169,7 +169,7 @@ const TypingFeatureText = ({ features, className = "" }: { features: string[]; c
     return (
         <span className={`inline-block min-w-[300px] text-left ${className}`}>
             {displayText}
-            <span className="animate-pulse text-purple-400">|</span>
+            <span className="animate-pulse text-purple-600">|</span>
         </span>
     )
 }
@@ -189,8 +189,8 @@ const FloatingFeatureCard = ({
     return (
         <div
             className={`relative border-2 rounded-lg overflow-hidden transition-all duration-300 cursor-pointer group ${isSelected
-                ? `border-purple-500 shadow-lg shadow-purple-500/30`
-                : 'border-purple-500/20 bg-purple-950/30 hover:border-purple-500/50 hover:bg-purple-950/40'
+                ? `border-purple-400 shadow-xl shadow-purple-300/50 bg-gradient-to-br from-purple-50 to-pink-50`
+                : 'border-purple-200 bg-white/80 hover:border-purple-300 hover:bg-gradient-to-br hover:from-purple-50/50 hover:to-pink-50/50 shadow-md'
                 }`}
             onClick={onClick}
         >
@@ -201,13 +201,13 @@ const FloatingFeatureCard = ({
                     <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-10`}></div>
                 )}
                 <h3 className={`relative text-base font-semibold text-center transition-all duration-300 ${isSelected
-                    ? 'text-white'
-                    : 'text-purple-300 group-hover:text-purple-200'
+                    ? 'text-purple-700'
+                    : 'text-purple-600 group-hover:text-purple-700'
                     }`}>
                     {title}
                 </h3>
                 {isSelected && (
-                    <div className="absolute top-2 right-2 w-2 h-2 bg-purple-400 rounded-full"></div>
+                    <div className="absolute top-2 right-2 w-2 h-2 bg-purple-500 rounded-full shadow-lg shadow-purple-400"></div>
                 )}
             </div>
         </div>
@@ -217,13 +217,13 @@ const FloatingFeatureCard = ({
 // Feature Detail Card
 const FeatureDetailCard = ({ icon: Icon, title, description, delay = 0 }: { icon: any; title: string; description: string; delay?: number }) => {
     return (
-        <Card className="border-2 border-purple-500/30 bg-purple-950/50 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-purple-500 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 group animate-fade-in-up">
+        <Card className="border-2 border-purple-200 bg-white/90 backdrop-blur-sm overflow-hidden transition-all duration-500 hover:border-purple-300 hover:shadow-xl hover:shadow-purple-200/50 hover:scale-105 group animate-fade-in-up shadow-lg">
             <CardContent className="p-5 relative">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 mb-3 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-purple-400 to-pink-400 mb-3 shadow-lg shadow-purple-300/50 group-hover:scale-110 transition-transform duration-300">
                     <Icon className="h-6 w-6 text-white" />
                 </div>
-                <h4 className="text-base font-bold text-white mb-2">{title}</h4>
-                <p className="text-sm text-purple-300 leading-relaxed">{description}</p>
+                <h4 className="text-base font-bold text-gray-800 mb-2">{title}</h4>
+                <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
             </CardContent>
         </Card>
     )
@@ -232,18 +232,18 @@ const FeatureDetailCard = ({ icon: Icon, title, description, delay = 0 }: { icon
 // Accordion Component for FAQ
 const AccordionItem = ({ question, answer, isOpen, onToggle }: { question: string; answer: string; isOpen: boolean; onToggle: () => void }) => {
     return (
-        <Card className="border-2 border-purple-500/30 overflow-hidden transition-all duration-300 hover:border-purple-500/50 bg-purple-950/50 backdrop-blur-sm">
+        <Card className="border-2 border-purple-200 overflow-hidden transition-all duration-300 hover:border-purple-300 bg-white/90 backdrop-blur-sm shadow-md">
             <button
                 onClick={onToggle}
-                className="w-full p-6 text-left flex items-center justify-between hover:bg-purple-900/30 transition-colors"
+                className="w-full p-6 text-left flex items-center justify-between hover:bg-purple-50 transition-colors"
             >
-                <span className="font-semibold text-lg pr-8 text-white">{question}</span>
+                <span className="font-semibold text-lg pr-8 text-gray-800">{question}</span>
                 <div className={`flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
-                    <ChevronDown className="h-5 w-5 text-purple-400" />
+                    <ChevronDown className="h-5 w-5 text-purple-600" />
                 </div>
             </button>
             <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="px-6 pb-6 text-purple-200 leading-relaxed">
+                <div className="px-6 pb-6 text-gray-600 leading-relaxed">
                     {answer}
                 </div>
             </div>
@@ -300,17 +300,17 @@ const ContactForm = () => {
     }
 
     return (
-        <Card className="border-2 border-purple-500/30 shadow-xl bg-purple-950/50 backdrop-blur-sm">
+        <Card className="border-2 border-purple-200 shadow-xl bg-white/95 backdrop-blur-sm">
             <CardContent className="p-8">
                 {success && (
-                    <div className="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg flex items-center gap-2 text-green-400">
+                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700 shadow-md">
                         <CheckCircle2 className="h-5 w-5" />
                         <p>Thank you! We'll get back to you soon.</p>
                     </div>
                 )}
 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center gap-2 text-red-400">
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 shadow-md">
                         <AlertTriangle className="h-5 w-5" />
                         <p>{error}</p>
                     </div>
@@ -319,18 +319,18 @@ const ContactForm = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="name" className="text-purple-200">Name *</Label>
+                            <Label htmlFor="name" className="text-gray-700 font-medium">Name *</Label>
                             <Input
                                 id="name"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="Your name"
                                 required
-                                className="bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-400/50"
+                                className="bg-white border-purple-200 text-gray-800 placeholder:text-gray-400 focus:border-purple-400 shadow-sm"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-purple-200">Email *</Label>
+                            <Label htmlFor="email" className="text-gray-700 font-medium">Email *</Label>
                             <Input
                                 id="email"
                                 type="email"
@@ -338,20 +338,20 @@ const ContactForm = () => {
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 placeholder="your.email@company.com"
                                 required
-                                className="bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-400/50"
+                                className="bg-white border-purple-200 text-gray-800 placeholder:text-gray-400 focus:border-purple-400 shadow-sm"
                             />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="type" className="text-purple-200">Inquiry Type *</Label>
+                            <Label htmlFor="type" className="text-gray-700 font-medium">Inquiry Type *</Label>
                             <Select
                                 value={formData.type}
                                 onValueChange={(value) => setFormData({ ...formData, type: value })}
                                 required
                             >
-                                <SelectTrigger className="bg-purple-900/30 border-purple-500/30 text-white">
+                                <SelectTrigger className="bg-white border-purple-200 text-gray-800 focus:border-purple-400 shadow-sm">
                                     <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -364,19 +364,19 @@ const ContactForm = () => {
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="subject" className="text-purple-200">Subject</Label>
+                            <Label htmlFor="subject" className="text-gray-700 font-medium">Subject</Label>
                             <Input
                                 id="subject"
                                 value={formData.subject}
                                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                                 placeholder="Brief subject"
-                                className="bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-400/50"
+                                className="bg-white border-purple-200 text-gray-800 placeholder:text-gray-400 focus:border-purple-400 shadow-sm"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="message" className="text-purple-200">Message *</Label>
+                        <Label htmlFor="message" className="text-gray-700 font-medium">Message *</Label>
                         <Textarea
                             id="message"
                             value={formData.message}
@@ -384,13 +384,13 @@ const ContactForm = () => {
                             placeholder="Tell us more about your inquiry..."
                             rows={6}
                             required
-                            className="bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-400/50"
+                            className="bg-white border-purple-200 text-gray-800 placeholder:text-gray-400 focus:border-purple-400 shadow-sm"
                         />
                     </div>
 
                     <Button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-300/50"
                         disabled={submitting}
                     >
                         {submitting ? (
@@ -579,7 +579,7 @@ export default function LandingPage() {
     ]
 
     return (
-        <div className="min-h-screen bg-black text-white overflow-hidden relative">
+        <div className="min-h-screen bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 text-gray-900 overflow-hidden relative">
             {/* Animated Background */}
             <AnimatedBackground />
 
@@ -589,7 +589,7 @@ export default function LandingPage() {
             <FloatingOrb delay={2} size={200} x={50} y={70} color="blue" />
 
             {/* Fixed Navigation */}
-            <nav className="fixed top-0 left-0 right-0 z-50 border-b border-purple-500/30 bg-black/80 backdrop-blur-xl">
+            <nav className="fixed top-0 left-0 right-0 z-50 border-b border-purple-200/50 bg-white/90 backdrop-blur-xl shadow-sm">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex h-20 items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -603,23 +603,23 @@ export default function LandingPage() {
                             </div>
                         </div>
                         <div className="hidden lg:flex items-center gap-8">
-                            <a href="#ai-tools" className="text-sm font-medium text-purple-300 hover:text-purple-200 transition-colors">
+                            <a href="#ai-tools" className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
                                 AI Tools
                             </a>
-                            <a href="#features" className="text-sm font-medium text-purple-300 hover:text-purple-200 transition-colors">
+                            <a href="#features" className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
                                 Features
                             </a>
-                            <a href="#pricing" className="text-sm font-medium text-purple-300 hover:text-purple-200 transition-colors">
+                            <a href="#pricing" className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
                                 Pricing
                             </a>
                         </div>
                         <div className="flex items-center gap-3">
-                            <Button variant="ghost" onClick={() => router.push('/login')} className="text-purple-300 hover:text-white hover:bg-purple-900/50">
+                            <Button variant="ghost" onClick={() => router.push('/login')} className="text-gray-700 hover:text-purple-600 hover:bg-purple-50">
                                 Sign In
                             </Button>
                             <Button
                                 onClick={() => router.push('/signup')}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium"
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium shadow-lg shadow-purple-300/50"
                             >
                                 Start Free Trial
                                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -642,22 +642,22 @@ export default function LandingPage() {
                 </div>
 
                 {/* Animated Gradient Blobs */}
-                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
-                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-600/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }}></div>
-                <div className="absolute top-1/2 right-1/3 w-80 h-80 bg-blue-600/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }}></div>
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-200/40 rounded-full blur-3xl animate-pulse shadow-lg shadow-purple-300/30" style={{ animationDuration: '4s' }}></div>
+                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-200/40 rounded-full blur-3xl animate-pulse shadow-lg shadow-pink-300/30" style={{ animationDuration: '5s', animationDelay: '1s' }}></div>
+                <div className="absolute top-1/2 right-1/3 w-80 h-80 bg-blue-200/40 rounded-full blur-3xl animate-pulse shadow-lg shadow-blue-300/30" style={{ animationDuration: '6s', animationDelay: '2s' }}></div>
 
                 <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col items-center text-center max-w-6xl mx-auto">
                         {/* Badge with Animation */}
-                        <Badge className="mb-4 px-6 py-2 bg-purple-500/20 text-purple-300 border-purple-500/50 animate-fade-in-up">
-                            <Sparkles className="mr-2 h-4 w-4 animate-spin" style={{ animationDuration: '3s' }} />
+                        <Badge className="mb-4 px-6 py-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md animate-fade-in-up">
+                            <Sparkles className="mr-2 h-4 w-4 animate-spin text-purple-600" style={{ animationDuration: '3s' }} />
                             The Only Platform You Need
                         </Badge>
 
                         {/* Main Headline */}
                         <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight mb-4 leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-                            <span className="block text-white mb-2">One Platform for</span>
-                            <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                            <span className="block text-gray-900 mb-2">One Platform for</span>
+                            <span className="block bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
                                 <TypingFeatureText
                                     features={[
                                         "Project Management",
@@ -674,9 +674,9 @@ export default function LandingPage() {
                         </h1>
 
                         {/* Subheadline */}
-                        <p className="text-xl sm:text-2xl md:text-3xl text-purple-200 mb-4 max-w-4xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                        <p className="text-xl sm:text-2xl md:text-3xl text-gray-700 mb-4 max-w-4xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                             The all-in-one platform for Project Management, Sales, Finance, Ops Management, Recruitment, IT, and Customer Service
-                            <span className="block mt-2 text-lg text-purple-300">
+                            <span className="block mt-2 text-lg text-purple-600 font-medium">
                                 Everything your business needs, powered by AI
                             </span>
                         </p>
@@ -729,7 +729,7 @@ export default function LandingPage() {
                             <Button
                                 size="lg"
                                 onClick={() => router.push('/signup')}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg px-10 py-7 shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transition-all duration-300 hover:scale-105 group"
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg px-10 py-7 shadow-2xl shadow-purple-300/50 hover:shadow-purple-400/70 transition-all duration-300 hover:scale-105 group"
                             >
                                 <Plus className="mr-2 h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
                                 Get Started Free
@@ -739,7 +739,7 @@ export default function LandingPage() {
                                 size="lg"
                                 variant="outline"
                                 onClick={handleCtaClick}
-                                className="text-lg px-10 py-7 border-2 border-purple-500/50 text-purple-300 hover:bg-purple-900/50 hover:border-purple-400 hover:scale-105 transition-all duration-300 group"
+                                className="text-lg px-10 py-7 border-2 border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 hover:scale-105 transition-all duration-300 group shadow-md"
                             >
                                 <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
                                 Watch Demo
@@ -747,17 +747,17 @@ export default function LandingPage() {
                         </div>
 
                         {/* Trust Indicators */}
-                        <div className="flex flex-wrap justify-center gap-6 text-sm text-purple-300 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+                        <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
                             <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                                <CheckCircle2 className="h-5 w-5 text-green-600" />
                                 <span>No Credit Card Required</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                                <CheckCircle2 className="h-5 w-5 text-green-600" />
                                 <span>Free Trial Available</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                                <CheckCircle2 className="h-5 w-5 text-green-600" />
                                 <span>Cancel Anytime</span>
                             </div>
                         </div>
@@ -766,60 +766,60 @@ export default function LandingPage() {
             </section>
 
             {/* AI Writing Tools Section */}
-            <section id="ai-tools" className="relative py-16 overflow-hidden bg-gradient-to-br from-purple-950/40 via-indigo-950/30 to-black/50">
+            <section id="ai-tools" className="relative py-16 overflow-hidden bg-gradient-to-br from-purple-50/60 via-pink-50/40 to-white">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
                         <div className="space-y-6">
-                            <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-4">
-                                <PenTool className="mr-2 h-3 w-3" />
+                            <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md mb-4">
+                                <PenTool className="mr-2 h-3 w-3 text-purple-600" />
                                 AI Writing Tools
                             </Badge>
-                            <h2 className="text-5xl font-black text-white mb-4">
+                            <h2 className="text-5xl font-black text-gray-900 mb-4">
                                 Write ✍️ Better Content Faster
                             </h2>
-                            <p className="text-xl text-purple-200 mb-2">
+                            <p className="text-xl text-gray-700 mb-2 font-medium">
                                 The Future of AI Writing Tools is Finally here
                             </p>
-                            <p className="text-purple-300 leading-relaxed mb-6">
+                            <p className="text-gray-600 leading-relaxed mb-6">
                                 Mastering the Art of AI Content Writing: Unleashing the Power of Automated Creativity
                             </p>
-                            <ul className="space-y-3 text-purple-200">
+                            <ul className="space-y-3 text-gray-700">
                                 <li className="flex items-start gap-3">
-                                    <CheckCircle2 className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
                                     <span>Multiple use cases and templates to pick from to meet all of your writing demands</span>
                                 </li>
                                 <li className="flex items-start gap-3">
-                                    <CheckCircle2 className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
                                     <span>Communicate with your customers with emotions</span>
                                 </li>
                                 <li className="flex items-start gap-3">
-                                    <CheckCircle2 className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
                                     <span>Choose the best AI copy for your message & save as a document</span>
                                 </li>
                             </ul>
                             <Button
                                 onClick={() => router.push('/signup')}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white mt-6"
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white mt-6 shadow-lg shadow-purple-300/50"
                             >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Get Started
                             </Button>
                         </div>
                         <div className="relative">
-                            <Card className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-black/50 backdrop-blur-sm overflow-hidden">
+                            <Card className="border-2 border-purple-200 bg-white/95 backdrop-blur-sm overflow-hidden shadow-xl">
                                 <CardContent className="p-8">
-                                    <div className="bg-purple-900/30 rounded-lg p-6 space-y-4">
+                                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 space-y-4 shadow-md">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                            <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm"></div>
+                                            <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-sm"></div>
+                                            <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm"></div>
                                         </div>
                                         <div className="space-y-2">
-                                            <div className="h-4 bg-purple-700/50 rounded w-3/4"></div>
-                                            <div className="h-4 bg-purple-700/30 rounded w-1/2"></div>
+                                            <div className="h-4 bg-purple-200 rounded w-3/4 shadow-sm"></div>
+                                            <div className="h-4 bg-purple-100 rounded w-1/2 shadow-sm"></div>
                                         </div>
-                                        <div className="h-32 bg-purple-800/30 rounded mt-4 flex items-center justify-center">
-                                            <PenTool className="h-12 w-12 text-purple-400 opacity-50" />
+                                        <div className="h-32 bg-gradient-to-br from-purple-100 to-pink-100 rounded mt-4 flex items-center justify-center shadow-inner">
+                                            <PenTool className="h-12 w-12 text-purple-500 opacity-60" />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -830,22 +830,22 @@ export default function LandingPage() {
             </section>
 
             {/* AI Chat Bot Section */}
-            <section className="relative py-32 overflow-hidden bg-purple-950/30">
+            <section className="relative py-32 overflow-hidden bg-white">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
                         <div className="relative">
-                            <Card className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-black/50 backdrop-blur-sm overflow-hidden">
+                            <Card className="border-2 border-purple-200 bg-white/95 backdrop-blur-sm overflow-hidden shadow-xl">
                                 <CardContent className="p-8">
-                                    <div className="bg-purple-900/30 rounded-lg p-6 space-y-4">
+                                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 space-y-4 shadow-md">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <Bot className="h-6 w-6 text-purple-400" />
-                                            <span className="text-purple-300 font-semibold">Chat Assistant</span>
+                                            <Bot className="h-6 w-6 text-purple-600" />
+                                            <span className="text-purple-700 font-semibold">Chat Assistant</span>
                                         </div>
                                         <div className="space-y-3">
-                                            <div className="bg-purple-800/50 rounded-lg p-3 text-sm text-purple-200">
+                                            <div className="bg-white rounded-lg p-3 text-sm text-gray-700 shadow-sm border border-purple-100">
                                                 How can I help with your project?
                                             </div>
-                                            <div className="bg-purple-700/50 rounded-lg p-3 text-sm text-purple-200 ml-auto w-3/4">
+                                            <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-3 text-sm text-gray-700 ml-auto w-3/4 shadow-sm border border-purple-200">
                                                 Show me risk predictions
                                             </div>
                                         </div>
@@ -854,19 +854,19 @@ export default function LandingPage() {
                             </Card>
                         </div>
                         <div className="space-y-6">
-                            <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-4">
-                                <Bot className="mr-2 h-3 w-3" />
+                            <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md mb-4">
+                                <Bot className="mr-2 h-3 w-3 text-purple-600" />
                                 AI Chat Bot
                             </Badge>
-                            <h2 className="text-5xl font-black text-white mb-4">
+                            <h2 className="text-5xl font-black text-gray-900 mb-4">
                                 Chat 🤖 Smarter, Not Harder
                             </h2>
-                            <p className="text-purple-300 leading-relaxed mb-6">
+                            <p className="text-gray-600 leading-relaxed mb-6">
                                 With wrkportal.com AI, you can chat smarter, not harder. Master the art of AI-powered conversations and unleash the power of automated intelligence for your projects.
                             </p>
                             <Button
                                 onClick={() => router.push('/signup')}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-300/50"
                             >
                                 Start Chat
                                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -877,34 +877,34 @@ export default function LandingPage() {
             </section>
 
             {/* AI Video Generator Section */}
-            <section className="relative py-32 overflow-hidden">
+            <section className="relative py-32 overflow-hidden bg-gradient-to-br from-purple-50/50 to-pink-50/50">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
                         <div className="space-y-6">
-                            <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-4">
-                                <Video className="mr-2 h-3 w-3" />
+                            <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md mb-4">
+                                <Video className="mr-2 h-3 w-3 text-purple-600" />
                                 AI Video Generator
                             </Badge>
-                            <h2 className="text-5xl font-black text-white mb-4">
+                            <h2 className="text-5xl font-black text-gray-900 mb-4">
                                 A Wonderful Video May Be Created by Anyone
                             </h2>
-                            <p className="text-purple-300 leading-relaxed mb-6">
+                            <p className="text-gray-600 leading-relaxed mb-6">
                                 That includes you. By leveraging our leading AI text-to-speech reader, you can breeze through presentations, reports, and documentation with ease.
                             </p>
                             <Button
                                 onClick={() => router.push('/signup')}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-300/50"
                             >
                                 Try AI Video
                                 <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                         </div>
                         <div className="relative">
-                            <Card className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-black/50 backdrop-blur-sm overflow-hidden">
+                            <Card className="border-2 border-purple-200 bg-white/95 backdrop-blur-sm overflow-hidden shadow-xl">
                                 <CardContent className="p-8">
-                                    <div className="bg-purple-900/30 rounded-lg p-6 space-y-4">
-                                        <div className="aspect-video bg-gradient-to-br from-purple-800/50 to-pink-800/50 rounded-lg flex items-center justify-center">
-                                            <Play className="h-16 w-16 text-white opacity-50" />
+                                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 space-y-4 shadow-md">
+                                        <div className="aspect-video bg-gradient-to-br from-purple-200 to-pink-200 rounded-lg flex items-center justify-center shadow-inner">
+                                            <Play className="h-16 w-16 text-purple-600 opacity-60" />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -915,59 +915,59 @@ export default function LandingPage() {
             </section>
 
             {/* AI Image Generator Section */}
-            <section className="relative py-32 overflow-hidden bg-purple-950/30">
+            <section className="relative py-32 overflow-hidden bg-white">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div className="grid grid-cols-3 gap-4">
                             {[...Array(9)].map((_, i) => (
-                                <Card key={i} className="border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-black/50 backdrop-blur-sm aspect-square overflow-hidden">
+                                <Card key={i} className="border-2 border-purple-200 bg-white/95 backdrop-blur-sm aspect-square overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
                                     <CardContent className="p-0 h-full">
-                                        <div className={`h-full w-full bg-gradient-to-br ${i % 3 === 0 ? 'from-purple-600/50 to-pink-600/50' :
-                                            i % 3 === 1 ? 'from-blue-600/50 to-purple-600/50' :
-                                                'from-pink-600/50 to-orange-600/50'
-                                            } flex items-center justify-center`}>
-                                            <ImageIcon className="h-8 w-8 text-white/30" />
+                                        <div className={`h-full w-full bg-gradient-to-br ${i % 3 === 0 ? 'from-purple-200 to-pink-200' :
+                                            i % 3 === 1 ? 'from-blue-200 to-purple-200' :
+                                                'from-pink-200 to-orange-200'
+                                            } flex items-center justify-center shadow-inner`}>
+                                            <ImageIcon className="h-8 w-8 text-purple-500/50" />
                                         </div>
                                     </CardContent>
                                 </Card>
                             ))}
                         </div>
                         <div className="space-y-6">
-                            <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-4">
-                                <ImageIcon className="mr-2 h-3 w-3" />
+                            <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md mb-4">
+                                <ImageIcon className="mr-2 h-3 w-3 text-purple-600" />
                                 AI Image Generator
                             </Badge>
-                            <h2 className="text-5xl font-black text-white mb-4">
+                            <h2 className="text-5xl font-black text-gray-900 mb-4">
                                 Generate Outstanding AI Images Just Using Prompt 💡
                             </h2>
-                            <p className="text-purple-300 leading-relaxed mb-6">
+                            <p className="text-gray-600 leading-relaxed mb-6">
                                 wrkportal.com is an artificial art generator that turns your ideas into one-of-a-kind artwork and photographs in seconds. Finally, you'll have the perfect image to go with your statement.
                             </p>
-                            <ul className="space-y-3 text-purple-200 mb-6">
+                            <ul className="space-y-3 text-gray-700 mb-6">
                                 <li className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-5 w-5 text-purple-400" />
+                                    <CheckCircle2 className="h-5 w-5 text-purple-600" />
                                     <span>Multiple Styles</span>
                                 </li>
                                 <li className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-5 w-5 text-purple-400" />
+                                    <CheckCircle2 className="h-5 w-5 text-purple-600" />
                                     <span>Custom Sizes</span>
                                 </li>
                                 <li className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-5 w-5 text-purple-400" />
+                                    <CheckCircle2 className="h-5 w-5 text-purple-600" />
                                     <span>Photo-realistic scenes</span>
                                 </li>
                                 <li className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-5 w-5 text-purple-400" />
+                                    <CheckCircle2 className="h-5 w-5 text-purple-600" />
                                     <span>Graphics & Vector Graphics</span>
                                 </li>
                                 <li className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-5 w-5 text-purple-400" />
+                                    <CheckCircle2 className="h-5 w-5 text-purple-600" />
                                     <span>And Much More</span>
                                 </li>
                             </ul>
                             <Button
                                 onClick={() => router.push('/signup')}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-300/50"
                             >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Generate AI Image
@@ -978,16 +978,16 @@ export default function LandingPage() {
             </section>
 
             {/* Features Section */}
-            <section id="features" className="relative py-32 overflow-hidden">
+            <section id="features" className="relative py-32 overflow-hidden bg-gradient-to-br from-white to-purple-50/30">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-6">
-                            <Layers className="mr-2 h-4 w-4" />
+                        <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md mb-6">
+                            <Layers className="mr-2 h-4 w-4 text-purple-600" />
                             Platform Features
                         </Badge>
-                        <h2 className="text-5xl font-black mb-6">
+                        <h2 className="text-5xl font-black mb-6 text-gray-900">
                             Everything You Need
-                            <span className="block bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">And More</span>
+                            <span className="block bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">And More</span>
                         </h2>
                     </div>
 
@@ -1003,13 +1003,13 @@ export default function LandingPage() {
                             { icon: Brain, title: "AI-Powered Intelligence", description: "Advanced AI tools for automation, predictions, insights, and intelligent recommendations across all modules." },
                             { icon: Shield, title: "Enterprise Security", description: "SOC 2, ISO 27001, GDPR compliant with end-to-end encryption and role-based access control." },
                         ].map((feature, index) => (
-                            <Card key={index} className="border-2 border-purple-500/30 bg-purple-950/50 backdrop-blur-sm hover:border-purple-500/50 transition-all duration-300 hover:scale-105">
+                            <Card key={index} className="border-2 border-purple-200 bg-white/95 backdrop-blur-sm hover:border-purple-300 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl">
                                 <CardContent className="p-8">
-                                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 mb-6">
+                                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-purple-400 to-pink-400 mb-6 shadow-lg shadow-purple-300/50">
                                         <feature.icon className="h-8 w-8 text-white" />
                                     </div>
-                                    <h3 className="text-xl font-bold mb-3 text-white">{feature.title}</h3>
-                                    <p className="text-purple-300 leading-relaxed">{feature.description}</p>
+                                    <h3 className="text-xl font-bold mb-3 text-gray-900">{feature.title}</h3>
+                                    <p className="text-gray-600 leading-relaxed">{feature.description}</p>
                                 </CardContent>
                             </Card>
                         ))}
@@ -1018,33 +1018,33 @@ export default function LandingPage() {
             </section>
 
             {/* Pricing Section */}
-            <section id="pricing" className="relative py-32 overflow-hidden bg-purple-950/30">
+            <section id="pricing" className="relative py-32 overflow-hidden bg-white">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-6">
-                            <DollarSign className="mr-2 h-4 w-4" />
+                        <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md mb-6">
+                            <DollarSign className="mr-2 h-4 w-4 text-purple-600" />
                             Flexible Pricing
                         </Badge>
-                        <h2 className="text-5xl font-black mb-6">
+                        <h2 className="text-5xl font-black mb-6 text-gray-900">
                             Flexible Pricing Plans
-                            <span className="block bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">That Fit Your Needs</span>
+                            <span className="block bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">That Fit Your Needs</span>
                         </h2>
 
                         {/* Billing Toggle */}
                         <div className="flex items-center justify-center gap-4 mt-8">
-                            <span className={`text-sm font-medium ${billingPeriod === 'monthly' ? 'text-white' : 'text-purple-400'}`}>
+                            <span className={`text-sm font-medium ${billingPeriod === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>
                                 Pay Monthly
                             </span>
                             <button
                                 onClick={() => setBillingPeriod(billingPeriod === 'monthly' ? 'yearly' : 'monthly')}
-                                className="relative w-14 h-7 bg-purple-600 rounded-full transition-colors"
+                                className="relative w-14 h-7 bg-purple-500 rounded-full transition-colors shadow-md"
                             >
-                                <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${billingPeriod === 'yearly' ? 'translate-x-7' : ''}`} />
+                                <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform shadow-md ${billingPeriod === 'yearly' ? 'translate-x-7' : ''}`} />
                             </button>
-                            <span className={`text-sm font-medium ${billingPeriod === 'yearly' ? 'text-white' : 'text-purple-400'} flex items-center gap-2`}>
+                            <span className={`text-sm font-medium ${billingPeriod === 'yearly' ? 'text-gray-900' : 'text-gray-500'} flex items-center gap-2`}>
                                 Pay Yearly
                                 {billingPeriod === 'yearly' && (
-                                    <Badge className="bg-green-500 text-white text-xs">
+                                    <Badge className="bg-green-500 text-white text-xs shadow-md">
                                         Save 20%
                                     </Badge>
                                 )}
@@ -1056,39 +1056,39 @@ export default function LandingPage() {
                         {pricingPlans.map((plan, index) => (
                             <Card
                                 key={index}
-                                className={`relative overflow-hidden border-2 transition-all duration-500 hover:scale-105 ${plan.popular
-                                    ? 'border-purple-500 bg-purple-950/70 scale-105'
-                                    : 'border-purple-500/30 bg-purple-950/50 hover:border-purple-500/50'
+                                className={`relative overflow-hidden border-2 transition-all duration-500 hover:scale-105 shadow-lg ${plan.popular
+                                    ? 'border-purple-400 bg-gradient-to-br from-purple-50 to-pink-50 scale-105 shadow-xl shadow-purple-300/50'
+                                    : 'border-purple-200 bg-white hover:border-purple-300 hover:shadow-xl'
                                     } backdrop-blur-sm`}
                             >
                                 {plan.popular && (
-                                    <div className="absolute top-0 right-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1 text-xs font-bold rounded-bl-lg">
+                                    <div className="absolute top-0 right-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 text-xs font-bold rounded-bl-lg shadow-md">
                                         Popular
                                     </div>
                                 )}
                                 <CardContent className="p-8">
                                     <div className="mb-6">
-                                        <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">{plan.name}</h3>
+                                        <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">{plan.name}</h3>
                                         <div className="flex items-baseline gap-2 mb-4">
-                                            <span className="text-5xl font-black text-white">{plan.price}</span>
-                                            <span className="text-purple-300">/{plan.period}</span>
+                                            <span className="text-5xl font-black text-gray-900">{plan.price}</span>
+                                            <span className="text-gray-600">/{plan.period}</span>
                                         </div>
-                                        <p className="text-sm text-purple-400">*Billed monthly until cancelled</p>
+                                        <p className="text-sm text-gray-500">*Billed monthly until cancelled</p>
                                     </div>
-                                    <p className="text-purple-300 mb-6">{plan.description}</p>
+                                    <p className="text-gray-600 mb-6">{plan.description}</p>
                                     <ul className="space-y-4 mb-8">
                                         {plan.features.map((feature, idx) => (
                                             <li key={idx} className="flex items-start gap-3">
-                                                <CheckCircle2 className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
-                                                <span className="text-sm text-purple-200">{feature}</span>
+                                                <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                                <span className="text-sm text-gray-700">{feature}</span>
                                             </li>
                                         ))}
                                     </ul>
                                     <Button
                                         onClick={() => router.push('/signup')}
                                         className={`w-full ${plan.popular
-                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
-                                            : 'bg-purple-900/50 hover:bg-purple-800/50 text-purple-200 border border-purple-500/50'
+                                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-300/50'
+                                            : 'bg-white hover:bg-purple-50 text-purple-700 border-2 border-purple-300 hover:border-purple-400 shadow-md'
                                             }`}
                                     >
                                         {plan.cta}
@@ -1101,20 +1101,20 @@ export default function LandingPage() {
             </section>
 
             {/* FAQ Section */}
-            <section id="faq" className="relative py-32 overflow-hidden">
+            <section id="faq" className="relative py-32 overflow-hidden bg-gradient-to-br from-purple-50/50 to-pink-50/50">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/50 mb-6">
-                            <MessageSquare className="mr-2 h-4 w-4" />
+                        <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md mb-6">
+                            <MessageSquare className="mr-2 h-4 w-4 text-purple-600" />
                             Frequently Asked Questions
                         </Badge>
-                        <h2 className="text-5xl font-black mb-4">
+                        <h2 className="text-5xl font-black mb-4 text-gray-900">
                             Questions About Our
-                            <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                            <span className="block bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
                                 wrkportal.com Platform?
                             </span>
                         </h2>
-                        <p className="text-xl text-purple-400 mt-4">We have Answers!</p>
+                        <p className="text-xl text-purple-600 mt-4 font-medium">We have Answers!</p>
                     </div>
 
                     <div className="max-w-4xl mx-auto space-y-4">
@@ -1132,45 +1132,45 @@ export default function LandingPage() {
             </section>
 
             {/* Final CTA */}
-            <section className="relative py-32 overflow-hidden bg-gradient-to-r from-purple-950/50 to-pink-950/50">
+            <section className="relative py-32 overflow-hidden bg-gradient-to-r from-purple-100/80 to-pink-100/80">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <Card className="relative overflow-hidden border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-black/50 backdrop-blur-sm">
+                    <Card className="relative overflow-hidden border-2 border-purple-200 bg-white/95 backdrop-blur-sm shadow-2xl">
                         <CardContent className="relative p-16 sm:p-24 text-center">
-                            <div className="inline-flex items-center gap-2 mb-6 px-6 py-3 bg-purple-500/20 backdrop-blur-sm rounded-full border border-purple-500/50">
-                                <Brain className="h-5 w-5 text-purple-300" />
-                                <span className="text-purple-200 font-semibold">AI-Powered Business Platform</span>
+                            <div className="inline-flex items-center gap-2 mb-6 px-6 py-3 bg-gradient-to-r from-purple-100 to-pink-100 backdrop-blur-sm rounded-full border border-purple-300 shadow-md">
+                                <Brain className="h-5 w-5 text-purple-600" />
+                                <span className="text-purple-700 font-semibold">AI-Powered Business Platform</span>
                             </div>
-                            <h2 className="text-5xl font-black text-white sm:text-6xl mb-6">
+                            <h2 className="text-5xl font-black text-gray-900 sm:text-6xl mb-6">
                                 Ready to Transform
-                                <span className="block bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Your Entire Business?</span>
+                                <span className="block bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Your Entire Business?</span>
                             </h2>
-                            <p className="text-xl text-purple-200 mb-6 max-w-3xl mx-auto">
+                            <p className="text-xl text-gray-700 mb-6 max-w-3xl mx-auto">
                                 Join thousands of teams using wrkportal.com to manage projects, drive sales, optimize finance, streamline operations, recruit talent, and deliver exceptional customer service.
                             </p>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10 max-w-2xl mx-auto">
                                 <div className="text-center">
-                                    <div className="text-3xl font-bold text-white mb-1">500+</div>
-                                    <div className="text-sm text-purple-300">Companies</div>
+                                    <div className="text-3xl font-bold text-gray-900 mb-1">500+</div>
+                                    <div className="text-sm text-gray-600">Companies</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-3xl font-bold text-white mb-1">50K+</div>
-                                    <div className="text-sm text-purple-300">Active Users</div>
+                                    <div className="text-3xl font-bold text-gray-900 mb-1">50K+</div>
+                                    <div className="text-sm text-gray-600">Active Users</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="text-3xl font-bold text-white mb-1">99.9%</div>
-                                    <div className="text-sm text-purple-300">Uptime</div>
+                                    <div className="text-3xl font-bold text-gray-900 mb-1">99.9%</div>
+                                    <div className="text-sm text-gray-600">Uptime</div>
                                 </div>
                             </div>
                             <Button
                                 size="lg"
                                 onClick={() => router.push('/signup')}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg px-12 py-7 font-bold"
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg px-12 py-7 font-bold shadow-2xl shadow-purple-300/50"
                             >
                                 <Sparkles className="mr-2 h-5 w-5" />
                                 Start Your Free Trial
                                 <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
-                            <p className="mt-6 text-purple-300 text-sm">
+                            <p className="mt-6 text-gray-600 text-sm">
                                 Free trial available • No credit card required • Full AI access
                             </p>
                         </CardContent>
@@ -1179,18 +1179,18 @@ export default function LandingPage() {
             </section>
 
             {/* Contact Us Section */}
-            <section className="relative py-24 overflow-hidden bg-purple-950/30">
+            <section className="relative py-24 overflow-hidden bg-white">
                 <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="max-w-4xl mx-auto">
                         <div className="text-center mb-12">
-                            <Badge className="mb-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0">
+                            <Badge className="mb-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 shadow-md">
                                 <MessageSquare className="mr-1 h-3 w-3" />
                                 Get In Touch
                             </Badge>
-                            <h2 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                            <h2 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                                 Contact Us
                             </h2>
-                            <p className="text-lg text-purple-300 max-w-2xl mx-auto">
+                            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                                 Have a question, suggestion, or want to discuss pricing? We'd love to hear from you!
                             </p>
                         </div>
@@ -1200,7 +1200,7 @@ export default function LandingPage() {
             </section>
 
             {/* Footer */}
-            <footer className="relative border-t border-purple-500/30 py-16 bg-black/50 backdrop-blur-sm">
+            <footer className="relative border-t border-purple-200 py-16 bg-white/95 backdrop-blur-sm">
                 <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
                         <div className="md:col-span-2">
@@ -1214,26 +1214,26 @@ export default function LandingPage() {
                                     />
                                 </div>
                             </div>
-                            <p className="text-sm text-purple-300 max-w-md leading-relaxed mb-4">
+                            <p className="text-sm text-gray-600 max-w-md leading-relaxed mb-4">
                                 Transform your entire business with artificial intelligence. Manage projects, drive sales, optimize finance, streamline operations, recruit talent, and deliver exceptional customer service - all in one platform.
                             </p>
                         </div>
                     </div>
 
-                    <div className="pt-8 border-t border-purple-500/30">
+                    <div className="pt-8 border-t border-purple-200">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="flex items-center gap-6 text-sm text-purple-400">
-                                <Link href="/privacy" className="hover:text-purple-300 transition-colors">
+                            <div className="flex items-center gap-6 text-sm text-gray-600">
+                                <Link href="/privacy" className="hover:text-purple-600 transition-colors">
                                     Privacy Policy
                                 </Link>
-                                <Link href="/terms" className="hover:text-purple-300 transition-colors">
+                                <Link href="/terms" className="hover:text-purple-600 transition-colors">
                                     Terms of Service
                                 </Link>
-                                <Link href="/security" className="hover:text-purple-300 transition-colors">
+                                <Link href="/security" className="hover:text-purple-600 transition-colors">
                                     Security
                                 </Link>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-purple-400">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
                                 <p>&copy; 2026 wrkportal.com</p>
                             </div>
                         </div>
