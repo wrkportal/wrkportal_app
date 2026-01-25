@@ -166,16 +166,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (!tenant) {
             console.log('[OAuth] STEP 2.1: Tenant not found, creating new tenant...')
             try {
+              // Use raw SQL to create tenant, avoiding Prisma's schema validation
+              // This works around missing columns like ssoEnabled that may not exist in DB yet
               tenant = await withRetry(
-                () => (prisma as any).tenant.create({
-                  data: {
-                    name: `${profile.name || email}'s Organization`,
-                    domain: domain,
-                    // Only include fields that exist in database
-                    // ssoEnabled and other fields with defaults will be handled by database defaults
-                  },
-                  select: { id: true, name: true },
-                }),
+                async () => {
+                  const tenantId = `tenant_${Date.now()}_${Math.random().toString(36).substring(7)}`
+                  const tenantName = `${profile.name || email}'s Organization`
+                  
+                  // Insert using raw SQL to avoid Prisma schema validation
+                  await prisma.$executeRaw`
+                    INSERT INTO "Tenant" (id, name, domain, "createdAt", "updatedAt")
+                    VALUES (${tenantId}, ${tenantName}, ${domain}, NOW(), NOW())
+                    ON CONFLICT (domain) DO NOTHING
+                  `
+                  
+                  // Fetch the created tenant
+                  const created = await prisma.tenant.findFirst({
+                    where: { domain },
+                    select: { id: true, name: true },
+                  })
+                  
+                  if (!created) {
+                    // If domain conflict, try to find existing
+                    return await prisma.tenant.findFirst({
+                      where: { domain },
+                      select: { id: true, name: true },
+                    })
+                  }
+                  
+                  return created
+                },
                 'Create Tenant',
                 3,
                 1000
