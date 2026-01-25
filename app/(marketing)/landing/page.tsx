@@ -196,11 +196,11 @@ const FloatingFeatureCard = ({
         >
             <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${gradient} ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
                 } transition-opacity duration-300`}></div>
-            <div className="relative px-6 py-4 flex items-center justify-center min-h-[60px]">
+            <div className="relative px-4 lg:px-5 py-3 lg:py-3.5 flex items-center justify-center min-h-[50px] lg:min-h-[55px]">
                 {isSelected && (
                     <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-10`}></div>
                 )}
-                <h3 className={`relative text-base font-semibold text-center transition-all duration-300 ${isSelected
+                <h3 className={`relative text-sm lg:text-base font-semibold text-center transition-all duration-300 ${isSelected
                     ? 'text-purple-700'
                     : 'text-purple-600 group-hover:text-purple-700'
                     }`}>
@@ -412,7 +412,7 @@ export default function LandingPage() {
     const router = useRouter()
     const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly')
     const [openFAQ, setOpenFAQ] = useState<number | null>(1)
-    const [selectedCategory, setSelectedCategory] = useState<'projects' | 'reporting' | 'clients' | 'tasks'>('projects')
+    const [selectedCategory, setSelectedCategory] = useState<'projects' | 'reporting' | 'clients' | 'tasks' | 'sales' | 'finance' | 'ops' | 'hr' | 'it' | 'customer-service'>('projects')
 
     useEffect(() => {
         markAsVisited()
@@ -448,6 +448,48 @@ export default function LandingPage() {
             { icon: Zap, title: "Task Automation", description: "Automate recurring tasks and workflows" },
             { icon: CheckCircle2, title: "Status Management", description: "Track task status and completion" },
             { icon: Users, title: "Task Assignment", description: "Assign and delegate tasks to team members" },
+        ],
+        sales: [
+            { icon: TrendingUp, title: "Lead Management", description: "Track and manage sales leads through the pipeline" },
+            { icon: Target, title: "Sales Forecasting", description: "Predict sales outcomes with AI-powered analytics" },
+            { icon: Users, title: "CRM Integration", description: "Seamlessly connect with your CRM systems" },
+            { icon: BarChart3, title: "Sales Analytics", description: "Comprehensive sales performance insights" },
+            { icon: CheckCircle2, title: "Deal Tracking", description: "Monitor deals and opportunities in real-time" },
+        ],
+        finance: [
+            { icon: DollarSign, title: "Budget Management", description: "Create and track budgets across projects" },
+            { icon: BarChart3, title: "Financial Reporting", description: "Generate detailed financial reports and statements" },
+            { icon: TrendingUp, title: "Revenue Tracking", description: "Monitor revenue streams and financial health" },
+            { icon: FileText, title: "Invoice Management", description: "Create, send, and track invoices efficiently" },
+            { icon: Shield, title: "Compliance", description: "Ensure financial compliance and audit readiness" },
+        ],
+        ops: [
+            { icon: Activity, title: "Operations Dashboard", description: "Real-time view of operational metrics" },
+            { icon: Zap, title: "Process Automation", description: "Automate operational workflows and processes" },
+            { icon: Network, title: "Resource Management", description: "Optimize resource allocation and utilization" },
+            { icon: Target, title: "Performance Monitoring", description: "Track operational KPIs and efficiency" },
+            { icon: CheckCircle2, title: "Quality Control", description: "Maintain quality standards across operations" },
+        ],
+        hr: [
+            { icon: Users, title: "Recruitment", description: "Manage hiring process and candidate pipeline" },
+            { icon: UserCheck, title: "Employee Management", description: "Track employee information and records" },
+            { icon: Calendar, title: "Leave Management", description: "Handle time-off requests and approvals" },
+            { icon: FileText, title: "Performance Reviews", description: "Conduct and track employee evaluations" },
+            { icon: Shield, title: "Compliance", description: "Ensure HR policies and legal compliance" },
+        ],
+        it: [
+            { icon: Cpu, title: "IT Project Management", description: "Manage IT projects and development cycles" },
+            { icon: Network, title: "Infrastructure Monitoring", description: "Monitor IT infrastructure and systems" },
+            { icon: Shield, title: "Security Management", description: "Track security incidents and compliance" },
+            { icon: Database, title: "Asset Management", description: "Manage IT assets and inventory" },
+            { icon: Zap, title: "Automation", description: "Automate IT operations and deployments" },
+        ],
+        'customer-service': [
+            { icon: MessageSquare, title: "Ticket Management", description: "Handle customer support tickets efficiently" },
+            { icon: Users, title: "Customer Portal", description: "Self-service portal for customers" },
+            { icon: CheckCircle2, title: "Satisfaction Tracking", description: "Measure and improve customer satisfaction" },
+            { icon: Clock, title: "Response Time", description: "Track and optimize response times" },
+            { icon: BarChart3, title: "Service Analytics", description: "Analyze customer service performance" },
         ],
     }
 
@@ -649,14 +691,14 @@ export default function LandingPage() {
                 <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col items-center text-center max-w-6xl mx-auto">
                         {/* Badge with Animation */}
-                        <Badge className="mb-4 px-6 py-2 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md animate-fade-in-up">
-                            <Sparkles className="mr-2 h-4 w-4 animate-spin text-purple-600" style={{ animationDuration: '3s' }} />
+                        <Badge className="mb-3 lg:mb-2 px-4 lg:px-5 py-1.5 lg:py-2 text-xs lg:text-sm bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md animate-fade-in-up">
+                            <Sparkles className="mr-2 h-3 w-3 lg:h-4 lg:w-4 animate-spin text-purple-600" style={{ animationDuration: '3s' }} />
                             The Only Platform You Need
                         </Badge>
 
                         {/* Main Headline */}
-                        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight mb-4 leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-                            <span className="block text-gray-900 mb-2">One Platform for</span>
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-3 lg:mb-4 leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                            <span className="block text-gray-900 mb-1 lg:mb-2">We help you manage</span>
                             <span className="block bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
                                 <TypingFeatureText
                                     features={[
@@ -668,21 +710,21 @@ export default function LandingPage() {
                                         "IT & Development",
                                         "Customer Service"
                                     ]}
-                                    className="text-purple-400"
+                                    className="text-purple-600"
                                 />
                             </span>
                         </h1>
 
                         {/* Subheadline */}
-                        <p className="text-xl sm:text-2xl md:text-3xl text-gray-700 mb-4 max-w-4xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                        <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-700 mb-3 lg:mb-4 max-w-4xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                             The all-in-one platform for Project Management, Sales, Finance, Ops Management, Recruitment, IT, and Customer Service
-                            <span className="block mt-2 text-lg text-purple-600 font-medium">
+                            <span className="block mt-1 lg:mt-2 text-sm lg:text-lg text-purple-600 font-medium">
                                 Everything your business needs, powered by AI
                             </span>
                         </p>
 
                         {/* Feature Cards Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 my-8 w-full max-w-5xl animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-4 my-6 lg:my-8 w-full max-w-6xl animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                             <FloatingFeatureCard
                                 title="Projects"
                                 gradient="from-purple-600 to-pink-600"
@@ -706,6 +748,42 @@ export default function LandingPage() {
                                 gradient="from-indigo-600 to-blue-600"
                                 onClick={() => setSelectedCategory('tasks')}
                                 isSelected={selectedCategory === 'tasks'}
+                            />
+                            <FloatingFeatureCard
+                                title="Sales"
+                                gradient="from-green-600 to-emerald-600"
+                                onClick={() => setSelectedCategory('sales')}
+                                isSelected={selectedCategory === 'sales'}
+                            />
+                            <FloatingFeatureCard
+                                title="Finance"
+                                gradient="from-yellow-600 to-orange-600"
+                                onClick={() => setSelectedCategory('finance')}
+                                isSelected={selectedCategory === 'finance'}
+                            />
+                            <FloatingFeatureCard
+                                title="Ops"
+                                gradient="from-cyan-600 to-blue-600"
+                                onClick={() => setSelectedCategory('ops')}
+                                isSelected={selectedCategory === 'ops'}
+                            />
+                            <FloatingFeatureCard
+                                title="HR"
+                                gradient="from-rose-600 to-pink-600"
+                                onClick={() => setSelectedCategory('hr')}
+                                isSelected={selectedCategory === 'hr'}
+                            />
+                            <FloatingFeatureCard
+                                title="IT"
+                                gradient="from-violet-600 to-purple-600"
+                                onClick={() => setSelectedCategory('it')}
+                                isSelected={selectedCategory === 'it'}
+                            />
+                            <FloatingFeatureCard
+                                title="Support"
+                                gradient="from-teal-600 to-cyan-600"
+                                onClick={() => setSelectedCategory('customer-service')}
+                                isSelected={selectedCategory === 'customer-service'}
                             />
                         </div>
 
