@@ -32,13 +32,16 @@ import { canInviteUsers } from "@/lib/permissions"
 import { WorkspaceType, UserRole, GroupRole } from "@/types"
 
 export function Header() {
-    const user = useAuthStore((state) => state.user)
+    const { user, isHydrated } = useAuthStore((state) => ({ user: state.user, isHydrated: state.isHydrated }))
     const logout = useAuthStore((state) => state.logout)
     const toggleSidebar = useUIStore((state) => state.toggleSidebar)
     const router = useRouter()
     const [alertsCount, setAlertsCount] = useState(0)
     const [inviteModalOpen, setInviteModalOpen] = useState(false)
     const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
+    
+    // Show user profile once hydrated (even if user is still loading)
+    const showUserProfile = isHydrated && user !== null
 
     // Fetch alerts count
     useEffect(() => {
@@ -214,7 +217,7 @@ export function Header() {
                         </TooltipProvider>
                     )}
                     
-                    {user ? (
+                    {showUserProfile && user ? (
                         <>
                             <Button
                                 variant="ghost"

@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useUIStore } from '@/stores/uiStore'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore, fetchAuthenticatedUser } from '@/stores/authStore'
 import { Header } from './header'
 import { Sidebar } from './sidebar'
 import { AIDataQueryWidget } from '@/components/ai/ai-data-query-widget'
@@ -12,7 +12,37 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const router = useRouter()
     const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed)
-    const user = useAuthStore((state) => state.user)
+    const { user, setUser, isHydrated } = useAuthStore()
+    const [isLoadingUser, setIsLoadingUser] = useState(true)
+
+    // Fetch user on mount if not already loaded
+    useEffect(() => {
+        const loadUser = async () => {
+            if (!isHydrated) {
+                return
+            }
+
+            // If user is already in store, we're done
+            if (user) {
+                setIsLoadingUser(false)
+                return
+            }
+
+            // Try to fetch user
+            try {
+                const fetchedUser = await fetchAuthenticatedUser(true)
+                if (fetchedUser) {
+                    setUser(fetchedUser)
+                }
+            } catch (error) {
+                console.error('Error loading user:', error)
+            } finally {
+                setIsLoadingUser(false)
+            }
+        }
+
+        loadUser()
+    }, [isHydrated, user, setUser])
 
     // Check if current page is an auth page or public marketing page
     const isAuthPage =

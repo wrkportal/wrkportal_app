@@ -1110,12 +1110,29 @@ export function Sidebar() {
         }
     }, [user, sidebarOpen, setSidebarOpen])
 
-    // Render immediately but with opacity transition to sync with header
-    // This prevents the sidebar from appearing after the header
-    if (!user) return null
+    // Always render sidebar structure, but hide if no user after hydration
+    // This prevents layout shift and ensures sidebar appears when user loads
+    const shouldShow = user !== null && isMounted
     
     // Use opacity transition instead of conditional rendering for better sync
-    const sidebarStyle = !isMounted ? { opacity: 0 } : { opacity: 1, transition: 'opacity 0.2s ease-in' }
+    const sidebarStyle = !shouldShow ? { opacity: 0, pointerEvents: 'none' as const } : { opacity: 1, transition: 'opacity 0.2s ease-in' }
+    
+    // Don't render sidebar content if no user (but keep structure to prevent layout shift)
+    if (!user) {
+        // Return minimal structure to prevent layout shift
+        return (
+            <aside 
+                className={cn(
+                    "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card/95 backdrop-blur-xl transition-all duration-300 shadow-sm",
+                    "md:translate-x-0",
+                    "-translate-x-full",
+                    sidebarCollapsed ? "w-14" : "w-56"
+                )}
+                style={{ opacity: 0, pointerEvents: 'none' }}
+                aria-hidden="true"
+            />
+        )
+    }
 
     // Be robust if user.role isn't hydrated yet or not properly set
     const effectiveRole = (user.role && Object.values(UserRole).includes(user.role as UserRole))
