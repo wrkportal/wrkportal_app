@@ -171,12 +171,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               tenant = await withRetry(
                 async () => {
                   const tenantName = `${profile.name || email}'s Organization`
+                  // Generate a simple unique ID (Prisma uses cuid() but we'll use timestamp-based)
+                  const tenantId = `cl${Date.now()}${Math.random().toString(36).substring(2, 11)}`
                   
-                  // Insert using raw SQL, letting database generate ID via default
-                  // Only insert fields that definitely exist (name, domain)
+                  // Insert using raw SQL, only including fields that definitely exist
+                  // Only insert fields that definitely exist (id, name, domain)
                   await prisma.$executeRaw`
-                    INSERT INTO "Tenant" (name, domain, "createdAt", "updatedAt")
-                    VALUES (${tenantName}, ${domain}, NOW(), NOW())
+                    INSERT INTO "Tenant" (id, name, domain, "createdAt", "updatedAt")
+                    VALUES (${tenantId}, ${tenantName}, ${domain}, NOW(), NOW())
                     ON CONFLICT (domain) DO NOTHING
                   `
                   
