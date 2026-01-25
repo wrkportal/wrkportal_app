@@ -59,7 +59,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { email, role = UserRole.TEAM_MEMBER, allowedSections } = body
+    const { 
+      email, 
+      role = UserRole.TEAM_MEMBER, 
+      allowedSections,
+      accessLevel,
+      dataScope,
+      dataScopeValue,
+      accessExpiresAt,
+      requireMFA,
+      enableAuditLog,
+      functionAccess,
+    } = body
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
@@ -110,19 +121,41 @@ export async function POST(req: NextRequest) {
     const token = generateVerificationCode()
 
     // Create invitation (expires in 7 days)
-    // Store allowedSections as JSON string if provided
+    // Store allowedSections and additional security settings as JSON
+    const invitationData: any = {
+      tenantId: session.user.tenantId,
+      email: email.toLowerCase(),
+      token,
+      role: role as UserRole,
+      invitedById: session.user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      allowedSections: allowedSections && Array.isArray(allowedSections) 
+        ? JSON.stringify(allowedSections) 
+        : null,
+    }
+
+    // Store additional access control settings in a JSON field
+    // Note: You may need to add an 'accessSettings' JSON field to TenantInvitation model
+    const accessSettings: any = {}
+    if (accessLevel) accessSettings.accessLevel = accessLevel
+    if (dataScope) accessSettings.dataScope = dataScope
+    if (dataScopeValue) accessSettings.dataScopeValue = dataScopeValue
+    if (accessExpiresAt) accessSettings.accessExpiresAt = accessExpiresAt
+    if (requireMFA !== undefined) accessSettings.requireMFA = requireMFA
+    if (enableAuditLog !== undefined) accessSettings.enableAuditLog = enableAuditLog
+    if (functionAccess) accessSettings.functionAccess = functionAccess
+
+    // Store access settings in allowedSections field as JSON for now
+    // In production, you'd want a separate JSON field in the schema
+    if (Object.keys(accessSettings).length > 0) {
+      invitationData.allowedSections = JSON.stringify({
+        sections: allowedSections || [],
+        settings: accessSettings,
+      })
+    }
+
     const invitation = await prisma.tenantInvitation.create({
-      data: {
-        tenantId: session.user.tenantId,
-        email: email.toLowerCase(),
-        token,
-        role: role as UserRole,
-        invitedById: session.user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        allowedSections: allowedSections && Array.isArray(allowedSections) 
-          ? JSON.stringify(allowedSections) 
-          : null,
-      } as any,
+      data: invitationData,
       include: {
         invitedBy: {
           select: {
