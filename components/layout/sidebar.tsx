@@ -1103,9 +1103,16 @@ export function Sidebar() {
         }
     }, [user, isMounted])
 
+    // Ensure sidebar is open when user is logged in
+    useEffect(() => {
+        if (user && !sidebarOpen) {
+            setSidebarOpen(true)
+        }
+    }, [user, sidebarOpen, setSidebarOpen])
+
     // Render immediately but with opacity transition to sync with header
     // This prevents the sidebar from appearing after the header
-    if (!user || !sidebarOpen) return null
+    if (!user) return null
     
     // Use opacity transition instead of conditional rendering for better sync
     const sidebarStyle = !isMounted ? { opacity: 0 } : { opacity: 1, transition: 'opacity 0.2s ease-in' }
