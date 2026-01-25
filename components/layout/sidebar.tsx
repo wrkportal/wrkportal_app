@@ -1114,10 +1114,48 @@ export function Sidebar() {
     // Special case: sandeep200680@gmail.com sees all pages
     const isSuperUser = user?.email === 'sandeep200680@gmail.com' || user?.email?.includes('sandeep200680@gmail')
 
+    // Parse allowed sections from user (stored as JSON string or null)
+    let allowedSections: string[] | null = null
+    if (user && (user as any).allowedSections) {
+        try {
+            const parsed = typeof (user as any).allowedSections === 'string' 
+                ? JSON.parse((user as any).allowedSections) 
+                : (user as any).allowedSections
+            allowedSections = Array.isArray(parsed) ? parsed : null
+        } catch (e) {
+            allowedSections = null
+        }
+    }
+
+    // Map section titles to hrefs for permission checking
+    const sectionMap: Record<string, string> = {
+        'Finance': '/finance-dashboard',
+        'Sales': '/sales-dashboard',
+        'Operations': '/operations-dashboard',
+        'Developer': '/developer-dashboard',
+        'IT Services': '/it-dashboard',
+        'Customer Service': '/customer-service-dashboard',
+        'Projects': '/product-management',
+        'Recruitment': '/recruitment-dashboard',
+    }
+
     const filteredItems = navigationItems.filter((item) => {
         // Super user sees everything
         if (isSuperUser) return true
-        // Ensure roles array exists and contains the user's role
+        
+        // If user has allowedSections set (not null), check if this section is allowed
+        if (allowedSections !== null) {
+            // If allowedSections is empty array, user has no access
+            if (allowedSections.length === 0) {
+                // Only show wrkboard and collaborate
+                return item.title === 'wrkboard' || item.title === 'Collaborate'
+            }
+            // Check if this section is in the allowed list
+            return allowedSections.includes(item.title) || item.title === 'wrkboard' || item.title === 'Collaborate'
+        }
+        
+        // If allowedSections is null, user has full access (first-time signup)
+        // Check role-based access as fallback
         return item.roles && Array.isArray(item.roles) && item.roles.includes(effectiveRole)
     })
 

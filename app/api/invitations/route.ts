@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { email, role = UserRole.TEAM_MEMBER } = body
+    const { email, role = UserRole.TEAM_MEMBER, allowedSections } = body
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
@@ -83,10 +83,10 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         )
       } else {
-        return NextResponse.json(
-          { error: 'User already has an account with another organization' },
-          { status: 400 }
-        )
+        // User exists in another tenant - allow cross-tenant invitation
+        // This allows User A from Tenant A to invite User B from Tenant B
+        // User B will have access to Tenant A's data based on allowedSections
+        console.log(`[Invitation] Cross-tenant invitation: ${email} from tenant ${existingUser.tenantId} invited to tenant ${session.user.tenantId}`)
       }
     }
 
@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
     const token = generateVerificationCode()
 
     // Create invitation (expires in 7 days)
+    // Store allowedSections as JSON string if provided
     const invitation = await prisma.tenantInvitation.create({
       data: {
         tenantId: session.user.tenantId,
@@ -118,7 +119,10 @@ export async function POST(req: NextRequest) {
         role: role as UserRole,
         invitedById: session.user.id,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-      },
+        allowedSections: allowedSections && Array.isArray(allowedSections) 
+          ? JSON.stringify(allowedSections) 
+          : null,
+      } as any,
       include: {
         invitedBy: {
           select: {

@@ -32,20 +32,8 @@ export default function HomePage() {
                     // Update store with fresh data
                     setUser(authenticatedUser)
 
-                    // Check if user has selected a role previously
-                    const hasSelectedRole =
-                        authenticatedUser.primaryWorkflowType !== null &&
-                        authenticatedUser.primaryWorkflowType !== undefined
-
-                    if (!hasSelectedRole) {
-                        // User hasn't selected a role - redirect to role selection
-                        window.location.href = '/onboarding/role-selection'
-                        return
-                    }
-
-                    // User has completed onboarding - redirect to their landing page
-                    const landingPage = authenticatedUser.landingPage || '/wrkboard'
-                    window.location.href = landingPage
+                    // Redirect to wrkboard (no role selection required)
+                    window.location.href = '/wrkboard'
                 } else {
                     // Not logged in or user creation failed - redirect to landing page
                     router.replace('/landing')

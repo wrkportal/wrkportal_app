@@ -30,10 +30,23 @@ interface InviteUserModalProps {
   onOpenChange: (open: boolean) => void
 }
 
+// Available sections that can be granted access to
+const AVAILABLE_SECTIONS = [
+  { id: 'Finance', label: 'Finance', href: '/finance-dashboard' },
+  { id: 'Sales', label: 'Sales', href: '/sales-dashboard' },
+  { id: 'Operations', label: 'Operations', href: '/operations-dashboard' },
+  { id: 'Developer', label: 'Developer', href: '/developer-dashboard' },
+  { id: 'IT Services', label: 'IT Services', href: '/it-dashboard' },
+  { id: 'Customer Service', label: 'Customer Service', href: '/customer-service-dashboard' },
+  { id: 'Projects', label: 'Projects', href: '/product-management' },
+  { id: 'Recruitment', label: 'Recruitment', href: '/recruitment-dashboard' },
+]
+
 export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
   const user = useAuthStore((state) => state.user)
   const [email, setEmail] = useState('')
   const [selectedRole, setSelectedRole] = useState<string>('')
+  const [selectedSections, setSelectedSections] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -81,7 +94,16 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
         payload.groupRole = selectedRole
       }
 
-      const response = await fetch('/api/invitations/send', {
+      // Add allowed sections if any are selected
+      // If no sections selected, user will have no access (empty array)
+      // If all sections selected or none selected, pass null for full access
+      if (selectedSections.length > 0 && selectedSections.length < AVAILABLE_SECTIONS.length) {
+        payload.allowedSections = selectedSections
+      }
+      // If no sections selected, pass empty array (no access except wrkboard)
+      // If all sections selected, don't pass allowedSections (null = full access)
+
+      const response = await fetch('/api/invitations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,13 +113,14 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
       const data = await response.json()
 
-      if (!response.ok || !data.success) {
+      if (!response.ok) {
         throw new Error(data.error || 'Failed to send invitation')
       }
 
       setSuccess(true)
       setEmail('')
       setSelectedRole(availableRoles[availableRoles.length - 1].value)
+      setSelectedSections([])
 
       // Close modal after a short delay
       setTimeout(() => {
@@ -117,7 +140,16 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
       setEmail('')
       setError(null)
       setSuccess(false)
+      setSelectedSections([])
     }
+  }
+
+  const toggleSection = (sectionId: string) => {
+    setSelectedSections(prev => 
+      prev.includes(sectionId)
+        ? prev.filter(id => id !== sectionId)
+        : [...prev, sectionId]
+    )
   }
 
   return (
@@ -189,11 +221,49 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label>Allowed Sections (Optional)</Label>
+              <div className="text-xs text-muted-foreground mb-2">
+                Select which sections the invited user can access. Leave empty for full access.
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-2">
+                {AVAILABLE_SECTIONS.map((section) => (
+                  <label
+                    key={section.id}
+                    className="flex items-center space-x-2 p-2 rounded hover:bg-muted cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedSections.includes(section.id)}
+                      onChange={() => toggleSection(section.id)}
+                      disabled={loading || success}
+                      className="rounded"
+                    />
+                    <span className="text-sm">{section.label}</span>
+                  </label>
+                ))}
+              </div>
+              {selectedSections.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  No sections selected = Full access (all sections)
+                </p>
+              )}
+              {selectedSections.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selectedSections.length} section(s) selected. User will only see these sections.
+                </p>
+              )}
+            </div>
+
             <div className="rounded-md bg-muted p-3 text-sm">
               <p className="text-muted-foreground">
                 💡 The invited user will receive an email with a link to join your{' '}
                 {workspaceType === WorkspaceType.ORGANIZATION ? 'organization' : 'group'}. 
                 The invitation will expire in 7 days.
+                <br />
+                <span className="block mt-1 text-amber-600">
+                  ⚠️ If the user already has an account, they will have access to your organization's data based on the selected sections.
+                </span>
               </p>
             </div>
           </div>

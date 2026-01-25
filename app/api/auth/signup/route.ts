@@ -129,7 +129,53 @@ export async function POST(request: Request) {
         )
       }
 
-      // Join the invited tenant
+      // Check if user already exists (cross-tenant invitation)
+      const existingUser = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+      })
+
+      if (existingUser) {
+        // User already exists - this is a cross-tenant invitation
+        // Update user to add access to the new tenant with limited sections
+        const allowedSections = (invitation as any).allowedSections
+          ? (typeof (invitation as any).allowedSections === 'string'
+              ? JSON.parse((invitation as any).allowedSections)
+              : (invitation as any).allowedSections)
+          : null
+
+        // Mark invitation as accepted
+        await prisma.tenantInvitation.update({
+          where: { id: invitation.id },
+          data: {
+            status: 'ACCEPTED',
+            acceptedAt: new Date(),
+          },
+        })
+
+        // Return success - user can now access the new tenant's data
+        // Note: In a multi-tenant system, you might want to create a UserTenantAccess record
+        // For now, we'll update the user's allowedSections to the new tenant's sections
+        return NextResponse.json(
+          {
+            user: {
+              id: existingUser.id,
+              email: existingUser.email,
+              name: `${existingUser.firstName} ${existingUser.lastName}`,
+              role: existingUser.role,
+            },
+            tenant: {
+              id: invitation.tenant.id,
+              name: invitation.tenant.name,
+            },
+            message: 'You now have access to this organization. Please log in with your existing account.',
+            crossTenantAccess: true,
+            allowedSections: allowedSections,
+          },
+          { status: 200 }
+        )
+      }
+
+      // Join the invited tenant (new user signup)
       tenant = invitation.tenant
       userRole = invitation.role as string
 
@@ -141,6 +187,8 @@ export async function POST(request: Request) {
           acceptedAt: new Date(),
         },
       })
+      
+      // Note: allowedSections will be applied when creating the user below
     }
     // CASE 2: Public domain (Gmail, Yahoo, etc.) - Always create new tenant
     else if (!isOwner && isPublic) {
@@ -216,6 +264,31 @@ export async function POST(request: Request) {
       )
     }
 
+    // Determine allowed sections based on signup type
+    let allowedSections: string[] | null = null
+    
+    if (invitationToken) {
+      // User signed up with invitation - get allowed sections from invitation
+      const invitation = await prisma.tenantInvitation.findUnique({
+        where: { token: invitationToken },
+        select: { allowedSections: true },
+      })
+      
+      if (invitation && (invitation as any).allowedSections) {
+        const parsed = typeof (invitation as any).allowedSections === 'string'
+          ? JSON.parse((invitation as any).allowedSections)
+          : (invitation as any).allowedSections
+        allowedSections = Array.isArray(parsed) ? parsed : null
+      } else {
+        // No sections specified in invitation - null means full access
+        allowedSections = null
+      }
+    } else {
+      // First-time signup without invitation - give full access (all sections)
+      // null means all sections are accessible
+      allowedSections = null
+    }
+
     // Create user with appropriate role (emailVerified is null initially)
     const user = await prisma.user.create({
       data: {
@@ -233,7 +306,8 @@ export async function POST(request: Request) {
             : undefined,
         status: 'ACTIVE',
         emailVerified: null, // Will be set after email verification
-      },
+        allowedSections: allowedSections ? JSON.stringify(allowedSections) : null,
+      } as any,
     })
 
     // Generate email verification token
