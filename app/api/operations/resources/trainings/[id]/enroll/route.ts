@@ -4,6 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsTraining model
+function getOperationsTraining() {
+  return (prisma as any).operationsTraining as any
+}
+
+// Helper function to safely access operationsTrainingEnrollment model
+function getOperationsTrainingEnrollment() {
+  return (prisma as any).operationsTrainingEnrollment as any
+}
+
 const enrollSchema = z.object({
   employeeId: z.string().min(1),
 })
@@ -21,8 +31,17 @@ export async function POST(
         const body = await request.json()
         const validatedData = enrollSchema.parse(body)
 
+        const operationsTraining = getOperationsTraining()
+        const operationsTrainingEnrollment = getOperationsTrainingEnrollment()
+        if (!operationsTraining || !operationsTrainingEnrollment) {
+          return NextResponse.json(
+            { error: 'Operations training models not available' },
+            { status: 503 }
+          )
+        }
+
         // Verify training exists
-        const training = await prisma.operationsTraining.findFirst({
+        const training = await operationsTraining.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -52,7 +71,7 @@ export async function POST(
         }
 
         // Check if already enrolled
-        const existing = await prisma.operationsTrainingEnrollment.findFirst({
+        const existing = await operationsTrainingEnrollment.findFirst({
           where: {
             trainingId: params.id,
             employeeId: validatedData.employeeId,
@@ -67,7 +86,7 @@ export async function POST(
           )
         }
 
-        const enrollment = await prisma.operationsTrainingEnrollment.create({
+        const enrollment = await operationsTrainingEnrollment.create({
           data: {
             trainingId: params.id,
             employeeId: validatedData.employeeId,

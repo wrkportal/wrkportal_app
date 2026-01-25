@@ -98,7 +98,7 @@ export async function GET(
     })
 
     // Calculate progress for database tasks
-    const tasksWithProgress = tasks.map(task => ({
+    const tasksWithProgress = tasks.map((task: any) => ({
       ...task,
       progress: task.status === 'DONE' ? 100 : task.status === 'IN_PROGRESS' ? 50 : 0,
     }))

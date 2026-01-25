@@ -27,8 +27,9 @@ export function ErrorMessage({
   variant = 'destructive',
   className,
 }: ErrorMessageProps) {
+  const alertVariant = variant === 'warning' ? 'default' : variant
   return (
-    <Alert variant={variant} className={cn('relative', className)}>
+    <Alert variant={alertVariant} className={cn('relative', className)}>
       <AlertCircle className="h-4 w-4" />
       <AlertTitle className="flex items-center justify-between">
         <span>{title || 'Error'}</span>

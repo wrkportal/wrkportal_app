@@ -4,6 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsShift model
+function getOperationsShift() {
+  return (prisma as any).operationsShift as any
+}
+
+// Helper function to safely access operationsShiftAssignment model
+function getOperationsShiftAssignment() {
+  return (prisma as any).operationsShiftAssignment as any
+}
+
 const createShiftSchema = z.object({
   name: z.string().min(1),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/), // HH:mm format
@@ -36,7 +46,16 @@ export async function GET(req: NextRequest) {
           where.status = status
         }
 
-        const shifts = await prisma.operationsShift.findMany({
+        const operationsShift = getOperationsShift()
+        const operationsShiftAssignment = getOperationsShiftAssignment()
+        if (!operationsShift || !operationsShiftAssignment) {
+          return NextResponse.json(
+            { error: 'Operations shift models not available' },
+            { status: 503 }
+          )
+        }
+
+        const shifts = await (operationsShift as any).findMany({
           where,
           include: {
             shiftAssignments: includeAssignments ? {
@@ -63,8 +82,8 @@ export async function GET(req: NextRequest) {
         // Calculate stats
         const stats = {
           total: shifts.length,
-          active: shifts.filter(s => s.status === 'ACTIVE').length,
-          totalEmployees: await prisma.operationsShiftAssignment.count({
+          active: shifts.filter((s: any) => s.status === 'ACTIVE').length,
+          totalEmployees: await (operationsShiftAssignment as any).count({
             where: {
               tenantId: userInfo.tenantId,
               endDate: null,
@@ -73,11 +92,11 @@ export async function GET(req: NextRequest) {
         }
 
         const shiftsWithEmployees = await Promise.all(
-          shifts.map(async shift => ({
+          shifts.map(async (shift: any) => ({
             ...shift,
             employees: includeAssignments && shift.shiftAssignments
               ? shift.shiftAssignments.length
-              : await prisma.operationsShiftAssignment.count({
+              : await (operationsShiftAssignment as any).count({
                   where: {
                     shiftId: shift.id,
                     tenantId: userInfo.tenantId,
@@ -112,7 +131,15 @@ export async function POST(req: NextRequest) {
         const body = await request.json()
         const validatedData = createShiftSchema.parse(body)
 
-        const shift = await prisma.operationsShift.create({
+        const operationsShift = getOperationsShift()
+        if (!operationsShift) {
+          return NextResponse.json(
+            { error: 'Operations shift model not available' },
+            { status: 503 }
+          )
+        }
+
+        const shift = await (operationsShift as any).create({
           data: {
             name: validatedData.name,
             startTime: validatedData.startTime,

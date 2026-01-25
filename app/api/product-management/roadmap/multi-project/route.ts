@@ -106,7 +106,7 @@ export async function GET(req: NextRequest) {
 
           // Enrich dependencies with project names
           dependencies = await Promise.all(
-            deps.map(async (dep) => {
+            deps.map(async (dep: any) => {
               let sourceName = 'Unknown'
               let targetName = 'Unknown'
 
@@ -136,20 +136,20 @@ export async function GET(req: NextRequest) {
         }
 
         // Build roadmap timeline
-        const roadmapItems = projects.map((project) => {
+        const roadmapItems = projects.map((project: any) => {
           const releases = project.releases || []
           const sprints = project.sprints || []
           const tasks = project.tasks || []
 
           // Calculate project metrics
           const totalTasks = tasks.length
-          const completedTasks = tasks.filter((t) => t.status === 'DONE').length
-          const blockedTasks = tasks.filter((t) => t.status === 'BLOCKED').length
+          const completedTasks = tasks.filter((t: any) => t.status === 'DONE').length
+          const blockedTasks = tasks.filter((t: any) => t.status === 'BLOCKED').length
           const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
           // Get project dependencies
           const projectDeps = dependencies.filter(
-            (d) =>
+            (d: any) =>
               (d.sourceType === 'PROJECT' && d.sourceId === project.id) ||
               (d.targetType === 'PROJECT' && d.targetId === project.id)
           )
@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
           const resourceAllocation = {
             totalTasks,
             completedTasks,
-            inProgressTasks: tasks.filter((t) => t.status === 'IN_PROGRESS').length,
+            inProgressTasks: tasks.filter((t: any) => t.status === 'IN_PROGRESS').length,
             blockedTasks,
           }
 
@@ -171,7 +171,7 @@ export async function GET(req: NextRequest) {
             startDate: project.startDate,
             endDate: project.endDate,
             progress,
-            releases: releases.map((r) => ({
+            releases: releases.map((r: any) => ({
               id: r.id,
               name: r.name,
               version: r.version,
@@ -180,9 +180,9 @@ export async function GET(req: NextRequest) {
               status: r.status,
               progress: r.progress || 0,
               totalTasks: r.tasks.length,
-              completedTasks: r.tasks.filter((t) => t.status === 'DONE').length,
+              completedTasks: r.tasks.filter((t: any) => t.status === 'DONE').length,
             })),
-            sprints: sprints.map((s) => ({
+            sprints: sprints.map((s: any) => ({
               id: s.id,
               name: s.name,
               startDate: s.startDate,
@@ -191,8 +191,8 @@ export async function GET(req: NextRequest) {
               progress: s.progress || 0,
               totalPoints: s.storyPoints || 0,
               completedPoints: s.tasks
-                .filter((t) => t.status === 'DONE')
-                .reduce((sum, t) => sum + (t.estimatedHours || 0), 0),
+                .filter((t: any) => t.status === 'DONE')
+                .reduce((sum: number, t: any) => sum + (t.estimatedHours || 0), 0),
             })),
             dependencies: projectDeps,
             resourceAllocation,
@@ -202,13 +202,13 @@ export async function GET(req: NextRequest) {
         // Calculate timeline statistics
         const stats = {
           totalProjects: roadmapItems.length,
-          activeProjects: roadmapItems.filter((p) => p.status === 'IN_PROGRESS').length,
-          plannedProjects: roadmapItems.filter((p) => p.status === 'PLANNING' || p.status === 'PLANNED').length,
-          totalReleases: roadmapItems.reduce((sum, p) => sum + p.releases.length, 0),
-          totalSprints: roadmapItems.reduce((sum, p) => sum + p.sprints.length, 0),
+          activeProjects: roadmapItems.filter((p: any) => p.status === 'IN_PROGRESS').length,
+          plannedProjects: roadmapItems.filter((p: any) => p.status === 'PLANNING' || p.status === 'PLANNED').length,
+          totalReleases: roadmapItems.reduce((sum: number, p: any) => sum + p.releases.length, 0),
+          totalSprints: roadmapItems.reduce((sum: number, p: any) => sum + p.sprints.length, 0),
           totalDependencies: dependencies.length,
           avgProgress: roadmapItems.length > 0
-            ? Math.round(roadmapItems.reduce((sum, p) => sum + p.progress, 0) / roadmapItems.length)
+            ? Math.round(roadmapItems.reduce((sum: number, p: any) => sum + p.progress, 0) / roadmapItems.length)
             : 0,
         }
 

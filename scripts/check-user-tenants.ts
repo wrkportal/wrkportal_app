@@ -33,8 +33,9 @@ async function main() {
     console.log(`Total users: ${users.length}\n`);
 
     // Group users by tenant
-    const usersByTenant: { [key: string]: any[] } = {};
-    users.forEach(user => {
+    type UserWithTenant = typeof users[0];
+    const usersByTenant: { [key: string]: UserWithTenant[] } = {};
+    users.forEach((user: UserWithTenant) => {
       if (!usersByTenant[user.tenantId]) {
         usersByTenant[user.tenantId] = [];
       }
@@ -64,7 +65,7 @@ async function main() {
 
     if (usersWithoutTenant.length > 0) {
       console.log('\n⚠️  Users without tenant:');
-      usersWithoutTenant.forEach(user => {
+      usersWithoutTenant.forEach((user: { email: string }) => {
         console.log(`   - ${user.email}`);
       });
     }

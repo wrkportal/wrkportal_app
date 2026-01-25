@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsWorkOrder model
+function getOperationsWorkOrder() {
+  return (prisma as any).operationsWorkOrder as any
+}
+
 const updateWorkOrderSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
@@ -32,7 +37,15 @@ export async function GET(
     { resource: 'operations', action: 'READ' },
     async (request, userInfo) => {
       try {
-        const workOrder = await prisma.operationsWorkOrder.findFirst({
+        const operationsWorkOrder = getOperationsWorkOrder()
+        if (!operationsWorkOrder) {
+          return NextResponse.json(
+            { error: 'Operations work order model not available' },
+            { status: 503 }
+          )
+        }
+
+        const workOrder = await (operationsWorkOrder as any).findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -114,7 +127,15 @@ export async function PATCH(
         const validatedData = updateWorkOrderSchema.parse(body)
 
         // Check if work order exists
-        const existing = await prisma.operationsWorkOrder.findFirst({
+        const operationsWorkOrder = getOperationsWorkOrder()
+        if (!operationsWorkOrder) {
+          return NextResponse.json(
+            { error: 'Operations work order model not available' },
+            { status: 503 }
+          )
+        }
+
+        const existing = await (operationsWorkOrder as any).findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -155,7 +176,7 @@ export async function PATCH(
           updateData.completedDate = new Date()
         }
 
-        const workOrder = await prisma.operationsWorkOrder.update({
+        const workOrder = await (operationsWorkOrder as any).update({
           where: { id: params.id },
           data: updateData,
           include: {
@@ -210,7 +231,15 @@ export async function DELETE(
     { resource: 'operations', action: 'DELETE' },
     async (request, userInfo) => {
       try {
-        const workOrder = await prisma.operationsWorkOrder.findFirst({
+        const operationsWorkOrder = getOperationsWorkOrder()
+        if (!operationsWorkOrder) {
+          return NextResponse.json(
+            { error: 'Operations work order model not available' },
+            { status: 503 }
+          )
+        }
+
+        const workOrder = await (operationsWorkOrder as any).findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -224,7 +253,7 @@ export async function DELETE(
           )
         }
 
-        await prisma.operationsWorkOrder.delete({
+        await (operationsWorkOrder as any).delete({
           where: { id: params.id },
         })
 

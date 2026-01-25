@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { UserStatus, Prisma } from '@prisma/client'
 
 export async function GET(
   request: NextRequest,
@@ -21,13 +22,28 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') || undefined
+    const statusParam = searchParams.get('status')
+    
+    // Validate and cast status to UserStatus enum
+    const isValidUserStatus = (value: string): value is UserStatus => {
+      return ['ACTIVE', 'INACTIVE', 'INVITED', 'SUSPENDED'].includes(value as UserStatus)
+    }
+    
+    const status: UserStatus | undefined = statusParam && isValidUserStatus(statusParam)
+      ? (statusParam as UserStatus)
+      : undefined
+
+    const whereClause: Prisma.UserWhereInput = status
+      ? {
+          tenantId: params.tenantId,
+          status: status,
+        }
+      : {
+          tenantId: params.tenantId,
+        }
 
     const users = await prisma.user.findMany({
-      where: {
-        tenantId: params.tenantId,
-        ...(status ? { status } : {}),
-      },
+      where: whereClause,
       select: {
         id: true,
         email: true,

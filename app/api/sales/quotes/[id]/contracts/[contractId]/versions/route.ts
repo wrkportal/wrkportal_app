@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
+const getContractVersion = () => (prisma as any).contractVersion
+const getSalesContract = () => (prisma as any).salesContract
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string; contractId: string } }
@@ -12,7 +15,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const versions = await prisma.contractVersion.findMany({
+    const contractVersion = getContractVersion()
+    if (!contractVersion) {
+      return NextResponse.json({ error: 'Contract versions are unavailable' }, { status: 503 })
+    }
+
+    const versions = await (contractVersion as any).findMany({
       where: {
         contractId: params.contractId,
         contract: {
@@ -52,14 +60,19 @@ export async function POST(
     const { documentUrl, redlineUrl, changeSummary } = body
 
     // Get the latest version number
-    const latestVersion = await prisma.contractVersion.findFirst({
+    const contractVersion = getContractVersion()
+    if (!contractVersion) {
+      return NextResponse.json({ error: 'Contract versions are unavailable' }, { status: 503 })
+    }
+
+    const latestVersion = await (contractVersion as any).findFirst({
       where: { contractId: params.contractId },
       orderBy: { versionNumber: 'desc' },
     })
 
     const versionNumber = (latestVersion?.versionNumber || 0) + 1
 
-    const version = await prisma.contractVersion.create({
+    const version = await (contractVersion as any).create({
       data: {
         contractId: params.contractId,
         versionNumber,
@@ -76,7 +89,12 @@ export async function POST(
     })
 
     // Update contract's current version
-    await prisma.salesContract.update({
+    const salesContract = getSalesContract()
+    if (!salesContract) {
+      return NextResponse.json({ error: 'Contracts are unavailable' }, { status: 503 })
+    }
+
+    await (salesContract as any).update({
       where: { id: params.contractId },
       data: { currentVersionId: version.id },
     })

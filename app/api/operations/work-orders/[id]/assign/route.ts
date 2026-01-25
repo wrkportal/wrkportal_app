@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsWorkOrder model
+function getOperationsWorkOrder() {
+  return (prisma as any).operationsWorkOrder as any
+}
+
 const assignWorkOrderSchema = z.object({
   assignedToId: z.string().min(1),
 })
@@ -21,7 +26,15 @@ export async function POST(
         const body = await request.json()
         const validatedData = assignWorkOrderSchema.parse(body)
 
-        const workOrder = await prisma.operationsWorkOrder.findFirst({
+        const operationsWorkOrder = getOperationsWorkOrder()
+        if (!operationsWorkOrder) {
+          return NextResponse.json(
+            { error: 'Operations work order model not available' },
+            { status: 503 }
+          )
+        }
+
+        const workOrder = await (operationsWorkOrder as any).findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -50,7 +63,7 @@ export async function POST(
           )
         }
 
-        const updated = await prisma.operationsWorkOrder.update({
+        const updated = await (operationsWorkOrder as any).update({
           where: { id: params.id },
           data: {
             assignedToId: validatedData.assignedToId,

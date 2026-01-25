@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
-import { PrismaClientKnownRequestError } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 
 // Helper to safely query Prisma models that might not exist
 const safeQuery = async <T>(
@@ -14,13 +14,12 @@ const safeQuery = async <T>(
   } catch (error: any) {
     // Check if it's a Prisma error about missing model or TypeError from undefined
     if (
-      error instanceof PrismaClientKnownRequestError &&
-      (error.code === 'P2001' ||
-        error.message?.includes('does not exist') ||
-        error.message?.includes('Unknown model') ||
-        error.message?.includes('model does not exist'))
+      (error?.code === 'P2001' ||
+        error?.message?.includes('does not exist') ||
+        error?.message?.includes('Unknown model') ||
+        error?.message?.includes('model does not exist'))
     ) {
-      console.warn('Prisma model not found, using default value:', error.message)
+      console.warn('Prisma model not found, using default value:', error?.message)
       return defaultValue
     }
     // Catch TypeError from accessing undefined properties
@@ -81,26 +80,36 @@ export async function GET(req: NextRequest) {
           },
         })
 
-        const responseTimes = ticketsWithResponse
-          .filter(t => t.updatedAt && t.createdAt)
-          .map(t => {
-            const responseTime = (t.updatedAt.getTime() - t.createdAt.getTime()) / (1000 * 60) // minutes
+        type SalesCaseWithSelected = Prisma.SalesCaseGetPayload<{
+          select: {
+            createdAt: true
+            updatedAt: true
+            closedDate: true
+          }
+        }>
+
+        const typedTickets: SalesCaseWithSelected[] = ticketsWithResponse as SalesCaseWithSelected[]
+
+        const responseTimes = typedTickets
+          .filter((t: SalesCaseWithSelected) => t.updatedAt && t.createdAt)
+          .map((t: SalesCaseWithSelected) => {
+            const responseTime = (t.updatedAt!.getTime() - t.createdAt.getTime()) / (1000 * 60) // minutes
             return responseTime
           })
 
         const avgResponseTime = responseTimes.length > 0
-          ? Math.round(responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length)
+          ? Math.round(responseTimes.reduce((sum: number, time: number) => sum + time, 0) / responseTimes.length)
           : 0
 
         // Calculate average resolution time
-        const resolvedTickets = ticketsWithResponse.filter(t => t.closedDate)
-        const resolutionTimes = resolvedTickets.map(t => {
+        const resolvedTickets = typedTickets.filter((t: SalesCaseWithSelected) => t.closedDate)
+        const resolutionTimes = resolvedTickets.map((t: SalesCaseWithSelected) => {
           const resolutionTime = (t.closedDate!.getTime() - t.createdAt.getTime()) / (1000 * 60) // minutes
           return resolutionTime
         })
 
         const avgResolutionTime = resolutionTimes.length > 0
-          ? Math.round(resolutionTimes.reduce((sum, time) => sum + time, 0) / resolutionTimes.length)
+          ? Math.round(resolutionTimes.reduce((sum: number, time: number) => sum + time, 0) / resolutionTimes.length)
           : 0
 
         // Assets - using OperationsAsset (safely handle missing model)

@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsNewHire model
+function getOperationsNewHire() {
+  return (prisma as any).operationsNewHire as any
+}
+
 const createNewHireSchema = z.object({
   name: z.string().min(1),
   email: z.string().email().optional(),
@@ -44,8 +49,16 @@ export async function GET(req: NextRequest) {
           }
         }
 
+        const operationsNewHire = getOperationsNewHire()
+        if (!operationsNewHire) {
+          return NextResponse.json(
+            { error: 'Operations new hire model not available' },
+            { status: 503 }
+          )
+        }
+
         const [newHires, total] = await Promise.all([
-          prisma.operationsNewHire.findMany({
+          (operationsNewHire as any).findMany({
             where,
             include: {
               operationsOnboarding: {
@@ -63,7 +76,7 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsNewHire.count({ where }),
+          (operationsNewHire as any).count({ where }),
         ])
 
         // Calculate stats
@@ -72,10 +85,10 @@ export async function GET(req: NextRequest) {
         thisMonth.setHours(0, 0, 0, 0)
 
         const stats = {
-          total: await prisma.operationsNewHire.count({
+          total: await (operationsNewHire as any).count({
             where: { tenantId: userInfo.tenantId },
           }),
-          thisMonth: await prisma.operationsNewHire.count({
+          thisMonth: await (operationsNewHire as any).count({
             where: {
               tenantId: userInfo.tenantId,
               joinDate: {
@@ -83,19 +96,19 @@ export async function GET(req: NextRequest) {
               },
             },
           }),
-          pending: await prisma.operationsNewHire.count({
+          pending: await (operationsNewHire as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'PENDING',
             },
           }),
-          confirmed: await prisma.operationsNewHire.count({
+          confirmed: await (operationsNewHire as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'CONFIRMED',
             },
           }),
-          offerAccepted: await prisma.operationsNewHire.count({
+          offerAccepted: await (operationsNewHire as any).count({
             where: {
               tenantId: userInfo.tenantId,
               offerAccepted: true,
@@ -134,7 +147,15 @@ export async function POST(req: NextRequest) {
         const body = await request.json()
         const validatedData = createNewHireSchema.parse(body)
 
-        const newHire = await prisma.operationsNewHire.create({
+        const operationsNewHire = getOperationsNewHire()
+        if (!operationsNewHire) {
+          return NextResponse.json(
+            { error: 'Operations new hire model not available' },
+            { status: 503 }
+          )
+        }
+
+        const newHire = await (operationsNewHire as any).create({
           data: {
             name: validatedData.name,
             email: validatedData.email,

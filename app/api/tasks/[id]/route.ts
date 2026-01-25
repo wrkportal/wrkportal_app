@@ -65,9 +65,9 @@ export async function GET(
       try {
         const dependencyTag = task.tags?.find((tag: any) => typeof tag === 'string' && tag.startsWith('dependency:'))
         if (dependencyTag && typeof dependencyTag === 'string') {
-          const dependencyId = String(dependencyTag).replace('dependency:', '')
-          (task as any).dependencyId = dependencyId
-          (task as any).predecessorId = dependencyId
+          const normalizedDependencyId = `${dependencyTag}`.replace('dependency:', '')
+          ;(task as any).dependencyId = normalizedDependencyId
+          ;(task as any).predecessorId = normalizedDependencyId
         }
       } catch (err) {
         // Silently ignore dependency extraction errors

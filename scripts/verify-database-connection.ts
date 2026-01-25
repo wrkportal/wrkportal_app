@@ -57,7 +57,7 @@ async function verifyConnection() {
         ORDER BY table_name
       `
       console.log('\n📋 All tables in public schema:')
-      tables.forEach(t => console.log(`   - ${t.table_name}`))
+      tables.forEach((t: { table_name: string }) => console.log(`   - ${t.table_name}`))
     } catch (error: any) {
       console.error('⚠️  Could not list tables:', error.message)
     }

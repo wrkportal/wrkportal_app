@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { LeadSource, LeadStatus } from '@prisma/client'
 import * as XLSX from 'xlsx'
 import { parse } from 'csv-parse/sync'
 import { SalesAutomationEngine } from '@/lib/sales/automation-engine'
@@ -155,36 +156,36 @@ export async function POST(request: NextRequest) {
         }
 
         // Map lead source
-        const leadSourceMap: Record<string, string> = {
-          'web form': 'WEB_FORM',
-          'webform': 'WEB_FORM',
-          'website': 'WEB_FORM',
-          'email': 'EMAIL',
-          'phone': 'PHONE',
-          'advertising': 'ADVERTISING',
-          'event': 'EVENT',
-          'referral': 'REFERRAL',
-          'partner': 'PARTNER',
-          'social media': 'SOCIAL_MEDIA',
-          'socialmedia': 'SOCIAL_MEDIA',
-          'linkedin': 'LINKEDIN',
-          'other': 'OTHER',
+        const leadSourceMap: Record<string, LeadSource> = {
+          'web form': LeadSource.WEB_FORM,
+          'webform': LeadSource.WEB_FORM,
+          'website': LeadSource.WEB_FORM,
+          'email': LeadSource.EMAIL,
+          'phone': LeadSource.PHONE,
+          'advertising': LeadSource.ADVERTISING,
+          'event': LeadSource.EVENT,
+          'referral': LeadSource.REFERRAL,
+          'partner': LeadSource.PARTNER,
+          'social media': LeadSource.SOCIAL_MEDIA,
+          'socialmedia': LeadSource.SOCIAL_MEDIA,
+          'linkedin': LeadSource.LINKEDIN,
+          'other': LeadSource.OTHER,
         }
         
         const sourceValue = String(mappedData.leadSource || 'other').trim().toLowerCase()
-        const leadSource = leadSourceMap[sourceValue] || 'OTHER'
+        const leadSource = leadSourceMap[sourceValue] || LeadSource.OTHER
 
         // Map status
-        const statusMap: Record<string, string> = {
-          'new': 'NEW',
-          'contacted': 'CONTACTED',
-          'qualified': 'QUALIFIED',
-          'converted': 'CONVERTED',
-          'unqualified': 'UNQUALIFIED',
-          'nurturing': 'NURTURING',
+        const statusMap: Record<string, LeadStatus> = {
+          'new': LeadStatus.NEW,
+          'contacted': LeadStatus.CONTACTED,
+          'qualified': LeadStatus.QUALIFIED,
+          'converted': LeadStatus.CONVERTED,
+          'unqualified': LeadStatus.UNQUALIFIED,
+          'nurturing': LeadStatus.NURTURING,
         }
         const statusValue = String(mappedData.status || 'new').trim().toUpperCase()
-        const status = statusMap[statusValue.toLowerCase()] || 'NEW'
+        const status = statusMap[statusValue.toLowerCase()] || LeadStatus.NEW
 
         // Map rating
         const ratingMap: Record<string, string> = {

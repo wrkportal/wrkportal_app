@@ -79,13 +79,13 @@ export async function analyzeFunnel(
   // Calculate stage metrics
   const stages: FunnelStage[] = []
   let previousCount = opportunities.length
-  let previousAmount = opportunities.reduce((sum, opp) => sum + Number(opp.amount), 0)
+  let previousAmount = opportunities.reduce((sum: number, opp: any) => sum + Number(opp.amount), 0)
 
   for (let i = 0; i < stageOrder.length; i++) {
     const stage = stageOrder[i]
-    const stageOpportunities = opportunities.filter(opp => opp.stage === stage)
+    const stageOpportunities = opportunities.filter((opp: any) => opp.stage === stage)
     const count = stageOpportunities.length
-    const amount = stageOpportunities.reduce((sum, opp) => sum + Number(opp.amount), 0)
+    const amount = stageOpportunities.reduce((sum: number, opp: any) => sum + Number(opp.amount), 0)
 
     // Calculate conversion rate (percentage of initial opportunities that reached this stage)
     const conversionRate = opportunities.length > 0
@@ -100,9 +100,9 @@ export async function analyzeFunnel(
     // Calculate average time in stage (if closed)
     let avgTimeInStage = 0
     if (stage === 'CLOSED_WON' || stage === 'CLOSED_LOST') {
-      const closedOpps = stageOpportunities.filter(opp => opp.actualCloseDate)
+      const closedOpps = stageOpportunities.filter((opp: any) => opp.actualCloseDate)
       if (closedOpps.length > 0) {
-        const totalDays = closedOpps.reduce((sum, opp) => {
+        const totalDays = closedOpps.reduce((sum: number, opp: any) => {
           const days = Math.round(
             (opp.actualCloseDate!.getTime() - opp.createdAt.getTime()) / (1000 * 60 * 60 * 24)
           )
@@ -112,7 +112,7 @@ export async function analyzeFunnel(
       }
     } else {
       // For open stages, calculate based on last update
-      const stageOpps = stageOpportunities.filter(opp => {
+      const stageOpps = stageOpportunities.filter((opp: any) => {
         // Get activities for this opportunity to determine when it entered this stage
         return true // Simplified - in production, track stage entry dates
       })
@@ -134,7 +134,7 @@ export async function analyzeFunnel(
     previousAmount = amount
   }
 
-  const closedWon = opportunities.filter(opp => opp.stage === 'CLOSED_WON')
+  const closedWon = opportunities.filter((opp: any) => opp.stage === 'CLOSED_WON')
   const overallConversionRate = opportunities.length > 0
     ? (closedWon.length / opportunities.length) * 100
     : 0
@@ -142,7 +142,7 @@ export async function analyzeFunnel(
   return {
     stages,
     totalOpportunities: opportunities.length,
-    totalValue: Number(opportunities.reduce((sum, opp) => sum + Number(opp.amount), 0)),
+    totalValue: Number(opportunities.reduce((sum: number, opp: any) => sum + Number(opp.amount), 0)),
     overallConversionRate: Math.round(overallConversionRate * 100) / 100,
     period: {
       startDate: startDate || new Date(0),

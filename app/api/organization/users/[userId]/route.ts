@@ -126,12 +126,12 @@ export async function PATCH(
       updatedUserId: updatedUser.id,
       updatedUserEmail: updatedUser.email,
       changes: {
-        role: { from: existingUser.role, to: updatedUser.role },
-        status: { from: existingUser.status, to: updatedUser.status },
-        department: { from: existingUser.department, to: updatedUser.department },
+        role: { from: userToEdit.role, to: updatedUser.role },
+        status: { from: userToEdit.status, to: updatedUser.status },
+        department: { from: userToEdit.department, to: updatedUser.department },
       },
-      ipAddress: getIpAddress(request),
-      userAgent: getUserAgent(request),
+      ipAddress: getIpAddress(req),
+      userAgent: getUserAgent(req),
     })
 
     return NextResponse.json({ user: updatedUser }, { status: 200 })

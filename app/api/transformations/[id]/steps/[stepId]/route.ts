@@ -7,6 +7,8 @@ import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 import { z } from 'zod'
 
+const getTransformationStep = () => (prisma as any).transformationStep
+
 const updateStepSchema = z.object({
   stepOrder: z.number().int().min(0).optional(),
   operator: z.string().optional(),
@@ -29,7 +31,8 @@ export async function PATCH(
         const body = await req.json()
         const data = updateStepSchema.parse(body)
 
-        if (!prisma.transformationStep) {
+        const transformationStep = getTransformationStep()
+        if (!transformationStep) {
           return NextResponse.json(
             { error: 'TransformationStep model not available' },
             { status: 500 }
@@ -49,7 +52,7 @@ export async function PATCH(
         }
 
         // Verify step exists and belongs to transformation
-        const existingStep = await prisma.transformationStep.findUnique({
+        const existingStep = await transformationStep.findUnique({
           where: { id: resolvedParams.stepId },
         })
 
@@ -60,7 +63,7 @@ export async function PATCH(
           )
         }
 
-        const step = await prisma.transformationStep.update({
+        const step = await transformationStep.update({
           where: { id: resolvedParams.stepId },
           data,
         })
@@ -95,7 +98,8 @@ export async function DELETE(
       try {
         const resolvedParams = 'then' in params ? await params : params
 
-        if (!prisma.transformationStep) {
+        const transformationStep = getTransformationStep()
+        if (!transformationStep) {
           return NextResponse.json(
             { error: 'TransformationStep model not available' },
             { status: 500 }
@@ -115,7 +119,7 @@ export async function DELETE(
         }
 
         // Verify step exists and belongs to transformation
-        const existingStep = await prisma.transformationStep.findUnique({
+        const existingStep = await transformationStep.findUnique({
           where: { id: resolvedParams.stepId },
         })
 
@@ -126,7 +130,7 @@ export async function DELETE(
           )
         }
 
-        await prisma.transformationStep.delete({
+        await transformationStep.delete({
           where: { id: resolvedParams.stepId },
         })
 

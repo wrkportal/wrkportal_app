@@ -57,22 +57,22 @@ export async function GET(req: NextRequest) {
         })
 
         // Generate update summaries
-        const updates = projects.map((project) => {
+        const updates = projects.map((project: any) => {
           const tasks = project.tasks || []
           const releases = project.releases || []
           const totalTasks = tasks.length
-          const completedTasks = tasks.filter((t) => t.status === 'DONE').length
+          const completedTasks = tasks.filter((t: any) => t.status === 'DONE').length
           const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
           // Find upcoming milestones (releases)
           const upcomingReleases = releases
-            .filter((r) => {
+            .filter((r: any) => {
               const daysUntil = Math.ceil(
                 (new Date(r.targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
               )
               return daysUntil <= 30 && daysUntil >= 0
             })
-            .map((r) => ({
+            .map((r: any) => ({
               id: r.id,
               name: r.name,
               version: r.version,
@@ -116,12 +116,12 @@ export async function GET(req: NextRequest) {
           },
           summary: {
             totalProjects: updates.length,
-            activeProjects: updates.filter((u) => u.status === 'IN_PROGRESS').length,
+            activeProjects: updates.filter((u: any) => u.status === 'IN_PROGRESS').length,
             avgProgress:
               updates.length > 0
-                ? Math.round(updates.reduce((sum, u) => sum + u.progress, 0) / updates.length)
+                ? Math.round(updates.reduce((sum: number, u: any) => sum + u.progress, 0) / updates.length)
                 : 0,
-            upcomingReleases: updates.reduce((sum, u) => sum + u.upcomingReleases.length, 0),
+            upcomingReleases: updates.reduce((sum: number, u: any) => sum + u.upcomingReleases.length, 0),
           },
         })
       } catch (error) {
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
 
         // Generate update content
         const totalTasks = project.tasks.length
-        const completedTasks = project.tasks.filter((t) => t.status === 'DONE').length
+        const completedTasks = project.tasks.filter((t: any) => t.status === 'DONE').length
         const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
         const updateContent = {
@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
             ${project.releases.length > 0 ? `
               <div style="background: #ffffff; padding: 20px; border-left: 4px solid #9333ea; margin: 20px 0;">
                 <h3 style="margin-top: 0;">Upcoming Releases</h3>
-                ${project.releases.map((r) => `
+                ${project.releases.map((r: any) => `
                   <p><strong>${r.name}</strong> (${r.version}) - ${new Date(r.targetDate).toLocaleDateString()}</p>
                 `).join('')}
               </div>

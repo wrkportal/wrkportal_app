@@ -215,7 +215,7 @@ function evaluateSUM(formula: string, context: FormulaContext): number {
   if (!range) throw new Error('Invalid SUM range')
 
   const values = context.getCellRange(range.start.row, range.start.column, range.end.row, range.end.column)
-  return values.reduce((sum, val) => {
+  return values.reduce((sum: number, val: string | number | null) => {
     const num = typeof val === 'number' ? val : parseFloat(String(val)) || 0
     return sum + num
   }, 0)

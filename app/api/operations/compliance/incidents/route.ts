@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsIncident model
+function getOperationsIncident() {
+  return (prisma as any).operationsIncident as any
+}
+
 const createIncidentSchema = z.object({
   type: z.enum(['SAFETY', 'QUALITY', 'SECURITY', 'OPERATIONAL', 'ENVIRONMENTAL', 'OTHER']),
   description: z.string().min(1),
@@ -39,8 +44,16 @@ export async function GET(req: NextRequest) {
           where.status = status
         }
 
+        const operationsIncident = getOperationsIncident()
+        if (!operationsIncident) {
+          return NextResponse.json(
+            { error: 'Operations incident model not available', incidents: [], stats: { total: 0, open: 0, investigating: 0, resolved: 0, highSeverity: 0 }, pagination: { page, limit, total: 0, totalPages: 0 } },
+            { status: 503 }
+          )
+        }
+
         const [incidents, total] = await Promise.all([
-          prisma.operationsIncident.findMany({
+          (operationsIncident as any).findMany({
             where,
             include: {
               reportedBy: {
@@ -57,33 +70,33 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsIncident.count({ where }),
+          (operationsIncident as any).count({ where }),
         ])
 
         // Calculate stats
         const stats = {
-          total: await prisma.operationsIncident.count({
+          total: await (operationsIncident as any).count({
             where: { tenantId: userInfo.tenantId },
           }),
-          open: await prisma.operationsIncident.count({
+          open: await (operationsIncident as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'OPEN',
             },
           }),
-          investigating: await prisma.operationsIncident.count({
+          investigating: await (operationsIncident as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'INVESTIGATING',
             },
           }),
-          resolved: await prisma.operationsIncident.count({
+          resolved: await (operationsIncident as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'RESOLVED',
             },
           }),
-          highSeverity: await prisma.operationsIncident.count({
+          highSeverity: await (operationsIncident as any).count({
             where: {
               tenantId: userInfo.tenantId,
               severity: { in: ['HIGH', 'CRITICAL'] },
@@ -122,7 +135,15 @@ export async function POST(req: NextRequest) {
         const body = await request.json()
         const validatedData = createIncidentSchema.parse(body)
 
-        const incident = await prisma.operationsIncident.create({
+        const operationsIncident = getOperationsIncident()
+        if (!operationsIncident) {
+          return NextResponse.json(
+            { error: 'Operations incident model not available' },
+            { status: 503 }
+          )
+        }
+
+        const incident = await (operationsIncident as any).create({
           data: {
             type: validatedData.type,
             description: validatedData.description,

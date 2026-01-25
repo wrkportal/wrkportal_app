@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getProjectActivityForAI } from '@/lib/ai/data-access'
 import { detectAnomalies } from '@/lib/ai/services/anomaly-detector'
+import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,21 +30,41 @@ export async function POST(request: NextRequest) {
       }
 
       // Compile recent activity
+      type TaskWithSelectedFields = Prisma.TaskGetPayload<{
+        select: {
+          id: true
+          title: true
+          status: true
+          priority: true
+          completedAt: true
+          createdAt: true
+          updatedAt: true
+        }
+      }>
+      
       const taskActivity = `Tasks: ${projectData.tasks.length} updated in last ${daysBack} days\n` +
-        `- Completed: ${projectData.tasks.filter(t => t.status === 'DONE').length}\n` +
-        `- In Progress: ${projectData.tasks.filter(t => t.status === 'IN_PROGRESS').length}\n` +
-        `- Blocked: ${projectData.tasks.filter(t => t.status === 'BLOCKED').length}`
+        `- Completed: ${projectData.tasks.filter((t: TaskWithSelectedFields) => t.status === 'DONE').length}\n` +
+        `- In Progress: ${projectData.tasks.filter((t: TaskWithSelectedFields) => t.status === 'IN_PROGRESS').length}\n` +
+        `- Blocked: ${projectData.tasks.filter((t: TaskWithSelectedFields) => t.status === 'BLOCKED').length}`
 
       // Calculate daily time entries
+      type TimesheetWithSelectedFields = Prisma.TimesheetGetPayload<{
+        select: {
+          date: true
+          hours: true
+          userId: true
+        }
+      }>
+      
       const timesheetsByDate = new Map<string, number>()
-      projectData.timesheets.forEach(ts => {
+      projectData.timesheets.forEach((ts: TimesheetWithSelectedFields) => {
         const date = ts.date.toISOString().split('T')[0]
         const current = timesheetsByDate.get(date) || 0
         timesheetsByDate.set(date, current + Number(ts.hours))
       })
 
       const avgDailyHours = timesheetsByDate.size > 0
-        ? Array.from(timesheetsByDate.values()).reduce((a, b) => a + b, 0) / timesheetsByDate.size
+        ? Array.from(timesheetsByDate.values()).reduce((a: number, b: number) => a + b, 0) / timesheetsByDate.size
         : 0
 
       const recentData = `${taskActivity}\n\n` +
@@ -56,18 +77,75 @@ export async function POST(request: NextRequest) {
       const budget = projectData.budget as any
       const baseline = budget ? 
         `Normal weekly budget usage: $${(Number(budget.totalBudget) / 52).toFixed(0)}\n` +
-        `Current spend rate: $${(Number(budget.spentToDate) / Math.max(1, projectData.tasks.filter(t => t.completedAt).length)).toFixed(0)} per completed task` :
+        `Current spend rate: $${(Number(budget.spentToDate) / Math.max(1, projectData.tasks.filter((t: TaskWithSelectedFields) => t.completedAt).length)).toFixed(0)} per completed task` :
         ''
 
+      // Transform data to match ProjectMetrics interface
+      const endDate = new Date()
+      const startDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000)
+      
+      // Create daily metrics arrays from the task data
+      const dailyTaskCreation = Array.from({ length: daysBack }, (_, i) => {
+        const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000)
+        const dateKey = date.toISOString().split('T')[0]
+        const count = projectData.tasks.filter((t: TaskWithSelectedFields) => 
+          t.createdAt.toISOString().split('T')[0] === dateKey
+        ).length
+        return { date, count }
+      })
+
+      const dailyTaskCompletion = Array.from({ length: daysBack }, (_, i) => {
+        const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000)
+        const dateKey = date.toISOString().split('T')[0]
+        const count = projectData.tasks.filter((t: TaskWithSelectedFields) => 
+          t.status === 'DONE' && t.completedAt && t.completedAt.toISOString().split('T')[0] === dateKey
+        ).length
+        return { date, count }
+      })
+
+      const dailyTimeLogged = Array.from({ length: daysBack }, (_, i) => {
+        const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000)
+        const dateKey = date.toISOString().split('T')[0]
+        const hours = projectData.timesheets
+          .filter((ts: TimesheetWithSelectedFields) => ts.date.toISOString().split('T')[0] === dateKey)
+          .reduce((sum: number, ts: TimesheetWithSelectedFields) => sum + Number(ts.hours), 0)
+        return { date, hours }
+      })
+
+      const weeks = Math.floor(daysBack / 7)
+      const teamVelocity = Array.from({ length: weeks }, (_, i) => {
+        const weekStart = new Date(startDate.getTime() + i * 7 * 24 * 60 * 60 * 1000)
+        const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+        const weekTasks = projectData.tasks.filter((t: TaskWithSelectedFields) => 
+          t.status === 'DONE' && 
+          t.completedAt && 
+          t.completedAt >= weekStart && 
+          t.completedAt < weekEnd
+        )
+        // Use storyPoints if available, otherwise count tasks
+        const points = weekTasks.reduce((sum: number, t: TaskWithSelectedFields) => sum + ((t as any).storyPoints || 1), 0)
+        return {
+          week: `W${i + 1}`,
+          points,
+        }
+      })
+
       result = await detectAnomalies({
-        projectName: projectData.name,
-        dataType: dataType || 'general',
-        recentActivity: recentData,
-        baselineMetrics: baseline,
-        timeRange: `Last ${daysBack} days`,
+        projectId: projectId,
+        period: { start: startDate, end: endDate },
+        metrics: {
+          dailyTaskCreation,
+          dailyTaskCompletion,
+          dailyBudgetSpend: Array.from({ length: daysBack }, (_, i) => ({
+            date: new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000),
+            amount: 0, // Placeholder until budget tracking is implemented
+          })),
+          dailyTimeLogged,
+          teamVelocity,
+        },
       })
     } else {
-      // Use manually provided data
+      // Use manually provided data - create placeholder metrics
       if (!recentActivity) {
         return NextResponse.json(
           { error: 'Recent activity data is required' },
@@ -75,12 +153,35 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Create placeholder metrics for manual data
+      const endDate = new Date()
+      const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Default 30 days
+      
       result = await detectAnomalies({
-        projectName: projectName || 'Project',
-        dataType: dataType || 'general',
-        recentActivity,
-        baselineMetrics: baselineMetrics || '',
-        timeRange: timeRange || '',
+        projectId: projectId || 'manual-project',
+        period: { start: startDate, end: endDate },
+        metrics: {
+          dailyTaskCreation: Array.from({ length: 30 }, (_, i) => ({
+            date: new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000),
+            count: 0,
+          })),
+          dailyTaskCompletion: Array.from({ length: 30 }, (_, i) => ({
+            date: new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000),
+            count: 0,
+          })),
+          dailyBudgetSpend: Array.from({ length: 30 }, (_, i) => ({
+            date: new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000),
+            amount: 0,
+          })),
+          dailyTimeLogged: Array.from({ length: 30 }, (_, i) => ({
+            date: new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000),
+            hours: 0,
+          })),
+          teamVelocity: Array.from({ length: 4 }, (_, i) => ({
+            week: `W${i + 1}`,
+            points: 0,
+          })),
+        },
       })
     }
 

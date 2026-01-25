@@ -85,6 +85,8 @@ export default function TutorialsAdminPage() {
     thumbnail: '',
     order: 0,
     isPublished: true,
+    fileName: '',
+    fileSize: 0,
   })
   const [submitting, setSubmitting] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -229,6 +231,8 @@ export default function TutorialsAdminPage() {
       thumbnail: tutorial.thumbnail || '',
       order: tutorial.order,
       isPublished: tutorial.isPublished,
+      fileName: '',
+      fileSize: 0,
     })
     setIsDialogOpen(true)
   }
@@ -249,6 +253,8 @@ export default function TutorialsAdminPage() {
       thumbnail: '',
       order: 0,
       isPublished: true,
+      fileName: '',
+      fileSize: 0,
     })
   }
 
@@ -279,223 +285,223 @@ export default function TutorialsAdminPage() {
                 Add Tutorial
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingTutorial ? 'Edit Tutorial' : 'Add New Tutorial'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingTutorial
-                  ? 'Update the tutorial details below.'
-                  : 'Fill in the details to create a new tutorial.'}
-              </DialogDescription>
-            </DialogHeader>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingTutorial ? 'Edit Tutorial' : 'Add New Tutorial'}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingTutorial
+                    ? 'Update the tutorial details below.'
+                    : 'Fill in the details to create a new tutorial.'}
+                </DialogDescription>
+              </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description *</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="type">Type *</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value: any) => setFormData({ ...formData, type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="VIDEO">Video</SelectItem>
-                      <SelectItem value="TEXT">Text</SelectItem>
-                      <SelectItem value="INTERACTIVE">Interactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="duration">Duration * (e.g., "10 min")</Label>
+                  <Label htmlFor="title">Title *</Label>
                   <Input
-                    id="duration"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    placeholder="10 min"
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     required
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="level">Level *</Label>
-                  <Select
-                    value={formData.level}
-                    onValueChange={(value: any) => setFormData({ ...formData, level: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="BEGINNER">Beginner</SelectItem>
-                      <SelectItem value="INTERMEDIATE">Intermediate</SelectItem>
-                      <SelectItem value="ADVANCED">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div>
-                  <Label htmlFor="section">Section *</Label>
-                  <Select
-                    value={formData.section}
-                    onValueChange={(value: any) => {
-                      setFormData({ ...formData, section: value, category: '' })
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PROJECT_MANAGEMENT">Project Management</SelectItem>
-                      <SelectItem value="TOOLS_WORKINGS">ManagerBook Tools</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="category">Category *</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) => setFormData({ ...formData, category: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES[formData.section].map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {formData.type === 'VIDEO' && (
-                <>
-                  <div>
-                    <Label htmlFor="videoUrl">Video URL (YouTube embed)</Label>
-                    <Input
-                      id="videoUrl"
-                      type="url"
-                      value={formData.videoUrl}
-                      onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                      placeholder="https://www.youtube.com/embed/VIDEO_ID"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Use YouTube embed format: https://www.youtube.com/embed/VIDEO_ID
-                    </p>
-                  </div>
-
-                  <div className="relative">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex-1 h-px bg-border" />
-                      <span className="text-xs text-muted-foreground">OR</span>
-                      <div className="flex-1 h-px bg-border" />
-                    </div>
-                    <Label htmlFor="videoFile">Upload Video File</Label>
-                    <Input
-                      id="videoFile"
-                      type="file"
-                      accept="video/mp4,video/webm,video/ogg,video/quicktime"
-                      onChange={handleVideoUpload}
-                      disabled={uploading}
-                      className="cursor-pointer"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Upload MP4, WebM, OGG, or MOV (Max 100MB)
-                    </p>
-                    {uploading && (
-                      <div className="mt-2">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
-                          Uploading video...
-                        </div>
-                      </div>
-                    )}
-                    {formData.fileName && (
-                      <p className="text-xs text-green-600 mt-1">
-                        ✓ Uploaded: {formData.fileName}
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {formData.type === 'TEXT' && (
-                <div>
-                  <Label htmlFor="contentText">Content Text</Label>
+                  <Label htmlFor="description">Description *</Label>
                   <Textarea
-                    id="contentText"
-                    value={formData.contentText}
-                    onChange={(e) => setFormData({ ...formData, contentText: e.target.value })}
-                    rows={6}
-                    placeholder="Enter tutorial content in markdown or plain text"
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={3}
+                    required
                   />
                 </div>
-              )}
 
-              <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="type">Type *</Label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(value: any) => setFormData({ ...formData, type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="VIDEO">Video</SelectItem>
+                        <SelectItem value="TEXT">Text</SelectItem>
+                        <SelectItem value="INTERACTIVE">Interactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="duration">Duration * (e.g., "10 min")</Label>
+                    <Input
+                      id="duration"
+                      value={formData.duration}
+                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      placeholder="10 min"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="level">Level *</Label>
+                    <Select
+                      value={formData.level}
+                      onValueChange={(value: any) => setFormData({ ...formData, level: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="BEGINNER">Beginner</SelectItem>
+                        <SelectItem value="INTERMEDIATE">Intermediate</SelectItem>
+                        <SelectItem value="ADVANCED">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="section">Section *</Label>
+                    <Select
+                      value={formData.section}
+                      onValueChange={(value: any) => {
+                        setFormData({ ...formData, section: value, category: '' })
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PROJECT_MANAGEMENT">Project Management</SelectItem>
+                        <SelectItem value="TOOLS_WORKINGS">ManagerBook Tools</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div>
-                  <Label htmlFor="order">Display Order</Label>
-                  <Input
-                    id="order"
-                    type="number"
-                    value={formData.order}
-                    onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
-                  />
+                  <Label htmlFor="category">Category *</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES[formData.section].map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="flex items-center gap-2 pt-8">
-                  <input
-                    type="checkbox"
-                    id="isPublished"
-                    checked={formData.isPublished}
-                    onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-                    className="w-4 h-4"
-                  />
-                  <Label htmlFor="isPublished">Published</Label>
-                </div>
-              </div>
+                {formData.type === 'VIDEO' && (
+                  <>
+                    <div>
+                      <Label htmlFor="videoUrl">Video URL (YouTube embed)</Label>
+                      <Input
+                        id="videoUrl"
+                        type="url"
+                        value={formData.videoUrl}
+                        onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                        placeholder="https://www.youtube.com/embed/VIDEO_ID"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Use YouTube embed format: https://www.youtube.com/embed/VIDEO_ID
+                      </p>
+                    </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button type="submit" disabled={submitting} className="flex-1">
-                  {submitting ? 'Saving...' : editingTutorial ? 'Update Tutorial' : 'Create Tutorial'}
-                </Button>
-                <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex-1 h-px bg-border" />
+                        <span className="text-xs text-muted-foreground">OR</span>
+                        <div className="flex-1 h-px bg-border" />
+                      </div>
+                      <Label htmlFor="videoFile">Upload Video File</Label>
+                      <Input
+                        id="videoFile"
+                        type="file"
+                        accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                        onChange={handleVideoUpload}
+                        disabled={uploading}
+                        className="cursor-pointer"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Upload MP4, WebM, OGG, or MOV (Max 100MB)
+                      </p>
+                      {uploading && (
+                        <div className="mt-2">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                            Uploading video...
+                          </div>
+                        </div>
+                      )}
+                      {formData.fileName && (
+                        <p className="text-xs text-green-600 mt-1">
+                          ✓ Uploaded: {formData.fileName}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {formData.type === 'TEXT' && (
+                  <div>
+                    <Label htmlFor="contentText">Content Text</Label>
+                    <Textarea
+                      id="contentText"
+                      value={formData.contentText}
+                      onChange={(e) => setFormData({ ...formData, contentText: e.target.value })}
+                      rows={6}
+                      placeholder="Enter tutorial content in markdown or plain text"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="order">Display Order</Label>
+                    <Input
+                      id="order"
+                      type="number"
+                      value={formData.order}
+                      onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-8">
+                    <input
+                      type="checkbox"
+                      id="isPublished"
+                      checked={formData.isPublished}
+                      onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="isPublished">Published</Label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button type="submit" disabled={submitting} className="flex-1">
+                    {submitting ? 'Saving...' : editingTutorial ? 'Update Tutorial' : 'Create Tutorial'}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
           </Dialog>
         </div>
       </div>

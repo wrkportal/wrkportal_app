@@ -5,8 +5,8 @@
 import {
   calculateNextRun,
   shouldRunNow,
+  ScheduleStatus,
 } from '@/lib/scheduling/scheduler'
-import { ScheduleFrequency, ScheduleStatus } from '@prisma/client'
 
 describe('Scheduler', () => {
   describe('calculateNextRun', () => {

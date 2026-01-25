@@ -46,7 +46,7 @@ export const optimizedSelects = {
 export interface OptimizedQueryOptions {
   skip?: number
   take?: number
-  select?: Prisma.UserSelect | Prisma.ReportScheduleSelect | any
+  select?: Prisma.UserSelect | any
   where?: any
   orderBy?: any
   include?: any

@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Calculate match scores
-    const scoredCandidates = candidates.map((candidate) => {
+    const scoredCandidates = candidates.map((candidate: any) => {
       let score = 0
       let maxScore = 0
       const reasons: string[] = []
@@ -70,10 +70,10 @@ export async function POST(request: NextRequest) {
         validatedData.requiredSkills &&
         validatedData.requiredSkills.length > 0
       ) {
-        const candidateSkills = candidate.skills.map((s) =>
+        const candidateSkills = candidate.skills.map((s: any) =>
           s.skill.name.toLowerCase()
         )
-        const matchingSkills = validatedData.requiredSkills.filter((skill) =>
+        const matchingSkills = validatedData.requiredSkills.filter((skill: any) =>
           candidateSkills.includes(skill.toLowerCase())
         )
         const skillMatchPercentage =
@@ -120,13 +120,13 @@ export async function POST(request: NextRequest) {
         },
         score: matchPercentage,
         reasons,
-        skills: candidate.skills.map((s) => s.skill.name),
+        skills: candidate.skills.map((s: any) => s.skill.name),
       }
     })
 
     // Sort by score (descending) and limit
     const topMatches = scoredCandidates
-      .sort((a, b) => b.score - a.score)
+      .sort((a: any, b: any) => b.score - a.score)
       .slice(0, validatedData.limit)
 
     return NextResponse.json({

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
+const getContractOpenItem = () => (prisma as any).contractOpenItem
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string; contractId: string } }
@@ -12,7 +14,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const openItems = await prisma.contractOpenItem.findMany({
+    const contractOpenItem = getContractOpenItem()
+    if (!contractOpenItem) {
+      return NextResponse.json({ error: 'Contract open items are unavailable' }, { status: 503 })
+    }
+
+    const openItems = await (contractOpenItem as any).findMany({
       where: {
         contractId: params.contractId,
         contract: {
@@ -54,7 +61,12 @@ export async function POST(
     const body = await request.json()
     const { item, description, ownerId, dueDate } = body
 
-    const openItem = await prisma.contractOpenItem.create({
+    const contractOpenItem = getContractOpenItem()
+    if (!contractOpenItem) {
+      return NextResponse.json({ error: 'Contract open items are unavailable' }, { status: 503 })
+    }
+
+    const openItem = await (contractOpenItem as any).create({
       data: {
         contractId: params.contractId,
         item,
@@ -108,7 +120,12 @@ export async function PATCH(
       updateData.completedAt = new Date()
     }
 
-    const openItem = await prisma.contractOpenItem.update({
+    const contractOpenItem = getContractOpenItem()
+    if (!contractOpenItem) {
+      return NextResponse.json({ error: 'Contract open items are unavailable' }, { status: 503 })
+    }
+
+    const openItem = await (contractOpenItem as any).update({
       where: { id: itemId },
       data: updateData,
       include: {

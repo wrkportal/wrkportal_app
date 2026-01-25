@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { getOKRsForAI } from '@/lib/ai/data-access'
 import { analyzeOKRProgress } from '@/lib/ai/services'
+import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,18 +31,31 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Goal not found' }, { status: 404 })
       }
 
-      const goal = goals[0]
-
       // Format key results with current progress
-      const keyResultsList = goal.keyResults.map(kr => {
+      type GoalWithKeyResults = Prisma.GoalGetPayload<{
+        include: {
+          keyResults: {
+            include: {
+              checkIns: true
+            }
+          }
+        }
+      }>
+      
+      type KeyResultWithCheckIns = GoalWithKeyResults['keyResults'][0]
+      type CheckIn = KeyResultWithCheckIns['checkIns'][0]
+
+      const goal = goals[0] as GoalWithKeyResults
+
+      const keyResultsList = goal.keyResults.map((kr: KeyResultWithCheckIns) => {
         const progress = ((Number(kr.currentValue) - Number(kr.startValue)) / 
                          (Number(kr.targetValue) - Number(kr.startValue))) * 100
         return `${kr.title}: ${kr.currentValue}${kr.unit} / ${kr.targetValue}${kr.unit} (${progress.toFixed(0)}% complete, Confidence: ${kr.confidence}/10)`
       }).join('\n')
 
       // Compile check-in history
-      const recentUpdates = goal.keyResults.flatMap(kr => 
-        kr.checkIns.map(ci => 
+      const recentUpdates = goal.keyResults.flatMap((kr: KeyResultWithCheckIns) => 
+        kr.checkIns.map((ci: CheckIn) => 
           `${kr.title}: ${ci.value}${kr.unit} (Confidence: ${ci.confidence}/10) - ${ci.narrative || 'No notes'}`
         )
       ).slice(0, 10).join('\n')

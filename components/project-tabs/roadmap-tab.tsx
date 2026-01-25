@@ -112,7 +112,7 @@ export function RoadmapTab({ project }: RoadmapTabProps) {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <GanttChart tasks={projectTasks} />
+                        <GanttChart projects={[project]} />
                     </CardContent>
                 </Card>
             ) : view === 'grid' ? (
@@ -126,7 +126,7 @@ export function RoadmapTab({ project }: RoadmapTabProps) {
                         </Button>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {projectTasks.map((task) => (
+                        {projectTasks.map((task: any) => (
                             <Card key={task.id} className="hover:shadow-lg transition-shadow cursor-pointer">
                                 <CardHeader>
                                     <div className="flex items-start justify-between">
@@ -183,7 +183,7 @@ export function RoadmapTab({ project }: RoadmapTabProps) {
                         <Card>
                             <CardContent className="p-6">
                                 <div className="space-y-4">
-                                    {projectTasks.map((task) => (
+                                    {projectTasks.map((task: any) => (
                                         <div
                                             key={task.id}
                                             className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent transition-colors cursor-pointer"
@@ -228,7 +228,7 @@ export function RoadmapTab({ project }: RoadmapTabProps) {
                         <Card>
                             <CardContent className="p-6">
                                 <div className="space-y-4">
-                                    {tasksByStatus.todo.map((task) => (
+                                    {tasksByStatus.todo.map((task: any) => (
                                         <div key={task.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent transition-colors cursor-pointer">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
@@ -253,7 +253,7 @@ export function RoadmapTab({ project }: RoadmapTabProps) {
                         <Card>
                             <CardContent className="p-6">
                                 <div className="space-y-4">
-                                    {tasksByStatus.inProgress.map((task) => (
+                                    {tasksByStatus.inProgress.map((task: any) => (
                                         <div key={task.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent transition-colors cursor-pointer">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
@@ -278,7 +278,7 @@ export function RoadmapTab({ project }: RoadmapTabProps) {
                         <Card>
                             <CardContent className="p-6">
                                 <div className="space-y-4">
-                                    {tasksByStatus.completed.map((task) => (
+                                    {tasksByStatus.completed.map((task: any) => (
                                         <div key={task.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-accent transition-colors cursor-pointer opacity-75">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">

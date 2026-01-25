@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
+const getSalesContract = () => (prisma as any).salesContract
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string; contractId: string } }
@@ -12,7 +14,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const contract = await prisma.salesContract.findFirst({
+    const salesContract = getSalesContract()
+    if (!salesContract) {
+      return NextResponse.json({ error: 'Contracts are unavailable' }, { status: 503 })
+    }
+
+    const contract = await (salesContract as any).findFirst({
       where: {
         id: params.contractId,
         quoteId: params.id,
@@ -85,7 +92,12 @@ export async function PATCH(
     const body = await request.json()
     const { name, status, predictedTimeline } = body
 
-    const contract = await prisma.salesContract.update({
+    const salesContract = getSalesContract()
+    if (!salesContract) {
+      return NextResponse.json({ error: 'Contracts are unavailable' }, { status: 503 })
+    }
+
+    const contract = await (salesContract as any).update({
       where: { id: params.contractId },
       data: {
         ...(name && { name }),

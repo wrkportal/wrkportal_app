@@ -60,7 +60,7 @@ export default function SettingsPage() {
     const user = useAuthStore((state) => state.user)
     const setUser = useAuthStore((state) => state.setUser)
     const pathname = usePathname()
-    
+
     // Admin pages configuration
     const adminPages = [
         {
@@ -135,29 +135,29 @@ export default function SettingsPage() {
             roles: [UserRole.PLATFORM_OWNER],
         },
     ]
-    
+
     // Check if user has admin access
     const isSuperUser = user?.email === 'sandeep200680@gmail.com' || user?.email?.includes('sandeep200680@gmail')
     const hasAdminAccess = user && (isSuperUser || [UserRole.PLATFORM_OWNER, UserRole.TENANT_SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.INTEGRATION_ADMIN].includes(user.role))
-    
+
     // Filter admin pages based on user role
-    const availableAdminPages = adminPages.filter(page => 
+    const availableAdminPages = adminPages.filter(page =>
         isSuperUser || page.roles.includes(user?.role || UserRole.TEAM_MEMBER)
     )
-    
+
     // Library/Download Desktop App state
     const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
     const [fileStatus, setFileStatus] = useState<Record<string, boolean | 'checking'>>({})
     const [autoDetectedPlatform, setAutoDetectedPlatform] = useState<string | null>(null)
     const [isClient, setIsClient] = useState(false)
-    
+
     // Download Desktop App configuration
     const downloadLinks = {
         windows: process.env.NEXT_PUBLIC_DESKTOP_WINDOWS_URL || '/downloads/Project-Management-Studio-Setup.exe',
         mac: process.env.NEXT_PUBLIC_DESKTOP_MAC_URL || '/downloads/Project-Management-Studio.dmg',
         linux: process.env.NEXT_PUBLIC_DESKTOP_LINUX_URL || '/downloads/Project-Management-Studio.AppImage'
     }
-    
+
     const fileCheckPaths = {
         windows: '/downloads/Project-Management-Studio-Setup.exe',
         mac: '/downloads/Project-Management-Studio.dmg',
@@ -182,7 +182,7 @@ export default function SettingsPage() {
     // Preferences state
     const [timezone, setTimezone] = useState(user?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
     const [locale, setLocale] = useState(user?.locale || 'en-US')
-    
+
     // Workflow state
     const [primaryWorkflowType, setPrimaryWorkflowType] = useState<WorkflowType | null>(
         (user?.primaryWorkflowType as WorkflowType) || null
@@ -202,27 +202,27 @@ export default function SettingsPage() {
     const [passwordSuccess, setPasswordSuccess] = useState(false)
     const [passwordError, setPasswordError] = useState('')
     const [resendVerificationLoading, setResendVerificationLoading] = useState(false)
-    
+
     const handleDownload = (platform: string) => {
         const link = downloadLinks[platform as keyof typeof downloadLinks]
         const exists = fileStatus[platform]
-        
+
         if (exists === 'checking') {
             alert('Still checking for installer availability. Please wait a moment.')
             return
         }
-        
+
         if (!exists) {
             alert('The installer is not available yet. Please build the desktop app first using: npm run electron:build')
             return
         }
-        
+
         if (link) {
             const linkElement = document.createElement('a')
             linkElement.href = link
             linkElement.download = platform === 'windows' ? 'Project-Management-Studio-Setup.exe' :
-                                platform === 'mac' ? 'Project-Management-Studio.dmg' :
-                                'Project-Management-Studio.AppImage'
+                platform === 'mac' ? 'Project-Management-Studio.dmg' :
+                    'Project-Management-Studio.AppImage'
             linkElement.style.display = 'none'
             document.body.appendChild(linkElement)
             linkElement.click()
@@ -233,10 +233,10 @@ export default function SettingsPage() {
             alert('Download link not available. Please contact support.')
         }
     }
-    
+
     const hasAnyFile = Object.values(fileStatus).some(exists => exists === true)
     const isCheckingAnyFile = Object.values(fileStatus).some(status => status === 'checking')
-    
+
     const [resendVerificationSuccess, setResendVerificationSuccess] = useState(false)
 
     // Set client-side flag and detect platform only on client (for Library tab)
@@ -252,7 +252,7 @@ export default function SettingsPage() {
         }
         setAutoDetectedPlatform(detectPlatform())
     }, [])
-    
+
     // Check if files exist (for Library tab)
     useEffect(() => {
         const checkFiles = async () => {
@@ -262,12 +262,12 @@ export default function SettingsPage() {
                 try {
                     const controller = new AbortController()
                     const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
-                    
-                    const response = await fetch(url, { 
+
+                    const response = await fetch(url, {
                         method: 'HEAD',
                         signal: controller.signal
                     })
-                    
+
                     clearTimeout(timeoutId)
                     status[platform] = response.ok
                 } catch (error: any) {
@@ -295,9 +295,9 @@ export default function SettingsPage() {
                 setFirstName(authenticatedUser.firstName)
                 setLastName(authenticatedUser.lastName)
                 setEmail(authenticatedUser.email)
-                setPhone(authenticatedUser.phone || '')
-                setLocation(authenticatedUser.location || '')
-                setDepartment(authenticatedUser.department || '')
+                setPhone((authenticatedUser as any).phone || '')
+                setLocation((authenticatedUser as any).location || '')
+                setDepartment((authenticatedUser as any).department || '')
                 setTimezone(authenticatedUser.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
                 setLocale(authenticatedUser.locale || 'en-US')
                 setPrimaryWorkflowType((authenticatedUser.primaryWorkflowType as WorkflowType) || null)
@@ -319,7 +319,7 @@ export default function SettingsPage() {
                 }
             }
             refreshUser()
-            
+
             // Scroll to verification section
             setTimeout(() => {
                 const verifySection = document.getElementById('email-verification-section')
@@ -327,7 +327,7 @@ export default function SettingsPage() {
                     verifySection.scrollIntoView({ behavior: 'smooth', block: 'center' })
                 }
             }, 500)
-            
+
             // Clean up URL parameter
             window.history.replaceState({}, '', '/settings')
         }
@@ -338,9 +338,9 @@ export default function SettingsPage() {
             setFirstName(user.firstName)
             setLastName(user.lastName)
             setEmail(user.email)
-            setPhone(user.phone || '')
-            setLocation(user.location || '')
-            setDepartment(user.department || '')
+            setPhone((user as any).phone || '')
+            setLocation((user as any).location || '')
+            setDepartment((user as any).department || '')
         }
     }, [user])
 
@@ -629,7 +629,7 @@ export default function SettingsPage() {
                                                     e.target.value = '' // Reset the input
                                                     return
                                                 }
-                                                
+
                                                 // Convert to base64 data URL
                                                 const reader = new FileReader()
                                                 reader.onloadend = async () => {
@@ -1295,8 +1295,8 @@ export default function SettingsPage() {
                                     <Label className="text-base font-semibold">Choose Your Platform</Label>
                                     {isClient && autoDetectedPlatform && (
                                         <p className="text-sm text-green-600 mt-1">
-                                            We detected you're on {autoDetectedPlatform === 'windows' ? 'Windows' : 
-                                            autoDetectedPlatform === 'mac' ? 'Mac' : 'Linux'}. 
+                                            We detected you're on {autoDetectedPlatform === 'windows' ? 'Windows' :
+                                                autoDetectedPlatform === 'mac' ? 'Mac' : 'Linux'}.
                                             Recommended download below:
                                         </p>
                                     )}
@@ -1304,12 +1304,11 @@ export default function SettingsPage() {
 
                                 <div className="space-y-4">
                                     {/* Windows */}
-                                    <div 
-                                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                                            selectedPlatform === 'windows' || autoDetectedPlatform === 'windows'
-                                                ? 'border-primary bg-primary/5' 
-                                                : 'border-border hover:border-primary/50'
-                                        }`}
+                                    <div
+                                        className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedPlatform === 'windows' || autoDetectedPlatform === 'windows'
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-border hover:border-primary/50'
+                                            }`}
                                         onClick={() => setSelectedPlatform('windows')}
                                     >
                                         <div className="flex items-center justify-between">
@@ -1336,12 +1335,11 @@ export default function SettingsPage() {
                                     </div>
 
                                     {/* Mac */}
-                                    <div 
-                                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                                            selectedPlatform === 'mac' || autoDetectedPlatform === 'mac'
-                                                ? 'border-primary bg-primary/5' 
-                                                : 'border-border hover:border-primary/50'
-                                        }`}
+                                    <div
+                                        className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedPlatform === 'mac' || autoDetectedPlatform === 'mac'
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-border hover:border-primary/50'
+                                            }`}
                                         onClick={() => setSelectedPlatform('mac')}
                                     >
                                         <div className="flex items-center justify-between">
@@ -1368,12 +1366,11 @@ export default function SettingsPage() {
                                     </div>
 
                                     {/* Linux */}
-                                    <div 
-                                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                                            selectedPlatform === 'linux' || autoDetectedPlatform === 'linux'
-                                                ? 'border-primary bg-primary/5' 
-                                                : 'border-border hover:border-primary/50'
-                                        }`}
+                                    <div
+                                        className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedPlatform === 'linux' || autoDetectedPlatform === 'linux'
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-border hover:border-primary/50'
+                                            }`}
                                         onClick={() => setSelectedPlatform('linux')}
                                     >
                                         <div className="flex items-center justify-between">
@@ -1481,7 +1478,7 @@ export default function SettingsPage() {
                                     {availableAdminPages.map((page) => {
                                         const Icon = page.icon
                                         const isActive = pathname === page.href || pathname.startsWith(page.href + "/")
-                                        
+
                                         return (
                                             <Link
                                                 key={page.href}

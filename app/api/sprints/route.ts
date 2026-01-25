@@ -66,10 +66,10 @@ export async function GET(req: NextRequest) {
     })
 
     // Calculate progress and stats for each sprint
-    const sprintsWithStats = sprints.map((sprint) => {
+    const sprintsWithStats = sprints.map((sprint: any) => {
       const tasks = sprint.tasks || []
       const totalTasks = tasks.length
-      const completedTasks = tasks.filter((t) => t.status === 'DONE').length
+      const completedTasks = tasks.filter((t: any) => t.status === 'DONE').length
       const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
       
       // Calculate story points (if tasks have estimatedHours, use that as proxy)

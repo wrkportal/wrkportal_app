@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { mockRisks, mockIssues } from "@/lib/mock-data"
-import { formatDate, getRagColor, getPriorityColor, cn } from "@/lib/utils"
+import { formatDate, getPriorityColor, cn } from "@/lib/utils"
 import { AlertTriangle, Shield, Search, Plus, TrendingUp, TrendingDown } from "lucide-react"
-import { RiskStatus, IssueStatus, Priority } from "@/types"
+import { Priority } from "@/types"
 import { RAIDDialog } from "@/components/dialogs/raid-dialog"
 
 export default function RAIDPage() {
@@ -22,41 +22,41 @@ export default function RAIDPage() {
     const filteredRisks = mockRisks.filter(risk => {
         const matchesSearch = risk.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             risk.description.toLowerCase().includes(searchQuery.toLowerCase())
-        const matchesPriority = filterPriority === 'all' || risk.priority === filterPriority
+        const matchesPriority = filterPriority === 'all' || risk.level === filterPriority
         return matchesSearch && matchesPriority
     })
 
     const filteredIssues = mockIssues.filter(issue => {
         const matchesSearch = issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             issue.description.toLowerCase().includes(searchQuery.toLowerCase())
-        const matchesPriority = filterPriority === 'all' || issue.priority === filterPriority
+        const matchesPriority = filterPriority === 'all' || issue.severity === filterPriority
         return matchesSearch && matchesPriority
     })
 
     // Calculate stats
-    const activeRisks = mockRisks.filter(r => r.status === 'ACTIVE').length
+    const activeRisks = mockRisks.filter(r => r.status !== 'CLOSED').length
     const activeIssues = mockIssues.filter(i => i.status === 'OPEN').length
-    const highPriorityRisks = mockRisks.filter(r => r.priority === 'HIGH' || r.priority === 'CRITICAL').length
-    const highPriorityIssues = mockIssues.filter(i => i.priority === 'HIGH' || i.priority === 'CRITICAL').length
+    const highPriorityRisks = mockRisks.filter(r => r.level === 'HIGH' || r.level === 'CRITICAL').length
+    const highPriorityIssues = mockIssues.filter(i => i.severity === 'HIGH').length
 
-    const getRiskStatusBadge = (status: RiskStatus) => {
-        const variants: Record<RiskStatus, string> = {
+    const getRiskStatusBadge = (status: string) => {
+        const variants: Record<string, string> = {
             IDENTIFIED: 'bg-blue-100 text-blue-700',
             ACTIVE: 'bg-amber-100 text-amber-700',
             MITIGATED: 'bg-green-100 text-green-700',
             CLOSED: 'bg-slate-100 text-slate-700',
         }
-        return variants[status]
+        return variants[status] || 'bg-gray-100 text-gray-700'
     }
 
-    const getIssueStatusBadge = (status: IssueStatus) => {
-        const variants: Record<IssueStatus, string> = {
+    const getIssueStatusBadge = (status: string) => {
+        const variants: Record<string, string> = {
             OPEN: 'bg-red-100 text-red-700',
             IN_PROGRESS: 'bg-blue-100 text-blue-700',
             RESOLVED: 'bg-green-100 text-green-700',
             CLOSED: 'bg-slate-100 text-slate-700',
         }
-        return variants[status]
+        return variants[status] || 'bg-gray-100 text-gray-700'
     }
 
     return (
@@ -108,7 +108,7 @@ export default function RAIDPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold text-green-600">
-                            {mockRisks.filter(r => r.status === 'MITIGATED').length}
+                            {mockRisks.filter(r => r.status === 'CLOSED').length}
                         </div>
                         <p className="text-xs text-slate-500 mt-1">Successfully handled</p>
                     </CardContent>
@@ -179,8 +179,8 @@ export default function RAIDPage() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <Badge className={cn("text-xs", getPriorityColor(risk.priority))}>
-                                                {risk.priority}
+                                            <Badge className={cn("text-xs", getPriorityColor(risk.level))}>
+                                                {risk.level}
                                             </Badge>
                                             <Badge className={cn("text-xs", getRiskStatusBadge(risk.status))}>
                                                 {risk.status}
@@ -196,8 +196,8 @@ export default function RAIDPage() {
                                         <CardDescription className="mt-2">{risk.description}</CardDescription>
                                     </div>
                                     <AlertTriangle className={cn("h-6 w-6 ml-4",
-                                        risk.priority === 'CRITICAL' ? 'text-red-600' :
-                                            risk.priority === 'HIGH' ? 'text-amber-600' : 'text-slate-400'
+                                        risk.level === 'CRITICAL' ? 'text-red-600' :
+                                            risk.level === 'HIGH' ? 'text-amber-600' : 'text-slate-400'
                                     )} />
                                 </div>
                             </CardHeader>
@@ -234,14 +234,14 @@ export default function RAIDPage() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <Badge className={cn("text-xs", getPriorityColor(issue.priority))}>
-                                                {issue.priority}
+                                            <Badge className={cn("text-xs", getPriorityColor(issue.severity))}>
+                                                {issue.severity}
                                             </Badge>
                                             <Badge className={cn("text-xs", getIssueStatusBadge(issue.status))}>
                                                 {issue.status.replace('_', ' ')}
                                             </Badge>
                                             <Badge variant="outline" className="text-xs">
-                                                {issue.category}
+                                                Level {issue.escalationLevel}
                                             </Badge>
                                         </div>
                                         <CardTitle className="text-lg">{issue.title}</CardTitle>
@@ -261,12 +261,12 @@ export default function RAIDPage() {
                                         <p className="text-slate-900 mt-1">{issue.resolution || 'Pending'}</p>
                                     </div>
                                     <div>
-                                        <span className="text-slate-600">Assignee:</span>
-                                        <p className="text-slate-900 mt-1">{issue.assigneeId || 'Unassigned'}</p>
+                                        <span className="text-slate-600">Owner:</span>
+                                        <p className="text-slate-900 mt-1">{issue.ownerId || 'Unassigned'}</p>
                                     </div>
                                     <div>
-                                        <span className="text-slate-600">Reported:</span>
-                                        <p className="text-slate-900 mt-1">{formatDate(issue.reportedDate)}</p>
+                                        <span className="text-slate-600">Identified:</span>
+                                        <p className="text-slate-900 mt-1">{formatDate(issue.identifiedDate)}</p>
                                     </div>
                                     {issue.resolvedDate && (
                                         <div>

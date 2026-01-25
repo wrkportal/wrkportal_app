@@ -6,6 +6,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { detectAnomalies } from '@/lib/ai/services/anomaly-detector'
+import { Prisma } from '@prisma/client'
+
+type TaskWithSelectedFields = Prisma.TaskGetPayload<{
+  select: {
+    id: true
+    createdAt: true
+    status: true
+    dueDate: true
+    storyPoints: true
+  }
+}>
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +53,7 @@ export async function POST(request: NextRequest) {
     const startDate = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000)
 
     // Fetch real task data from database
-    const tasks = await prisma.task.findMany({
+    const tasks = (await prisma.task.findMany({
       where: {
         projectId,
         tenantId: session.user.tenantId,
@@ -55,18 +66,18 @@ export async function POST(request: NextRequest) {
         dueDate: true,
         storyPoints: true,
       },
-    })
+    })) as TaskWithSelectedFields[]
 
     // Aggregate daily task creation
     const dailyTaskCreationMap = new Map<string, number>()
-    tasks.forEach(task => {
+    tasks.forEach((task: TaskWithSelectedFields) => {
       const dateKey = task.createdAt.toISOString().split('T')[0]
       dailyTaskCreationMap.set(dateKey, (dailyTaskCreationMap.get(dateKey) || 0) + 1)
     })
 
     // Aggregate daily task completion
     const dailyTaskCompletionMap = new Map<string, number>()
-    tasks.filter(t => t.status === 'DONE').forEach(task => {
+    tasks.filter((t: TaskWithSelectedFields) => t.status === 'DONE').forEach((task: TaskWithSelectedFields) => {
       const dateKey = task.createdAt.toISOString().split('T')[0]
       dailyTaskCompletionMap.set(dateKey, (dailyTaskCompletionMap.get(dateKey) || 0) + 1)
     })
@@ -106,12 +117,12 @@ export async function POST(request: NextRequest) {
     const teamVelocity = Array.from({ length: weeks }, (_, i) => {
       const weekStart = new Date(startDate.getTime() + i * 7 * 24 * 60 * 60 * 1000)
       const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
-      const weekTasks = tasks.filter(t => 
+      const weekTasks = tasks.filter((t: TaskWithSelectedFields) => 
         t.status === 'DONE' && 
         t.createdAt >= weekStart && 
         t.createdAt < weekEnd
       )
-      const points = weekTasks.reduce((sum, t) => sum + (t.storyPoints || 0), 0)
+      const points = weekTasks.reduce((sum: number, t: TaskWithSelectedFields) => sum + (t.storyPoints || 0), 0)
       return {
         week: `W${i + 1}`,
         points,

@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsComplianceIssue model
+function getOperationsComplianceIssue() {
+  return (prisma as any).operationsComplianceIssue as any
+}
+
 const resolveIssueSchema = z.object({
   resolution: z.string().min(1),
 })
@@ -21,7 +26,15 @@ export async function POST(
         const body = await request.json()
         const validatedData = resolveIssueSchema.parse(body)
 
-        const issue = await prisma.operationsComplianceIssue.findFirst({
+        const operationsComplianceIssue = getOperationsComplianceIssue()
+        if (!operationsComplianceIssue) {
+          return NextResponse.json(
+            { error: 'Operations compliance issue model not available' },
+            { status: 503 }
+          )
+        }
+
+        const issue = await (operationsComplianceIssue as any).findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -42,7 +55,7 @@ export async function POST(
           )
         }
 
-        const updated = await prisma.operationsComplianceIssue.update({
+        const updated = await (operationsComplianceIssue as any).update({
           where: { id: params.id },
           data: {
             status: 'RESOLVED',

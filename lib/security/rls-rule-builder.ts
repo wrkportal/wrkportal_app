@@ -259,19 +259,14 @@ export const RLSRulePatterns = {
     orgUnitField: string = 'orgUnitId',
     managerField: string = 'managerId'
   ): RLSRuleExpression {
-    const orgUnitRule = createRLSRule()
+    const orgUnitBuilder = createRLSRule()
       .equals(orgUnitField, '${orgUnitId}')
-      .build()
 
-    const managedRule = createRLSRule()
+    const managedBuilder = createRLSRule()
       .equals(managerField, '${userId}')
-      .build()
 
     return createRLSRule()
-      .or(
-        createRLSRule().expressions.push(orgUnitRule) && createRLSRule(),
-        createRLSRule().expressions.push(managedRule) && createRLSRule()
-      )
+      .or(orgUnitBuilder, managedBuilder)
       .buildOr()
   },
 

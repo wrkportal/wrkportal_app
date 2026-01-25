@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 // POST - Approve an approval request
 export async function POST(
@@ -18,19 +19,27 @@ export async function POST(
     const { comments } = body
 
     // Find the approval and check if user is an approver
-    const approval = await prisma.approval.findUnique({
+    type ApprovalWithApprovers = Prisma.ApprovalGetPayload<{
+      include: {
+        approvers: true
+      }
+    }>
+
+    type ApprovalApprover = ApprovalWithApprovers['approvers'][0]
+
+    const approval = (await prisma.approval.findUnique({
       where: { id: params.id },
       include: {
         approvers: true,
       },
-    })
+    })) as ApprovalWithApprovers | null
 
     if (!approval) {
       return NextResponse.json({ error: 'Approval not found' }, { status: 404 })
     }
 
     const approverRecord = approval.approvers.find(
-      (a) => a.userId === session.user.id
+      (a: ApprovalApprover) => a.userId === session.user.id
     )
 
     if (!approverRecord) {
@@ -58,13 +67,13 @@ export async function POST(
     })
 
     // Check if all approvers have approved
-    const updatedApproval = await prisma.approval.findUnique({
+    const updatedApproval = (await prisma.approval.findUnique({
       where: { id: params.id },
       include: { approvers: true },
-    })
+    })) as ApprovalWithApprovers | null
 
     const allApproved = updatedApproval!.approvers.every(
-      (a) => a.status === 'APPROVED'
+      (a: ApprovalApprover) => a.status === 'APPROVED'
     )
 
     if (allApproved) {

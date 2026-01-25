@@ -95,43 +95,54 @@ export async function POST(request: NextRequest) {
         const body = await request.json()
         const data = createCatalogEntrySchema.parse(body)
 
-        const entry = await prisma.dataCatalogEntry.upsert({
+        // Check if entry exists
+        const existingEntry = await prisma.dataCatalogEntry.findFirst({
           where: {
-            tenantId_resourceType_resourceId: {
-              tenantId: userInfo.tenantId,
-              resourceType: data.resourceType,
-              resourceId: data.resourceId,
-            },
-          },
-          create: {
             tenantId: userInfo.tenantId,
             resourceType: data.resourceType,
             resourceId: data.resourceId,
-            name: data.name,
-            description: data.description,
-            tags: data.tags || [],
-            category: data.category || null,
-            ownerId: data.ownerId || null,
-            classification: data.classification || null,
-            sensitivity: data.sensitivity || null,
-            businessGlossary: data.businessGlossary || null,
-            technicalMetadata: data.technicalMetadata || null,
-            customFields: data.customFields || null,
-            isPublished: data.isPublished,
           },
-          update: {
-            name: data.name,
-            description: data.description,
-            tags: data.tags,
-            category: data.category || null,
-            ownerId: data.ownerId || null,
-            classification: data.classification || null,
-            sensitivity: data.sensitivity || null,
-            businessGlossary: data.businessGlossary || null,
-            technicalMetadata: data.technicalMetadata || null,
-            customFields: data.customFields || null,
-            isPublished: data.isPublished,
-          },
+        })
+
+        const entry = existingEntry
+          ? await prisma.dataCatalogEntry.update({
+              where: { id: existingEntry.id },
+              data: {
+                name: data.name,
+                description: data.description,
+                tags: data.tags,
+                category: data.category || null,
+                ownerId: data.ownerId || null,
+                classification: data.classification || null,
+                sensitivity: data.sensitivity || null,
+                businessGlossary: data.businessGlossary || null,
+                technicalMetadata: data.technicalMetadata || null,
+                customFields: data.customFields || null,
+                isPublished: data.isPublished,
+              },
+            })
+          : await prisma.dataCatalogEntry.create({
+              data: {
+                tenantId: userInfo.tenantId,
+                resourceType: data.resourceType,
+                resourceId: data.resourceId,
+                name: data.name,
+                description: data.description,
+                tags: data.tags || [],
+                category: data.category || null,
+                ownerId: data.ownerId || null,
+                classification: data.classification || null,
+                sensitivity: data.sensitivity || null,
+                businessGlossary: data.businessGlossary || null,
+                technicalMetadata: data.technicalMetadata || null,
+                customFields: data.customFields || null,
+                isPublished: data.isPublished,
+              },
+            })
+
+        // Fetch the entry with includes
+        const entryWithIncludes = await prisma.dataCatalogEntry.findUnique({
+          where: { id: entry.id },
           include: {
             owner: {
               select: {
@@ -145,7 +156,7 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        return NextResponse.json({ entry }, { status: 201 })
+        return NextResponse.json({ entry: entryWithIncludes }, { status: 201 })
       } catch (error: any) {
         if (error instanceof z.ZodError) {
           return NextResponse.json(

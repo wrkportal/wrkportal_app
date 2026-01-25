@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
           {
             OR: [
               { managerId: userId },
-              { members: { some: { id: userId } } },
+              { teamMembers: { some: { userId } } },
             ],
           },
           {

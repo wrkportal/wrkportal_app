@@ -120,7 +120,7 @@ export function ColumnMappingDialog({
   sampleRows,
   onConfirm,
   loading = false,
-  standardFields = LEAD_STANDARD_FIELDS,
+  standardFields = [...LEAD_STANDARD_FIELDS],
 }: ColumnMappingDialogProps) {
   const [mapping, setMapping] = useState<Record<string, string>>({})
   const [usedFields, setUsedFields] = useState<Set<string>>(new Set())
@@ -134,7 +134,7 @@ export function ColumnMappingDialog({
 
     columns.forEach((col, index) => {
       const normalized = normalizedColumns[index]
-      
+
       // Try to match common variations
       if (normalized.includes('firstname') || normalized.includes('first') || normalized === 'fname') {
         autoMapping[col] = 'firstName'

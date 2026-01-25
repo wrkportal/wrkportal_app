@@ -6,6 +6,7 @@ import { generateFunctionCall, generateChatCompletion, ChatTool } from '../ai-se
 import { PROMPTS } from '../prompts'
 import { convertOpenAIMessage, convertOpenAITools } from '../compat'
 import type OpenAI from 'openai'
+import type { ChatMessage } from '../types'
 
 // Define available functions for the AI assistant (using ChatTool type for compatibility)
 export const ASSISTANT_FUNCTIONS: ChatTool[] = [
@@ -501,12 +502,19 @@ export const ASSISTANT_FUNCTIONS: ChatTool[] = [
  * Keep the system message and the most recent exchanges
  */
 function trimConversationHistory(
-  messages: Array<{ role: string; content: string }>,
+  messages: OpenAI.Chat.ChatCompletionMessageParam[],
   maxMessages: number = 10
-): Array<{ role: string; content: string }> {
+): ChatMessage[] {
+  const toChatMessage = (message: OpenAI.Chat.ChatCompletionMessageParam): ChatMessage => ({
+    role: message.role === 'developer' ? 'system' : (message.role === 'function' ? 'tool' : message.role),
+    content: typeof message.content === 'string' ? message.content : '',
+    name: 'name' in message ? message.name : undefined,
+    tool_call_id: 'tool_call_id' in message ? message.tool_call_id : undefined,
+  })
+
   // Always keep system message
-  const systemMessage = messages[0]?.role === 'system' ? messages[0] : null
-  const conversationMessages = systemMessage ? messages.slice(1) : messages
+  const systemMessage = messages[0]?.role === 'system' ? toChatMessage(messages[0]) : null
+  const conversationMessages = (systemMessage ? messages.slice(1) : messages).map(toChatMessage)
   
   // If we're under the limit, return as is
   if (conversationMessages.length <= maxMessages) {
@@ -568,7 +576,10 @@ export async function chatWithAssistant(
           })
 
           // Add function result to messages
-          trimmedMessages.push(responseMessage)
+          trimmedMessages.push({
+            role: responseMessage.role,
+            content: responseMessage.content ?? '',
+          })
           trimmedMessages.push({
             role: 'tool',
             content: JSON.stringify(functionResult),
@@ -608,7 +619,7 @@ export async function chatWithAssistant(
  * Simple query without function calling
  */
 export async function askAssistant(question: string, context?: string): Promise<string> {
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+  const messages: ChatMessage[] = [
     { role: 'system', content: PROMPTS.ASSISTANT_SYSTEM },
   ]
 

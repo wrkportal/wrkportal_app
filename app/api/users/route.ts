@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     })
 
     // Format users to match expected structure (id, name, email)
-    const formattedUsers = users.map(user => ({
+    const formattedUsers = users.map((user: { id: string; name: string | null; firstName: string | null; lastName: string | null; email: string; role: string; status: string; avatar: string | null }) => ({
       id: user.id,
       name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
       email: user.email,

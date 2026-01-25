@@ -38,16 +38,16 @@ export async function GET(request: NextRequest) {
       { id: 'HIRED', label: 'Hired', color: '#a28dff' },
     ]
 
-    const pipeline = stages.map((stage) => {
+    const pipeline = stages.map((stage: any) => {
       // For now, distribute candidates across stages for demo
       // In real implementation, this would come from RecruitmentCandidate.status
       const stageCandidates = candidates
-        .filter((_, index) => {
+        .filter((_: any, index: number) => {
           // Simple distribution for demo - replace with actual status filtering
-          const stageIndex = stages.findIndex((s) => s.id === stage.id)
+          const stageIndex = stages.findIndex((s: any) => s.id === stage.id)
           return index % stages.length === stageIndex
         })
-        .map((candidate) => ({
+        .map((candidate: any) => ({
           id: candidate.id,
           name:
             `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim() ||
@@ -70,10 +70,10 @@ export async function GET(request: NextRequest) {
     // Calculate pipeline metrics
     const totalCandidates = candidates.length
     const totalInPipeline = pipeline.reduce(
-      (sum, stage) => sum + stage.count,
+      (sum: number, stage: any) => sum + stage.count,
       0
     )
-    const conversionRates = pipeline.map((stage, index) => {
+    const conversionRates = pipeline.map((stage: any, index: number) => {
       const previousCount =
         index > 0 ? pipeline[index - 1].count : totalCandidates
       const rate = previousCount > 0 ? (stage.count / previousCount) * 100 : 0

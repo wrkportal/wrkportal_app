@@ -86,7 +86,13 @@ export const apiBatcher = new APIBatcher()
 export async function batchAPICalls<T extends Record<string, any>>(
   requests: Array<{ url: string; options?: RequestInit; key: keyof T }>
 ): Promise<T> {
-  return apiBatcher.batchRequests(requests) as T
+  const batchedRequests: BatchedRequest[] = requests.map(req => ({
+    url: req.url,
+    options: req.options,
+    key: String(req.key),
+  }))
+  const result = await apiBatcher.batchRequests(batchedRequests)
+  return result as unknown as T
 }
 
 /**

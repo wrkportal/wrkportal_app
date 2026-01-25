@@ -68,11 +68,11 @@ export abstract class BaseIntegration {
    * Update integration status
    */
   protected async updateStatus(status: IntegrationConfig['status'], errorMessage?: string) {
-    await prisma.salesIntegration.update({
+    await prisma.integration.update({
       where: { id: this.config.id },
       data: {
         status: status as any,
-        errorMessage: errorMessage || null,
+        lastError: errorMessage || null,
         lastSyncAt: status === 'CONNECTED' ? new Date() : undefined,
       },
     })

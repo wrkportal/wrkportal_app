@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     // Filter by custom fields if search term exists
     if (search) {
       const searchLower = search.toLowerCase()
-      leads = leads.filter((lead) => {
+      leads = leads.filter((lead: any) => {
         // Check if standard fields match (already done by Prisma, but double-check)
         const standardMatch =
           lead.firstName.toLowerCase().includes(searchLower) ||

@@ -9,6 +9,8 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { getFieldMappings, upsertFieldMapping, deleteFieldMapping } from '@/lib/integrations/field-mapping'
 
+const getSalesIntegration = () => (prisma as any).salesIntegration
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -19,7 +21,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const integration = await prisma.salesIntegration.findUnique({
+    const salesIntegration = getSalesIntegration()
+    if (!salesIntegration) {
+      return NextResponse.json({ error: 'Integrations are unavailable' }, { status: 503 })
+    }
+
+    const integration = await (salesIntegration as any).findUnique({
       where: { id: params.id },
     })
 
@@ -49,7 +56,12 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const integration = await prisma.salesIntegration.findUnique({
+    const salesIntegration = getSalesIntegration()
+    if (!salesIntegration) {
+      return NextResponse.json({ error: 'Integrations are unavailable' }, { status: 503 })
+    }
+
+    const integration = await (salesIntegration as any).findUnique({
       where: { id: params.id },
     })
 

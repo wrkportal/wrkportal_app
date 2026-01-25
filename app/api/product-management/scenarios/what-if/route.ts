@@ -76,19 +76,19 @@ export async function POST(req: NextRequest) {
 
         // Scenario 1: Delay Impact Analysis
         if (scenarioType === 'DELAY' && delayDays) {
-          projects.forEach((project) => {
+          projects.forEach((project: any) => {
             const delayedEndDate = new Date(project.endDate || new Date())
             delayedEndDate.setDate(delayedEndDate.getDate() + delayDays)
 
             // Calculate impact on releases
-            const impactedReleases = project.releases.map((release) => {
+            const impactedReleases = project.releases.map((release: any) => {
               const releaseDate = release.releaseDate || release.targetDate
               const newReleaseDate = new Date(releaseDate)
               newReleaseDate.setDate(newReleaseDate.getDate() + delayDays)
 
               const tasks = release.tasks || []
               const totalTasks = tasks.length
-              const completedTasks = tasks.filter((t) => t.status === 'DONE').length
+              const completedTasks = tasks.filter((t: any) => t.status === 'DONE').length
               const remainingTasks = totalTasks - completedTasks
 
               return {
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
             })
 
             // Calculate impact on dependencies
-            const dependencies = project.tasks.filter((t) => t.status !== 'DONE').length
+            const dependencies = project.tasks.filter((t: any) => t.status !== 'DONE').length
 
             scenarios.push({
               projectId: project.id,
@@ -129,11 +129,11 @@ export async function POST(req: NextRequest) {
 
         // Scenario 2: Resource Reallocation
         if (scenarioType === 'RESOURCE_REALLOCATION' && resourceChanges) {
-          projects.forEach((project) => {
+          projects.forEach((project: any) => {
             const tasks = project.tasks || []
             const currentAssignments = new Map<string, number>()
 
-            tasks.forEach((task) => {
+            tasks.forEach((task: any) => {
               if (task.assigneeId) {
                 currentAssignments.set(
                   task.assigneeId,
@@ -188,9 +188,9 @@ export async function POST(req: NextRequest) {
 
         // Scenario 3: Release Date Optimization
         if (scenarioType === 'RELEASE_OPTIMIZATION' && releaseDateChanges) {
-          projects.forEach((project) => {
+          projects.forEach((project: any) => {
             const releases = project.releases || []
-            const optimizedReleases = releases.map((release) => {
+            const optimizedReleases = releases.map((release: any) => {
               const change = releaseDateChanges.find((rc: any) => rc.releaseId === release.id)
               if (!change) return null
 
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
 
               const tasks = release.tasks || []
               const totalTasks = tasks.length
-              const completedTasks = tasks.filter((t) => t.status === 'DONE').length
+              const completedTasks = tasks.filter((t: any) => t.status === 'DONE').length
               const remainingTasks = totalTasks - completedTasks
 
               // Calculate if new date is feasible

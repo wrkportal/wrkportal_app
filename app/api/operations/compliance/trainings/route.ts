@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsComplianceTraining model
+function getOperationsComplianceTraining() {
+  return (prisma as any).operationsComplianceTraining as any
+}
+
 const assignTrainingSchema = z.object({
   employeeId: z.string().min(1),
   trainingName: z.string().min(1),
@@ -47,8 +52,16 @@ export async function GET(req: NextRequest) {
           ]
         }
 
+        const operationsComplianceTraining = getOperationsComplianceTraining()
+        if (!operationsComplianceTraining) {
+          return NextResponse.json(
+            { error: 'Operations compliance training model not available', trainings: [], stats: { total: 0, pending: 0, overdue: 0, completed: 0 }, pagination: { page, limit, total: 0, totalPages: 0 } },
+            { status: 503 }
+          )
+        }
+
         const [trainings, total] = await Promise.all([
-          prisma.operationsComplianceTraining.findMany({
+          (operationsComplianceTraining as any).findMany({
             where,
             include: {
               employee: {
@@ -67,28 +80,28 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsComplianceTraining.count({ where }),
+          (operationsComplianceTraining as any).count({ where }),
         ])
 
         // Calculate stats
         const stats = {
-          total: await prisma.operationsComplianceTraining.count({
+          total: await (operationsComplianceTraining as any).count({
             where: { tenantId: userInfo.tenantId },
           }),
-          pending: await prisma.operationsComplianceTraining.count({
+          pending: await (operationsComplianceTraining as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'PENDING',
             },
           }),
-          overdue: await prisma.operationsComplianceTraining.count({
+          overdue: await (operationsComplianceTraining as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'PENDING',
               dueDate: { lt: new Date() },
             },
           }),
-          completed: await prisma.operationsComplianceTraining.count({
+          completed: await (operationsComplianceTraining as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'COMPLETED',
@@ -127,7 +140,15 @@ export async function POST(req: NextRequest) {
         const body = await request.json()
         const validatedData = assignTrainingSchema.parse(body)
 
-        const training = await prisma.operationsComplianceTraining.create({
+        const operationsComplianceTraining = getOperationsComplianceTraining()
+        if (!operationsComplianceTraining) {
+          return NextResponse.json(
+            { error: 'Operations compliance training model not available' },
+            { status: 503 }
+          )
+        }
+
+        const training = await (operationsComplianceTraining as any).create({
           data: {
             employeeId: validatedData.employeeId,
             trainingName: validatedData.trainingName,

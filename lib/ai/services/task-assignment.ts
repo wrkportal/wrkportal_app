@@ -5,7 +5,7 @@
 import { extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { TaskAssignmentRecommendation, TaskAssignmentAnalysis } from '@/types/ai'
-import { Task, User, Skill } from '@/types'
+import { Task, User, Skill, UserRole, TaskStatus, Priority } from '@/types'
 
 interface TaskAssignmentContext {
   task: Task
@@ -128,11 +128,15 @@ export async function assignTasks(data: {
         id: `task-${idx}`,
         title: typeof t === 'string' ? t : t.title,
         description: typeof t === 'string' ? '' : (t.description || ''),
-        priority: typeof t === 'string' ? 'MEDIUM' : (t.priority || 'MEDIUM'),
+        priority: typeof t === 'string' ? Priority.MEDIUM : ((t.priority as Priority) || Priority.MEDIUM),
         tags: [],
-        status: 'TODO' as const,
+        status: TaskStatus.TODO,
         projectId: 'temp',
         reporterId: 'temp',
+        checklist: [],
+        dependencies: [],
+        attachments: [],
+        comments: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       }))
@@ -141,14 +145,15 @@ export async function assignTasks(data: {
   const mockUsers: User[] = data.teamMembers.split('\n').map((line, idx) => ({
     id: `user-${idx}`,
     email: `user${idx}@example.com`,
-    name: line.split('-')[0].trim(),
     firstName: line.split('-')[0].trim().split(' ')[0],
     lastName: line.split('-')[0].trim().split(' ')[1] || '',
     tenantId: 'temp',
-    role: 'TEAM_MEMBER' as const,
+    role: UserRole.TEAM_MEMBER,
     skills: [],
+    timezone: 'UTC',
+    locale: 'en-US',
+    status: 'ACTIVE',
     createdAt: new Date(),
-    updatedAt: new Date(),
   }))
 
   const recommendations = await Promise.all(

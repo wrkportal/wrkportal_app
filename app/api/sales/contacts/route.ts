@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Add opportunity count manually since it's a many-to-many relation
-    const contactIds = contacts.map((c) => c.id)
+    const contactIds = contacts.map((c: any) => c.id)
     const opportunityCounts = await prisma.salesOpportunityContact.groupBy({
       by: ['contactId'],
       where: {
@@ -89,10 +89,10 @@ export async function GET(request: NextRequest) {
     })
 
     const opportunityCountMap = new Map(
-      opportunityCounts.map((oc) => [oc.contactId, oc._count.contactId])
+      opportunityCounts.map((oc: any) => [oc.contactId, oc._count.contactId])
     )
 
-    const contactsWithCounts = contacts.map((contact) => ({
+    const contactsWithCounts = contacts.map((contact: any) => ({
       ...contact,
       _count: {
         ...contact._count,

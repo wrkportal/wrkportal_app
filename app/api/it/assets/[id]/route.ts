@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsAsset model
+function getOperationsAsset() {
+  return (prisma as any).operationsAsset as any
+}
+
 const updateAssetSchema = z.object({
   name: z.string().min(1).optional(),
   category: z.string().optional(),
@@ -30,7 +35,15 @@ export async function GET(
       try {
         const { id } = await params
 
-        const asset = await prisma.operationsAsset.findFirst({
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available' },
+            { status: 503 }
+          )
+        }
+
+        const asset = await (operationsAsset as any).findFirst({
           where: {
             id,
             tenantId: userInfo.tenantId,
@@ -107,7 +120,15 @@ export async function PUT(
         if (data.warrantyExpiry) updateData.warrantyExpiry = new Date(data.warrantyExpiry)
         if (data.notes !== undefined) updateData.notes = data.notes
 
-        const asset = await prisma.operationsAsset.update({
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available' },
+            { status: 503 }
+          )
+        }
+
+        const asset = await (operationsAsset as any).update({
           where: {
             id,
             tenantId: userInfo.tenantId,
@@ -170,13 +191,21 @@ export async function DELETE(
         const { id } = await params
 
         // Soft delete by setting status to RETIRED
-        await prisma.operationsAsset.update({
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available' },
+            { status: 503 }
+          )
+        }
+
+        await (operationsAsset as any).update({
           where: {
             id,
             tenantId: userInfo.tenantId,
           },
           data: {
-            status: 'RETIRED',
+            status: 'RETIRED' as any,
           },
         })
 

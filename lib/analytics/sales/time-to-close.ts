@@ -65,7 +65,12 @@ export async function analyzeTimeToClose(
   // Get closed won opportunities with related data
   const opportunities = await prisma.salesOpportunity.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      createdAt: true,
+      actualCloseDate: true,
+      stage: true,
+      ownerId: true,
       owner: {
         select: {
           id: true,
@@ -78,35 +83,23 @@ export async function analyzeTimeToClose(
           industry: true
         }
       }
-    },
-    select: {
-      id: true,
-      createdAt: true,
-      actualCloseDate: true,
-      stage: true,
-      ownerId: true,
-      account: {
-        select: {
-          industry: true
-        }
-      }
     }
   })
 
   // Calculate overall metrics
   const daysToClose = opportunities
-    .filter(opp => opp.actualCloseDate)
-    .map(opp => {
+    .filter((opp: any) => opp.actualCloseDate)
+    .map((opp: any) => {
       const days = Math.round(
         (opp.actualCloseDate!.getTime() - opp.createdAt.getTime()) / (1000 * 60 * 60 * 24)
       )
       return days
     })
-    .sort((a, b) => a - b)
+    .sort((a: number, b: number) => a - b)
 
   const overall = {
     avgDays: daysToClose.length > 0
-      ? Math.round((daysToClose.reduce((sum, days) => sum + days, 0) / daysToClose.length) * 10) / 10
+      ? Math.round((daysToClose.reduce((sum: number, days: number) => sum + days, 0) / daysToClose.length) * 10) / 10
       : 0,
     medianDays: daysToClose.length > 0
       ? daysToClose[Math.floor(daysToClose.length / 2)]
@@ -121,7 +114,7 @@ export async function analyzeTimeToClose(
 
   // By rep
   const repMap = new Map<string, { days: number[], name: string }>()
-  opportunities.forEach(opp => {
+  opportunities.forEach((opp: any) => {
     if (!opp.actualCloseDate) return
     const days = Math.round(
       (opp.actualCloseDate.getTime() - opp.createdAt.getTime()) / (1000 * 60 * 60 * 24)
@@ -145,7 +138,7 @@ export async function analyzeTimeToClose(
 
   // By industry
   const industryMap = new Map<string, number[]>()
-  opportunities.forEach(opp => {
+  opportunities.forEach((opp: any) => {
     if (!opp.actualCloseDate || !opp.account?.industry) return
     const days = Math.round(
       (opp.actualCloseDate.getTime() - opp.createdAt.getTime()) / (1000 * 60 * 60 * 24)
@@ -165,7 +158,7 @@ export async function analyzeTimeToClose(
 
   // Trend by month
   const trendMap = new Map<string, number[]>()
-  opportunities.forEach(opp => {
+  opportunities.forEach((opp: any) => {
     if (!opp.actualCloseDate) return
     const days = Math.round(
       (opp.actualCloseDate.getTime() - opp.createdAt.getTime()) / (1000 * 60 * 60 * 24)

@@ -168,7 +168,7 @@ export async function DELETE(
       select: { id: true },
     })
 
-    const queryIds = relatedQueries.map(q => q.id)
+    const queryIds = relatedQueries.map((q: any) => q.id)
     const relatedQueriesCount = queryIds.length
 
     // Delete related visualizations first (they depend on queries)
@@ -179,7 +179,7 @@ export async function DELETE(
       select: { id: true },
     })
 
-    const visualizationIds = relatedVisualizations.map(v => v.id)
+    const visualizationIds = relatedVisualizations.map((v: any) => v.id)
     const relatedVisualizationsCount = visualizationIds.length
 
     // Delete dashboard visualizations first (they reference visualizations)

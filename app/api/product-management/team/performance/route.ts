@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
         >()
 
         // Process tasks
-        tasks.forEach((task) => {
+        tasks.forEach((task: any) => {
           if (!task.assigneeId) return
 
           const current = teamMap.get(task.assigneeId) || {
@@ -132,11 +132,11 @@ export async function GET(req: NextRequest) {
         })
 
         // Calculate velocity from sprints
-        sprints.forEach((sprint) => {
+        sprints.forEach((sprint: any) => {
           const sprintTasks = sprint.tasks || []
-          const completedTasks = sprintTasks.filter((t) => t.status === 'DONE')
+          const completedTasks = sprintTasks.filter((t: any) => t.status === 'DONE')
 
-          completedTasks.forEach((task) => {
+          completedTasks.forEach((task: any) => {
             if (!task.assigneeId) return
             const member = teamMap.get(task.assigneeId)
             if (member) {
@@ -146,10 +146,10 @@ export async function GET(req: NextRequest) {
         })
 
         // Calculate average cycle time (simplified - time from creation to completion)
-        const completedTasks = tasks.filter((t) => t.status === 'DONE' && t.assigneeId)
+        const completedTasks = tasks.filter((t: any) => t.status === 'DONE' && t.assigneeId)
         const cycleTimes: { [userId: string]: number[] } = {}
 
-        completedTasks.forEach((task) => {
+        completedTasks.forEach((task: any) => {
           if (!task.assigneeId || !task.createdAt || !task.updatedAt) return
 
           const cycleTime = Math.ceil(
@@ -164,17 +164,17 @@ export async function GET(req: NextRequest) {
         })
 
         // Calculate averages
-        Object.keys(cycleTimes).forEach((userId) => {
+        Object.keys(cycleTimes).forEach((userId: string) => {
           const member = teamMap.get(userId)
           if (member && cycleTimes[userId].length > 0) {
             member.avgCycleTime = Math.round(
-              cycleTimes[userId].reduce((a, b) => a + b, 0) / cycleTimes[userId].length
+              cycleTimes[userId].reduce((a: number, b: number) => a + b, 0) / cycleTimes[userId].length
             )
           }
         })
 
         // Convert to array and calculate completion rates
-        const teamPerformance = Array.from(teamMap.values()).map((member) => {
+        const teamPerformance = Array.from(teamMap.values()).map((member: any) => {
           const completionRate =
             member.totalTasks > 0
               ? Math.round((member.completedTasks / member.totalTasks) * 100)
@@ -223,7 +223,7 @@ export async function GET(req: NextRequest) {
                   )
                 : 0,
             totalTasks: tasks.length,
-            completedTasks: tasks.filter((t) => t.status === 'DONE').length,
+            completedTasks: tasks.filter((t: any) => t.status === 'DONE').length,
           },
         })
       } catch (error) {

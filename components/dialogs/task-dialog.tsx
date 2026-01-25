@@ -14,6 +14,7 @@ interface TaskDialogProps {
     open: boolean
     onClose: () => void
     onSubmit: (data: any) => void
+    projectId?: string
 }
 
 interface OnboardedUser {
@@ -34,13 +35,13 @@ const MANAGER_ROLES = [
     'RESOURCE_MANAGER'
 ]
 
-export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
+export function TaskDialog({ open, onClose, onSubmit, projectId }: TaskDialogProps) {
     const currentUser = useAuthStore((state) => state.user)
 
     const [formData, setFormData] = useState({
         title: '',
         description: '',
-        projectId: '',
+        projectId: projectId || '',
         assigneeId: '',
         assigneeName: '',
         priority: 'MEDIUM',
@@ -76,9 +77,9 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
 
             // Auto-assign to themselves if no assignee set
             if (!formData.assigneeId && currentUser) {
-                const displayName = currentUser.firstName && currentUser.lastName 
+                const displayName = currentUser.firstName && currentUser.lastName
                     ? `${currentUser.firstName} ${currentUser.lastName}`
-                    : currentUser.name || currentUser.email
+                    : (currentUser as any).name || currentUser.email
                 setFormData(prev => ({
                     ...prev,
                     assigneeId: currentUser.id,
@@ -91,6 +92,9 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
 
     // Fetch onboarded users and projects on mount
     useEffect(() => {
+        if (projectId) {
+            setFormData(prev => ({ ...prev, projectId }))
+        }
         const fetchData = async () => {
             try {
                 const [usersRes, projectsRes] = await Promise.all([
@@ -126,8 +130,8 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
             const searchTerm = value.split('@').pop()?.toLowerCase() || ''
             // Filter from assignableUsers instead of all onboardedUsers
             const filtered = assignableUsers.filter(user =>
-                user.firstName.toLowerCase().includes(searchTerm) ||
-                user.lastName.toLowerCase().includes(searchTerm) ||
+                (user.firstName || '').toLowerCase().includes(searchTerm) ||
+                (user.lastName || '').toLowerCase().includes(searchTerm) ||
                 user.email.toLowerCase().includes(searchTerm)
             )
             setFilteredUsers(filtered)
@@ -138,7 +142,7 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
     }
 
     const selectUser = (user: OnboardedUser) => {
-        const displayName = user.firstName && user.lastName 
+        const displayName = user.firstName && user.lastName
             ? `${user.firstName} ${user.lastName}`
             : user.name || user.email
         setFormData({
@@ -152,22 +156,22 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         // Ensure assigneeId is set - default to current user if empty
         const submissionData = {
             ...formData,
-            assigneeId: formData.assigneeId && formData.assigneeId.trim() !== '' 
-                ? formData.assigneeId 
+            assigneeId: formData.assigneeId && formData.assigneeId.trim() !== ''
+                ? formData.assigneeId
                 : currentUser?.id || ''
         }
-        
+
         onSubmit(submissionData)
         onClose()
         // Reset form
         setFormData({
             title: '',
             description: '',
-            projectId: '',
+            projectId: projectId || '',
             assigneeId: '',
             assigneeName: '',
             priority: 'MEDIUM',
@@ -289,8 +293,8 @@ export function TaskDialog({ open, onClose, onSubmit }: TaskDialogProps) {
                                             >
                                                 <div>
                                                     <p className="text-sm font-medium">
-                                                        {user.firstName && user.lastName 
-                                                            ? `${user.firstName} ${user.lastName}` 
+                                                        {user.firstName && user.lastName
+                                                            ? `${user.firstName} ${user.lastName}`
                                                             : user.name || user.email}
                                                     </p>
                                                     <p className="text-xs text-muted-foreground">{user.email}</p>

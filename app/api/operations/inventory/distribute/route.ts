@@ -4,6 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsInventoryItem model
+function getOperationsInventoryItem() {
+  return (prisma as any).operationsInventoryItem as any
+}
+
+// Helper function to safely access operationsInventoryDistribution model
+function getOperationsInventoryDistribution() {
+  return (prisma as any).operationsInventoryDistribution as any
+}
+
 const distributeSchema = z.object({
   itemId: z.string().min(1),
   fromLocation: z.string().min(1),
@@ -23,8 +33,17 @@ export async function POST(req: NextRequest) {
         const body = await request.json()
         const validatedData = distributeSchema.parse(body)
 
+        const operationsInventoryItem = getOperationsInventoryItem()
+        const operationsInventoryDistribution = getOperationsInventoryDistribution()
+        if (!operationsInventoryItem || !operationsInventoryDistribution) {
+          return NextResponse.json(
+            { error: 'Operations inventory models not available' },
+            { status: 503 }
+          )
+        }
+
         // Get the inventory item
-        const item = await prisma.operationsInventoryItem.findFirst({
+        const item = await operationsInventoryItem.findFirst({
           where: {
             id: validatedData.itemId,
             tenantId: userInfo.tenantId,
@@ -55,7 +74,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Create distribution record
-        const distribution = await prisma.operationsInventoryDistribution.create({
+        const distribution = await operationsInventoryDistribution.create({
           data: {
             itemId: validatedData.itemId,
             fromLocation: validatedData.fromLocation,
@@ -78,7 +97,7 @@ export async function POST(req: NextRequest) {
           newStatus = 'LOW_STOCK'
         }
 
-        const updatedItem = await prisma.operationsInventoryItem.update({
+        const updatedItem = await operationsInventoryItem.update({
           where: { id: validatedData.itemId },
           data: {
             quantity: newQuantity,
@@ -89,7 +108,7 @@ export async function POST(req: NextRequest) {
 
         // If distributing to a different location, create or update item at destination
         if (validatedData.toLocation !== validatedData.fromLocation) {
-          const existingAtDestination = await prisma.operationsInventoryItem.findFirst({
+          const existingAtDestination = await operationsInventoryItem.findFirst({
             where: {
               itemName: item.itemName,
               location: validatedData.toLocation,
@@ -99,7 +118,7 @@ export async function POST(req: NextRequest) {
 
           if (existingAtDestination) {
             // Update existing item at destination
-            await prisma.operationsInventoryItem.update({
+            await operationsInventoryItem.update({
               where: { id: existingAtDestination.id },
               data: {
                 quantity: existingAtDestination.quantity + validatedData.quantity,
@@ -110,7 +129,7 @@ export async function POST(req: NextRequest) {
             })
           } else {
             // Create new item at destination
-            await prisma.operationsInventoryItem.create({
+            await operationsInventoryItem.create({
               data: {
                 itemName: item.itemName,
                 category: item.category,
@@ -128,7 +147,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Update distribution status to completed
-        const completedDistribution = await prisma.operationsInventoryDistribution.update({
+        const completedDistribution = await operationsInventoryDistribution.update({
           where: { id: distribution.id },
           data: { status: 'COMPLETED' },
           include: {

@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { WorkflowType, MethodologyType } from '@/types/index'
+import { TaskStatus, Priority } from '@prisma/client'
 import { getTaskTemplates } from '@/lib/workflows/task-templates'
 
 // GET - Get task templates for a workflow and methodology
@@ -69,8 +70,8 @@ export async function POST(req: NextRequest) {
       description: z.string().optional(),
       category: z.string().optional(),
       fields: z.any(), // JSON schema for fields
-      defaultStatus: z.string().optional(),
-      defaultPriority: z.string().optional(),
+      defaultStatus: z.nativeEnum(TaskStatus).optional(),
+      defaultPriority: z.nativeEnum(Priority).optional(),
       workflowFields: z.any().optional(),
     })
 

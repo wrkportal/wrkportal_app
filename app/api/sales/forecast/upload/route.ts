@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const accountMap = new Map(accounts.map((acc) => [acc.name.toLowerCase(), acc.id]))
+    const accountMap = new Map(accounts.map((acc: any) => [acc.name.toLowerCase(), acc.id]))
 
     const results = {
       success: [] as any[],
@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
           })
           continue
         }
+        const accountIdValue = accountId as string
 
         // Extract period
         const period = row['Period']?.toString() || ''
@@ -154,14 +155,14 @@ export async function POST(request: NextRequest) {
         const forecastType =
           (row['Forecast Type'] || row['Type'])?.toString().toUpperCase() || 'MONTHLY'
         const validTypes = ['MONTHLY', 'QUARTERLY', 'YEARLY']
-        const finalForecastType = validTypes.includes(forecastType) ? forecastType : 'MONTHLY'
+        const finalForecastType = (validTypes.includes(forecastType) ? forecastType : 'MONTHLY') as any
 
         // Create or update forecast
         const forecast = await prisma.salesForecast.upsert({
           where: {
             tenantId_accountId_period: {
               tenantId: session.user.tenantId!,
-              accountId,
+              accountId: accountIdValue,
               period,
             },
           },
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
           },
           create: {
             tenantId: session.user.tenantId!,
-            accountId,
+            accountId: accountIdValue,
             userId: session.user.id,
             period,
             forecastType: finalForecastType,

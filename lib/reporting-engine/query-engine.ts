@@ -5,9 +5,29 @@
 
 import { prisma } from '@/lib/prisma'
 import { buildRLSFilter, type RLSEvaluationContext } from '@/lib/security/rls-engine'
+
+// DuckDB type definitions
+interface DuckDBDatabase {
+  connect(): DuckDBConnection
+  all(query: string, callback: (err: Error | null, rows: any[]) => void): void
+  run(query: string, callback?: (err: Error | null) => void): void
+  close(): void
+}
+
+interface DuckDBConnection {
+  all(query: string, callback: (err: Error | null, rows: any[]) => void): void
+  run(query: string, callback?: (err: Error | null) => void): void
+  close(): void
+}
+
+interface DuckDBModule {
+  Database: new (path: string) => DuckDBDatabase
+  Connection: new (db: DuckDBDatabase) => DuckDBConnection
+}
+
 // DuckDB is optional - will fallback to PostgreSQL if not available
 // Completely isolated to avoid Turbopack static analysis using eval("require")
-let DuckDB: any = null
+let DuckDB: DuckDBModule | null = null
 
 /**
  * Get DuckDB module at runtime (only if enabled and not on Vercel)
@@ -80,8 +100,8 @@ export interface QueryOptions {
 }
 
 export class QueryEngine {
-  private db: DuckDB.Database | null = null
-  private connection: DuckDB.Connection | null = null
+  private db: DuckDBDatabase | null = null
+  private connection: DuckDBConnection | null = null
   private duckdbInitialized = false
 
   constructor() {
@@ -95,7 +115,7 @@ export class QueryEngine {
     
     if (DuckDB) {
       try {
-        this.db = new DuckDB.Database(':memory:')
+        this.db = new DuckDB.Database(':memory:') as DuckDBDatabase
         this.connection = this.db.connect()
       } catch (error) {
         console.warn('DuckDB not available, falling back to PostgreSQL')
@@ -203,11 +223,12 @@ export class QueryEngine {
     // Simple field comparisons
     for (const [key, value] of Object.entries(where)) {
       if (typeof value === 'object' && value !== null) {
-        if (value.equals !== undefined) {
-          return `${key} = '${value.equals}'`
+        const valueObj = value as Record<string, any>
+        if (valueObj.equals !== undefined) {
+          return `${key} = '${valueObj.equals}'`
         }
-        if (value.in && Array.isArray(value.in)) {
-          return `${key} IN (${value.in.map((v: any) => `'${v}'`).join(', ')})`
+        if (valueObj.in && Array.isArray(valueObj.in)) {
+          return `${key} IN (${valueObj.in.map((v: any) => `'${v}'`).join(', ')})`
         }
       } else {
         return `${key} = '${value}'`

@@ -331,7 +331,7 @@ export default function CandidateDetailPage() {
   }
 
   const handleSendEmail = () => {
-    setEmailData({ subject: '', body: '' })
+    setEmailData({ subject: '', body: '', templateId: '' })
     setEmailDialogOpen(true)
   }
 

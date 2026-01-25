@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +40,19 @@ export async function GET(request: NextRequest) {
     })
 
     // Format logs for frontend
-    const formattedLogs = auditLogs.map((log) => ({
+    type AuditLogWithUser = Prisma.AuditLogGetPayload<{
+      include: {
+        user: {
+          select: {
+            firstName: true
+            lastName: true
+            email: true
+          }
+        }
+      }
+    }>
+    
+    const formattedLogs = (auditLogs as AuditLogWithUser[]).map((log: AuditLogWithUser) => ({
       id: log.id,
       timestamp: log.createdAt.toISOString(),
       user: `${log.user.firstName} ${log.user.lastName}`,

@@ -64,17 +64,17 @@ export async function GET(req: NextRequest) {
     })
 
     // Calculate progress and counts for each release
-    const releasesWithStats = releases.map((release) => {
+    const releasesWithStats = releases.map((release: any) => {
       const tasks = release.tasks || []
       const totalTasks = tasks.length
-      const completedTasks = tasks.filter((t) => t.status === 'DONE').length
+      const completedTasks = tasks.filter((t: any) => t.status === 'DONE').length
       const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
       return {
         ...release,
         progress,
         features: totalTasks,
-        bugs: tasks.filter((t) => t.priority === 'CRITICAL' || t.priority === 'HIGH').length,
+        bugs: tasks.filter((t: any) => t.priority === 'CRITICAL' || t.priority === 'HIGH').length,
       }
     })
 

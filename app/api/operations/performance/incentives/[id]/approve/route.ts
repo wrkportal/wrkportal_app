@@ -3,6 +3,11 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsIncentive model
+function getOperationsIncentive() {
+  return (prisma as any).operationsIncentive as any
+}
+
 // POST - Approve incentive
 export async function POST(
   req: NextRequest,
@@ -13,7 +18,15 @@ export async function POST(
     { resource: 'operations', action: 'UPDATE' },
     async (request, userInfo) => {
       try {
-        const incentive = await prisma.operationsIncentive.findFirst({
+        const operationsIncentive = getOperationsIncentive()
+        if (!operationsIncentive) {
+          return NextResponse.json(
+            { error: 'Operations incentive model not available' },
+            { status: 503 }
+          )
+        }
+
+        const incentive = await operationsIncentive.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -34,7 +47,7 @@ export async function POST(
           )
         }
 
-        const updated = await prisma.operationsIncentive.update({
+        const updated = await operationsIncentive.update({
           where: { id: params.id },
           data: {
             status: 'APPROVED',

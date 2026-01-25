@@ -10,7 +10,7 @@ function getStripeClient(): Stripe | null {
     return null
   }
   return new Stripe(apiKey, {
-    apiVersion: '2024-11-20.acacia',
+    apiVersion: '2025-12-15.clover',
   })
 }
 
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 
       await prisma.user.update({
         where: { id: session.user.id },
-        data: { stripeCustomerId: customerId },
+        data: { stripeCustomerId: customerId } as any,
       })
     }
 

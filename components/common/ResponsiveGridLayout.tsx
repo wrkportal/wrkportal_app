@@ -47,7 +47,7 @@ if (typeof window !== 'undefined') {
 
 export interface ResponsiveGridLayoutProps {
   layouts: Layouts
-  onLayoutChange?: (layouts: Layouts, allLayouts: Layout[]) => void
+  onLayoutChange?: (currentLayout: Layout[], allLayouts: Layouts) => void
   children: React.ReactNode
   className?: string
   breakpoints?: { lg?: number; md?: number; sm?: number; xs?: number; xxs?: number }

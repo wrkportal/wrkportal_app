@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { searchProjectDataForAI } from '@/lib/ai/data-access'
 import { performSemanticSearch } from '@/lib/ai/services'
+import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,10 +24,75 @@ export async function POST(request: NextRequest) {
     // First, do a basic database search
     const dbResults = await searchProjectDataForAI(session.user.tenantId, query)
 
+    // Define types for the search results
+    type ProjectWithManager = Prisma.ProjectGetPayload<{
+      select: {
+        id: true
+        name: true
+        description: true
+        code: true
+        status: true
+        manager: {
+          select: {
+            name: true
+            firstName: true
+            lastName: true
+          }
+        }
+      }
+    }>
+
+    type TaskWithRelations = Prisma.TaskGetPayload<{
+      select: {
+        id: true
+        title: true
+        description: true
+        status: true
+        priority: true
+        project: {
+          select: {
+            name: true
+          }
+        }
+        assignee: {
+          select: {
+            name: true
+            firstName: true
+            lastName: true
+          }
+        }
+      }
+    }>
+
+    type CommentWithRelations = Prisma.TaskCommentGetPayload<{
+      select: {
+        id: true
+        content: true
+        createdAt: true
+        task: {
+          select: {
+            title: true
+            project: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
+        user: {
+          select: {
+            name: true
+            firstName: true
+            lastName: true
+          }
+        }
+      }
+    }>
+
     // Compile all data for AI to analyze
     const searchContext = {
       query,
-      projects: dbResults.projects.map(p => ({
+      projects: dbResults.projects.map((p: ProjectWithManager) => ({
         title: p.name,
         content: `${p.description || ''} (Code: ${p.code}, Status: ${p.status})`,
         type: 'project',
@@ -36,7 +102,7 @@ export async function POST(request: NextRequest) {
           date: '',
         },
       })),
-      tasks: dbResults.tasks.map(t => ({
+      tasks: dbResults.tasks.map((t: TaskWithRelations) => ({
         title: t.title,
         content: `${t.description || ''} (Status: ${t.status}, Priority: ${t.priority})`,
         type: 'task',
@@ -46,7 +112,7 @@ export async function POST(request: NextRequest) {
           date: '',
         },
       })),
-      comments: dbResults.comments.map(c => ({
+      comments: dbResults.comments.map((c: CommentWithRelations) => ({
         title: `Comment on: ${c.task.title}`,
         content: c.content,
         type: 'comment',

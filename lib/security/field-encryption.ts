@@ -112,15 +112,17 @@ export function encryptFields<T extends Record<string, any>>(
   fieldsToEncrypt: string[],
   tenantId: string
 ): T {
-  const encrypted = { ...data }
+  // Create a mutable copy to allow property assignment
+  const encrypted: Record<string, any> = Object.assign({}, data)
   
   for (const field of fieldsToEncrypt) {
     if (field in encrypted && typeof encrypted[field] === 'string' && encrypted[field]) {
-      encrypted[field] = encryptField(encrypted[field], tenantId) as any
+      const encryptedValue = encryptField(encrypted[field], tenantId)
+      encrypted[field] = encryptedValue
     }
   }
   
-  return encrypted
+  return encrypted as T
 }
 
 /**
@@ -131,15 +133,17 @@ export function decryptFields<T extends Record<string, any>>(
   fieldsToDecrypt: string[],
   tenantId: string
 ): T {
-  const decrypted = { ...data }
+  // Create a mutable copy to allow property assignment
+  const decrypted: Record<string, any> = Object.assign({}, data)
   
   for (const field of fieldsToDecrypt) {
     if (field in decrypted && typeof decrypted[field] === 'string' && decrypted[field]) {
-      decrypted[field] = decryptField(decrypted[field], tenantId) as any
+      const decryptedValue = decryptField(decrypted[field], tenantId)
+      decrypted[field] = decryptedValue
     }
   }
   
-  return decrypted
+  return decrypted as T
 }
 
 /**

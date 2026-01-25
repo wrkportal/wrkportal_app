@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const createInvoiceSchema = z.object({
   projectId: z.string().optional(),
@@ -12,10 +13,12 @@ const createInvoiceSchema = z.object({
   clientName: z.string().min(1),
   clientEmail: z.string().email().optional(),
   clientAddress: z.string().optional(),
+  subject: z.string().min(1),
+  description: z.string().optional(),
   invoiceDate: z.string().transform((str) => new Date(str)),
   dueDate: z.string().transform((str) => new Date(str)),
   currency: z.string().default('USD'),
-  status: z.enum(['DRAFT', 'SENT', 'VIEWED', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED']).default('DRAFT'),
+  status: z.enum(['DRAFT', 'SENT', 'VIEWED', 'PAID', 'OVERDUE', 'CANCELLED', 'VOID']).default('DRAFT'),
   notes: z.string().optional(),
   terms: z.string().optional(),
   lineItems: z.array(
@@ -55,7 +58,36 @@ export async function GET(request: NextRequest) {
       if (toDate) where.invoiceDate.lte = new Date(toDate)
     }
 
-    const invoices = await prisma.invoice.findMany({
+    type InvoiceWithIncludes = Prisma.InvoiceGetPayload<{
+      include: {
+        project: {
+          select: {
+            id: true
+            name: true
+            code: true
+          }
+        }
+        quote: {
+          select: {
+            id: true
+            quoteNumber: true
+          }
+        }
+        lineItems: true
+        payments: true
+        createdBy: {
+          select: {
+            id: true
+            name: true
+            email: true
+          }
+        }
+      }
+    }>
+
+    type Payment = InvoiceWithIncludes['payments'][0]
+
+    const invoices: InvoiceWithIncludes[] = await prisma.invoice.findMany({
       where,
       include: {
         project: {
@@ -71,9 +103,6 @@ export async function GET(request: NextRequest) {
         createdBy: {
           select: { id: true, name: true, email: true },
         },
-        approvedBy: {
-          select: { id: true, name: true, email: true },
-        },
       },
       orderBy: {
         invoiceDate: 'desc',
@@ -82,11 +111,11 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate totals and payment status (schema already has these fields, but calculate for consistency)
-    const invoicesWithTotals = invoices.map((invoice) => {
+    const invoicesWithTotals = invoices.map((invoice: InvoiceWithIncludes) => {
       const subtotal = Number(invoice.subtotal)
       const tax = Number(invoice.taxAmount)
       const total = Number(invoice.totalAmount)
-      const paid = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0)
+      const paid = invoice.payments.reduce((sum: number, p: Payment) => sum + Number(p.amount), 0)
       const balance = total - paid
 
       return {
@@ -154,57 +183,55 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate totals
-    const subtotal = data.lineItems.reduce((sum, item) => sum + item.amount, 0)
-    const tax = data.lineItems.reduce((sum, item) => sum + (item.amount * item.taxRate) / 100, 0)
+    const subtotal = data.lineItems.reduce((sum: number, item: z.infer<typeof createInvoiceSchema>['lineItems'][number]) => sum + item.amount, 0)
+    const tax = data.lineItems.reduce((sum: number, item: z.infer<typeof createInvoiceSchema>['lineItems'][number]) => sum + (item.amount * item.taxRate) / 100, 0)
     const total = subtotal + tax
 
     // Create invoice
-    const invoice = await prisma.invoice.create({
-      data: {
-        tenantId: (session.user as any).tenantId,
-        projectId: data.projectId,
-        quoteId: data.quoteId,
-        invoiceNumber: data.invoiceNumber,
-        clientName: data.clientName,
-        clientEmail: data.clientEmail,
-        clientAddress: data.clientAddress,
-        subject: data.subject,
-        description: data.description,
-        invoiceDate: data.invoiceDate,
-        dueDate: data.dueDate,
-        currency: data.currency,
-        status: data.status,
-        subtotal,
-        taxAmount: tax,
-        taxRate: data.lineItems[0]?.taxRate || 0,
-        totalAmount: total,
-        notes: data.notes,
-        terms: data.terms,
-        createdBy: {
-          connect: { id: (session.user as any).id },
-        },
-        lineItems: {
-          create: data.lineItems.map((item) => ({
-            name: item.description,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.amount,
-          })),
-        },
+    const invoiceData: any = {
+      tenantId: (session.user as any).tenantId,
+      invoiceNumber: data.invoiceNumber,
+      clientName: data.clientName,
+      subject: data.subject,
+      invoiceDate: data.invoiceDate,
+      dueDate: data.dueDate,
+      currency: data.currency,
+      status: data.status,
+      subtotal,
+      taxAmount: tax,
+      taxRate: data.lineItems[0]?.taxRate || 0,
+      totalAmount: total,
+      createdBy: {
+        connect: { id: (session.user as any).id },
       },
+      lineItems: {
+        create: data.lineItems.map((item: z.infer<typeof createInvoiceSchema>['lineItems'][number]) => ({
+          name: item.description,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.amount,
+        })),
+      },
+    }
+
+    // Conditionally add optional fields
+    if (data.projectId) invoiceData.projectId = data.projectId
+    if (data.quoteId) invoiceData.quoteId = data.quoteId
+    if (data.clientEmail) invoiceData.clientEmail = data.clientEmail
+    if (data.clientAddress) invoiceData.clientAddress = data.clientAddress
+    if (data.description) invoiceData.description = data.description
+    if (data.notes) invoiceData.notes = data.notes
+    if (data.terms) invoiceData.terms = data.terms
+
+    const invoice = await prisma.invoice.create({
+      data: invoiceData,
       include: {
         project: {
           select: { id: true, name: true, code: true },
         },
         quote: {
           select: { id: true, quoteNumber: true },
-        },
-        salesQuote: {
-          select: { id: true, quoteNumber: true, name: true },
-        },
-        salesOrder: {
-          select: { id: true, orderNumber: true, name: true },
         },
         lineItems: true,
         createdBy: {

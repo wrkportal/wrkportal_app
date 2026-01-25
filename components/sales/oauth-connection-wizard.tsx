@@ -134,7 +134,7 @@ export function OAuthConnectionWizard({
       const data = await response.json()
       setOauthUrl(data.authUrl)
       setStep(2)
-      
+
       // Open OAuth URL in new window
       const width = 600
       const height = 700
@@ -153,16 +153,16 @@ export function OAuthConnectionWizard({
           const statusResponse = await fetch(
             `/api/sales/integrations/oauth/status?state=${data.state}`
           )
-          
+
           if (statusResponse.ok) {
             const statusData = await statusResponse.json()
-            
+
             if (statusData.status === 'completed') {
               clearInterval(pollInterval)
               oauthWindow?.close()
               setConnectionStatus('success')
               setStep(3)
-              
+
               if (statusData.integrationId) {
                 onComplete(statusData.integrationId)
               }
@@ -223,7 +223,7 @@ export function OAuthConnectionWizard({
                 </CardHeader>
                 <CardContent>
                   <ol className="list-decimal list-inside space-y-2">
-                    {config.steps.map((stepText, index) => (
+                    {config.steps.map((stepText: string, index: number) => (
                       <li key={index} className="text-sm text-muted-foreground">
                         {stepText}
                       </li>

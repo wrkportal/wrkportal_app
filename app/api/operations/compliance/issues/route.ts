@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsComplianceIssue model
+function getOperationsComplianceIssue() {
+  return (prisma as any).operationsComplianceIssue as any
+}
+
 const createIssueSchema = z.object({
   type: z.enum(['PROCESS_VIOLATION', 'DOCUMENTATION', 'TRAINING', 'SAFETY', 'REGULATORY', 'OTHER']),
   description: z.string().min(1),
@@ -44,8 +49,16 @@ export async function GET(req: NextRequest) {
           where.assignedToId = assignedToId
         }
 
+        const operationsComplianceIssue = getOperationsComplianceIssue()
+        if (!operationsComplianceIssue) {
+          return NextResponse.json(
+            { error: 'Operations compliance issue model not available', issues: [], stats: { total: 0, open: 0, inProgress: 0, resolved: 0, highSeverity: 0 }, pagination: { page, limit, total: 0, totalPages: 0 } },
+            { status: 503 }
+          )
+        }
+
         const [issues, total] = await Promise.all([
-          prisma.operationsComplianceIssue.findMany({
+          (operationsComplianceIssue as any).findMany({
             where,
             include: {
               assignedTo: {
@@ -64,33 +77,33 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsComplianceIssue.count({ where }),
+          (operationsComplianceIssue as any).count({ where }),
         ])
 
         // Calculate stats
         const stats = {
-          total: await prisma.operationsComplianceIssue.count({
+          total: await (operationsComplianceIssue as any).count({
             where: { tenantId: userInfo.tenantId },
           }),
-          open: await prisma.operationsComplianceIssue.count({
+          open: await (operationsComplianceIssue as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'OPEN',
             },
           }),
-          inProgress: await prisma.operationsComplianceIssue.count({
+          inProgress: await (operationsComplianceIssue as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'IN_PROGRESS',
             },
           }),
-          resolved: await prisma.operationsComplianceIssue.count({
+          resolved: await (operationsComplianceIssue as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'RESOLVED',
             },
           }),
-          highSeverity: await prisma.operationsComplianceIssue.count({
+          highSeverity: await (operationsComplianceIssue as any).count({
             where: {
               tenantId: userInfo.tenantId,
               severity: { in: ['HIGH', 'CRITICAL'] },
@@ -129,7 +142,15 @@ export async function POST(req: NextRequest) {
         const body = await request.json()
         const validatedData = createIssueSchema.parse(body)
 
-        const issue = await prisma.operationsComplianceIssue.create({
+        const operationsComplianceIssue = getOperationsComplianceIssue()
+        if (!operationsComplianceIssue) {
+          return NextResponse.json(
+            { error: 'Operations compliance issue model not available' },
+            { status: 503 }
+          )
+        }
+
+        const issue = await (operationsComplianceIssue as any).create({
           data: {
             type: validatedData.type,
             description: validatedData.description,

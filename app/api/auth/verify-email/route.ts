@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export async function GET(req: NextRequest) {
   try {
@@ -105,11 +106,19 @@ export async function GET(req: NextRequest) {
       
       // If we can't determine user status, return helpful error
       console.log('📋 Checking for available tokens...')
-      const availableTokens = await prisma.verificationToken.findMany({
+      type VerificationTokenWithSelected = Prisma.VerificationTokenGetPayload<{
+        select: {
+          token: true
+          identifier: true
+          expires: true
+        }
+      }>
+
+      const availableTokens: VerificationTokenWithSelected[] = await prisma.verificationToken.findMany({
         take: 5,
         select: { token: true, identifier: true, expires: true },
       })
-      console.log('📋 Available tokens in database:', availableTokens.map(t => ({
+      console.log('📋 Available tokens in database:', availableTokens.map((t: VerificationTokenWithSelected) => ({
         token: t.token.substring(0, 10) + '...',
         identifier: t.identifier,
         expires: t.expires,

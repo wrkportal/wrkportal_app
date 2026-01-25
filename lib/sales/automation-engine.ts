@@ -5,6 +5,13 @@
 
 import { prisma } from '@/lib/prisma'
 
+// Helper to access optional Prisma models
+const getSalesAutomationRuleExecution = () => {
+  return (prisma as any).salesAutomationRuleExecution as {
+    update: (args: { where: { id: string }; data: any }) => Promise<any>
+  } | undefined
+}
+
 export interface AutomationContext {
   tenantId: string
   triggerType: string
@@ -73,13 +80,16 @@ export class SalesAutomationEngine {
       await updateExecutionStatus(executionId, 'SUCCESS')
       
       // Update execution time
-      await prisma.salesAutomationRuleExecution.update({
-        where: { id: executionId },
-        data: {
-          executionTime,
-          completedAt: new Date(),
-        },
-      })
+      const executionModel = getSalesAutomationRuleExecution()
+      if (executionModel) {
+        await executionModel.update({
+          where: { id: executionId },
+          data: {
+            executionTime,
+            completedAt: new Date(),
+          },
+        })
+      }
     } catch (error: any) {
       status = 'FAILED'
       errorMessage = error.message || 'Unknown error'
@@ -88,13 +98,16 @@ export class SalesAutomationEngine {
         const { updateExecutionStatus } = await import('./rule-execution-history')
         await updateExecutionStatus(executionId, 'FAILED', errorMessage)
         
-        await prisma.salesAutomationRuleExecution.update({
-          where: { id: executionId },
-          data: {
-            executionTime: Date.now() - startTime,
-            completedAt: new Date(),
-          },
-        })
+        const executionModel = getSalesAutomationRuleExecution()
+        if (executionModel) {
+          await executionModel.update({
+            where: { id: executionId },
+            data: {
+              executionTime: Date.now() - startTime,
+              completedAt: new Date(),
+            },
+          })
+        }
       } else {
         // Log failed execution if logging failed
         try {
@@ -379,10 +392,14 @@ export class SalesAutomationEngine {
       const subject = this.replacePlaceholders(config.subject || 'Follow-up', entityData)
       const body = this.replacePlaceholders(config.body || 'Hello', entityData)
 
+      // Create plain text version by stripping HTML tags
+      const text = body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+
       await sendEmail({
         to: email,
         subject,
         html: body,
+        text,
       })
     }
   }

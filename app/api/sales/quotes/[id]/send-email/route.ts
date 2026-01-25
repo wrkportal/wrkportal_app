@@ -103,7 +103,7 @@ export async function POST(
                   </tr>
                 </thead>
                 <tbody>
-                  ${quote.lineItems.map((item) => `
+                  ${quote.lineItems.map((item: any) => `
                     <tr>
                       <td>${item.name}</td>
                       <td>${item.quantity}</td>
@@ -148,7 +148,7 @@ ${quote.validUntil ? `Valid Until: ${new Date(quote.validUntil).toLocaleDateStri
 ${message || 'Please find the quote details below.'}
 
 Items:
-${quote.lineItems.map((item) => `- ${item.name}: ${item.quantity} x $${parseFloat(item.unitPrice.toString()).toFixed(2)} = $${parseFloat(item.totalPrice.toString()).toFixed(2)}`).join('\n')}
+${quote.lineItems.map((item: any) => `- ${item.name}: ${item.quantity} x $${parseFloat(item.unitPrice.toString()).toFixed(2)} = $${parseFloat(item.totalPrice.toString()).toFixed(2)}`).join('\n')}
 
 Subtotal: $${parseFloat(quote.subtotal.toString()).toFixed(2)}
 ${parseFloat(quote.discount.toString()) > 0 ? `Discount: -$${parseFloat(quote.discount.toString()).toFixed(2)}` : ''}

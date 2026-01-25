@@ -225,27 +225,37 @@ export async function storeOAuthToken(
     : null
 
   // In production, encrypt tokens before storing
-  await prisma.oAuthToken.upsert({
+  const existingToken = await prisma.oAuthToken.findFirst({
     where: {
       integrationId,
-    },
-    create: {
-      integrationId,
       tenantId,
-      accessToken: tokenData.accessToken, // Should be encrypted
-      refreshToken: tokenData.refreshToken || null,
-      tokenType: tokenData.tokenType || 'Bearer',
-      expiresAt,
-      scope: tokenData.scope || null,
-    },
-    update: {
-      accessToken: tokenData.accessToken, // Should be encrypted
-      refreshToken: tokenData.refreshToken || undefined,
-      tokenType: tokenData.tokenType || 'Bearer',
-      expiresAt,
-      scope: tokenData.scope || null,
     },
   })
+
+  if (existingToken) {
+    await prisma.oAuthToken.update({
+      where: { id: existingToken.id },
+      data: {
+        accessToken: tokenData.accessToken, // Should be encrypted
+        refreshToken: tokenData.refreshToken || undefined,
+        tokenType: tokenData.tokenType || 'Bearer',
+        expiresAt,
+        scope: tokenData.scope || null,
+      },
+    })
+  } else {
+    await prisma.oAuthToken.create({
+      data: {
+        integrationId,
+        tenantId,
+        accessToken: tokenData.accessToken, // Should be encrypted
+        refreshToken: tokenData.refreshToken || null,
+        tokenType: tokenData.tokenType || 'Bearer',
+        expiresAt,
+        scope: tokenData.scope || null,
+      },
+    })
+  }
 }
 
 /**
@@ -254,7 +264,7 @@ export async function storeOAuthToken(
 export async function getValidToken(
   integrationId: string
 ): Promise<string | null> {
-  const token = await prisma.oAuthToken.findUnique({
+  const token = await prisma.oAuthToken.findFirst({
     where: { integrationId },
     include: {
       integration: {

@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import * as XLSX from 'xlsx'
 import PDFDocument from 'pdfkit'
+import { Prisma } from '@prisma/client'
 
 // GET /api/finance/export?type=BUDGET&format=excel&id=xxx
 export async function GET(request: NextRequest) {
@@ -57,7 +58,26 @@ async function exportExcel(
       if (id) where.id = id
       if (projectId) where.projectId = projectId
 
-      const budgets = await prisma.budget.findMany({
+      type BudgetWithIncludes = Prisma.BudgetGetPayload<{
+        include: {
+          project: {
+            select: {
+              name: true
+              code: true
+            }
+          }
+          program: {
+            select: {
+              name: true
+              code: true
+            }
+          }
+          categories: true
+          lineItems: true
+        }
+      }>
+
+      const budgets: BudgetWithIncludes[] = await prisma.budget.findMany({
         where,
         include: {
           project: { select: { name: true, code: true } },
@@ -68,7 +88,7 @@ async function exportExcel(
       })
 
       // Budget summary sheet
-      const budgetData = budgets.map((b) => ({
+      const budgetData = budgets.map((b: BudgetWithIncludes) => ({
         'Budget Name': b.name,
         'Project': b.project?.name || b.program?.name || 'N/A',
         'Code': b.project?.code || b.program?.code || 'N/A',
@@ -87,9 +107,10 @@ async function exportExcel(
       XLSX.utils.book_append_sheet(workbook, ws1, 'Budgets')
 
       // Budget categories sheet
+      type BudgetCategory = BudgetWithIncludes['categories'][0]
       const categoryData: any[] = []
-      budgets.forEach((b) => {
-        b.categories.forEach((cat) => {
+      budgets.forEach((b: BudgetWithIncludes) => {
+        b.categories.forEach((cat: BudgetCategory) => {
           categoryData.push({
             'Budget Name': b.name,
             'Category': cat.name,
@@ -115,7 +136,25 @@ async function exportExcel(
       if (id) where.id = id
       if (projectId) where.projectId = projectId
 
-      const forecasts = await prisma.forecast.findMany({
+      type ForecastWithIncludes = Prisma.ForecastGetPayload<{
+        include: {
+          budget: {
+            select: {
+              name: true
+              totalAmount: true
+            }
+          }
+          project: {
+            select: {
+              name: true
+              code: true
+            }
+          }
+          dataPoints: true
+        }
+      }>
+
+      const forecasts: ForecastWithIncludes[] = await prisma.forecast.findMany({
         where,
         include: {
           budget: { select: { name: true, totalAmount: true } },
@@ -124,7 +163,7 @@ async function exportExcel(
         },
       })
 
-      const forecastData = forecasts.map((f) => ({
+      const forecastData = forecasts.map((f: ForecastWithIncludes) => ({
         'Forecast Name': f.name,
         'Budget': f.budget.name,
         'Project': f.project?.name || 'N/A',
@@ -148,7 +187,28 @@ async function exportExcel(
       if (id) where.id = id
       if (projectId) where.projectId = projectId
 
-      const costs = await prisma.costActual.findMany({
+      type CostActualWithIncludes = Prisma.CostActualGetPayload<{
+        include: {
+          budget: {
+            select: {
+              name: true
+            }
+          }
+          project: {
+            select: {
+              name: true
+              code: true
+            }
+          }
+          task: {
+            select: {
+              title: true
+            }
+          }
+        }
+      }>
+
+      const costs: CostActualWithIncludes[] = await prisma.costActual.findMany({
         where,
         include: {
           budget: { select: { name: true } },
@@ -157,7 +217,7 @@ async function exportExcel(
         },
       })
 
-      const costData = costs.map((c) => ({
+      const costData = costs.map((c: CostActualWithIncludes) => ({
         'Date': c.date.toISOString().split('T')[0],
         'Budget': c.budget?.name || 'N/A',
         'Project': c.project?.name || 'N/A',
@@ -180,7 +240,22 @@ async function exportExcel(
       if (id) where.id = id
       if (projectId) where.projectId = projectId
 
-      const invoices = await prisma.invoice.findMany({
+      type InvoiceWithIncludes = Prisma.InvoiceGetPayload<{
+        include: {
+          project: {
+            select: {
+              name: true
+              code: true
+            }
+          }
+          lineItems: true
+          payments: true
+        }
+      }>
+
+      type Payment = InvoiceWithIncludes['payments'][0]
+
+      const invoices: InvoiceWithIncludes[] = await prisma.invoice.findMany({
         where,
         include: {
           project: { select: { name: true, code: true } },
@@ -189,8 +264,8 @@ async function exportExcel(
         },
       })
 
-      const invoiceData = invoices.map((inv) => {
-        const paid = inv.payments.reduce((sum, p) => sum + Number(p.amount), 0)
+      const invoiceData = invoices.map((inv: InvoiceWithIncludes) => {
+        const paid = inv.payments.reduce((sum: number, p: Payment) => sum + Number(p.amount), 0)
         return {
           'Invoice Number': inv.invoiceNumber,
           'Client': inv.clientName,
@@ -216,14 +291,22 @@ async function exportExcel(
       const where: any = { tenantId }
       if (id) where.id = id
 
-      const rateCards = await prisma.rateCard.findMany({
+      type RateCardWithRates = Prisma.RateCardGetPayload<{
+        include: {
+          rates: true
+        }
+      }>
+
+      type Rate = RateCardWithRates['rates'][0]
+
+      const rateCards: RateCardWithRates[] = await prisma.rateCard.findMany({
         where,
         include: { rates: true },
       })
 
       const rateCardData: any[] = []
-      rateCards.forEach((rc) => {
-        rc.rates.forEach((item) => {
+      rateCards.forEach((rc: RateCardWithRates) => {
+        rc.rates.forEach((item: Rate) => {
           rateCardData.push({
             'Rate Card': rc.name,
             'Effective Date': rc.effectiveDate.toISOString().split('T')[0],
@@ -299,7 +382,25 @@ async function exportPDF(
           if (id) where.id = id
           if (projectId) where.projectId = projectId
 
-          const budgets = await prisma.budget.findMany({
+          type BudgetWithIncludesPDF = Prisma.BudgetGetPayload<{
+            include: {
+              project: {
+                select: {
+                  name: true
+                  code: true
+                }
+              }
+              program: {
+                select: {
+                  name: true
+                  code: true
+                }
+              }
+              categories: true
+            }
+          }>
+
+          const budgets: BudgetWithIncludesPDF[] = await prisma.budget.findMany({
             where,
             include: {
               project: { select: { name: true, code: true } },
@@ -311,11 +412,11 @@ async function exportPDF(
           doc.fontSize(16).text('Budget Report', { underline: true })
           doc.moveDown()
 
-          budgets.forEach((b, idx) => {
+          budgets.forEach((b: BudgetWithIncludesPDF, idx: number) => {
             if (idx > 0) doc.addPage()
 
-            doc.fontSize(14).text(b.name, { bold: true })
-            doc.fontSize(10)
+            doc.fontSize(14).font('Helvetica-Bold').text(b.name)
+            doc.font('Helvetica').fontSize(10)
             doc.text(`Project: ${b.project?.name || b.program?.name || 'N/A'}`)
             doc.text(`Type: ${b.type} | Status: ${b.status}`)
             doc.text(`Total: ${b.currency} ${Number(b.totalAmount).toLocaleString()}`)
@@ -324,8 +425,10 @@ async function exportPDF(
             doc.moveDown()
 
             if (b.categories.length > 0) {
-              doc.text('Categories:', { bold: true })
-              b.categories.forEach((cat) => {
+              type BudgetCategoryPDF = BudgetWithIncludesPDF['categories'][0]
+              doc.font('Helvetica-Bold').text('Categories:')
+              doc.font('Helvetica')
+              b.categories.forEach((cat: BudgetCategoryPDF) => {
                 doc.text(
                   `  • ${cat.name}: ${b.currency} ${Number(cat.allocatedAmount).toLocaleString()} (${Number(cat.percentage)}%)`,
                   { indent: 20 }
@@ -342,7 +445,20 @@ async function exportPDF(
           if (id) where.id = id
           if (projectId) where.projectId = projectId
 
-          const invoices = await prisma.invoice.findMany({
+          type InvoiceWithIncludesPDF = Prisma.InvoiceGetPayload<{
+            include: {
+              project: {
+                select: {
+                  name: true
+                  code: true
+                }
+              }
+              lineItems: true
+              payments: true
+            }
+          }>
+
+          const invoices: InvoiceWithIncludesPDF[] = await prisma.invoice.findMany({
             where,
             include: {
               project: { select: { name: true, code: true } },
@@ -354,11 +470,11 @@ async function exportPDF(
           doc.fontSize(16).text('Invoice Report', { underline: true })
           doc.moveDown()
 
-          invoices.forEach((inv, idx) => {
+          invoices.forEach((inv: InvoiceWithIncludesPDF, idx: number) => {
             if (idx > 0) doc.addPage()
 
-            doc.fontSize(14).text(`Invoice #${inv.invoiceNumber}`, { bold: true })
-            doc.fontSize(10)
+            doc.fontSize(14).font('Helvetica-Bold').text(`Invoice #${inv.invoiceNumber}`)
+            doc.font('Helvetica').fontSize(10)
             doc.text(`Client: ${inv.clientName}`)
             doc.text(`Project: ${inv.project?.name || 'N/A'}`)
             doc.text(`Issue Date: ${inv.invoiceDate.toISOString().split('T')[0]}`)
@@ -366,7 +482,8 @@ async function exportPDF(
             doc.text(`Status: ${inv.status}`)
             doc.moveDown()
 
-            const paid = inv.payments.reduce((sum, p) => sum + Number(p.amount), 0)
+            type PaymentPDF = InvoiceWithIncludesPDF['payments'][0]
+            const paid = inv.payments.reduce((sum: number, p: PaymentPDF) => sum + Number(p.amount), 0)
             doc.text(`Subtotal: ${inv.currency} ${Number(inv.subtotal).toLocaleString()}`)
             doc.text(`Tax: ${inv.currency} ${Number(inv.tax).toLocaleString()}`)
             doc.text(`Total: ${inv.currency} ${Number(inv.total).toLocaleString()}`)

@@ -4,8 +4,27 @@
  * Handles delivery of reports through various channels
  */
 
-import { DeliveryChannel, DeliveryStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+
+// Define enums locally since they may not be exported if no model uses them
+export enum DeliveryChannel {
+  EMAIL = 'EMAIL',
+  SLACK = 'SLACK',
+  TEAMS = 'TEAMS',
+  WEBHOOK = 'WEBHOOK',
+  GOOGLE_DRIVE = 'GOOGLE_DRIVE',
+  DROPBOX = 'DROPBOX',
+  ONEDRIVE = 'ONEDRIVE',
+  S3 = 'S3',
+}
+
+export enum DeliveryStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED',
+}
 
 export interface DeliveryOptions {
   channel: DeliveryChannel
@@ -34,17 +53,13 @@ export async function deliverReport(
 }> {
   try {
     // Create delivery record
-    if (!prisma.reportDelivery) {
-      return { success: false, error: 'Delivery model not available' }
-    }
-
-    const delivery = await prisma.reportDelivery.create({
+    const delivery = await (prisma as any).reportDelivery.create({
       data: {
         scheduleId,
         tenantId,
         channel: options.channel,
         recipient: options.recipient,
-        status: 'IN_PROGRESS',
+        status: DeliveryStatus.IN_PROGRESS,
         subject: options.subject,
         message: options.message,
         fileUrl: options.fileUrl,
@@ -57,22 +72,22 @@ export async function deliverReport(
     let deliveryResult: { success: boolean; error?: string }
 
     switch (options.channel) {
-      case 'EMAIL':
+      case DeliveryChannel.EMAIL:
         deliveryResult = await deliverViaEmail(options)
         break
-      case 'SLACK':
+      case DeliveryChannel.SLACK:
         deliveryResult = await deliverViaSlack(options)
         break
-      case 'TEAMS':
+      case DeliveryChannel.TEAMS:
         deliveryResult = await deliverViaTeams(options)
         break
-      case 'WEBHOOK':
+      case DeliveryChannel.WEBHOOK:
         deliveryResult = await deliverViaWebhook(options)
         break
-      case 'GOOGLE_DRIVE':
-      case 'DROPBOX':
-      case 'ONEDRIVE':
-      case 'S3':
+      case DeliveryChannel.GOOGLE_DRIVE:
+      case DeliveryChannel.DROPBOX:
+      case DeliveryChannel.ONEDRIVE:
+      case DeliveryChannel.S3:
         deliveryResult = await deliverViaCloudStorage(options)
         break
       default:
@@ -80,10 +95,10 @@ export async function deliverReport(
     }
 
     // Update delivery record
-    await prisma.reportDelivery.update({
+    await (prisma as any).reportDelivery.update({
       where: { id: delivery.id },
       data: {
-        status: deliveryResult.success ? 'COMPLETED' : 'FAILED',
+        status: deliveryResult.success ? DeliveryStatus.COMPLETED : DeliveryStatus.FAILED,
         deliveredAt: deliveryResult.success ? new Date() : null,
         sentAt: new Date(),
         errorMessage: deliveryResult.error,

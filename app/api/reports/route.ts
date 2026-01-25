@@ -86,26 +86,26 @@ export async function GET(request: NextRequest) {
     // Calculate project metrics
     const projectMetrics = {
       total: projects.length,
-      byStatus: projects.reduce((acc, p) => {
+      byStatus: projects.reduce((acc: Record<string, number>, p: any) => {
         acc[p.status] = (acc[p.status] || 0) + 1
         return acc
       }, {} as Record<string, number>),
-      byHealth: projects.reduce((acc, p) => {
+      byHealth: projects.reduce((acc: Record<string, number>, p: any) => {
         const status = p.ragStatus as string
         acc[status] = (acc[status] || 0) + 1
         return acc
       }, {} as Record<string, number>),
       avgProgress:
         projects.length > 0
-          ? projects.reduce((sum, p) => sum + (p.progress || 0), 0) /
+          ? projects.reduce((sum: number, p: any) => sum + (p.progress || 0), 0) /
             projects.length
           : 0,
       totalBudget: projects.reduce(
-        (sum, p) => sum + (Number((p.budget as any)?.total) || 0),
+        (sum: number, p: any) => sum + (Number((p.budget as any)?.total) || 0),
         0
       ),
       totalSpent: projects.reduce(
-        (sum, p) => sum + (Number((p.budget as any)?.spent) || 0),
+        (sum: number, p: any) => sum + (Number((p.budget as any)?.spent) || 0),
         0
       ),
     }
@@ -113,20 +113,20 @@ export async function GET(request: NextRequest) {
     // Calculate OKR metrics
     const okrMetrics = {
       totalGoals: goals.length,
-      byStatus: goals.reduce((acc, g) => {
+      byStatus: goals.reduce((acc: Record<string, number>, g: any) => {
         acc[g.status] = (acc[g.status] || 0) + 1
         return acc
       }, {} as Record<string, number>),
-      byLevel: goals.reduce((acc, g) => {
+      byLevel: goals.reduce((acc: Record<string, number>, g: any) => {
         acc[g.level] = (acc[g.level] || 0) + 1
         return acc
       }, {} as Record<string, number>),
-      totalKeyResults: goals.reduce((sum, g) => sum + g.keyResults.length, 0),
+      totalKeyResults: goals.reduce((sum: number, g: any) => sum + g.keyResults.length, 0),
       avgConfidence:
-        goals.reduce((sum, g) => {
+        goals.reduce((sum: number, g: any) => {
           const avgConf =
             g.keyResults.length > 0
-              ? g.keyResults.reduce((s, kr) => s + kr.confidence, 0) /
+              ? g.keyResults.reduce((s: number, kr: any) => s + kr.confidence, 0) /
                 g.keyResults.length
               : 0
           return sum + avgConf
@@ -136,17 +136,17 @@ export async function GET(request: NextRequest) {
     // Calculate task metrics
     const taskMetrics = {
       total: tasks.length,
-      byStatus: tasks.reduce((acc, t) => {
+      byStatus: tasks.reduce((acc: Record<string, number>, t: any) => {
         acc[t.status] = (acc[t.status] || 0) + 1
         return acc
       }, {} as Record<string, number>),
-      byPriority: tasks.reduce((acc, t) => {
+      byPriority: tasks.reduce((acc: Record<string, number>, t: any) => {
         acc[t.priority] = (acc[t.priority] || 0) + 1
         return acc
       }, {} as Record<string, number>),
-      completed: tasks.filter((t) => t.status === 'DONE').length,
+      completed: tasks.filter((t: any) => t.status === 'DONE').length,
       overdue: tasks.filter(
-        (t) =>
+        (t: any) =>
           t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'DONE'
       ).length,
     }
@@ -154,10 +154,10 @@ export async function GET(request: NextRequest) {
     // Calculate program metrics
     const programMetrics = {
       total: programs.length,
-      totalProjects: programs.reduce((sum, p) => sum + p.projects.length, 0),
+      totalProjects: programs.reduce((sum: number, p: any) => sum + p.projects.length, 0),
       avgProjectsPerProgram:
         programs.length > 0
-          ? programs.reduce((sum, p) => sum + p.projects.length, 0) /
+          ? programs.reduce((sum: number, p: any) => sum + p.projects.length, 0) /
             programs.length
           : 0,
     }
@@ -176,19 +176,19 @@ export async function GET(request: NextRequest) {
           year: 'numeric',
         }),
         projectsCreated: projects.filter(
-          (p) =>
+          (p: any) =>
             new Date(p.createdAt) >= monthStart &&
             new Date(p.createdAt) <= monthEnd
         ).length,
         projectsCompleted: projects.filter(
-          (p) =>
+          (p: any) =>
             p.status === 'COMPLETED' &&
             p.updatedAt &&
             new Date(p.updatedAt) >= monthStart &&
             new Date(p.updatedAt) <= monthEnd
         ).length,
         tasksCompleted: tasks.filter(
-          (t) =>
+          (t: any) =>
             t.status === 'DONE' &&
             t.updatedAt &&
             new Date(t.updatedAt) >= monthStart &&
@@ -210,7 +210,7 @@ export async function GET(request: NextRequest) {
           programs: programMetrics,
         },
         timeline: monthlyData,
-        projects: projects.map((p) => ({
+        projects: projects.map((p: any) => ({
           id: p.id,
           name: p.name,
           status: p.status,
@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
           endDate: p.endDate,
           taskCount: p._count.tasks,
         })),
-        goals: goals.map((g) => ({
+        goals: goals.map((g: any) => ({
           id: g.id,
           title: g.title,
           status: g.status,
@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
           keyResultCount: g.keyResults.length,
           avgProgress:
             g.keyResults.length > 0
-              ? g.keyResults.reduce((sum, kr) => {
+              ? g.keyResults.reduce((sum: number, kr: any) => {
                   const progress =
                     ((Number(kr.currentValue) - Number(kr.startValue)) /
                       (Number(kr.targetValue) - Number(kr.startValue))) *

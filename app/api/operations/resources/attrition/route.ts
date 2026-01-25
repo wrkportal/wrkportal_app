@@ -4,6 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsAttrition model
+function getOperationsAttrition() {
+  return (prisma as any).operationsAttrition as any
+}
+
+type AttritionRecord = {
+  tenure: number | null
+  type: 'VOLUNTARY' | 'INVOLUNTARY'
+}
+
 const createAttritionSchema = z.object({
   employeeId: z.string().min(1),
   exitDate: z.string(),
@@ -44,8 +54,16 @@ export async function GET(req: NextRequest) {
           }
         }
 
+        const operationsAttrition = getOperationsAttrition()
+        if (!operationsAttrition) {
+          return NextResponse.json(
+            { error: 'Operations attrition model not available' },
+            { status: 503 }
+          )
+        }
+
         const [attritions, total] = await Promise.all([
-          prisma.operationsAttrition.findMany({
+          (operationsAttrition as any).findMany({
             where,
             include: {
               employee: {
@@ -63,7 +81,7 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsAttrition.count({ where }),
+          (operationsAttrition as any).count({ where }),
         ])
 
         // Calculate stats
@@ -78,7 +96,7 @@ export async function GET(req: NextRequest) {
         thisMonth.setDate(1)
         thisMonth.setHours(0, 0, 0, 0)
 
-        const thisMonthAttritions = await prisma.operationsAttrition.findMany({
+        const thisMonthAttritions = await (operationsAttrition as any).findMany({
           where: {
             tenantId: userInfo.tenantId,
             exitDate: {
@@ -87,19 +105,23 @@ export async function GET(req: NextRequest) {
           },
         })
 
-        const voluntary = thisMonthAttritions.filter(a => a.type === 'VOLUNTARY').length
-        const involuntary = thisMonthAttritions.filter(a => a.type === 'INVOLUNTARY').length
-        const monthlyAttrition = thisMonthAttritions.length
+        const voluntary = (thisMonthAttritions as AttritionRecord[]).filter(
+          (a: AttritionRecord) => a.type === 'VOLUNTARY'
+        ).length
+        const involuntary = (thisMonthAttritions as AttritionRecord[]).filter(
+          (a: AttritionRecord) => a.type === 'INVOLUNTARY'
+        ).length
+        const monthlyAttrition = (thisMonthAttritions as AttritionRecord[]).length
         const monthlyAttritionRate = totalEmployees > 0
           ? Number(((monthlyAttrition / totalEmployees) * 100).toFixed(2))
           : 0
 
         // Calculate average tenure
-        const tenures = attritions
-          .filter(a => a.tenure !== null)
-          .map(a => a.tenure!)
+        const tenures = (attritions as AttritionRecord[])
+          .filter((a: AttritionRecord) => a.tenure !== null)
+          .map((a: AttritionRecord) => a.tenure!)
         const avgTenure = tenures.length > 0
-          ? Number((tenures.reduce((sum, t) => sum + t, 0) / tenures.length).toFixed(1))
+          ? Number((tenures.reduce((sum: number, t: number) => sum + t, 0) / tenures.length).toFixed(1))
           : 0
 
         return NextResponse.json({
@@ -159,7 +181,15 @@ export async function POST(req: NextRequest) {
           tenure = months
         }
 
-        const attrition = await prisma.operationsAttrition.create({
+        const operationsAttrition = getOperationsAttrition()
+        if (!operationsAttrition) {
+          return NextResponse.json(
+            { error: 'Operations attrition model not available' },
+            { status: 503 }
+          )
+        }
+
+        const attrition = await (operationsAttrition as any).create({
           data: {
             employeeId: validatedData.employeeId,
             exitDate: new Date(validatedData.exitDate),

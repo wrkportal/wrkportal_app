@@ -143,6 +143,7 @@ export const DEFAULT_FORMATTING: ChartFormatting = {
       style: 'normal',
       color: '#1f2937',
     },
+    color: '#1f2937',
     position: 'top',
   },
   xAxis: {

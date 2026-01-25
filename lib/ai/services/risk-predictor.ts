@@ -5,7 +5,7 @@
 import { extractStructuredData } from '../ai-service'
 import { PROMPTS } from '../prompts'
 import { RiskPrediction, RiskAnalysisResult } from '@/types/ai'
-import { Project, Task, Budget } from '@/types'
+import { Project, Task, Budget, RAGStatus, BudgetType } from '@/types'
 
 interface ProjectRiskData {
   project: Project
@@ -141,6 +141,22 @@ export async function generateRiskPrediction(data: {
   taskData?: any[]
 }): Promise<any> {
   // This is a simplified version - in production, you'd want to fetch full project data
+  const mockBudget: Budget = {
+    id: 'temp',
+    entityId: 'temp',
+    entityType: 'PROJECT',
+    type: BudgetType.OPEX,
+    currency: 'USD',
+    totalBudget: data.budget || 0,
+    spentToDate: 0,
+    committed: 0,
+    forecast: 0,
+    variance: 0,
+    categories: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+
   const mockProject: Project = {
     id: 'temp',
     name: data.projectName,
@@ -149,21 +165,17 @@ export async function generateRiskPrediction(data: {
     progress: data.projectProgress || 0,
     code: '',
     tenantId: '',
+    ownerId: '',
     managerId: '',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    teamMembers: [],
+    startDate: new Date(),
+    endDate: new Date(),
+    plannedStartDate: new Date(),
+    plannedEndDate: new Date(),
+    budget: mockBudget,
     tags: [],
-    ragStatus: 'NOT_STARTED',
-  }
-
-  const mockBudget: Budget = {
-    id: 'temp',
-    projectId: 'temp',
-    totalBudget: data.budget || 0,
-    spentToDate: 0,
-    committed: 0,
-    forecast: 0,
-    variance: 0,
+    metadata: {},
+    ragStatus: RAGStatus.GREEN,
     createdAt: new Date(),
     updatedAt: new Date(),
   }

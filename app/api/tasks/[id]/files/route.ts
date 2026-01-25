@@ -156,8 +156,8 @@ export async function POST(
                 uploadedBy: {
                     id: session.user.id,
                     name: session.user.name,
-                    firstName: session.user.firstName,
-                    lastName: session.user.lastName,
+                    firstName: (session.user as any).firstName,
+                    lastName: (session.user as any).lastName,
                 },
                 uploadedAt: new Date().toISOString(),
             },

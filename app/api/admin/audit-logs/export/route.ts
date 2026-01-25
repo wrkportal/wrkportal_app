@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,7 +64,19 @@ export async function GET(request: NextRequest) {
     // Convert to CSV
     const csvHeader = 'Timestamp,User,User Email,Action,Entity,Entity ID,Entity Name,IP Address,Changes\n'
     
-    const csvRows = auditLogs.map((log) => {
+    type AuditLogWithUser = Prisma.AuditLogGetPayload<{
+      include: {
+        user: {
+          select: {
+            firstName: true
+            lastName: true
+            email: true
+          }
+        }
+      }
+    }>
+    
+    const csvRows = auditLogs.map((log: AuditLogWithUser) => {
       const timestamp = log.createdAt.toISOString()
       const userName = `${log.user.firstName} ${log.user.lastName}`
       const userEmail = log.user.email

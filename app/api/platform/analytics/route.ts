@@ -90,19 +90,19 @@ export async function GET(req: NextRequest) {
         activeUsers,
         tenantsWithVerifiedDomain,
       },
-      tenantsByPlan: tenantsByPlan.reduce((acc, item) => {
+      tenantsByPlan: tenantsByPlan.reduce((acc: Record<string, number>, item: any) => {
         acc[item.plan] = item._count
         return acc
       }, {} as Record<string, number>),
-      usersByRole: usersByRole.reduce((acc, item) => {
+      usersByRole: usersByRole.reduce((acc: Record<string, number>, item: any) => {
         acc[item.role] = item._count
         return acc
       }, {} as Record<string, number>),
-      tasksByStatus: tasksByStatus.reduce((acc, item) => {
+      tasksByStatus: tasksByStatus.reduce((acc: Record<string, number>, item: any) => {
         acc[item.status] = item._count
         return acc
       }, {} as Record<string, number>),
-      projectsByStatus: projectsByStatus.reduce((acc, item) => {
+      projectsByStatus: projectsByStatus.reduce((acc: Record<string, number>, item: any) => {
         acc[item.status] = item._count
         return acc
       }, {} as Record<string, number>),

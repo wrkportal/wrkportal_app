@@ -287,13 +287,18 @@ export async function getQualitySummary(
     : 0
 
   // Determine overall status
-  const statuses = Object.values(latestMetrics).map((m: any) => m.status)
-  let overallStatus = QualityStatus.PASS
-  if (statuses.includes(QualityStatus.FAIL)) {
-    overallStatus = QualityStatus.FAIL
-  } else if (statuses.includes(QualityStatus.WARNING)) {
-    overallStatus = QualityStatus.WARNING
+  let hasFail = false
+  let hasWarning = false
+  for (const metric of Object.values(latestMetrics)) {
+    const status = String((metric as any).status)
+    if (status === 'FAIL') hasFail = true
+    if (status === 'WARNING') hasWarning = true
   }
+  const overallStatus: QualityStatus = hasFail 
+    ? QualityStatus.FAIL
+    : hasWarning 
+    ? QualityStatus.WARNING
+    : QualityStatus.PASS
 
   return {
     overallScore,

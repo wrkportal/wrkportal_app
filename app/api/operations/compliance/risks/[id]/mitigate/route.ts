@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsRisk model
+function getOperationsRisk() {
+  return (prisma as any).operationsRisk as any
+}
+
 const updateMitigationSchema = z.object({
   mitigation: z.string().optional(),
   mitigationStatus: z.enum(['NOT_STARTED', 'PLANNED', 'IN_PROGRESS', 'MITIGATED', 'ACCEPTED']).optional(),
@@ -22,7 +27,15 @@ export async function PATCH(
         const body = await request.json()
         const validatedData = updateMitigationSchema.parse(body)
 
-        const risk = await prisma.operationsRisk.findFirst({
+        const operationsRisk = getOperationsRisk()
+        if (!operationsRisk) {
+          return NextResponse.json(
+            { error: 'Operations risk model not available' },
+            { status: 503 }
+          )
+        }
+
+        const risk = await (operationsRisk as any).findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -44,7 +57,7 @@ export async function PATCH(
           updateData.mitigationStatus = validatedData.mitigationStatus
         }
 
-        const updated = await prisma.operationsRisk.update({
+        const updated = await (operationsRisk as any).update({
           where: { id: params.id },
           data: updateData,
         })

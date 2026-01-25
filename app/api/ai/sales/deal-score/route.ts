@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { scoreDeal } from '@/lib/ai/services/sales/deal-scorer'
+import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch opportunity with related data
-    const opportunity = await prisma.salesOpportunity.findFirst({
+    type OpportunityWithIncludes = Prisma.SalesOpportunityGetPayload<{
+      include: {
+        account: {
+          select: {
+            type: true
+            industry: true
+          }
+        }
+        activities: true
+        contacts: {
+          include: {
+            contact: true
+          }
+        }
+      }
+    }>
+    
+    type OpportunityContact = OpportunityWithIncludes['contacts'][0]
+
+    const opportunity = (await prisma.salesOpportunity.findFirst({
       where: {
         id: opportunityId,
         tenantId: session.user.tenantId!,
@@ -41,7 +61,7 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-    })
+    })) as OpportunityWithIncludes | null
 
     if (!opportunity) {
       return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 })
@@ -76,7 +96,7 @@ export async function POST(request: NextRequest) {
       },
       contacts: {
         count: opportunity.contacts.length,
-        decisionMakers: opportunity.contacts.filter(c => 
+        decisionMakers: opportunity.contacts.filter((c: OpportunityContact) => 
           c.contact.title?.toLowerCase().includes('director') ||
           c.contact.title?.toLowerCase().includes('vp') ||
           c.contact.title?.toLowerCase().includes('cfo') ||

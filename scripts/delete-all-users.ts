@@ -137,7 +137,8 @@ async function deleteAllUsers() {
       }
     })
 
-    const emptyTenants = tenants.filter(t => t.users.length === 0)
+    type TenantWithUsers = typeof tenants[0];
+    const emptyTenants = tenants.filter((t: TenantWithUsers) => t.users.length === 0)
     if (emptyTenants.length > 0) {
       console.log(`   Found ${emptyTenants.length} empty tenants`)
       
@@ -157,7 +158,7 @@ async function deleteAllUsers() {
       const deletedTenants = await prisma.tenant.deleteMany({
         where: {
           id: {
-            in: emptyTenants.map(t => t.id)
+            in: emptyTenants.map((t: TenantWithUsers) => t.id)
           }
         }
       })

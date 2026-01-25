@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const createPaymentSchema = z.object({
   amount: z.number().positive(),
@@ -66,7 +67,15 @@ export async function POST(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
-    const invoice = await prisma.invoice.findFirst({
+    type InvoiceWithPayments = Prisma.InvoiceGetPayload<{
+      include: {
+        payments: true
+      }
+    }>
+
+    type Payment = InvoiceWithPayments['payments'][0]
+
+    const invoice: InvoiceWithPayments | null = await prisma.invoice.findFirst({
       where: {
         id: params.id,
         tenantId: (session.user as any).tenantId,
@@ -84,9 +93,9 @@ export async function POST(
     const data = createPaymentSchema.parse(body)
 
     // Calculate total paid
-    const totalPaid = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0)
+    const totalPaid = invoice.payments.reduce((sum: number, p: Payment) => sum + Number(p.amount), 0)
     const newTotalPaid = totalPaid + data.amount
-    const invoiceTotal = Number(invoice.total)
+    const invoiceTotal = Number(invoice.totalAmount)
 
     // Check if payment exceeds invoice total
     if (newTotalPaid > invoiceTotal) {
@@ -103,8 +112,9 @@ export async function POST(
         amount: data.amount,
         paymentDate: data.paymentDate,
         paymentMethod: data.paymentMethod,
-        referenceNumber: data.referenceNumber,
+        paymentReference: data.referenceNumber,
         notes: data.notes,
+        createdById: (session.user as any).id,
       },
     })
 

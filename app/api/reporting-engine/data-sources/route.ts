@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Filter to only include data sources user can access
-    const accessibleDataSources = dataSources.filter((ds) => {
+    const accessibleDataSources = dataSources.filter((ds: any) => {
       // If no access rules, allow access (tenant-level)
       if (ds.accessibleBy.length === 0 && ds.tenantId === tenantId) {
         return true

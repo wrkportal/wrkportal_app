@@ -79,7 +79,7 @@ export async function GET(
     const hasAccess =
       dashboard.createdById === session.user.id ||
       dashboard.isPublic ||
-      dashboard.sharedWith.some((share) => share.userId === session.user.id)
+      dashboard.sharedWith.some((share: any) => share.userId === session.user.id)
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.text()
-    const token = req.headers.get('x-jenkins-token') || req.headers.get('authorization')?.replace('Bearer ', '')
+    const token = req.headers.get('x-jenkins-token') || req.headers.get('authorization')?.replace('Bearer ', '') || null
     
     // Verify webhook token (optional but recommended)
     const webhookToken = process.env.JENKINS_WEBHOOK_TOKEN || ''

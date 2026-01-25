@@ -3,6 +3,18 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsResource model
+function getOperationsResource() {
+  return (prisma as any).operationsResource as any
+}
+
+type OperationsResource = {
+  department: string | null
+  onLeave: boolean
+  onTraining: boolean
+  utilization: number | string
+}
+
 // GET - Get capacity data by department
 export async function GET(req: NextRequest) {
   return withPermissionCheck(
@@ -10,7 +22,15 @@ export async function GET(req: NextRequest) {
     { resource: 'operations', action: 'READ' },
     async (request, userInfo) => {
       try {
-        const resources = await prisma.operationsResource.findMany({
+        const operationsResource = getOperationsResource()
+        if (!operationsResource) {
+          return NextResponse.json(
+            { error: 'Operations resource model not available' },
+            { status: 503 }
+          )
+        }
+
+        const resources = await operationsResource.findMany({
           where: { tenantId: userInfo.tenantId },
           include: {
             employee: {
@@ -25,9 +45,9 @@ export async function GET(req: NextRequest) {
         })
 
         // Group by department
-        const byDepartment: Record<string, any> = {}
+        const byDepartment: Record<string, any> = {};
         
-        resources.forEach(resource => {
+        (resources as OperationsResource[]).forEach((resource: OperationsResource) => {
           const dept = resource.department || 'Unassigned'
           if (!byDepartment[dept]) {
             byDepartment[dept] = {
@@ -58,12 +78,12 @@ export async function GET(req: NextRequest) {
         // Calculate totals
         const totals = {
           total: resources.length,
-          available: resources.filter(r => !r.onLeave && !r.onTraining).length,
+          available: (resources as OperationsResource[]).filter((r: OperationsResource) => !r.onLeave && !r.onTraining).length,
           utilization: resources.length > 0
-            ? Number((resources.reduce((sum, r) => sum + Number(r.utilization), 0) / resources.length).toFixed(1))
+            ? Number(((resources as OperationsResource[]).reduce((sum: number, r: OperationsResource) => sum + Number(r.utilization), 0) / resources.length).toFixed(1))
             : 0,
-          onLeave: resources.filter(r => r.onLeave).length,
-          onTraining: resources.filter(r => r.onTraining).length,
+          onLeave: (resources as OperationsResource[]).filter((r: OperationsResource) => r.onLeave).length,
+          onTraining: (resources as OperationsResource[]).filter((r: OperationsResource) => r.onTraining).length,
         }
 
         return NextResponse.json({

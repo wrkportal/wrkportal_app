@@ -21,14 +21,15 @@ export async function POST(
       try {
         const resolvedParams = 'then' in params ? await params : params
         
-        if (!prisma.reportSchedule) {
+        const reportSchedule = (prisma as any).reportSchedule
+        if (!reportSchedule) {
           return NextResponse.json(
             { error: 'Schedule model not available' },
             { status: 500 }
           )
         }
 
-        const schedule = await prisma.reportSchedule.findUnique({
+        const schedule = await reportSchedule.findUnique({
           where: { id: resolvedParams.id },
         })
 

@@ -139,9 +139,9 @@ export default function IntegrationsPage() {
     const [configClientSecret, setConfigClientSecret] = useState('')
     const [configRedirectUri, setConfigRedirectUri] = useState('')
 
-    const isAdmin = currentUser?.role === 'ORG_ADMIN' || 
-                   currentUser?.role === 'TENANT_SUPER_ADMIN' || 
-                   currentUser?.role === 'PLATFORM_OWNER'
+    const isAdmin = currentUser?.role === 'ORG_ADMIN' ||
+        currentUser?.role === 'TENANT_SUPER_ADMIN' ||
+        currentUser?.role === 'PLATFORM_OWNER'
 
     useEffect(() => {
         if (isAdmin) {
@@ -159,10 +159,10 @@ export default function IntegrationsPage() {
             const res = await fetch('/api/integrations')
             const data = await res.json()
             console.log('Fetched integrations:', data)
-            
+
             if (res.ok) {
                 setIntegrations(data.integrations || [])
-                
+
                 // Log if empty to help debug
                 if (!data.integrations || data.integrations.length === 0) {
                     console.log('No integrations found in response')
@@ -385,28 +385,28 @@ export default function IntegrationsPage() {
                 console.log('Install successful, response:', responseData)
                 const integrationName = responseData.integration?.name || 'New Integration'
                 const integrationId = responseData.integration?.id
-                
+
                 // Close dialogs first
                 setSelectedTemplate(null)
                 setTemplateDetails(null)
-                
+
                 // Refresh marketplace first (fast operation)
                 await fetchMarketplace()
-                
+
                 // Switch to integrations tab
                 setActiveView('integrations')
-                
+
                 // Small delay to ensure database write is committed, then fetch
                 await new Promise(resolve => setTimeout(resolve, 300))
-                
+
                 // Fetch integrations - this should now include the newly created one
                 await fetchIntegrations()
-                
+
                 // Verify the integration is in the list
                 setTimeout(() => {
                     // Double-check by fetching again if needed
                     fetchIntegrations()
-                    
+
                     alert(`Template installed successfully!\n\nIntegration "${integrationName}" has been created.\n\nYou should now see it in the "My Integrations" tab. If you don't see it, please refresh the page.`)
                 }, 500)
             } else {
@@ -466,93 +466,93 @@ export default function IntegrationsPage() {
                 </div>
                 {activeView === 'integrations' && (
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Integration
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle>Add New Integration</DialogTitle>
-                            <DialogDescription>
-                                Configure a new SaaS integration
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-sm font-medium">Integration Type</label>
-                                <Select value={newIntegrationType} onValueChange={(v) => setNewIntegrationType(v as IntegrationType)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select integration type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(INTEGRATION_INFO).map(([type, info]) => (
-                                            <SelectItem key={type} value={type}>
-                                                {info.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {newIntegrationType && (
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        {INTEGRATION_INFO[newIntegrationType as IntegrationType]?.description}
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Integration
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                                <DialogTitle>Add New Integration</DialogTitle>
+                                <DialogDescription>
+                                    Configure a new SaaS integration
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium">Integration Type</label>
+                                    <Select value={newIntegrationType} onValueChange={(v) => setNewIntegrationType(v as IntegrationType)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select integration type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(INTEGRATION_INFO).map(([type, info]) => (
+                                                <SelectItem key={type} value={type}>
+                                                    {info.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {newIntegrationType && (
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            {INTEGRATION_INFO[newIntegrationType as IntegrationType]?.description}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium">Integration Name</label>
+                                    <Input
+                                        placeholder="e.g., Production Salesforce"
+                                        value={newIntegrationName}
+                                        onChange={(e) => setNewIntegrationName(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm font-medium">Client ID</label>
+                                        <Input
+                                            placeholder="OAuth Client ID"
+                                            value={configClientId}
+                                            onChange={(e) => setConfigClientId(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium">Client Secret</label>
+                                        <Input
+                                            type="password"
+                                            placeholder="OAuth Client Secret"
+                                            value={configClientSecret}
+                                            onChange={(e) => setConfigClientSecret(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium">Redirect URI</label>
+                                    <Input
+                                        placeholder="OAuth Redirect URI"
+                                        value={configRedirectUri}
+                                        onChange={(e) => setConfigRedirectUri(e.target.value)}
+                                    />
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Default: {window.location.origin}/api/integrations/callback
                                     </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium">Integration Name</label>
-                                <Input
-                                    placeholder="e.g., Production Salesforce"
-                                    value={newIntegrationName}
-                                    onChange={(e) => setNewIntegrationName(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-sm font-medium">Client ID</label>
-                                    <Input
-                                        placeholder="OAuth Client ID"
-                                        value={configClientId}
-                                        onChange={(e) => setConfigClientId(e.target.value)}
-                                    />
                                 </div>
-                                <div>
-                                    <label className="text-sm font-medium">Client Secret</label>
-                                    <Input
-                                        type="password"
-                                        placeholder="OAuth Client Secret"
-                                        value={configClientSecret}
-                                        onChange={(e) => setConfigClientSecret(e.target.value)}
-                                    />
+
+                                <div className="flex justify-end gap-2">
+                                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button onClick={createIntegration}>
+                                        Create Integration
+                                    </Button>
                                 </div>
                             </div>
-
-                            <div>
-                                <label className="text-sm font-medium">Redirect URI</label>
-                                <Input
-                                    placeholder="OAuth Redirect URI"
-                                    value={configRedirectUri}
-                                    onChange={(e) => setConfigRedirectUri(e.target.value)}
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Default: {window.location.origin}/api/integrations/callback
-                                </p>
-                            </div>
-
-                            <div className="flex justify-end gap-2">
-                                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                                    Cancel
-                                </Button>
-                                <Button onClick={createIntegration}>
-                                    Create Integration
-                                </Button>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                        </DialogContent>
+                    </Dialog>
                 )}
             </div>
 
@@ -564,108 +564,112 @@ export default function IntegrationsPage() {
 
                 <TabsContent value="integrations">
                     {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-            ) : (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Connected Integrations</CardTitle>
-                        <CardDescription>
-                            Manage your SaaS integrations and sync settings
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Integration</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Last Sync</TableHead>
-                                    <TableHead>Sync Jobs</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {integrations.map((integration) => {
-                                    const info = INTEGRATION_INFO[integration.type]
-                                    return (
-                                        <TableRow key={integration.id}>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-8 h-8 rounded ${info.color} flex items-center justify-center text-white text-xs font-bold`}>
-                                                        {info.name.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-medium">{info.name}</div>
-                                                        <div className="text-xs text-muted-foreground">{info.description}</div>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>{integration.name}</TableCell>
-                                            <TableCell>{getStatusBadge(integration.status)}</TableCell>
-                                            <TableCell className="text-sm text-muted-foreground">
-                                                {integration.lastSyncAt ? formatDate(integration.lastSyncAt) : 'Never'}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline">{integration._count?.syncJobs || 0}</Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    {integration.status !== 'ACTIVE' && (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => connectIntegration(integration.id)}
-                                                        >
-                                                            <ExternalLink className="h-3 w-3 mr-1" />
-                                                            Connect
-                                                        </Button>
-                                                    )}
-                                                    {integration.isActive && (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => triggerSync(integration.id)}
-                                                        >
-                                                            <RefreshCw className="h-3 w-3 mr-1" />
-                                                            Sync
-                                                        </Button>
-                                                    )}
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        onClick={() => {
-                                                            setSelectedIntegration(integration)
-                                                            fetchSyncHistory(integration.id)
-                                                        }}
-                                                    >
-                                                        <Settings className="h-3 w-3" />
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        onClick={() => deleteIntegration(integration.id)}
-                                                    >
-                                                        <Trash2 className="h-3 w-3" />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                        </div>
+                    ) : (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Connected Integrations</CardTitle>
+                                <CardDescription>
+                                    Manage your SaaS integrations and sync settings
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Integration</TableHead>
+                                            <TableHead>Name</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Last Sync</TableHead>
+                                            <TableHead>Sync Jobs</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
-                                    )
-                                })}
-                                {integrations.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                            No integrations configured. Click "Add Integration" to get started.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {integrations.map((integration) => {
+                                            const info = INTEGRATION_INFO[integration.type as IntegrationType] || {
+                                                name: integration.type || 'Unknown',
+                                                description: 'Integration',
+                                                color: 'bg-gray-500',
+                                            }
+                                            return (
+                                                <TableRow key={integration.id}>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-8 h-8 rounded ${info.color} flex items-center justify-center text-white text-xs font-bold`}>
+                                                                {info.name.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-medium">{info.name}</div>
+                                                                <div className="text-xs text-muted-foreground">{info.description}</div>
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>{integration.name}</TableCell>
+                                                    <TableCell>{getStatusBadge(integration.status)}</TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground">
+                                                        {integration.lastSyncAt ? formatDate(integration.lastSyncAt) : 'Never'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline">{integration._count?.syncJobs || 0}</Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            {integration.status !== 'ACTIVE' && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => connectIntegration(integration.id)}
+                                                                >
+                                                                    <ExternalLink className="h-3 w-3 mr-1" />
+                                                                    Connect
+                                                                </Button>
+                                                            )}
+                                                            {integration.isActive && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => triggerSync(integration.id)}
+                                                                >
+                                                                    <RefreshCw className="h-3 w-3 mr-1" />
+                                                                    Sync
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => {
+                                                                    setSelectedIntegration(integration)
+                                                                    fetchSyncHistory(integration.id)
+                                                                }}
+                                                            >
+                                                                <Settings className="h-3 w-3" />
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => deleteIntegration(integration.id)}
+                                                            >
+                                                                <Trash2 className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })}
+                                        {integrations.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                                    No integrations configured. Click "Add Integration" to get started.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
                     )}
                 </TabsContent>
 
@@ -739,7 +743,11 @@ export default function IntegrationsPage() {
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {templates.map((template) => {
-                                        const info = INTEGRATION_INFO[template.integrationType]
+                                        const info = INTEGRATION_INFO[template.integrationType as IntegrationType] || {
+                                            name: template.integrationType || 'Unknown',
+                                            description: 'Integration',
+                                            color: 'bg-gray-500',
+                                        }
                                         return (
                                             <Card key={template.id} className="hover:shadow-lg transition-shadow">
                                                 <CardHeader>
@@ -873,7 +881,11 @@ export default function IntegrationsPage() {
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-3">
                                 {templateDetails && (() => {
-                                    const info = INTEGRATION_INFO[templateDetails.integrationType]
+                                    const info = INTEGRATION_INFO[templateDetails.integrationType as IntegrationType] || {
+                                        name: templateDetails.integrationType || 'Unknown',
+                                        description: 'Integration',
+                                        color: 'bg-gray-500',
+                                    }
                                     return (
                                         <>
                                             <div className={`w-10 h-10 rounded-lg ${info.color} flex items-center justify-center text-white font-bold`}>
@@ -998,11 +1010,10 @@ export default function IntegrationsPage() {
                                                                 {[...Array(5)].map((_, i) => (
                                                                     <Star
                                                                         key={i}
-                                                                        className={`h-4 w-4 ${
-                                                                            i < review.rating
-                                                                                ? 'fill-yellow-400 text-yellow-400'
-                                                                                : 'text-gray-300'
-                                                                        }`}
+                                                                        className={`h-4 w-4 ${i < review.rating
+                                                                            ? 'fill-yellow-400 text-yellow-400'
+                                                                            : 'text-gray-300'
+                                                                            }`}
                                                                     />
                                                                 ))}
                                                             </div>

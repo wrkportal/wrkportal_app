@@ -81,7 +81,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
   const [isLoading, setIsLoading] = useState(false)
   const [projects, setProjects] = useState<any[]>([])
   const [programs, setPrograms] = useState<any[]>([])
-  
+
   // Step 1: Basic Info
   const [formData, setFormData] = useState({
     name: '',
@@ -90,6 +90,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     programId: programId || '',
     fiscalYear: new Date().getFullYear(),
     fiscalQuarter: undefined as number | undefined,
+    totalAmount: 0,
     currency: 'USD',
     startDate: '',
     endDate: '',
@@ -130,14 +131,14 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
   // Step 5: Monthly Template
   const [monthlyData, setMonthlyData] = useState<Record<string, Record<string, number>>>({})
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
-  
-      // Category Edit Dialog
+
+  // Category Edit Dialog
   const [editCategoryDialogOpen, setEditCategoryDialogOpen] = useState(false)
   const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null)
   const [editCategoryName, setEditCategoryName] = useState('')
   const [editCategoryCode, setEditCategoryCode] = useState('')
   const [editCategoryTab, setEditCategoryTab] = useState<'basic' | 'structure' | 'allocation' | 'timing' | 'subcategories'>('basic')
-  
+
   // Category structure options
   const [categoryStructure, setCategoryStructure] = useState<'flat' | 'hierarchical' | 'matrix' | 'custom'>('hierarchical')
   const [allocationMethod, setAllocationMethod] = useState<'fixed' | 'percentage' | 'formula' | 'historical' | 'forecast'>('fixed')
@@ -145,7 +146,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
   const [hasSubCategories, setHasSubCategories] = useState(true)
   const [categoryDescription, setCategoryDescription] = useState('')
   const [categoryNotes, setCategoryNotes] = useState('')
-  
+
   // Custom structure configuration
   const [customLevels, setCustomLevels] = useState<Array<{ name: string; label: string; required: boolean }>>([
     { name: 'level1', label: 'Level 1', required: true },
@@ -158,7 +159,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
   const [newFieldLabel, setNewFieldLabel] = useState('')
   const [newFieldType, setNewFieldType] = useState<'text' | 'number' | 'select' | 'date'>('text')
   const [newFieldOptions, setNewFieldOptions] = useState('')
-  
+
   // Calculate months based on start and end dates
   const getMonths = () => {
     if (!formData.startDate || !formData.endDate) return []
@@ -172,7 +173,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     }
     return months
   }
-  
+
   const months = getMonths()
 
   useEffect(() => {
@@ -186,6 +187,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
         programId: programId || '',
         fiscalYear: new Date().getFullYear(),
         fiscalQuarter: undefined,
+        totalAmount: 0,
         currency: 'USD',
         startDate: '',
         endDate: '',
@@ -236,38 +238,39 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     // Try to create code from name first
     let baseCode = prefix || name.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '')
     if (baseCode.length < 2) baseCode = name.substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '')
-    
+
     let code = baseCode
     let counter = 1
-    
+
     // Ensure uniqueness
     while (existingCodes.includes(code.toUpperCase())) {
       code = `${baseCode}${counter}`
       counter++
     }
-    
+
     return code.toUpperCase()
   }
 
   const toggleCategory = (categoryName: string) => {
     const suggestion = MAIN_CATEGORY_SUGGESTIONS.find(c => c.name === categoryName)
     const existingIndex = categories.findIndex(c => c.name === categoryName)
-    
+
     if (existingIndex >= 0) {
       // Remove category
       setCategories(categories.filter((_, i) => i !== existingIndex))
     } else {
       // Get all existing category codes
       const existingCodes = categories.map(c => c.code || '').filter(Boolean)
-      
+
       // Generate unique code
       const uniqueCode = generateUniqueCode(categoryName, existingCodes, suggestion?.code)
-      
+
       // Add category
       const newCategory: Category = {
         name: categoryName,
         code: uniqueCode,
         selected: true,
+        wantsSubSubCategories,
         subCategories: (suggestion?.subCategories || []).map(sub => {
           // Generate unique codes for sub-categories too
           const subExistingCodes = categories
@@ -289,14 +292,15 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     if (customCategoryName.trim()) {
       // Get all existing category codes
       const existingCodes = categories.map(c => c.code || '').filter(Boolean)
-      
+
       // Generate unique code
       const uniqueCode = generateUniqueCode(customCategoryName.trim(), existingCodes)
-      
+
       const newCategory: Category = {
         name: customCategoryName.trim(),
         code: uniqueCode,
         selected: true,
+        wantsSubSubCategories,
         subCategories: [],
       }
       setCategories([...categories, newCategory])
@@ -308,13 +312,13 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     const updated = [...categories]
     const category = updated[categoryIndex]
     const subIndex = category.subCategories.findIndex(s => s.name === subCategoryName)
-    
+
     if (subIndex >= 0) {
       category.subCategories[subIndex].selected = !category.subCategories[subIndex].selected
     } else {
       category.subCategories.push({ name: subCategoryName, selected: true })
     }
-    
+
     setCategories(updated)
   }
 
@@ -329,14 +333,14 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
         const existingCodes = updated
           .flatMap(c => c.subCategories.map(sc => sc.code || ''))
           .filter(Boolean)
-        
+
         // Generate unique code
         const uniqueCode = generateUniqueCode(trimmedName, existingCodes)
-        
-        updated[categoryIndex].subCategories.push({ 
-          name: trimmedName, 
+
+        updated[categoryIndex].subCategories.push({
+          name: trimmedName,
           code: uniqueCode,
-          selected: true 
+          selected: true
         })
         setCategories(updated)
       }
@@ -348,12 +352,14 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     const subCategory = category.subCategories.find(s => s.name === subCategoryName)
     setSelectedCategoryForMetrics(categoryIndex)
     setSelectedSubCategoryForMetrics(subCategoryName)
-    setMetricsConfig(subCategory?.metrics || {
+    setMetricsConfig({
       type: '',
       frequency: '',
       selectedMonths: [],
       customMetrics: [],
+      namedCalculations: [],
       formula: '',
+      ...(subCategory?.metrics || {}),
     })
     setNewMetricName('')
     setNewMetricUnit('')
@@ -365,12 +371,12 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
       const updated = [...categories]
       const category = updated[selectedCategoryForMetrics]
       const subIndex = category.subCategories.findIndex(s => s.name === selectedSubCategoryForMetrics)
-      
+
       if (subIndex >= 0) {
         category.subCategories[subIndex].metrics = { ...metricsConfig }
         setCategories(updated)
       }
-      
+
       setMetricsDialogOpen(false)
       setSelectedCategoryForMetrics(null)
       setSelectedSubCategoryForMetrics(null)
@@ -433,9 +439,9 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     const end = textarea.selectionEnd
     const currentValue = metricsConfig.formula
     const newValue = currentValue.substring(0, start) + text + currentValue.substring(end)
-    
+
     setMetricsConfig({ ...metricsConfig, formula: newValue })
-    
+
     // Restore cursor position after the inserted text
     setTimeout(() => {
       textarea.focus()
@@ -445,14 +451,14 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
 
   const handleFormulaChange = (value: string) => {
     setMetricsConfig({ ...metricsConfig, formula: value })
-    
+
     // Get cursor position
     const textarea = formulaTextareaRef.current
     if (!textarea) return
-    
+
     const cursorPos = textarea.selectionStart
     const textBeforeCursor = value.substring(0, cursorPos)
-    
+
     // Find the word being typed (for autocomplete)
     const wordMatch = textBeforeCursor.match(/\b(\w+)$/)
     if (wordMatch) {
@@ -461,10 +467,10 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
         ...metricsConfig.customMetrics.map(m => m.name),
         ...(metricsConfig.namedCalculations || []).map(c => c.name)
       ]
-      const suggestions = allSuggestions.filter(name => 
+      const suggestions = allSuggestions.filter(name =>
         name.toLowerCase().startsWith(partialWord.toLowerCase()) && name !== partialWord
       )
-      
+
       if (suggestions.length > 0) {
         setFormulaAutocompleteValue(partialWord)
         setFormulaSuggestions(suggestions)
@@ -486,12 +492,12 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     const currentValue = metricsConfig.formula
     const textBeforeCursor = currentValue.substring(0, start)
     const wordMatch = textBeforeCursor.match(/\b(\w+)$/)
-    
+
     if (wordMatch) {
       const wordStart = start - wordMatch[1].length
       const newValue = currentValue.substring(0, wordStart) + suggestion + currentValue.substring(end)
       setMetricsConfig({ ...metricsConfig, formula: newValue })
-      
+
       setTimeout(() => {
         textarea.focus()
         textarea.setSelectionRange(wordStart + suggestion.length, wordStart + suggestion.length)
@@ -504,18 +510,18 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     const updated = [...categories]
     const category = updated[categoryIndex]
     const subCategory = category.subCategories[subCategoryIndex]
-    
+
     if (!subCategory.subSubCategories) {
       subCategory.subSubCategories = []
     }
-    
+
     const subSubIndex = subCategory.subSubCategories.findIndex(s => s.name === subSubCategoryName)
     if (subSubIndex >= 0) {
       subCategory.subSubCategories[subSubIndex].selected = !subCategory.subSubCategories[subSubIndex].selected
     } else {
       subCategory.subSubCategories.push({ name: subSubCategoryName, selected: true })
     }
-    
+
     setCategories(updated)
   }
 
@@ -539,7 +545,12 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     }))
   }
 
-  const getMetricValue = (categoryName: string, subCategoryName: string, metricName: string, month: string) => {
+  const getMetricValue = (
+    categoryName: string,
+    subCategoryName: string,
+    metricName: string,
+    month: string
+  ): string | number => {
     const key = `${subCategoryName}_${metricName}_${month}`
     const value = monthlyData[categoryName]?.[key]
     // Return the value, preserving 0 as 0, but returning empty string for undefined/null
@@ -552,13 +563,13 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
   // Formula evaluator - safely evaluates formulas using metric values
   const evaluateFormula = (formula: string, categoryName: string, subCategoryName: string, month: string): number => {
     if (!formula) return 0
-    
+
     try {
       // Replace metric names with their actual values
       let expression = formula
       const category = categories.find(c => c.name === categoryName)
       const subCategory = category?.subCategories.find(s => s.name === subCategoryName)
-      
+
       // First, replace named calculations (they might use metrics)
       if (subCategory?.metrics?.namedCalculations) {
         subCategory.metrics.namedCalculations.forEach((calc) => {
@@ -585,7 +596,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
           }
         })
       }
-      
+
       // Then replace metric names with their actual values
       if (subCategory?.metrics?.customMetrics) {
         subCategory.metrics.customMetrics.forEach((metric) => {
@@ -600,7 +611,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
           expression = expression.replace(regex, numValue.toString())
         })
       }
-      
+
       // Replace any remaining variable names with 0 (in case of typos or undefined metrics)
       expression = expression.replace(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g, (match) => {
         // Check if it's a number (already replaced)
@@ -611,7 +622,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
         console.warn(`Unknown variable in formula: ${match}, replacing with 0`)
         return '0'
       })
-      
+
       // Evaluate the expression safely
       // Only allow numbers, operators, parentheses, and decimal points
       const sanitized = expression.replace(/\s+/g, '')
@@ -619,7 +630,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
         console.warn('Invalid characters in formula after replacement:', expression, 'Sanitized:', sanitized)
         return 0
       }
-      
+
       // Use Function constructor for evaluation (safer than eval)
       try {
         const result = new Function('return ' + sanitized)()
@@ -639,12 +650,12 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
     const category = categories.find(c => c.name === categoryName)
     const subCategory = category?.subCategories.find(s => s.name === subCategoryName)
     const formula = subCategory?.metrics?.formula
-    
+
     if (formula && formula.trim()) {
       const result = evaluateFormula(formula, categoryName, subCategoryName, month)
       return result
     }
-    
+
     // Fallback to sum of all metric values if no formula
     if (subCategory?.metrics?.customMetrics && subCategory.metrics.customMetrics.length > 0) {
       return subCategory.metrics.customMetrics.reduce((sum, metric) => {
@@ -653,7 +664,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
         return sum + numValue
       }, 0)
     }
-    
+
     // Fallback to old method
     return monthlyData[categoryName]?.[`${subCategoryName}_${month}`] || 0
   }
@@ -715,15 +726,15 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
 
   const saveCategoryEdit = () => {
     if (editingCategoryIndex === null || !editCategoryName.trim()) return
-    
+
     const updated = [...categories]
     const oldCategoryName = updated[editingCategoryIndex].name
-    
+
     // Validate code uniqueness
     const allCategoryCodes = updated
       .map((c, idx) => idx === editingCategoryIndex ? null : (c.code || ''))
       .filter(Boolean) as string[]
-    
+
     // Check if code is unique
     if (editCategoryCode.trim()) {
       const codeToCheck = editCategoryCode.trim().toUpperCase()
@@ -737,9 +748,9 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
       const uniqueCode = generateUniqueCode(editCategoryName.trim(), allCategoryCodes)
       updated[editingCategoryIndex].code = uniqueCode
     }
-    
+
     updated[editingCategoryIndex].name = editCategoryName.trim()
-    
+
     // Update monthlyData keys if category name changed
     if (oldCategoryName !== editCategoryName.trim() && monthlyData[oldCategoryName]) {
       const oldData = monthlyData[oldCategoryName]
@@ -750,7 +761,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
         return newData
       })
     }
-    
+
     setCategories(updated)
     setEditCategoryDialogOpen(false)
     setEditingCategoryIndex(null)
@@ -770,24 +781,24 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
 
   const saveSubCategoryEdit = () => {
     if (editingCategoryIndex === null || editingSubCategoryIndex === null || !editSubCategoryName.trim()) return
-    
+
     const updated = [...categories]
     const category = updated[editingCategoryIndex]
     const subCategory = category.subCategories[editingSubCategoryIndex]
     const oldSubCategoryName = subCategory.name
-    
+
     // Validate code uniqueness - get all sub-category codes except the current one
     const allSubCategoryCodes = updated
-      .flatMap((c, catIdx) => 
+      .flatMap((c, catIdx) =>
         c.subCategories
-          .map((sc, subIdx) => 
-            (catIdx === editingCategoryIndex && subIdx === editingSubCategoryIndex) 
-              ? null 
+          .map((sc, subIdx) =>
+            (catIdx === editingCategoryIndex && subIdx === editingSubCategoryIndex)
+              ? null
               : (sc.code || '')
           )
       )
       .filter(Boolean) as string[]
-    
+
     // Check if code is unique
     if (editSubCategoryCode.trim()) {
       const codeToCheck = editSubCategoryCode.trim().toUpperCase()
@@ -801,16 +812,16 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
       const uniqueCode = generateUniqueCode(editSubCategoryName.trim(), allSubCategoryCodes)
       subCategory.code = uniqueCode
     }
-    
+
     subCategory.name = editSubCategoryName.trim()
-    
+
     // Update monthlyData keys if sub-category name changed
     if (oldSubCategoryName !== editSubCategoryName.trim() && editingCategoryIndex !== null) {
       const categoryName = categories[editingCategoryIndex].name
       if (monthlyData[categoryName]) {
         const categoryData = monthlyData[categoryName]
         const newCategoryData: Record<string, number> = {}
-        
+
         Object.keys(categoryData).forEach(key => {
           if (key.startsWith(`${oldSubCategoryName}_`)) {
             newCategoryData[key.replace(`${oldSubCategoryName}_`, `${editSubCategoryName.trim()}_`)] = categoryData[key]
@@ -818,14 +829,14 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
             newCategoryData[key] = categoryData[key]
           }
         })
-        
+
         setMonthlyData(prev => ({
           ...prev,
           [categoryName]: newCategoryData,
         }))
       }
     }
-    
+
     setCategories(updated)
     setEditingSubCategoryIndex(null)
     setEditSubCategoryName('')
@@ -930,7 +941,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
         const error = await response.json()
         console.error('Budget creation error:', error)
         console.error('Payload sent:', payload)
-        const errorMessage = error.details 
+        const errorMessage = error.details
           ? `${error.error}: ${Array.isArray(error.details) ? error.details.map((d: any) => d.message || d.path?.join('.')).join(', ') : error.details}`
           : error.error || 'Failed to save budget'
         throw new Error(errorMessage)
@@ -946,141 +957,141 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
   }
 
   const renderStep1 = () => (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Budget Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Q1 2025 Budget"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="fiscalYear">Fiscal Year *</Label>
-                <Input
-                  id="fiscalYear"
-                  type="number"
-                  value={formData.fiscalYear}
-                  onChange={(e) => setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })}
-                  required
-                />
-              </div>
-            </div>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="name">Budget Name *</Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="e.g., Q1 2025 Budget"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="fiscalYear">Fiscal Year *</Label>
+          <Input
+            id="fiscalYear"
+            type="number"
+            value={formData.fiscalYear}
+            onChange={(e) => setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })}
+            required
+          />
+        </div>
+      </div>
 
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Budget description..."
-                rows={2}
-              />
-            </div>
+      <div>
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Budget description..."
+          rows={2}
+        />
+      </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="projectId">Project (Optional)</Label>
-                <Select
-                  value={formData.projectId || undefined}
-                  onValueChange={(value) => setFormData({ ...formData, projectId: value || '' })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name} ({p.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="programId">Program (Optional)</Label>
-                <Select
-                  value={formData.programId || undefined}
-                  onValueChange={(value) => setFormData({ ...formData, programId: value || '' })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select program" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {programs.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name} ({p.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="projectId">Project (Optional)</Label>
+          <Select
+            value={formData.projectId || undefined}
+            onValueChange={(value) => setFormData({ ...formData, projectId: value || '' })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name} ({p.code})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="programId">Program (Optional)</Label>
+          <Select
+            value={formData.programId || undefined}
+            onValueChange={(value) => setFormData({ ...formData, programId: value || '' })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select program" />
+            </SelectTrigger>
+            <SelectContent>
+              {programs.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name} ({p.code})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="currency">Currency</Label>
-                <Select
-                  value={formData.currency}
-                  onValueChange={(value) => setFormData({ ...formData, currency: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="INR">INR</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="fiscalQuarter">Fiscal Quarter</Label>
-                <Select
-                  value={formData.fiscalQuarter?.toString() || undefined}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, fiscalQuarter: value ? parseInt(value) : undefined })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Optional" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Q1</SelectItem>
-                    <SelectItem value="2">Q2</SelectItem>
-                    <SelectItem value="3">Q3</SelectItem>
-                    <SelectItem value="4">Q4</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label htmlFor="currency">Currency</Label>
+          <Select
+            value={formData.currency}
+            onValueChange={(value) => setFormData({ ...formData, currency: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="USD">USD</SelectItem>
+              <SelectItem value="EUR">EUR</SelectItem>
+              <SelectItem value="GBP">GBP</SelectItem>
+              <SelectItem value="INR">INR</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="fiscalQuarter">Fiscal Quarter</Label>
+          <Select
+            value={formData.fiscalQuarter?.toString() || undefined}
+            onValueChange={(value) =>
+              setFormData({ ...formData, fiscalQuarter: value ? parseInt(value) : undefined })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Optional" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Q1</SelectItem>
+              <SelectItem value="2">Q2</SelectItem>
+              <SelectItem value="3">Q3</SelectItem>
+              <SelectItem value="4">Q4</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startDate">Start Date *</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="endDate">End Date *</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="startDate">Start Date *</Label>
+          <Input
+            id="startDate"
+            type="date"
+            value={formData.startDate}
+            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="endDate">End Date *</Label>
+          <Input
+            id="endDate"
+            type="date"
+            value={formData.endDate}
+            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+            required
+          />
+        </div>
+      </div>
     </div>
   )
 
@@ -1106,7 +1117,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
               onClick={() => toggleCategory(suggestion.name)}
             >
               <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">{suggestion.name}</div>
                     <div className="text-xs text-muted-foreground">{suggestion.code}</div>
@@ -1127,7 +1138,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
           onKeyPress={(e) => e.key === 'Enter' && addCustomCategory()}
         />
         <Button type="button" onClick={addCustomCategory} variant="outline">
-                  <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-4 w-4 mr-1" />
           Add
         </Button>
       </div>
@@ -1226,7 +1237,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
                     >
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between gap-2">
-                          <div 
+                          <div
                             className="flex-1 cursor-pointer"
                             onClick={() => toggleSubCategory(selectedCategoryIndex, subName)}
                           >
@@ -1263,60 +1274,60 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
             // Show custom sub-categories that aren't in the suggestion list
             return !suggestion?.subCategories.includes(sub.name)
           }).length > 0 && (
-            <div>
-              <Label className="text-sm font-medium mb-2">Your Sub-Categories</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {category.subCategories
-                  .filter(sub => !suggestion?.subCategories.includes(sub.name))
-                  .map((subCategory) => {
-                    const isSelected = subCategory.selected
-                    return (
-                      <Card
-                        key={subCategory.name}
-                        className={cn(
-                          "transition-all",
-                          isSelected && "border-primary bg-primary/5"
-                        )}
-                      >
-                        <CardContent className="p-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <div 
-                              className="flex-1 cursor-pointer"
-                              onClick={() => toggleSubCategory(selectedCategoryIndex, subCategory.name)}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm">{subCategory.name}</span>
-                                {isSelected && <Check className="h-4 w-4 text-primary" />}
-                              </div>
-                            </div>
-                            {isSelected && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  openMetricsDialog(selectedCategoryIndex, subCategory.name)
-                                }}
+              <div>
+                <Label className="text-sm font-medium mb-2">Your Sub-Categories</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {category.subCategories
+                    .filter(sub => !suggestion?.subCategories.includes(sub.name))
+                    .map((subCategory) => {
+                      const isSelected = subCategory.selected
+                      return (
+                        <Card
+                          key={subCategory.name}
+                          className={cn(
+                            "transition-all",
+                            isSelected && "border-primary bg-primary/5"
+                          )}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <div
+                                className="flex-1 cursor-pointer"
+                                onClick={() => toggleSubCategory(selectedCategoryIndex, subCategory.name)}
                               >
-                                Set Metrics
-                </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{subCategory.name}</span>
+                                  {isSelected && <Check className="h-4 w-4 text-primary" />}
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    openMetricsDialog(selectedCategoryIndex, subCategory.name)
+                                  }}
+                                >
+                                  Set Metrics
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                </div>
               </div>
-            </div>
-          )}
-              </div>
+            )}
+        </div>
 
         <div className="space-y-2">
           <Label className="text-sm font-medium">Add Custom Sub-Category</Label>
           <div className="flex gap-2">
-                    <Input
+            <Input
               id={`custom-sub-${selectedCategoryIndex}`}
               placeholder="Enter sub-category name..."
               onKeyPress={(e) => {
@@ -1371,172 +1382,173 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
             {categories.map((category) => {
               const isExpanded = expandedCategories.has(category.name)
               return (
-              <Card key={category.name} className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">{category.name}</h3>
-                    {category.code && (
-                      <Badge variant="outline" className="text-xs">
-                        {category.code}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openEditCategoryDialog(categories.findIndex(c => c.name === category.name))
-                      }}
-                      title="Edit category"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => toggleCategoryExpansion(category.name)}
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
+                <Card key={category.name} className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">{category.name}</h3>
+                      {category.code && (
+                        <Badge variant="outline" className="text-xs">
+                          {category.code}
+                        </Badge>
                       )}
-                    </Button>
-                  </div>
-                </div>
-                {isExpanded && category.subCategories.filter(s => s.selected).map((subCategory) => {
-                  const hasMetrics = subCategory.metrics?.customMetrics && subCategory.metrics.customMetrics.length > 0
-                  return (
-                  <div key={subCategory.name} className="mb-4 last:mb-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm font-medium">{subCategory.name}</Label>
-                        {subCategory.metrics?.formula && (
-                          <Badge variant="outline" className="text-xs">
-                            Formula: {subCategory.metrics.formula}
-                          </Badge>
-                        )}
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        Total: {getMonthlyTotalForSubCategory(category.name, subCategory.name).toLocaleString()} {formData.currency}
-                      </span>
                     </div>
-                    
-                    {/* Show metrics if defined, otherwise show single amount input */}
-                    {hasMetrics ? (
-                      <div className="space-y-3">
-                        {subCategory.metrics.customMetrics.map((metric) => (
-                          <div key={metric.name} className="space-y-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Label className="text-xs font-medium">{metric.name}</Label>
-                              <span className="text-xs text-muted-foreground">({metric.unit})</span>
-                            </div>
-                            <div className="overflow-x-auto -mx-4 px-4">
-                              <div 
-                                className="grid gap-1.5 pb-2" 
-                                style={{ 
-                                  gridTemplateColumns: `repeat(${monthList.length}, minmax(65px, 1fr))`
-                                }}
-                              >
-                                {monthList.map((month) => (
-                                  <div key={month} className="space-y-0.5 min-w-[65px]">
-                                    <Label className="text-[10px] text-muted-foreground truncate block leading-tight" title={month}>{month}</Label>
-                                    <Input
-                                      type="number"
-                                      step="0.01"
-                                      placeholder="0"
-                                      value={(() => {
-                                        const val = getMetricValue(category.name, subCategory.name, metric.name, month)
-                                        return val === '' || val === undefined || val === null ? '' : val
-                                      })()}
-                                      onChange={(e) => {
-                                        const inputValue = e.target.value
-                                        const value = inputValue === '' ? 0 : parseFloat(inputValue) || 0
-                                        updateMetricValue(category.name, subCategory.name, metric.name, month, value)
-                                      }}
-                                      className="text-xs h-8 px-2 py-1 w-full"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {/* Show calculated total row if formula exists */}
-                        {subCategory.metrics?.formula && (
-                          <div className="space-y-1 pt-2 border-t">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Label className="text-xs font-semibold">Calculated Total</Label>
-                              <span className="text-xs text-muted-foreground">({formData.currency})</span>
-                            </div>
-                            <div className="overflow-x-auto -mx-4 px-4">
-                              <div 
-                                className="grid gap-1.5 pb-2" 
-                                style={{ 
-                                  gridTemplateColumns: `repeat(${monthList.length}, minmax(65px, 1fr))`
-                                }}
-                              >
-                                {monthList.map((month) => {
-                                  const calculatedValue = getCalculatedTotal(category.name, subCategory.name, month)
-                                  return (
-                                    <div key={month} className="space-y-0.5 min-w-[65px]">
-                                      <Label className="text-[10px] text-muted-foreground truncate block leading-tight" title={month}>{month}</Label>
-                                      <div className="text-xs h-8 px-2 py-1 w-full border rounded bg-primary/10 flex items-center justify-center font-semibold text-primary">
-                                        {calculatedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                      </div>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            </div>
-                          </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openEditCategoryDialog(categories.findIndex(c => c.name === category.name))
+                        }}
+                        title="Edit category"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => toggleCategoryExpansion(category.name)}
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
                         )}
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto -mx-4 px-4">
-                        <div 
-                          className="grid gap-1.5 pb-2" 
-                          style={{ 
-                            gridTemplateColumns: `repeat(${monthList.length}, minmax(65px, 1fr))`
-                          }}
-                        >
-                          {monthList.map((month) => (
-                            <div key={month} className="space-y-0.5 min-w-[65px]">
-                              <Label className="text-[10px] text-muted-foreground truncate block leading-tight" title={month}>{month}</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder="0"
-                                value={monthlyData[category.name]?.[`${subCategory.name}_${month}`] || ''}
-                                onChange={(e) => {
-                                  const amount = parseFloat(e.target.value) || 0
-                                  updateMonthlyAmount(category.name, subCategory.name, month, amount)
-                                }}
-                                className="text-xs h-8 px-2 py-1 w-full"
-                              />
-                            </div>
-                          ))}
+                      </Button>
+                    </div>
+                  </div>
+                  {isExpanded && category.subCategories.filter(s => s.selected).map((subCategory) => {
+                    const hasMetrics = subCategory.metrics?.customMetrics && subCategory.metrics.customMetrics.length > 0
+                    return (
+                      <div key={subCategory.name} className="mb-4 last:mb-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm font-medium">{subCategory.name}</Label>
+                            {subCategory.metrics?.formula && (
+                              <Badge variant="outline" className="text-xs">
+                                Formula: {subCategory.metrics.formula}
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            Total: {getMonthlyTotalForSubCategory(category.name, subCategory.name).toLocaleString()} {formData.currency}
+                          </span>
                         </div>
+
+                        {/* Show metrics if defined, otherwise show single amount input */}
+                        {hasMetrics ? (
+                          <div className="space-y-3">
+                            {(subCategory.metrics?.customMetrics ?? []).map((metric) => (
+                              <div key={metric.name} className="space-y-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Label className="text-xs font-medium">{metric.name}</Label>
+                                  <span className="text-xs text-muted-foreground">({metric.unit})</span>
+                                </div>
+                                <div className="overflow-x-auto -mx-4 px-4">
+                                  <div
+                                    className="grid gap-1.5 pb-2"
+                                    style={{
+                                      gridTemplateColumns: `repeat(${monthList.length}, minmax(65px, 1fr))`
+                                    }}
+                                  >
+                                    {monthList.map((month) => (
+                                      <div key={month} className="space-y-0.5 min-w-[65px]">
+                                        <Label className="text-[10px] text-muted-foreground truncate block leading-tight" title={month}>{month}</Label>
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          placeholder="0"
+                                          value={(() => {
+                                            const val = getMetricValue(category.name, subCategory.name, metric.name, month)
+                                            return val === '' || val === undefined || val === null ? '' : val
+                                          })()}
+                                          onChange={(e) => {
+                                            const inputValue = e.target.value
+                                            const value = inputValue === '' ? 0 : parseFloat(inputValue) || 0
+                                            updateMetricValue(category.name, subCategory.name, metric.name, month, value)
+                                          }}
+                                          className="text-xs h-8 px-2 py-1 w-full"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {/* Show calculated total row if formula exists */}
+                            {subCategory.metrics?.formula && (
+                              <div className="space-y-1 pt-2 border-t">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Label className="text-xs font-semibold">Calculated Total</Label>
+                                  <span className="text-xs text-muted-foreground">({formData.currency})</span>
+                                </div>
+                                <div className="overflow-x-auto -mx-4 px-4">
+                                  <div
+                                    className="grid gap-1.5 pb-2"
+                                    style={{
+                                      gridTemplateColumns: `repeat(${monthList.length}, minmax(65px, 1fr))`
+                                    }}
+                                  >
+                                    {monthList.map((month) => {
+                                      const calculatedValue = getCalculatedTotal(category.name, subCategory.name, month)
+                                      return (
+                                        <div key={month} className="space-y-0.5 min-w-[65px]">
+                                          <Label className="text-[10px] text-muted-foreground truncate block leading-tight" title={month}>{month}</Label>
+                                          <div className="text-xs h-8 px-2 py-1 w-full border rounded bg-primary/10 flex items-center justify-center font-semibold text-primary">
+                                            {calculatedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                          </div>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto -mx-4 px-4">
+                            <div
+                              className="grid gap-1.5 pb-2"
+                              style={{
+                                gridTemplateColumns: `repeat(${monthList.length}, minmax(65px, 1fr))`
+                              }}
+                            >
+                              {monthList.map((month) => (
+                                <div key={month} className="space-y-0.5 min-w-[65px]">
+                                  <Label className="text-[10px] text-muted-foreground truncate block leading-tight" title={month}>{month}</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0"
+                                    value={monthlyData[category.name]?.[`${subCategory.name}_${month}`] || ''}
+                                    onChange={(e) => {
+                                      const amount = parseFloat(e.target.value) || 0
+                                      updateMonthlyAmount(category.name, subCategory.name, month, amount)
+                                    }}
+                                    className="text-xs h-8 px-2 py-1 w-full"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )})}
-                {isExpanded && (
-                  <div className="mt-3 pt-3 border-t">
-                    <div className="flex justify-between text-sm font-medium">
-                      <span>Category Total:</span>
-                      <span>{getCategoryTotal(category.name).toLocaleString()} {formData.currency}</span>
+                    )
+                  })}
+                  {isExpanded && (
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>Category Total:</span>
+                        <span>{getCategoryTotal(category.name).toLocaleString()} {formData.currency}</span>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </Card>
-            )
+                  )}
+                </Card>
+              )
             })}
           </div>
         </div>
@@ -1579,7 +1591,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
               const isCompleted = stepNumber < step
               const isCurrent = stepNumber === step
               const isClickable = stepNumber <= step // Can only click on current or previous steps
-              
+
               return (
                 <div key={i} className="flex items-center flex-1">
                   <button
@@ -1591,8 +1603,8 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
                       isCompleted
                         ? "bg-primary border-primary text-primary-foreground cursor-pointer hover:bg-primary/90 hover:scale-110"
                         : isCurrent
-                        ? "border-primary text-primary cursor-default"
-                        : "border-muted text-muted-foreground cursor-not-allowed",
+                          ? "border-primary text-primary cursor-default"
+                          : "border-muted text-muted-foreground cursor-not-allowed",
                       isClickable && !isCurrent && "hover:shadow-md"
                     )}
                     title={isClickable ? `Go to step ${stepNumber}: ${stepTitles[i]}` : undefined}
@@ -1783,7 +1795,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
                       Create reusable calculations using your metrics. These can be used in the main formula below.
                     </p>
                   </div>
-                  
+
                   <div className="space-y-2">
                     {(metricsConfig.namedCalculations || []).map((calc, index) => (
                       <Card key={index} className="p-3">
@@ -1971,16 +1983,16 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
             <Button type="button" variant="outline" onClick={() => setMetricsDialogOpen(false)}>
               Cancel
             </Button>
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               onClick={saveMetrics}
-              disabled={!metricsConfig.type || !metricsConfig.frequency || 
+              disabled={!metricsConfig.type || !metricsConfig.frequency ||
                 ((metricsConfig.frequency === 'seasonal' || metricsConfig.frequency === 'one-time') && metricsConfig.selectedMonths.length === 0)}
             >
               Save Metrics
             </Button>
           </DialogFooter>
-      </DialogContent>
+        </DialogContent>
       </Dialog>
 
       {/* Edit Category Dialog */}
@@ -1992,7 +2004,7 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
               Define how this category is structured, allocated, and distributed over time
             </DialogDescription>
           </DialogHeader>
-          
+
           <Tabs value={editCategoryTab} onValueChange={(v) => setEditCategoryTab(v as any)} className="w-full">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -2652,11 +2664,11 @@ export function BudgetDialog({ open, onClose, onSuccess, budgetId, projectId, pr
                                   onClick={() => {
                                     if (editingCategoryIndex !== null) {
                                       const allSubCategoryCodes = categories
-                                        .flatMap((c, catIdx) => 
+                                        .flatMap((c, catIdx) =>
                                           c.subCategories
-                                            .map((sc, subIdx) => 
-                                              (catIdx === editingCategoryIndex && subIdx === editingSubCategoryIndex) 
-                                                ? null 
+                                            .map((sc, subIdx) =>
+                                              (catIdx === editingCategoryIndex && subIdx === editingSubCategoryIndex)
+                                                ? null
                                                 : (sc.code || '')
                                             )
                                         )

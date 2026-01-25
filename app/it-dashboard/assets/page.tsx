@@ -53,9 +53,9 @@ import {
   Tooltip,
   Legend,
 } from 'recharts'
-import { 
-  Plus, 
-  Search, 
+import {
+  Plus,
+  Search,
   HardDrive,
   Laptop,
   Server,
@@ -312,8 +312,8 @@ export default function AssetsPage() {
   })
 
   return (
-    <ITPageLayout 
-      title="Assets" 
+    <ITPageLayout
+      title="Assets"
       description="Manage hardware, software, and infrastructure assets"
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -344,7 +344,7 @@ export default function AssetsPage() {
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{assetStats.inUse}</div>
+                <div className="text-2xl font-bold">{assetStats.assigned}</div>
                 <p className="text-xs text-muted-foreground">Currently assigned</p>
               </CardContent>
             </Card>
@@ -711,7 +711,7 @@ export default function AssetsPage() {
                                 Change Status
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => handleDeleteAsset(asset.id)}
                                 className="text-red-600"
                               >

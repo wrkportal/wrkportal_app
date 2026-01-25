@@ -53,9 +53,9 @@ import {
   Tooltip,
   Legend,
 } from 'recharts'
-import { 
-  Plus, 
-  Search, 
+import {
+  Plus,
+  Search,
   Ticket,
   Clock,
   CheckCircle,
@@ -68,7 +68,6 @@ import {
   MoreVertical,
   Eye,
   Edit,
-  Assign,
   Tag,
   ArrowUpDown
 } from 'lucide-react'
@@ -193,7 +192,7 @@ export default function TicketsPage() {
     const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     // Map status for filtering
     const ticketStatus = ticket.status === 'TO_DO' ? 'OPEN' : ticket.status === 'DONE' ? 'RESOLVED' : ticket.status
     const matchesStatus = statusFilter === 'all' || ticketStatus === statusFilter
@@ -242,8 +241,8 @@ export default function TicketsPage() {
   }
 
   return (
-    <ITPageLayout 
-      title="Service Tickets" 
+    <ITPageLayout
+      title="Service Tickets"
       description="Manage support tickets and service requests"
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

@@ -85,7 +85,7 @@ export async function getResourceUsageStats(
     totalExports,
     totalShares,
     uniqueUsers: uniqueUsers.length,
-    usageByAction: usageByAction.map(item => ({
+    usageByAction: usageByAction.map((item: any) => ({
       action: item.action,
       count: item._count,
     })),
@@ -192,7 +192,7 @@ export async function getMostUsedResources(
     take: limit,
   })
 
-  return usage.map(item => ({
+  return usage.map((item: any) => ({
     resourceType: item.resourceType,
     resourceId: item.resourceId,
     usageCount: item._count,

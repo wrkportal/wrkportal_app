@@ -158,7 +158,7 @@ export default function PMDashboardLandingPage() {
   const [stakeholderUpdates, setStakeholderUpdates] = useState<any>(null)
   const [collaborationActivity, setCollaborationActivity] = useState<any>(null)
   const [feedback, setFeedback] = useState<any>(null)
-  
+
   // My Tasks widget state
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [priorityFilter, setPriorityFilter] = useState<string>('ALL')
@@ -462,27 +462,27 @@ export default function PMDashboardLandingPage() {
         const parsedLayouts: Layouts = JSON.parse(savedLayouts)
         // Merge saved layouts with defaults to ensure all widgets have positions
         const mergedLayouts: Layouts = { lg: [], md: [], sm: [] }
-        
-        // For each breakpoint, merge saved layouts with defaults
-        ;(['lg', 'md', 'sm'] as const).forEach(breakpoint => {
-          const savedBreakpointLayouts = parsedLayouts[breakpoint] || []
-          const defaultBreakpointLayouts = defaultLayouts[breakpoint] || []
-          
-          // Create a map of saved layouts by widget id
-          const savedLayoutMap = new Map(savedBreakpointLayouts.map(l => [l.i, l]))
-          
-          // Start with saved layouts, then add any missing defaults
-          const merged: Layout[] = [...savedBreakpointLayouts]
-          
-          defaultBreakpointLayouts.forEach(defaultLayout => {
-            if (!savedLayoutMap.has(defaultLayout.i)) {
-              merged.push(defaultLayout)
-            }
+
+          // For each breakpoint, merge saved layouts with defaults
+          ; (['lg', 'md', 'sm'] as const).forEach(breakpoint => {
+            const savedBreakpointLayouts = parsedLayouts[breakpoint] || []
+            const defaultBreakpointLayouts = defaultLayouts[breakpoint] || []
+
+            // Create a map of saved layouts by widget id
+            const savedLayoutMap = new Map(savedBreakpointLayouts.map(l => [l.i, l]))
+
+            // Start with saved layouts, then add any missing defaults
+            const merged: Layout[] = [...savedBreakpointLayouts]
+
+            defaultBreakpointLayouts.forEach(defaultLayout => {
+              if (!savedLayoutMap.has(defaultLayout.i)) {
+                merged.push(defaultLayout)
+              }
+            })
+
+            mergedLayouts[breakpoint] = merged
           })
-          
-          mergedLayouts[breakpoint] = merged
-        })
-        
+
         setLayouts(mergedLayouts)
         localStorage.setItem('pm-layouts', JSON.stringify(mergedLayouts))
       } catch (e) {
@@ -2662,7 +2662,7 @@ export default function PMDashboardLandingPage() {
                   </div>
                 </div>
               )}
-              
+
               {/* Velocity Trend Chart */}
               {velocityData && velocityData.velocityTrend && velocityData.velocityTrend.length > 0 && (
                 <div className="mt-4 space-y-2">
@@ -2671,27 +2671,27 @@ export default function PMDashboardLandingPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={velocityData.velocityTrend}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis 
-                          dataKey="sprintName" 
+                        <XAxis
+                          dataKey="sprintName"
                           tick={{ fontSize: 10 }}
                           stroke="hsl(var(--muted-foreground))"
                         />
-                        <YAxis 
+                        <YAxis
                           tick={{ fontSize: 10 }}
                           stroke="hsl(var(--muted-foreground))"
                         />
-                        <Tooltip 
-                          contentStyle={{ 
+                        <Tooltip
+                          contentStyle={{
                             backgroundColor: 'hsl(var(--background))',
                             border: '1px solid hsl(var(--border))',
                             borderRadius: '6px',
                             fontSize: '12px'
                           }}
                         />
-                        <Line 
-                          type="monotone" 
-                          dataKey="velocity" 
-                          stroke="#9333ea" 
+                        <Line
+                          type="monotone"
+                          dataKey="velocity"
+                          stroke="#9333ea"
                           strokeWidth={2}
                           dot={{ r: 3 }}
                           name="Velocity"
@@ -2720,36 +2720,36 @@ export default function PMDashboardLandingPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={velocityData.burndown}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis 
-                          dataKey="day" 
+                        <XAxis
+                          dataKey="day"
                           tick={{ fontSize: 10 }}
                           stroke="hsl(var(--muted-foreground))"
                         />
-                        <YAxis 
+                        <YAxis
                           tick={{ fontSize: 10 }}
                           stroke="hsl(var(--muted-foreground))"
                         />
-                        <Tooltip 
-                          contentStyle={{ 
+                        <Tooltip
+                          contentStyle={{
                             backgroundColor: 'hsl(var(--background))',
                             border: '1px solid hsl(var(--border))',
                             borderRadius: '6px',
                             fontSize: '12px'
                           }}
                         />
-                        <Area 
-                          type="monotone" 
-                          dataKey="ideal" 
-                          stroke="#10b981" 
-                          fill="#10b981" 
+                        <Area
+                          type="monotone"
+                          dataKey="ideal"
+                          stroke="#10b981"
+                          fill="#10b981"
                           fillOpacity={0.2}
                           name="Ideal"
                         />
-                        <Area 
-                          type="monotone" 
-                          dataKey="actual" 
-                          stroke="#9333ea" 
-                          fill="#9333ea" 
+                        <Area
+                          type="monotone"
+                          dataKey="actual"
+                          stroke="#9333ea"
+                          fill="#9333ea"
                           fillOpacity={0.3}
                           name="Actual"
                         />
@@ -2871,13 +2871,12 @@ export default function PMDashboardLandingPage() {
                           </Badge>
                         </div>
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] ${
-                            release.riskLevel === 'HIGH'
+                          className={`px-2 py-0.5 rounded-full text-[10px] ${release.riskLevel === 'HIGH'
                               ? 'border border-rose-500/60 bg-rose-500/10 text-rose-600 dark:text-rose-300'
                               : release.riskLevel === 'MEDIUM'
-                              ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600 dark:text-amber-300'
-                              : 'border border-green-500/60 bg-green-500/10 text-green-600 dark:text-green-300'
-                          }`}
+                                ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600 dark:text-amber-300'
+                                : 'border border-green-500/60 bg-green-500/10 text-green-600 dark:text-green-300'
+                            }`}
                         >
                           {release.riskLevel}
                         </span>
@@ -2942,7 +2941,7 @@ export default function PMDashboardLandingPage() {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Team Members */}
                   <div className="space-y-3">
                     {teamPerformance.teamPerformance.slice(0, 5).map((member: any) => (
@@ -2953,15 +2952,14 @@ export default function PMDashboardLandingPage() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-foreground font-medium">{member.name}</div>
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] ${
-                              member.status === 'Blocked'
+                            className={`px-2 py-0.5 rounded-full text-[10px] ${member.status === 'Blocked'
                                 ? 'border border-rose-500/60 bg-rose-500/10 text-rose-600'
                                 : member.status === 'Overloaded'
-                                ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
-                                : member.status === 'Busy'
-                                ? 'border border-blue-500/60 bg-blue-500/10 text-blue-600'
-                                : 'border border-green-500/60 bg-green-500/10 text-green-600'
-                            }`}
+                                  ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
+                                  : member.status === 'Busy'
+                                    ? 'border border-blue-500/60 bg-blue-500/10 text-blue-600'
+                                    : 'border border-green-500/60 bg-green-500/10 text-green-600'
+                              }`}
                           >
                             {member.status}
                           </span>
@@ -3040,13 +3038,12 @@ export default function PMDashboardLandingPage() {
                             )}
                           </div>
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] ${
-                              project.status === 'IN_PROGRESS'
+                            className={`px-2 py-0.5 rounded-full text-[10px] ${project.status === 'IN_PROGRESS'
                                 ? 'border border-blue-500/60 bg-blue-500/10 text-blue-600'
                                 : project.status === 'PLANNING'
-                                ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
-                                : 'border border-border bg-muted text-muted-foreground'
-                            }`}
+                                  ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
+                                  : 'border border-border bg-muted text-muted-foreground'
+                              }`}
                           >
                             {project.status}
                           </span>
@@ -3187,11 +3184,10 @@ export default function PMDashboardLandingPage() {
                               {prediction.projectName}
                             </div>
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] ${
-                                prediction.riskLevel === 'CRITICAL'
+                              className={`px-2 py-0.5 rounded-full text-[10px] ${prediction.riskLevel === 'CRITICAL'
                                   ? 'border border-rose-500/60 bg-rose-500/10 text-rose-600'
                                   : 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
-                              }`}
+                                }`}
                             >
                               {prediction.riskLevel}
                             </span>
@@ -3261,15 +3257,14 @@ export default function PMDashboardLandingPage() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-foreground font-medium">{forecast.name}</div>
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] ${
-                              forecast.status === 'OVERLOADED'
+                            className={`px-2 py-0.5 rounded-full text-[10px] ${forecast.status === 'OVERLOADED'
                                 ? 'border border-rose-500/60 bg-rose-500/10 text-rose-600'
                                 : forecast.status === 'FULL'
-                                ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
-                                : forecast.status === 'BUSY'
-                                ? 'border border-blue-500/60 bg-blue-500/10 text-blue-600'
-                                : 'border border-green-500/60 bg-green-500/10 text-green-600'
-                            }`}
+                                  ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
+                                  : forecast.status === 'BUSY'
+                                    ? 'border border-blue-500/60 bg-blue-500/10 text-blue-600'
+                                    : 'border border-green-500/60 bg-green-500/10 text-green-600'
+                              }`}
                           >
                             {forecast.status}
                           </span>
@@ -3312,8 +3307,8 @@ export default function PMDashboardLandingPage() {
             </CardHeader>
             <CardContent className="px-6 pt-0 pb-6">
               {releaseSuccessPredictions &&
-              releaseSuccessPredictions.predictions &&
-              releaseSuccessPredictions.predictions.length > 0 ? (
+                releaseSuccessPredictions.predictions &&
+                releaseSuccessPredictions.predictions.length > 0 ? (
                 <div className="space-y-4">
                   {/* Summary */}
                   {releaseSuccessPredictions.summary && (
@@ -3348,13 +3343,12 @@ export default function PMDashboardLandingPage() {
                             <Badge variant="outline" className="text-[10px]">{prediction.version}</Badge>
                           </div>
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] ${
-                              prediction.successLevel === 'CRITICAL' || prediction.successLevel === 'LOW'
+                            className={`px-2 py-0.5 rounded-full text-[10px] ${prediction.successLevel === 'CRITICAL' || prediction.successLevel === 'LOW'
                                 ? 'border border-rose-500/60 bg-rose-500/10 text-rose-600'
                                 : prediction.successLevel === 'MEDIUM'
-                                ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
-                                : 'border border-green-500/60 bg-green-500/10 text-green-600'
-                            }`}
+                                  ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
+                                  : 'border border-green-500/60 bg-green-500/10 text-green-600'
+                              }`}
                           >
                             {prediction.successProbability}%
                           </span>
@@ -3366,9 +3360,8 @@ export default function PMDashboardLandingPage() {
                           </div>
                           <Progress
                             value={prediction.successProbability}
-                            className={`h-1 ${
-                              prediction.successProbability < 60 ? 'bg-rose-500' : 'bg-green-500'
-                            }`}
+                            className={`h-1 ${prediction.successProbability < 60 ? 'bg-rose-500' : 'bg-green-500'
+                              }`}
                           />
                         </div>
                         <div className="text-[10px] text-muted-foreground mt-2">
@@ -3426,13 +3419,12 @@ export default function PMDashboardLandingPage() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="text-foreground font-medium">{scenario.scenarioType}</div>
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] ${
-                            scenario.riskAssessment?.level === 'HIGH'
+                          className={`px-2 py-0.5 rounded-full text-[10px] ${scenario.riskAssessment?.level === 'HIGH'
                               ? 'border border-rose-500/60 bg-rose-500/10 text-rose-600'
                               : scenario.riskAssessment?.level === 'MEDIUM'
-                              ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
-                              : 'border border-green-500/60 bg-green-500/10 text-green-600'
-                          }`}
+                                ? 'border border-amber-500/60 bg-amber-500/10 text-amber-600'
+                                : 'border border-green-500/60 bg-green-500/10 text-green-600'
+                            }`}
                         >
                           {scenario.riskAssessment?.level || 'LOW'}
                         </span>
@@ -3696,11 +3688,10 @@ export default function PMDashboardLandingPage() {
                             <div className="text-foreground font-medium line-clamp-1">{item.title}</div>
                             <Badge
                               variant="outline"
-                              className={`text-[10px] ${
-                                item.priority === 'CRITICAL' || item.priority === 'HIGH'
+                              className={`text-[10px] ${item.priority === 'CRITICAL' || item.priority === 'HIGH'
                                   ? 'border-rose-500/60 text-rose-600'
                                   : ''
-                              }`}
+                                }`}
                             >
                               {item.type}
                             </Badge>
@@ -4125,7 +4116,7 @@ export default function PMDashboardLandingPage() {
             {(() => {
               const currentHour = new Date().getHours()
               const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening'
-              
+
               // Check if there are any visible widgets
               const hasVisibleWidgets = widgets.some(w => w.visible)
 
@@ -4187,46 +4178,46 @@ export default function PMDashboardLandingPage() {
           </div>
           {widgets.some(w => w.visible) && (
             <>
-          {isMobile ? (
-            /* Mobile: Simple Stacked Layout */
-            <div className="space-y-4">
-              {widgets.map((widget) =>
-                widget.visible ? (
-                  <div key={widget.id} className="w-full">
-                    {renderWidget(widget)}
-                  </div>
-                ) : null
-              )}
-            </div>
-          ) : (
-            /* Desktop: Draggable Grid Layout */
-            <div className="pm-grid">
-              <ResponsiveGridLayout
-                key={JSON.stringify(layouts.lg?.map(l => l.i))}
-                className="layout"
-                layouts={layouts}
-                breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-                cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-                rowHeight={80}
-                onLayoutChange={handleLayoutChange}
-                draggableHandle=".drag-handle"
-                isDraggable={true}
-                isResizable={true}
-              >
-                {widgets.map((widget) =>
-                  widget.visible ? (
-                    <div key={widget.id} className="relative group">
-                      {/* Drag Handle - appears on hover */}
-                      <div className="drag-handle absolute top-1 right-1 z-20 cursor-move bg-purple-500/90 backdrop-blur-sm rounded p-1.5 hover:bg-purple-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
-                        <GripVertical className="h-3.5 w-3.5 text-white" />
+              {isMobile ? (
+                /* Mobile: Simple Stacked Layout */
+                <div className="space-y-4">
+                  {widgets.map((widget) =>
+                    widget.visible ? (
+                      <div key={widget.id} className="w-full">
+                        {renderWidget(widget)}
                       </div>
-                      {renderWidget(widget)}
-                    </div>
-                  ) : null
-                )}
-              </ResponsiveGridLayout>
-            </div>
-          )}
+                    ) : null
+                  )}
+                </div>
+              ) : (
+                /* Desktop: Draggable Grid Layout */
+                <div className="pm-grid">
+                  <ResponsiveGridLayout
+                    key={JSON.stringify(layouts.lg?.map(l => l.i))}
+                    className="layout"
+                    layouts={layouts}
+                    breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+                    cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+                    rowHeight={80}
+                    onLayoutChange={handleLayoutChange}
+                    draggableHandle=".drag-handle"
+                    isDraggable={true}
+                    isResizable={true}
+                  >
+                    {widgets.map((widget) =>
+                      widget.visible ? (
+                        <div key={widget.id} className="relative group">
+                          {/* Drag Handle - appears on hover */}
+                          <div className="drag-handle absolute top-1 right-1 z-20 cursor-move bg-purple-500/90 backdrop-blur-sm rounded p-1.5 hover:bg-purple-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
+                            <GripVertical className="h-3.5 w-3.5 text-white" />
+                          </div>
+                          {renderWidget(widget)}
+                        </div>
+                      ) : null
+                    )}
+                  </ResponsiveGridLayout>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -4243,10 +4234,25 @@ export default function PMDashboardLandingPage() {
           setSelectedTaskId(null)
           setAddingTaskToGroup(null)
         }}
-        taskId={selectedTaskId}
-        onUpdate={fetchUserTasks}
-        parentTaskId={addingTaskToGroup ? undefined : null}
-        groupId={addingTaskToGroup || undefined}
+        onSubmit={async (data) => {
+          try {
+            const taskData = selectedTaskId
+              ? { ...data, parentId: selectedTaskId }
+              : data
+
+            const response = await fetch('/api/tasks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(taskData),
+            })
+
+            if (response.ok) {
+              await fetchUserTasks()
+            }
+          } catch (error) {
+            console.error('Error creating task:', error)
+          }
+        }}
       />
 
       {/* Task Detail Dialog */}

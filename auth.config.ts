@@ -13,8 +13,8 @@ export const authConfig = {
     async jwt({ token, user, trigger, session }) {
       // Initial sign in - user data comes from the database
       if (user) {
-        token.id = user.id
-        token.email = user.email
+        token.id = user.id!
+        token.email = user.email!
         token.role = (user as any).role
         token.tenantId = (user as any).tenantId
         token.emailVerified = (user as any).emailVerified
@@ -74,7 +74,8 @@ export const authConfig = {
       }
 
       // Check email verification for protected pages (except verification page itself)
-      if (isLoggedIn && auth.user && !auth.user.emailVerified && !nextUrl.pathname.startsWith('/verify-email')) {
+      const userEmailVerified = (auth.user as { emailVerified?: Date | null })?.emailVerified
+      if (isLoggedIn && auth.user && !userEmailVerified && !nextUrl.pathname.startsWith('/verify-email')) {
         // Allow access to settings and verification-related pages
         if (
           nextUrl.pathname.startsWith('/settings') ||
@@ -90,4 +91,4 @@ export const authConfig = {
     },
   },
   debug: process.env.NODE_ENV === 'development',
-} satisfies NextAuthConfig
+} satisfies Partial<NextAuthConfig>

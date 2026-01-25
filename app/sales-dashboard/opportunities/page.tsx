@@ -1592,7 +1592,7 @@ function OpportunitiesInner() {
         sampleRows={sampleRows}
         onConfirm={handleMappingConfirm}
         loading={uploading}
-        standardFields={OPPORTUNITY_STANDARD_FIELDS}
+        standardFields={[...OPPORTUNITY_STANDARD_FIELDS]}
       />
 
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>

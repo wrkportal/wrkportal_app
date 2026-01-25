@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsTimesheet model
+function getOperationsTimesheet() {
+  return (prisma as any).operationsTimesheet as any
+}
+
 const createTimesheetSchema = z.object({
   employeeId: z.string().optional(),
   weekStartDate: z.string(),
@@ -50,8 +55,16 @@ export async function GET(req: NextRequest) {
           }
         }
 
+        const operationsTimesheet = getOperationsTimesheet()
+        if (!operationsTimesheet) {
+          return NextResponse.json(
+            { error: 'Operations timesheet model not available' },
+            { status: 503 }
+          )
+        }
+
         const [timesheets, total] = await Promise.all([
-          prisma.operationsTimesheet.findMany({
+          (operationsTimesheet as any).findMany({
             where,
             include: {
               employee: {
@@ -76,27 +89,27 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsTimesheet.count({ where }),
+          (operationsTimesheet as any).count({ where }),
         ])
 
         // Calculate stats
         const stats = {
-          total: await prisma.operationsTimesheet.count({
+          total: await (operationsTimesheet as any).count({
             where: { tenantId: userInfo.tenantId },
           }),
-          pending: await prisma.operationsTimesheet.count({
+          pending: await (operationsTimesheet as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'SUBMITTED',
             },
           }),
-          approved: await prisma.operationsTimesheet.count({
+          approved: await (operationsTimesheet as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'APPROVED',
             },
           }),
-          draft: await prisma.operationsTimesheet.count({
+          draft: await (operationsTimesheet as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'DRAFT',
@@ -138,7 +151,15 @@ export async function POST(req: NextRequest) {
         const employeeId = validatedData.employeeId || userInfo.userId
 
         // Check if timesheet already exists for this week
-        const existing = await prisma.operationsTimesheet.findFirst({
+        const operationsTimesheet = getOperationsTimesheet()
+        if (!operationsTimesheet) {
+          return NextResponse.json(
+            { error: 'Operations timesheet model not available' },
+            { status: 503 }
+          )
+        }
+
+        const existing = await (operationsTimesheet as any).findFirst({
           where: {
             employeeId,
             weekStartDate: new Date(validatedData.weekStartDate),
@@ -148,7 +169,7 @@ export async function POST(req: NextRequest) {
 
         if (existing) {
           // Update existing timesheet
-          const updated = await prisma.operationsTimesheet.update({
+          const updated = await (operationsTimesheet as any).update({
             where: { id: existing.id },
             data: {
               weekEndDate: new Date(validatedData.weekEndDate),
@@ -172,7 +193,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Create new timesheet
-        const timesheet = await prisma.operationsTimesheet.create({
+        const timesheet = await (operationsTimesheet as any).create({
           data: {
             employeeId,
             weekStartDate: new Date(validatedData.weekStartDate),

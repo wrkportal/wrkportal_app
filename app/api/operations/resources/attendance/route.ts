@@ -4,6 +4,18 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsAttendance model
+function getOperationsAttendance() {
+  return (prisma as any).operationsAttendance as any
+}
+
+type AttendanceRecord = {
+  id: string
+  date: Date
+  status: string
+  checkIn?: Date | null
+}
+
 const checkInSchema = z.object({
   employeeId: z.string().optional(),
   checkIn: z.string().optional(), // ISO date string
@@ -50,8 +62,16 @@ export async function GET(req: NextRequest) {
           where.status = status
         }
 
+        const operationsAttendance = getOperationsAttendance()
+        if (!operationsAttendance) {
+          return NextResponse.json(
+            { error: 'Operations attendance model not available' },
+            { status: 503 }
+          )
+        }
+
         const [records, total] = await Promise.all([
-          prisma.operationsAttendance.findMany({
+          (operationsAttendance as any).findMany({
             where,
             include: {
               employee: {
@@ -69,11 +89,11 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsAttendance.count({ where }),
+          (operationsAttendance as any).count({ where }),
         ])
 
         // Calculate stats
-        const todayRecords = records.filter(r => {
+        const todayRecords = (records as AttendanceRecord[]).filter((r: AttendanceRecord) => {
           const recordDate = new Date(r.date)
           const today = new Date()
           return recordDate.toDateString() === today.toDateString()
@@ -81,11 +101,11 @@ export async function GET(req: NextRequest) {
 
         const stats = {
           total: todayRecords.length,
-          present: todayRecords.filter(r => r.status === 'PRESENT').length,
-          absent: todayRecords.filter(r => r.status === 'ABSENT').length,
-          late: todayRecords.filter(r => r.status === 'LATE').length,
+          present: todayRecords.filter((r: AttendanceRecord) => r.status === 'PRESENT').length,
+          absent: todayRecords.filter((r: AttendanceRecord) => r.status === 'ABSENT').length,
+          late: todayRecords.filter((r: AttendanceRecord) => r.status === 'LATE').length,
           attendanceRate: todayRecords.length > 0
-            ? Number(((todayRecords.filter(r => r.status === 'PRESENT').length / todayRecords.length) * 100).toFixed(1))
+            ? Number(((todayRecords.filter((r: AttendanceRecord) => r.status === 'PRESENT').length / todayRecords.length) * 100).toFixed(1))
             : 0,
         }
 
@@ -126,7 +146,15 @@ export async function POST(req: NextRequest) {
         today.setHours(0, 0, 0, 0)
 
         // Check if attendance record already exists
-        const existing = await prisma.operationsAttendance.findFirst({
+        const operationsAttendance = getOperationsAttendance()
+        if (!operationsAttendance) {
+          return NextResponse.json(
+            { error: 'Operations attendance model not available' },
+            { status: 503 }
+          )
+        }
+
+        const existing = await (operationsAttendance as any).findFirst({
           where: {
             employeeId,
             tenantId: userInfo.tenantId,
@@ -139,7 +167,7 @@ export async function POST(req: NextRequest) {
 
         if (existing) {
           // Update existing record
-          const updated = await prisma.operationsAttendance.update({
+          const updated = await (operationsAttendance as any).update({
             where: { id: existing.id },
             data: {
               checkIn: checkInTime,
@@ -160,7 +188,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Create new record
-        const attendance = await prisma.operationsAttendance.create({
+        const attendance = await (operationsAttendance as any).create({
           data: {
             employeeId,
             date: today,

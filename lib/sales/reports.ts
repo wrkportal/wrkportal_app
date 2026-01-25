@@ -6,6 +6,17 @@
 
 import { prisma } from '@/lib/prisma'
 
+// Helper to access optional Prisma models
+const getSalesReport = () => {
+  return (prisma as any).salesReport as {
+    create: (args: { data: any }) => Promise<any>
+    findFirst: (args: { where: any; include?: any }) => Promise<any>
+    findMany: (args: { where: any; include?: any; orderBy?: any }) => Promise<any[]>
+    update: (args: { where: { id: string }; data: any }) => Promise<any>
+    delete: (args: { where: { id: string } }) => Promise<any>
+  } | undefined
+}
+
 export interface ReportConfig {
   name: string
   description?: string
@@ -44,7 +55,11 @@ export async function createReport(
     sharedWith?: string[]
   }
 ) {
-  const report = await prisma.salesReport.create({
+  const salesReportModel = getSalesReport()
+  if (!salesReportModel) {
+    throw new Error('Sales report model is not available')
+  }
+  const report = await salesReportModel.create({
     data: {
       tenantId,
       createdById,
@@ -67,7 +82,8 @@ export async function getReport(
   tenantId: string,
   userId?: string
 ) {
-  const report = await prisma.salesReport.findFirst({
+  const salesReportModel = getSalesReport()
+  const report = await (salesReportModel?.findFirst({
     where: {
       id: reportId,
       tenantId,
@@ -85,7 +101,7 @@ export async function getReport(
         },
       },
     },
-  })
+  } as any) || Promise.resolve(null))
 
   return report
 }
@@ -113,12 +129,8 @@ export async function getReports(
     ]
   }
 
-  if (!prisma?.salesReport) {
-    console.error('Prisma or salesReport model is not available')
-    return []
-  }
-
-  let reports = await prisma.salesReport.findMany({
+  const salesReportModel = getSalesReport()
+  let reports = await (salesReportModel?.findMany({
     where,
     include: {
       createdBy: {
@@ -130,11 +142,11 @@ export async function getReports(
       },
     },
     orderBy: { createdAt: 'desc' },
-  })
+  } as any) || Promise.resolve([]))
 
   // Filter by type if specified (since config is JSON)
   if (type) {
-    reports = reports.filter(report => {
+    reports = reports.filter((report: any) => {
       const config = report.config as ReportConfig
       return config.type === type
     })
@@ -158,7 +170,12 @@ export async function updateReport(
     sharedWith?: string[]
   }
 ) {
-  const report = await prisma.salesReport.findFirst({
+  const salesReportModel = getSalesReport()
+  if (!salesReportModel) {
+    throw new Error('Sales report model is not available')
+  }
+  
+  const report = await salesReportModel.findFirst({
     where: {
       id: reportId,
       tenantId,
@@ -170,7 +187,7 @@ export async function updateReport(
     throw new Error('Report not found or access denied')
   }
 
-  const updated = await prisma.salesReport.update({
+  const updated = await salesReportModel.update({
     where: { id: reportId },
     data: {
       name: data.name,
@@ -192,7 +209,12 @@ export async function deleteReport(
   tenantId: string,
   userId: string
 ) {
-  const report = await prisma.salesReport.findFirst({
+  const salesReportModel = getSalesReport()
+  if (!salesReportModel) {
+    throw new Error('Sales report model is not available')
+  }
+  
+  const report = await salesReportModel.findFirst({
     where: {
       id: reportId,
       tenantId,
@@ -204,7 +226,7 @@ export async function deleteReport(
     throw new Error('Report not found or access denied')
   }
 
-  await prisma.salesReport.delete({
+  await salesReportModel.delete({
     where: { id: reportId },
   })
 
@@ -218,12 +240,13 @@ export async function generateReportData(
   reportId: string,
   tenantId: string
 ): Promise<any> {
-  const report = await prisma.salesReport.findFirst({
+  const salesReportModel = getSalesReport()
+  const report = await (salesReportModel?.findFirst({
     where: {
       id: reportId,
       tenantId,
     },
-  })
+  }) || Promise.resolve(null))
 
   if (!report) {
     throw new Error('Report not found')

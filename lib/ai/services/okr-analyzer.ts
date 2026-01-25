@@ -142,36 +142,39 @@ export async function analyzeOKRProgress(data: {
   timeframe?: string
 }): Promise<any> {
   // This is a simplified version - in production, you'd want to fetch full OKR data
-  const mockGoal: Goal = {
-    id: 'temp',
-    title: data.objectiveName,
-    description: data.objectiveDescription || '',
-    quarter: data.timeframe || 'Q1',
-    year: new Date().getFullYear(),
-    status: 'ACTIVE',
-    tenantId: '',
-    ownerId: '',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    startDate: new Date(),
-    endDate: new Date(),
-  }
-
   const mockKeyResults: KeyResult[] = data.keyResults.split('\n').map((kr, idx) => ({
     id: `kr-${idx}`,
     goalId: 'temp',
     title: kr.split(':')[0] || `KR ${idx + 1}`,
-    description: '',
+    type: 'PERCENTAGE',
     startValue: 0,
     currentValue: 0,
     targetValue: 100,
     unit: '',
     weight: 100,
     confidence: 5,
-    status: 'IN_PROGRESS',
+    linkedInitiatives: [],
+    checkIns: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   }))
+
+  const mockGoal: Goal = {
+    id: 'temp',
+    title: data.objectiveName,
+    description: data.objectiveDescription || '',
+    quarter: data.timeframe || 'Q1',
+    status: 'ACTIVE',
+    tenantId: '',
+    ownerId: '',
+    level: 'TEAM',
+    keyResults: mockKeyResults,
+    alignedGoals: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    startDate: new Date(),
+    endDate: new Date(),
+  }
 
   return analyzeOKR({
     goal: mockGoal,

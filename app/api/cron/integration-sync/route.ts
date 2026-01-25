@@ -30,11 +30,11 @@ export async function GET(request: NextRequest) {
       total: results.length,
       successful: results.filter(r => r.success).length,
       failed: results.filter(r => !r.success).length,
-      totalRecordsSynced: results.reduce((sum, r) => sum + r.recordsSynced, 0),
+      totalRecordsSynced: results.reduce((sum, r) => sum + r.recordsProcessed, 0),
       results: results.map(r => ({
         integration: r.integrationName,
         success: r.success,
-        recordsSynced: r.recordsSynced,
+        recordsSynced: r.recordsProcessed,
         duration: `${r.duration}ms`,
         errors: r.errors.length > 0 ? r.errors : undefined,
       })),

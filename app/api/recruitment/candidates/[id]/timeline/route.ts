@@ -57,7 +57,7 @@ export async function GET(
     })
 
     // Transform activities to timeline format
-    const timeline = activities.map((activity) => ({
+    const timeline = activities.map((activity: any) => ({
       id: activity.id,
       type: activity.action || 'ACTIVITY',
       title: activity.action || 'Activity',
@@ -98,7 +98,7 @@ export async function GET(
     }
 
     // Sort by date (newest first)
-    timeline.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    timeline.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     return NextResponse.json({
       timeline,

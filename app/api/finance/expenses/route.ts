@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma, CostType } from '@prisma/client'
 
 // GET /api/finance/expenses - Get expenses data
 export async function GET(request: NextRequest) {
@@ -14,9 +15,17 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') || 'MTD'
     const projectId = searchParams.get('projectId')
-    const costType = searchParams.get('costType')
+    const costTypeParam = searchParams.get('costType')
     const fromDate = searchParams.get('fromDate')
     const toDate = searchParams.get('toDate')
+
+    // Validate costType enum
+    const isValidCostType = (value: string): value is CostType => {
+      return ['DIRECT', 'INDIRECT', 'FIXED', 'VARIABLE'].includes(value as CostType)
+    }
+    const costType: CostType | undefined = costTypeParam && isValidCostType(costTypeParam)
+      ? costTypeParam
+      : undefined
 
     // Calculate date range
     let startDate: Date
@@ -38,7 +47,9 @@ export async function GET(request: NextRequest) {
     }
 
     const where: any = {
-      tenantId,
+      project: {
+        tenantId,
+      },
       approvedAt: { not: null },
       date: {
         gte: startDate,
@@ -50,7 +61,38 @@ export async function GET(request: NextRequest) {
     if (costType) where.costType = costType
 
     // Get expenses
-    const expenses = await prisma.costActual.findMany({
+    type CostActualWithIncludes = Prisma.CostActualGetPayload<{
+      include: {
+        project: {
+          select: {
+            id: true
+            name: true
+            code: true
+          }
+        }
+        budget: {
+          select: {
+            id: true
+            name: true
+          }
+        }
+        category: {
+          select: {
+            id: true
+            name: true
+          }
+        }
+        createdBy: {
+          select: {
+            id: true
+            name: true
+            email: true
+          }
+        }
+      }
+    }>
+
+    const expenses: CostActualWithIncludes[] = await prisma.costActual.findMany({
       where,
       include: {
         project: {
@@ -72,10 +114,10 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate totals
-    const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0)
+    const totalExpenses = expenses.reduce((sum: number, exp: CostActualWithIncludes) => sum + Number(exp.amount), 0)
 
     // Expenses by category/type
-    const expensesByType = expenses.reduce((acc: any, exp) => {
+    const expensesByType = expenses.reduce((acc: any, exp: CostActualWithIncludes) => {
       const type = exp.costType || 'OTHER'
       if (!acc[type]) {
         acc[type] = { type, amount: 0, count: 0 }
@@ -86,7 +128,7 @@ export async function GET(request: NextRequest) {
     }, {})
 
     // Expenses by project
-    const expensesByProject = expenses.reduce((acc: any, exp) => {
+    const expensesByProject = expenses.reduce((acc: any, exp: CostActualWithIncludes) => {
       const projectName = exp.project?.name || 'No Project'
       if (!acc[projectName]) {
         acc[projectName] = {
@@ -102,7 +144,7 @@ export async function GET(request: NextRequest) {
     }, {})
 
     // Expenses by month
-    const expensesByMonth = expenses.reduce((acc: any, exp) => {
+    const expensesByMonth = expenses.reduce((acc: any, exp: CostActualWithIncludes) => {
       const month = new Date(exp.date).toISOString().substring(0, 7)
       if (!acc[month]) {
         acc[month] = { month, amount: 0, count: 0 }
@@ -118,20 +160,31 @@ export async function GET(request: NextRequest) {
     previousStartDate.setMonth(previousStartDate.getMonth() - 1)
     previousEndDate.setDate(0)
 
-    const previousExpenses = await prisma.costActual.findMany({
-      where: {
+    // Build where clause for previous expenses
+    const previousWhere: Prisma.CostActualWhereInput = {
+      project: {
         tenantId,
-        approvedAt: { not: null },
-        date: {
-          gte: previousStartDate,
-          lte: previousEndDate,
-        },
-        ...(projectId ? { projectId } : {}),
-        ...(costType ? { costType } : {}),
       },
+      approvedAt: { not: null },
+      date: {
+        gte: previousStartDate,
+        lte: previousEndDate,
+      },
+    }
+
+    if (projectId) {
+      previousWhere.projectId = projectId
+    }
+
+    if (costType) {
+      previousWhere.costType = costType
+    }
+
+    const previousExpenses: Prisma.CostActualGetPayload<{}>[] = await prisma.costActual.findMany({
+      where: previousWhere,
     })
 
-    const previousTotal = previousExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0)
+    const previousTotal = previousExpenses.reduce((sum: number, exp: Prisma.CostActualGetPayload<{}>) => sum + Number(exp.amount), 0)
     const expenseGrowth = previousTotal > 0 
       ? ((totalExpenses - previousTotal) / previousTotal) * 100 
       : 0
@@ -143,7 +196,7 @@ export async function GET(request: NextRequest) {
       expensesByType: Object.values(expensesByType),
       expensesByProject: Object.values(expensesByProject),
       expensesByMonth: Object.values(expensesByMonth).sort((a: any, b: any) => a.month.localeCompare(b.month)),
-      expenses: expenses.map(exp => ({
+      expenses: expenses.map((exp: CostActualWithIncludes) => ({
         id: exp.id,
         name: exp.name,
         description: exp.description,

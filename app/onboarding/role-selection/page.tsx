@@ -105,35 +105,35 @@ const roleMapping: Record<string, { workflowType: string; landingPage: string }>
 
 export default function RoleSelectionPage() {
   console.log('[Role Selection Page] 🎯 Component RENDERED/MOUNTED')
-  
+
   const router = useRouter()
   const { user, setUser, isHydrated } = useAuthStore()
   const [selectedRole, setSelectedRole] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  
-  console.log('[Role Selection Page] Initial state:', { 
-    hasUser: !!user, 
-    isHydrated, 
+
+  console.log('[Role Selection Page] Initial state:', {
+    hasUser: !!user,
+    isHydrated,
     isLoading,
-    selectedRole 
+    selectedRole
   })
 
   // Fetch user if not in store
   useEffect(() => {
     const loadUser = async () => {
       console.log('[Role Selection Page] useEffect triggered', { isHydrated, hasUser: !!user })
-      
+
       if (!isHydrated) {
         console.log('[Role Selection Page] Waiting for hydration...')
         return
       }
 
       console.log('[Role Selection Page] Loading user...', { hasUser: !!user, isHydrated })
-      
+
       // Always fetch fresh user data
       const authenticatedUser = await fetchAuthenticatedUser(true)
-      
+
       if (authenticatedUser) {
         setUser(authenticatedUser)
         console.log('[Role Selection Page] User fetched:', {
@@ -142,13 +142,12 @@ export default function RoleSelectionPage() {
           primaryWorkflowTypeType: typeof authenticatedUser.primaryWorkflowType,
           landingPage: authenticatedUser.landingPage
         })
-        
+
         // If user has already selected a role (has primaryWorkflowType), redirect to their landing page
-        const hasSelectedRole = authenticatedUser.primaryWorkflowType && 
-                               authenticatedUser.primaryWorkflowType !== null && 
-                               authenticatedUser.primaryWorkflowType !== '' &&
-                               authenticatedUser.primaryWorkflowType !== undefined
-        
+        const hasSelectedRole =
+          authenticatedUser.primaryWorkflowType !== null &&
+          authenticatedUser.primaryWorkflowType !== undefined
+
         if (hasSelectedRole) {
           console.log('[Role Selection Page] ✅ User has already selected role, redirecting to landing page')
           router.replace(authenticatedUser.landingPage || '/wrkboard')
@@ -213,7 +212,7 @@ export default function RoleSelectionPage() {
           workflowType: mapping.workflowType,
           landingPage: mapping.landingPage
         })
-        
+
         // Force refresh user data from API (bypass cache)
         const updatedUser = await fetchAuthenticatedUser(true)
         if (updatedUser) {
@@ -224,7 +223,7 @@ export default function RoleSelectionPage() {
             landingPage: updatedUser.landingPage
           })
         }
-        
+
         // Redirect to landing page using hard navigation to ensure it works
         console.log('[Role Selection] 🚀 Redirecting to landing page:', mapping.landingPage)
         // Use setTimeout to ensure state is saved before redirect

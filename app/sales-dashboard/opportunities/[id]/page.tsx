@@ -154,14 +154,14 @@ export default function OpportunityDetailPage() {
   const [nextContactDateTemp, setNextContactDateTemp] = useState<string>('')
   const [savingNextContactDate, setSavingNextContactDate] = useState(false)
   const [isUpdatingStage, setIsUpdatingStage] = useState(false)
-  
+
   // Dialog states
   const [noteDialogOpen, setNoteDialogOpen] = useState(false)
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [callDialogOpen, setCallDialogOpen] = useState(false)
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false)
-  
+
   // Form states
   const [activityForm, setActivityForm] = useState({
     subject: '',
@@ -812,18 +812,18 @@ export default function OpportunityDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2 mb-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="flex-1"
                     onClick={() => router.push('/sales-dashboard/accounts?create=true')}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => router.push('/sales-dashboard/accounts?upload=true')}
                     title="Upload Accounts"
                   >
@@ -850,18 +850,18 @@ export default function OpportunityDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2 mb-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="flex-1"
                     onClick={() => router.push(`/sales-dashboard/contacts?create=true&opportunityId=${opportunityId}`)}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => router.push('/sales-dashboard/contacts?upload=true')}
                     title="Upload Contacts"
                   >
@@ -893,18 +893,18 @@ export default function OpportunityDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2 mb-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="flex-1"
                     onClick={() => router.push(`/sales-dashboard/quotes/new?opportunityId=${opportunityId}`)}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     disabled
                     title="Quote upload coming soon"
                   >
@@ -933,18 +933,18 @@ export default function OpportunityDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2 mb-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="flex-1"
                     onClick={() => router.push(`/sales-dashboard/products?create=true&opportunityId=${opportunityId}`)}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => router.push('/sales-dashboard/products?upload=true')}
                     title="Upload Products"
                   >
@@ -995,7 +995,7 @@ export default function OpportunityDetailPage() {
                 <SmartNotesProcessor
                   noteContent={activityForm.description}
                   context={{
-                    type: 'NOTE',
+                    type: 'GENERAL',
                     relatedToId: opportunityId,
                     relatedToType: 'OPPORTUNITY',
                   }}

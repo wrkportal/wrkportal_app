@@ -3,6 +3,11 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsRecognition model
+function getOperationsRecognition() {
+  return (prisma as any).operationsRecognition as any
+}
+
 // POST - Publish recognition
 export async function POST(
   req: NextRequest,
@@ -13,7 +18,15 @@ export async function POST(
     { resource: 'operations', action: 'UPDATE' },
     async (request, userInfo) => {
       try {
-        const recognition = await prisma.operationsRecognition.findFirst({
+        const operationsRecognition = getOperationsRecognition()
+        if (!operationsRecognition) {
+          return NextResponse.json(
+            { error: 'Operations recognition model not available' },
+            { status: 503 }
+          )
+        }
+
+        const recognition = await operationsRecognition.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -34,7 +47,7 @@ export async function POST(
           )
         }
 
-        const updated = await prisma.operationsRecognition.update({
+        const updated = await operationsRecognition.update({
           where: { id: params.id },
           data: {
             status: 'PUBLISHED',

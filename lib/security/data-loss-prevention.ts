@@ -7,6 +7,49 @@
 import { prisma } from '@/lib/prisma'
 import { AuditAction } from '@prisma/client'
 
+// AuditEntity enum values (may not be exported from Prisma Client)
+// Using string literals that match the Prisma enum
+type AuditEntityType = 
+  | 'USER'
+  | 'PROJECT'
+  | 'TASK'
+  | 'PROGRAM'
+  | 'INITIATIVE'
+  | 'GOAL'
+  | 'OKR'
+  | 'RISK'
+  | 'ISSUE'
+  | 'APPROVAL'
+  | 'REPORT'
+  | 'NOTIFICATION'
+  | 'ORG_UNIT'
+  | 'TENANT'
+  | 'SSO_SETTINGS'
+  | 'RETENTION_SETTINGS'
+  | 'TUTORIAL'
+  | 'COLLABORATION'
+
+const AuditEntity: Record<string, AuditEntityType> = {
+  USER: 'USER',
+  PROJECT: 'PROJECT',
+  TASK: 'TASK',
+  PROGRAM: 'PROGRAM',
+  INITIATIVE: 'INITIATIVE',
+  GOAL: 'GOAL',
+  OKR: 'OKR',
+  RISK: 'RISK',
+  ISSUE: 'ISSUE',
+  APPROVAL: 'APPROVAL',
+  REPORT: 'REPORT',
+  NOTIFICATION: 'NOTIFICATION',
+  ORG_UNIT: 'ORG_UNIT',
+  TENANT: 'TENANT',
+  SSO_SETTINGS: 'SSO_SETTINGS',
+  RETENTION_SETTINGS: 'RETENTION_SETTINGS',
+  TUTORIAL: 'TUTORIAL',
+  COLLABORATION: 'COLLABORATION',
+}
+
 export interface DLPConfig {
   enabled: boolean
   maxExportRows?: number
@@ -111,6 +154,37 @@ export async function checkExportAllowed(
 }
 
 /**
+ * Map resource type string to AuditEntity enum
+ */
+function mapResourceTypeToAuditEntity(resourceType: string): AuditEntityType {
+  const upperResourceType = resourceType.toUpperCase()
+  // Map common resource types to AuditEntity enum values
+  const entityMap: Record<string, AuditEntityType> = {
+    'USER': AuditEntity.USER,
+    'PROJECT': AuditEntity.PROJECT,
+    'TASK': AuditEntity.TASK,
+    'PROGRAM': AuditEntity.PROGRAM,
+    'INITIATIVE': AuditEntity.INITIATIVE,
+    'GOAL': AuditEntity.GOAL,
+    'OKR': AuditEntity.OKR,
+    'RISK': AuditEntity.RISK,
+    'ISSUE': AuditEntity.ISSUE,
+    'APPROVAL': AuditEntity.APPROVAL,
+    'REPORT': AuditEntity.REPORT,
+    'NOTIFICATION': AuditEntity.NOTIFICATION,
+    'ORG_UNIT': AuditEntity.ORG_UNIT,
+    'TENANT': AuditEntity.TENANT,
+    'SSO_SETTINGS': AuditEntity.SSO_SETTINGS,
+    'RETENTION_SETTINGS': AuditEntity.RETENTION_SETTINGS,
+    'TUTORIAL': AuditEntity.TUTORIAL,
+    'COLLABORATION': AuditEntity.COLLABORATION,
+  }
+  // Return mapped entity or default to REPORT for exports
+  const mappedEntity = entityMap[upperResourceType]
+  return mappedEntity ?? AuditEntity.REPORT
+}
+
+/**
  * Log export activity for audit
  */
 export async function logExportActivity(
@@ -124,7 +198,7 @@ export async function logExportActivity(
         tenantId: request.tenantId,
         userId: request.userId,
         action: AuditAction.EXPORT,
-        entity: request.resourceType,
+        entity: mapResourceTypeToAuditEntity(request.resourceType) as any,
         entityId: `export_${Date.now()}`,
         entityName: `Export ${request.resourceType} (${request.format})`,
         changes: JSON.stringify({

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
+const getContractLegalComment = () => (prisma as any).contractLegalComment
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string; contractId: string } }
@@ -12,7 +14,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const comments = await prisma.contractLegalComment.findMany({
+    const contractLegalComment = getContractLegalComment()
+    if (!contractLegalComment) {
+      return NextResponse.json({ error: 'Contract comments are unavailable' }, { status: 503 })
+    }
+
+    const comments = await (contractLegalComment as any).findMany({
       where: {
         contractId: params.contractId,
         contract: {
@@ -51,7 +58,12 @@ export async function POST(
     const body = await request.json()
     const { commentType, content, clauseReference } = body
 
-    const comment = await prisma.contractLegalComment.create({
+    const contractLegalComment = getContractLegalComment()
+    if (!contractLegalComment) {
+      return NextResponse.json({ error: 'Contract comments are unavailable' }, { status: 503 })
+    }
+
+    const comment = await (contractLegalComment as any).create({
       data: {
         contractId: params.contractId,
         commentType: commentType || 'INTERNAL',

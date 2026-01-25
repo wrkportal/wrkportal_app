@@ -64,7 +64,8 @@ async function deleteUsersExcept() {
     }
 
     // Delete related data for all users to delete first
-    const userIdsToDelete = usersToDelete.map(u => u.id)
+    type UserToDelete = typeof usersToDelete[0];
+    const userIdsToDelete = usersToDelete.map((u: UserToDelete) => u.id)
     
     console.log('🗑️  Cleaning up related data...')
     

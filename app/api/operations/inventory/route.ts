@@ -3,7 +3,18 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
-import { PrismaClientKnownRequestError } from '@prisma/client'
+
+// Helper function to safely access operationsInventoryItem model
+function getOperationsInventoryItem() {
+  return (prisma as any).operationsInventoryItem as any
+}
+
+type OperationsInventoryItem = {
+  itemName: string
+  quantity: number
+  reorderLevel: number
+  status: string
+}
 
 // Helper to safely query Prisma models that might not exist
 const safeQuery = async <T>(
@@ -15,11 +26,10 @@ const safeQuery = async <T>(
   } catch (error: any) {
     // Check if it's a Prisma error about missing model or TypeError from undefined
     if (
-      error instanceof PrismaClientKnownRequestError &&
-      (error.code === 'P2001' ||
-        error.message?.includes('does not exist') ||
-        error.message?.includes('Unknown model') ||
-        error.message?.includes('model does not exist'))
+      error?.code === 'P2001' ||
+      error?.message?.includes('does not exist') ||
+      error?.message?.includes('Unknown model') ||
+      error?.message?.includes('model does not exist')
     ) {
       console.warn('Prisma model not found, using default value:', error.message)
       return defaultValue
@@ -87,20 +97,24 @@ export async function GET(req: NextRequest) {
           ]
         }
         if (lowStock) {
+          // Prisma doesn't support field references; filter IN_STOCK items after fetch.
           where.OR = [
             { status: 'LOW_STOCK' },
-            { 
-              AND: [
-                { status: 'IN_STOCK' },
-                { quantity: { lte: prisma.operationsInventoryItem.fields.reorderLevel } },
-              ],
-            },
+            { status: 'IN_STOCK' },
           ]
         }
 
+        const operationsInventoryItem = getOperationsInventoryItem()
+        if (!operationsInventoryItem) {
+          return NextResponse.json(
+            { error: 'Operations inventory item model not available' },
+            { status: 503 }
+          )
+        }
+
         const [items, total] = await Promise.all([
-          safeQuery(
-            () => (prisma as any).operationsInventoryItem.findMany({
+          safeQuery<OperationsInventoryItem[]>(
+            () => operationsInventoryItem.findMany({
               where,
               orderBy: {
                 itemName: 'asc',
@@ -111,13 +125,13 @@ export async function GET(req: NextRequest) {
             []
           ),
           safeQuery(
-            () => (prisma as any).operationsInventoryItem.count({ where }),
+            () => operationsInventoryItem.count({ where }),
             0
           ),
         ])
 
         // Update status based on quantity
-        const itemsWithStatus = items.map(item => {
+        const itemsWithStatus = items.map((item: OperationsInventoryItem) => {
           let status = item.status
           if (item.quantity <= 0) {
             status = 'OUT_OF_STOCK'
@@ -129,13 +143,20 @@ export async function GET(req: NextRequest) {
           return { ...item, status }
         })
 
+        const filteredItems = lowStock
+          ? itemsWithStatus.filter((item: OperationsInventoryItem) =>
+              item.status === 'LOW_STOCK' ||
+              (item.status === 'IN_STOCK' && item.quantity <= item.reorderLevel)
+            )
+          : itemsWithStatus
+
         return NextResponse.json({
-          items: itemsWithStatus,
+          items: filteredItems,
           pagination: {
             page,
             limit,
-            total,
-            totalPages: Math.ceil(total / limit),
+            total: lowStock ? filteredItems.length : total,
+            totalPages: Math.ceil((lowStock ? filteredItems.length : total) / limit),
           },
         })
       } catch (error) {
@@ -171,7 +192,15 @@ export async function POST(req: NextRequest) {
           ? validatedData.quantity * validatedData.unitCost
           : null
 
-        const item = await prisma.operationsInventoryItem.create({
+        const operationsInventoryItem = getOperationsInventoryItem()
+        if (!operationsInventoryItem) {
+          return NextResponse.json(
+            { error: 'Operations inventory item model not available' },
+            { status: 503 }
+          )
+        }
+
+        const item = await operationsInventoryItem.create({
           data: {
             itemName: validatedData.itemName,
             category: validatedData.category,

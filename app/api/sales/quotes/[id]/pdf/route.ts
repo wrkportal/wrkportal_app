@@ -123,7 +123,7 @@ export async function GET(
 
       // Table Rows
       doc.fontSize(10)
-      quote.lineItems.forEach((item) => {
+      quote.lineItems.forEach((item: any) => {
         const y = doc.y
         
         doc.text(item.name, columns[0].x, y, { width: columns[0].width })

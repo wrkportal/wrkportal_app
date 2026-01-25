@@ -74,7 +74,7 @@ export async function analyzeCohorts(
   // Group accounts by cohort (acquisition period)
   const cohortMap = new Map<string, typeof accounts>()
 
-  accounts.forEach(account => {
+  accounts.forEach((account: any) => {
     const cohortDate = account.createdAt
     let cohort: string
 
@@ -101,12 +101,12 @@ export async function analyzeCohorts(
     const periods: CohortData['periods'] = []
 
     // Find the date range for all periods
-    const allOpportunities = accountsInCohort.flatMap(acc => acc.opportunities)
-    const allOrders = accountsInCohort.flatMap(acc => acc.orders)
+    const allOpportunities = accountsInCohort.flatMap((acc: any) => acc.opportunities)
+    const allOrders = accountsInCohort.flatMap((acc: any) => acc.orders)
     
     const allDates = [
-      ...allOpportunities.map(opp => opp.actualCloseDate || opp.createdAt),
-      ...allOrders.map(order => order.createdAt)
+      ...allOpportunities.map((opp: any) => opp.actualCloseDate || opp.createdAt),
+      ...allOrders.map((order: any) => order.createdAt)
     ].filter(Boolean) as Date[]
 
     if (allDates.length === 0) {
@@ -161,19 +161,19 @@ export async function analyzeCohorts(
       let revenue = 0
       let orders = 0
 
-      accountsInCohort.forEach(account => {
-        const periodOpps = account.opportunities.filter(opp => {
+      accountsInCohort.forEach((account: any) => {
+        const periodOpps = account.opportunities.filter((opp: any) => {
           const oppDate = opp.actualCloseDate || opp.createdAt
           return oppDate >= periodStart && oppDate < periodEnd
         })
-        const periodOrders = account.orders.filter(order => {
+        const periodOrders = account.orders.filter((order: any) => {
           return order.createdAt >= periodStart && order.createdAt < periodEnd
         })
 
         if (periodOpps.length > 0 || periodOrders.length > 0) {
           activeCustomers++
-          revenue += periodOpps.reduce((sum, opp) => sum + Number(opp.amount), 0)
-          revenue += periodOrders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0)
+          revenue += periodOpps.reduce((sum: number, opp: any) => sum + Number(opp.amount), 0)
+          revenue += periodOrders.reduce((sum: number, order: any) => sum + Number(order.totalAmount || 0), 0)
           orders += periodOrders.length
         }
       })

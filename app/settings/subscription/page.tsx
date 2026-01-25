@@ -105,8 +105,8 @@ function SubscriptionPageInner() {
     }
   }
 
-  const currentTier = user?.subscriptionTier || 'free'
-  const subscriptionStatus = user?.subscriptionStatus || 'none'
+  const currentTier = (user as any)?.subscriptionTier || 'free'
+  const subscriptionStatus = (user as any)?.subscriptionStatus || 'none'
 
   const plans = [
     {
@@ -204,10 +204,10 @@ function SubscriptionPageInner() {
                   </Badge>
                 )}
               </div>
-              {user?.subscriptionEndDate && (
+              {(user as any)?.subscriptionEndDate && (
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  Renews on {new Date(user.subscriptionEndDate).toLocaleDateString()}
+                  Renews on {new Date((user as any).subscriptionEndDate).toLocaleDateString()}
                 </p>
               )}
             </div>

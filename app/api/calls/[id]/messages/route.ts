@@ -92,13 +92,24 @@ export async function POST(
       return NextResponse.json({ error: 'Call not found' }, { status: 404 })
     }
 
+    // Fetch user details to get firstName and lastName
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        name: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+      },
+    })
+
     // For now, we'll return a simple message object
     // In production, you'd want to store this in a database
     const message = {
       id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       callId: id,
       userId: session.user.id,
-      userName: session.user.name || `${session.user.firstName || ''} ${session.user.lastName || ''}`.trim() || session.user.email,
+      userName: user?.name || (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}`.trim() : '') || user?.email || session.user.email || 'Unknown User',
       content: validatedData.content,
       createdAt: new Date().toISOString(),
     }

@@ -4,6 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsShift model
+function getOperationsShift() {
+  return (prisma as any).operationsShift as any
+}
+
+// Helper function to safely access operationsShiftAssignment model
+function getOperationsShiftAssignment() {
+  return (prisma as any).operationsShiftAssignment as any
+}
+
 const assignShiftSchema = z.object({
   employeeId: z.string().min(1),
   startDate: z.string(),
@@ -23,8 +33,17 @@ export async function POST(
         const body = await request.json()
         const validatedData = assignShiftSchema.parse(body)
 
+        const operationsShift = getOperationsShift()
+        const operationsShiftAssignment = getOperationsShiftAssignment()
+        if (!operationsShift || !operationsShiftAssignment) {
+          return NextResponse.json(
+            { error: 'Operations shift models not available' },
+            { status: 503 }
+          )
+        }
+
         // Verify shift exists
-        const shift = await prisma.operationsShift.findFirst({
+        const shift = await operationsShift.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -54,7 +73,7 @@ export async function POST(
         }
 
         // Check for overlapping assignments
-        const existing = await prisma.operationsShiftAssignment.findFirst({
+        const existing = await operationsShiftAssignment.findFirst({
           where: {
             employeeId: validatedData.employeeId,
             tenantId: userInfo.tenantId,
@@ -73,7 +92,7 @@ export async function POST(
         }
 
         // End any existing assignment to this shift
-        await prisma.operationsShiftAssignment.updateMany({
+        await operationsShiftAssignment.updateMany({
           where: {
             employeeId: validatedData.employeeId,
             shiftId: params.id,
@@ -85,7 +104,7 @@ export async function POST(
           },
         })
 
-        const assignment = await prisma.operationsShiftAssignment.create({
+        const assignment = await operationsShiftAssignment.create({
           data: {
             shiftId: params.id,
             employeeId: validatedData.employeeId,

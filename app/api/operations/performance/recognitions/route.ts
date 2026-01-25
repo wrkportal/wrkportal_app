@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsRecognition model
+function getOperationsRecognition() {
+  return (prisma as any).operationsRecognition as any
+}
+
 const createRecognitionSchema = z.object({
   employeeId: z.string().min(1),
   achievement: z.string().min(1),
@@ -41,8 +46,16 @@ export async function GET(req: NextRequest) {
           where.status = status
         }
 
+        const operationsRecognition = getOperationsRecognition()
+        if (!operationsRecognition) {
+          return NextResponse.json(
+            { error: 'Operations recognition model not available' },
+            { status: 503 }
+          )
+        }
+
         const [recognitions, total] = await Promise.all([
-          prisma.operationsRecognition.findMany({
+          operationsRecognition.findMany({
             where,
             include: {
               employee: {
@@ -60,7 +73,7 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsRecognition.count({ where }),
+          operationsRecognition.count({ where }),
         ])
 
         // Calculate stats
@@ -69,10 +82,10 @@ export async function GET(req: NextRequest) {
         thisMonth.setHours(0, 0, 0, 0)
 
         const stats = {
-          total: await prisma.operationsRecognition.count({
+          total: await operationsRecognition.count({
             where: { tenantId: userInfo.tenantId },
           }),
-          thisMonth: await prisma.operationsRecognition.count({
+          thisMonth: await operationsRecognition.count({
             where: {
               tenantId: userInfo.tenantId,
               date: {
@@ -80,19 +93,19 @@ export async function GET(req: NextRequest) {
               },
             },
           }),
-          published: await prisma.operationsRecognition.count({
+          published: await operationsRecognition.count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'PUBLISHED',
             },
           }),
-          draft: await prisma.operationsRecognition.count({
+          draft: await operationsRecognition.count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'DRAFT',
             },
           }),
-          categories: await prisma.operationsRecognition.groupBy({
+          categories: await operationsRecognition.groupBy({
             by: ['category'],
             where: { tenantId: userInfo.tenantId },
             _count: true,
@@ -130,7 +143,15 @@ export async function POST(req: NextRequest) {
         const body = await request.json()
         const validatedData = createRecognitionSchema.parse(body)
 
-        const recognition = await prisma.operationsRecognition.create({
+        const operationsRecognition = getOperationsRecognition()
+        if (!operationsRecognition) {
+          return NextResponse.json(
+            { error: 'Operations recognition model not available' },
+            { status: 503 }
+          )
+        }
+
+        const recognition = await operationsRecognition.create({
           data: {
             employeeId: validatedData.employeeId,
             achievement: validatedData.achievement,

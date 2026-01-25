@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsInventoryItem model
+function getOperationsInventoryItem() {
+  return (prisma as any).operationsInventoryItem as any
+}
+
 const updateInventoryItemSchema = z.object({
   itemName: z.string().min(1).optional(),
   category: z.enum(['SUPPLIES', 'EQUIPMENT', 'SAFETY', 'TOOLS', 'IT_EQUIPMENT', 'OFFICE_SUPPLIES', 'OTHER']).optional(),
@@ -26,7 +31,15 @@ export async function GET(
     { resource: 'operations', action: 'READ' },
     async (request, userInfo) => {
       try {
-        const item = await prisma.operationsInventoryItem.findFirst({
+        const operationsInventoryItem = getOperationsInventoryItem()
+        if (!operationsInventoryItem) {
+          return NextResponse.json(
+            { error: 'Operations inventory item model not available' },
+            { status: 503 }
+          )
+        }
+
+        const item = await operationsInventoryItem.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -92,7 +105,15 @@ export async function PATCH(
         const body = await request.json()
         const validatedData = updateInventoryItemSchema.parse(body)
 
-        const existing = await prisma.operationsInventoryItem.findFirst({
+        const operationsInventoryItem = getOperationsInventoryItem()
+        if (!operationsInventoryItem) {
+          return NextResponse.json(
+            { error: 'Operations inventory item model not available' },
+            { status: 503 }
+          )
+        }
+
+        const existing = await operationsInventoryItem.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -135,7 +156,7 @@ export async function PATCH(
           updateData.totalValue = quantity * unitCost
         }
 
-        const item = await prisma.operationsInventoryItem.update({
+        const item = await operationsInventoryItem.update({
           where: { id: params.id },
           data: updateData,
         })
@@ -168,7 +189,15 @@ export async function DELETE(
     { resource: 'operations', action: 'DELETE' },
     async (request, userInfo) => {
       try {
-        const item = await prisma.operationsInventoryItem.findFirst({
+        const operationsInventoryItem = getOperationsInventoryItem()
+        if (!operationsInventoryItem) {
+          return NextResponse.json(
+            { error: 'Operations inventory item model not available' },
+            { status: 503 }
+          )
+        }
+
+        const item = await operationsInventoryItem.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -182,7 +211,7 @@ export async function DELETE(
           )
         }
 
-        await prisma.operationsInventoryItem.delete({
+        await operationsInventoryItem.delete({
           where: { id: params.id },
         })
 

@@ -260,9 +260,9 @@ export async function PATCH(req: NextRequest) {
       const tagsArray = Array.isArray(task.tags) ? task.tags : []
       const dependencyTag = tagsArray.find((tag: any) => typeof tag === 'string' && tag.startsWith('dependency:'))
       if (dependencyTag && typeof dependencyTag === 'string') {
-        const dependencyId = String(dependencyTag).replace('dependency:', '')
-        (task as any).dependencyId = dependencyId
-        (task as any).predecessorId = dependencyId
+        const normalizedDependencyId: string = `${dependencyTag}`.replace('dependency:', '')
+        ;(task as any).dependencyId = normalizedDependencyId
+        ;(task as any).predecessorId = normalizedDependencyId
       }
     } catch (err) {
       // Silently ignore dependency extraction errors

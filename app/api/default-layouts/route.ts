@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { UserRole } from '@prisma/client'
 
 // Schema for creating/updating default layout
 const defaultLayoutSchema = z.object({
@@ -87,8 +88,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = defaultLayoutSchema.parse(body)
 
-    // Ensure targetRole is either a valid role or explicitly null (not undefined)
-    const targetRole = validatedData.targetRole || null
+    // Ensure targetRole is either a valid UserRole enum or explicitly null (not undefined)
+    const targetRole: UserRole | null = validatedData.targetRole && Object.values(UserRole).includes(validatedData.targetRole as UserRole)
+      ? (validatedData.targetRole as UserRole)
+      : null
 
     // Prisma doesn't allow null in unique constraint where clauses for upsert
     // So we need to use findFirst, then update or create
@@ -157,17 +160,22 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const pageKey = searchParams.get('pageKey')
-    const targetRole = searchParams.get('targetRole')
+    const targetRoleParam = searchParams.get('targetRole')
 
     if (!pageKey) {
       return NextResponse.json({ error: 'pageKey is required' }, { status: 400 })
     }
 
+    // Ensure targetRole is either a valid UserRole enum or explicitly null
+    const targetRole: UserRole | null = targetRoleParam && Object.values(UserRole).includes(targetRoleParam as UserRole)
+      ? (targetRoleParam as UserRole)
+      : null
+
     await prisma.defaultLayout.deleteMany({
       where: {
         tenantId: user.tenantId,
         pageKey,
-        targetRole: targetRole || null,
+        targetRole: targetRole,
       },
     })
 

@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
+
+const lineItemSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  quantity: z.number().nonnegative().optional(),
+  unitPrice: z.number().nonnegative(),
+  totalPrice: z.number().nonnegative(),
+  category: z.string().optional(),
+})
 
 const createPricingModelSchema = z.object({
   projectId: z.string().optional(),
@@ -11,17 +21,10 @@ const createPricingModelSchema = z.object({
   baseAmount: z.number().nonnegative().optional(),
   markupPercentage: z.number().min(0).max(100).optional(),
   currency: z.string().default('USD'),
-  lineItems: z.array(
-    z.object({
-      name: z.string().min(1),
-      description: z.string().optional(),
-      quantity: z.number().nonnegative().optional(),
-      unitPrice: z.number().nonnegative(),
-      totalPrice: z.number().nonnegative(),
-      category: z.string().optional(),
-    })
-  ).optional(),
+  lineItems: z.array(lineItemSchema).optional(),
 })
+
+type LineItem = z.infer<typeof lineItemSchema>
 
 // GET /api/finance/pricing-models - List pricing models
 export async function GET(request: NextRequest) {
@@ -50,9 +53,6 @@ export async function GET(request: NextRequest) {
         },
         lineItems: true,
         createdBy: {
-          select: { id: true, name: true, email: true },
-        },
-        approvedByUser: {
           select: { id: true, name: true, email: true },
         },
       },
@@ -103,30 +103,40 @@ export async function POST(request: NextRequest) {
     }
 
     // Create pricing model
-    const pricingModel = await prisma.pricingModel.create({
-      data: {
-        tenantId: (session.user as any).tenantId,
-        projectId: data.projectId,
-        name: data.name,
-        description: data.description,
-        pricingType: data.pricingType,
-        baseAmount: data.baseAmount,
-        markupPercentage: data.markupPercentage,
-        currency: data.currency,
-        createdBy: {
-          connect: { id: (session.user as any).id },
-        },
-        lineItems: data.lineItems ? {
-          create: data.lineItems.map((item) => ({
+    const pricingModelData: Prisma.PricingModelUncheckedCreateInput = {
+      tenantId: (session.user as any).tenantId,
+      name: data.name,
+      pricingType: data.pricingType,
+      currency: data.currency,
+      createdById: (session.user as any).id,
+    }
+
+    // Conditionally add optional fields
+    if (data.projectId) {
+      pricingModelData.projectId = data.projectId
+    }
+    if (data.description) pricingModelData.description = data.description
+    if (data.baseAmount !== undefined) pricingModelData.baseAmount = data.baseAmount
+    if (data.markupPercentage !== undefined) pricingModelData.markupPercentage = data.markupPercentage
+    if (data.lineItems && data.lineItems.length > 0) {
+      const lineItems: LineItem[] = data.lineItems
+      pricingModelData.lineItems = {
+        create: lineItems.map((item: LineItem) => {
+          const lineItemData: Prisma.PricingLineItemCreateWithoutPricingModelInput = {
             name: item.name,
-            description: item.description,
-            quantity: item.quantity,
             unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
-            category: item.category,
-          })),
-        } : undefined,
-      },
+          }
+          if (item.description) lineItemData.description = item.description
+          if (item.quantity !== undefined) lineItemData.quantity = item.quantity
+          if (item.category) lineItemData.category = item.category
+          return lineItemData
+        }),
+      } as any
+    }
+
+    const pricingModel = await prisma.pricingModel.create({
+      data: pricingModelData,
       include: {
         project: {
           select: { id: true, name: true, code: true },

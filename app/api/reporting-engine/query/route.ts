@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         timeout: options.timeout || 30000,
         userId: session.user.id,
         userRole: session.user.role,
-        orgUnitId: session.user.orgUnitId || undefined,
+        orgUnitId: (session.user as any).orgUnitId || undefined,
       }
     )
 

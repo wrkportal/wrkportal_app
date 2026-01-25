@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 // Budget creation schema
 const subSubCategorySchema = z.object({
@@ -64,6 +65,70 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status
     if (fiscalYear) where.fiscalYear = parseInt(fiscalYear)
 
+    type BudgetWithSelected = Prisma.BudgetGetPayload<{
+      select: {
+        id: true
+        name: true
+        description: true
+        totalAmount: true
+        currency: true
+        fiscalYear: true
+        fiscalQuarter: true
+        startDate: true
+        endDate: true
+        status: true
+        createdAt: true
+        updatedAt: true
+        project: {
+          select: {
+            id: true
+            name: true
+            code: true
+          }
+        }
+        program: {
+          select: {
+            id: true
+            name: true
+            code: true
+          }
+        }
+        createdBy: {
+          select: {
+            id: true
+            name: true
+            email: true
+          }
+        }
+        approvedByUser: {
+          select: {
+            id: true
+            name: true
+            email: true
+          }
+        }
+        categories: {
+          select: {
+            id: true
+            name: true
+            code: true
+            allocatedAmount: true
+            spentAmount: true
+            committedAmount: true
+            percentage: true
+          }
+        }
+        _count: {
+          select: {
+            actuals: true
+            forecasts: true
+          }
+        }
+      }
+    }>
+
+    type CostActual = Prisma.CostActualGetPayload<{}>
+
     const budgets = await prisma.budget.findMany({
       where,
       select: {
@@ -116,15 +181,15 @@ export async function GET(request: NextRequest) {
 
     // Calculate spent, committed, variance for each budget
     const budgetsWithCalculations = await Promise.all(
-      budgets.map(async (budget) => {
-        const actuals = await prisma.costActual.findMany({
+      budgets.map(async (budget: BudgetWithSelected) => {
+        const actuals: CostActual[] = await prisma.costActual.findMany({
           where: { budgetId: budget.id },
         })
 
-        const totalSpent = actuals.reduce((sum, cost) => sum + Number(cost.amount), 0)
+        const totalSpent = actuals.reduce((sum: number, cost: CostActual) => sum + Number(cost.amount), 0)
         const totalCommitted = actuals
-          .filter((c) => c.approvedAt && !c.approvedAt) // Pending approvals
-          .reduce((sum, cost) => sum + Number(cost.amount), 0)
+          .filter((c: CostActual) => c.approvedAt && !c.approvedAt) // Pending approvals
+          .reduce((sum: number, cost: CostActual) => sum + Number(cost.amount), 0)
 
         const totalAmount = Number(budget.totalAmount)
         const variance = totalAmount - totalSpent

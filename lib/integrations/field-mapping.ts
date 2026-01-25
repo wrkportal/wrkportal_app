@@ -25,7 +25,7 @@ export interface TransformationRule {
  * Get all field mappings for an integration
  */
 export async function getFieldMappings(integrationId: string, tenantId: string): Promise<FieldMapping[]> {
-  const mappings = await prisma.salesIntegrationFieldMapping.findMany({
+  const mappings = await prisma.integrationFieldMapping.findMany({
     where: {
       integrationId,
       tenantId,
@@ -35,7 +35,7 @@ export async function getFieldMappings(integrationId: string, tenantId: string):
     },
   })
 
-  return mappings.map(m => ({
+  return mappings.map((m: any) => ({
     id: m.id,
     integrationId: m.integrationId,
     sourceField: m.sourceField,
@@ -58,30 +58,36 @@ export async function upsertFieldMapping(
   transformation?: TransformationRule,
   isActive: boolean = true
 ): Promise<FieldMapping> {
-  const mapping = await prisma.salesIntegrationFieldMapping.upsert({
+  const existing = await prisma.integrationFieldMapping.findFirst({
     where: {
-      sales_field_mapping_unique: {
-        integrationId,
-        sourceField,
-        targetField,
-      },
-    },
-    update: {
-      mappingType: mappingType as any,
-      transformation: transformation as any,
-      isActive,
-      updatedAt: new Date(),
-    },
-    create: {
       integrationId,
       tenantId,
       sourceField,
       targetField,
-      mappingType: mappingType as any,
-      transformation: transformation as any,
-      isActive,
     },
   })
+
+  const mapping = existing
+    ? await prisma.integrationFieldMapping.update({
+        where: { id: existing.id },
+        data: {
+          mappingType: mappingType as any,
+          transformation: transformation as any,
+          isActive,
+          updatedAt: new Date(),
+        },
+      })
+    : await prisma.integrationFieldMapping.create({
+        data: {
+          integrationId,
+          tenantId,
+          sourceField,
+          targetField,
+          mappingType: mappingType as any,
+          transformation: transformation as any,
+          isActive,
+        },
+      })
 
   return {
     id: mapping.id,
@@ -98,7 +104,7 @@ export async function upsertFieldMapping(
  * Delete a field mapping
  */
 export async function deleteFieldMapping(mappingId: string, tenantId: string): Promise<void> {
-  await prisma.salesIntegrationFieldMapping.deleteMany({
+  await prisma.integrationFieldMapping.deleteMany({
     where: {
       id: mappingId,
       tenantId,

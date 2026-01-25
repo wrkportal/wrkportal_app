@@ -51,7 +51,7 @@ async function checkTable() {
         ORDER BY table_name
       `
       console.log(`   Found ${tables.length} tables:`)
-      tables.slice(0, 20).forEach(t => console.log(`   - ${t.table_name}`))
+      tables.slice(0, 20).forEach((t: { table_name: string }) => console.log(`   - ${t.table_name}`))
       if (tables.length > 20) {
         console.log(`   ... and ${tables.length - 20} more`)
       }

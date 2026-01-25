@@ -107,8 +107,8 @@ export function getClientIP(request: NextRequest): string {
     return realIP
   }
   
-  // Fallback to connection remote address
-  return request.ip || '0.0.0.0'
+  // Fallback if no IP headers are present
+  return '0.0.0.0'
 }
 
 /**

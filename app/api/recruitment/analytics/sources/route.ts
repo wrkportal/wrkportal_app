@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     for (let i = 5; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthUsers = users.filter(
-        (u) =>
+        (u: any) =>
           new Date(u.createdAt).getMonth() === date.getMonth() &&
           new Date(u.createdAt).getFullYear() === date.getFullYear()
       )

@@ -6,6 +6,18 @@
 
 import { prisma } from '@/lib/prisma'
 
+// Helper to access optional Prisma models
+const getSalesAutomationRuleExecution = () => {
+  return (prisma as any).salesAutomationRuleExecution as {
+    create: (args: { data: any }) => Promise<{ id: string }>
+    update: (args: { where: { id: string }; data: any }) => Promise<any>
+    findMany: (args: { where: any; include?: any; orderBy?: any; take?: number }) => Promise<any[]>
+    findFirst: (args: { where: any; orderBy?: any; select?: any }) => Promise<any>
+    count: (args: { where: any }) => Promise<number>
+    aggregate: (args: { where: any; _avg: any }) => Promise<{ _avg: { executionTime: number | null } }>
+  } | undefined
+}
+
 export interface ExecutionLog {
   id: string
   ruleId: string
@@ -34,7 +46,12 @@ export async function logRuleExecution(
   executionTime?: number,
   createdById?: string
 ): Promise<string> {
-  const execution = await prisma.salesAutomationRuleExecution.create({
+  const executionModel = getSalesAutomationRuleExecution()
+  if (!executionModel) {
+    throw new Error('Sales automation rule execution model is not available')
+  }
+  
+  const execution = await executionModel.create({
     data: {
       tenantId,
       ruleId,
@@ -61,7 +78,12 @@ export async function updateExecutionStatus(
   status: 'SUCCESS' | 'FAILED' | 'PARTIAL' | 'SKIPPED',
   errorMessage?: string
 ): Promise<void> {
-  await prisma.salesAutomationRuleExecution.update({
+  const executionModel = getSalesAutomationRuleExecution()
+  if (!executionModel) {
+    throw new Error('Sales automation rule execution model is not available')
+  }
+  
+  await executionModel.update({
     where: { id: executionId },
     data: {
       status: status as any,
@@ -79,7 +101,12 @@ export async function getRuleExecutionHistory(
   tenantId: string,
   limit: number = 50
 ): Promise<ExecutionLog[]> {
-  const executions = await prisma.salesAutomationRuleExecution.findMany({
+  const executionModel = getSalesAutomationRuleExecution()
+  if (!executionModel) {
+    return []
+  }
+  
+  const executions = await executionModel.findMany({
     where: {
       ruleId,
       tenantId,
@@ -95,9 +122,9 @@ export async function getRuleExecutionHistory(
       startedAt: 'desc',
     },
     take: limit,
-  })
+  } as any)
 
-  return executions.map(exec => ({
+  return executions.map((exec: any) => ({
     id: exec.id,
     ruleId: exec.ruleId,
     ruleName: exec.rule.name,
@@ -127,28 +154,41 @@ export async function getRuleExecutionStats(
   avgExecutionTime: number
   lastExecution?: Date
 }> {
+  const executionModel = getSalesAutomationRuleExecution()
+  if (!executionModel) {
+    return {
+      total: 0,
+      success: 0,
+      failed: 0,
+      partial: 0,
+      skipped: 0,
+      successRate: 0,
+      avgExecutionTime: 0,
+    }
+  }
+  
   const [total, success, failed, partial, skipped, lastExecution, avgTime] = await Promise.all([
-    prisma.salesAutomationRuleExecution.count({
+    executionModel.count({
       where: { ruleId, tenantId },
     }),
-    prisma.salesAutomationRuleExecution.count({
+    executionModel.count({
       where: { ruleId, tenantId, status: 'SUCCESS' },
     }),
-    prisma.salesAutomationRuleExecution.count({
+    executionModel.count({
       where: { ruleId, tenantId, status: 'FAILED' },
     }),
-    prisma.salesAutomationRuleExecution.count({
+    executionModel.count({
       where: { ruleId, tenantId, status: 'PARTIAL' },
     }),
-    prisma.salesAutomationRuleExecution.count({
+    executionModel.count({
       where: { ruleId, tenantId, status: 'SKIPPED' },
     }),
-    prisma.salesAutomationRuleExecution.findFirst({
+    executionModel.findFirst({
       where: { ruleId, tenantId },
       orderBy: { startedAt: 'desc' },
       select: { startedAt: true },
     }),
-    prisma.salesAutomationRuleExecution.aggregate({
+    executionModel.aggregate({
       where: {
         ruleId,
         tenantId,
@@ -205,7 +245,12 @@ export async function getTenantExecutions(
     }
   }
 
-  const executions = await prisma.salesAutomationRuleExecution.findMany({
+  const executionModel = getSalesAutomationRuleExecution()
+  if (!executionModel) {
+    return []
+  }
+  
+  const executions = await executionModel.findMany({
     where,
     include: {
       rule: {
@@ -218,9 +263,9 @@ export async function getTenantExecutions(
       startedAt: 'desc',
     },
     take: limit,
-  })
+  } as any)
 
-  return executions.map(exec => ({
+  return executions.map((exec: any) => ({
     id: exec.id,
     ruleId: exec.ruleId,
     ruleName: exec.rule.name,

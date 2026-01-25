@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsAsset model
+function getOperationsAsset() {
+  return (prisma as any).operationsAsset as any
+}
+
 const createAssetSchema = z.object({
   name: z.string().min(1),
   category: z.string().optional(),
@@ -50,7 +55,15 @@ export async function GET(req: NextRequest) {
           ]
         }
 
-        const assets = await prisma.operationsAsset.findMany({
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available', assets: [], stats: { total: 0, available: 0, assigned: 0, maintenance: 0, retired: 0 } },
+            { status: 503 }
+          )
+        }
+
+        const assets = await (operationsAsset as any).findMany({
           where,
           include: {
             assignedTo: {
@@ -75,14 +88,14 @@ export async function GET(req: NextRequest) {
         // Calculate stats
         const stats = {
           total: assets.length,
-          available: assets.filter(a => a.status === 'AVAILABLE').length,
-          assigned: assets.filter(a => a.status === 'ASSIGNED').length,
-          maintenance: assets.filter(a => a.status === 'MAINTENANCE').length,
-          retired: assets.filter(a => a.status === 'RETIRED').length,
+          available: assets.filter((a: any) => a.status === 'AVAILABLE').length,
+          assigned: assets.filter((a: any) => a.status === 'ASSIGNED').length,
+          maintenance: assets.filter((a: any) => a.status === 'MAINTENANCE').length,
+          retired: assets.filter((a: any) => a.status === 'RETIRED').length,
         }
 
         // Format assets for IT dashboard
-        const formattedAssets = assets.map((asset) => ({
+        const formattedAssets = assets.map((asset: any) => ({
           id: asset.id,
           name: asset.name,
           type: asset.category || 'Unknown',
@@ -126,7 +139,15 @@ export async function POST(req: NextRequest) {
         const body = await request.json()
         const data = createAssetSchema.parse(body)
 
-        const asset = await prisma.operationsAsset.create({
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available' },
+            { status: 503 }
+          )
+        }
+
+        const asset = await (operationsAsset as any).create({
           data: {
             tenantId: userInfo.tenantId,
             name: data.name,

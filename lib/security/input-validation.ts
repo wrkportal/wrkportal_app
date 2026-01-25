@@ -30,7 +30,7 @@ export function sanitizeString(input: string): string {
  * Sanitize object by sanitizing all string values
  */
 export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
-  const sanitized = { ...obj }
+  const sanitized: Record<string, any> = { ...obj }
 
   for (const key in sanitized) {
     if (typeof sanitized[key] === 'string') {
@@ -40,7 +40,7 @@ export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
     }
   }
 
-  return sanitized
+  return sanitized as T
 }
 
 /**

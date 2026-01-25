@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 // GET /api/finance/profitability - Get profitability analysis
 export async function GET(request: NextRequest) {
@@ -16,6 +17,29 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('projectId')
     const fromDate = searchParams.get('fromDate')
     const toDate = searchParams.get('toDate')
+
+    // Define types
+    type InvoiceWithPayments = Prisma.InvoiceGetPayload<{
+      include: {
+        payments: true
+        project: {
+          select: { id: true; name: true }
+        }
+      }
+    }>
+    type Payment = InvoiceWithPayments['payments'][0]
+    type CostActualWithProject = Prisma.CostActualGetPayload<{
+      include: {
+        project: {
+          select: { id: true; name: true }
+        }
+      }
+    }>
+    type PreviousInvoiceWithPayments = Prisma.InvoiceGetPayload<{
+      include: { payments: true }
+    }>
+    type PreviousPayment = PreviousInvoiceWithPayments['payments'][0]
+    type PreviousCostActual = Prisma.CostActualGetPayload<{}>
 
     // Calculate date range
     let startDate: Date
@@ -57,14 +81,16 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const totalRevenue = invoices.reduce((sum, inv) => {
-      const paid = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0)
+    const typedInvoices: InvoiceWithPayments[] = invoices as InvoiceWithPayments[]
+
+    const totalRevenue = typedInvoices.reduce((sum: number, inv: InvoiceWithPayments) => {
+      const paid = inv.payments.reduce((pSum: number, p: Payment) => pSum + Number(p.amount), 0)
       return sum + (paid || Number(inv.totalAmount))
     }, 0)
 
     // Get expenses
-    const expensesWhere: any = {
-      tenantId,
+    const expensesWhere: Prisma.CostActualWhereInput = {
+      project: { tenantId },
       approvedAt: { not: null },
       date: {
         gte: startDate,
@@ -82,7 +108,9 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0)
+    const typedExpenses: CostActualWithProject[] = expenses as CostActualWithProject[]
+
+    const totalExpenses = typedExpenses.reduce((sum: number, exp: CostActualWithProject) => sum + Number(exp.amount), 0)
 
     // Calculate profitability metrics
     const grossProfit = totalRevenue - totalExpenses
@@ -92,9 +120,9 @@ export async function GET(request: NextRequest) {
     // Profitability by project
     const projectProfitability: any = {}
     
-    invoices.forEach(inv => {
+    typedInvoices.forEach((inv: InvoiceWithPayments) => {
       const projectName = inv.project?.name || 'No Project'
-      const paid = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0)
+      const paid = inv.payments.reduce((pSum: number, p: Payment) => pSum + Number(p.amount), 0)
       const revenue = paid || Number(inv.totalAmount)
       
       if (!projectProfitability[projectName]) {
@@ -108,7 +136,7 @@ export async function GET(request: NextRequest) {
       projectProfitability[projectName].revenue += revenue
     })
 
-    expenses.forEach(exp => {
+    typedExpenses.forEach((exp: CostActualWithProject) => {
       const projectName = exp.project?.name || 'No Project'
       if (!projectProfitability[projectName]) {
         projectProfitability[projectName] = {
@@ -131,17 +159,17 @@ export async function GET(request: NextRequest) {
     const monthlyData: any = {}
     const allDates = new Set<string>()
     
-    invoices.forEach(inv => {
+    typedInvoices.forEach((inv: InvoiceWithPayments) => {
       const month = new Date(inv.invoiceDate).toISOString().substring(0, 7)
       allDates.add(month)
       if (!monthlyData[month]) {
         monthlyData[month] = { month, revenue: 0, expenses: 0 }
       }
-      const paid = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0)
+      const paid = inv.payments.reduce((pSum: number, p: Payment) => pSum + Number(p.amount), 0)
       monthlyData[month].revenue += paid || Number(inv.totalAmount)
     })
 
-    expenses.forEach(exp => {
+    typedExpenses.forEach((exp: CostActualWithProject) => {
       const month = new Date(exp.date).toISOString().substring(0, 7)
       allDates.add(month)
       if (!monthlyData[month]) {
@@ -183,7 +211,7 @@ export async function GET(request: NextRequest) {
 
     const previousExpenses = await prisma.costActual.findMany({
       where: {
-        tenantId,
+        project: { tenantId },
         approvedAt: { not: null },
         date: {
           gte: previousStartDate,
@@ -193,12 +221,15 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const previousRevenue = previousInvoices.reduce((sum, inv) => {
-      const paid = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0)
+    const typedPreviousInvoices: PreviousInvoiceWithPayments[] = previousInvoices as PreviousInvoiceWithPayments[]
+    const typedPreviousExpenses: PreviousCostActual[] = previousExpenses as PreviousCostActual[]
+
+    const previousRevenue = typedPreviousInvoices.reduce((sum: number, inv: PreviousInvoiceWithPayments) => {
+      const paid = inv.payments.reduce((pSum: number, p: PreviousPayment) => pSum + Number(p.amount), 0)
       return sum + (paid || Number(inv.totalAmount))
     }, 0)
 
-    const previousTotalExpenses = previousExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0)
+    const previousTotalExpenses = typedPreviousExpenses.reduce((sum: number, exp: PreviousCostActual) => sum + Number(exp.amount), 0)
     const previousProfit = previousRevenue - previousTotalExpenses
 
     const profitGrowth = previousProfit !== 0 

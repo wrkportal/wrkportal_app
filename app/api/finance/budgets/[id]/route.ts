@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const updateBudgetSchema = z.object({
   name: z.string().min(1).optional(),
@@ -23,7 +24,85 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const budget = await prisma.budget.findFirst({
+    type BudgetWithIncludes = Prisma.BudgetGetPayload<{
+      include: {
+        project: {
+          select: {
+            id: true
+            name: true
+            code: true
+          }
+        }
+        program: {
+          select: {
+            id: true
+            name: true
+            code: true
+          }
+        }
+        createdBy: {
+          select: {
+            id: true
+            name: true
+            email: true
+          }
+        }
+        approvedByUser: {
+          select: {
+            id: true
+            name: true
+            email: true
+          }
+        }
+        categories: {
+          include: {
+            lineItems: true
+            actuals: true
+            subCategories: {
+              include: {
+                subCategories: true
+              }
+            }
+          }
+        }
+        lineItems: true
+        forecasts: true
+        actuals: {
+          include: {
+            category: true
+            project: {
+              select: {
+                id: true
+                name: true
+                code: true
+              }
+            }
+            createdBy: {
+              select: {
+                id: true
+                name: true
+                email: true
+              }
+            }
+          }
+        }
+        approvals: {
+          include: {
+            approver: {
+              select: {
+                id: true
+                name: true
+                email: true
+              }
+            }
+          }
+        }
+      }
+    }>
+
+    type CostActual = BudgetWithIncludes['actuals'][0]
+
+    const budget = (await prisma.budget.findFirst({
       where: {
         id: params.id,
         tenantId: session.user.tenantId,
@@ -83,17 +162,17 @@ export async function GET(
           orderBy: { level: 'asc' },
         },
       },
-    })
+    })) as BudgetWithIncludes | null
 
     if (!budget) {
       return NextResponse.json({ error: 'Budget not found' }, { status: 404 })
     }
 
     // Calculate totals
-    const totalSpent = budget.actuals.reduce((sum, cost) => sum + Number(cost.amount), 0)
+    const totalSpent = budget.actuals.reduce((sum: number, cost: CostActual) => sum + Number(cost.amount), 0)
     const totalCommitted = budget.actuals
-      .filter((c) => !c.approvedAt)
-      .reduce((sum, cost) => sum + Number(cost.amount), 0)
+      .filter((c: CostActual) => !c.approvedAt)
+      .reduce((sum: number, cost: CostActual) => sum + Number(cost.amount), 0)
     const totalAmount = Number(budget.totalAmount)
     const variance = totalAmount - totalSpent
 

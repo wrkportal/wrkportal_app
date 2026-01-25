@@ -11,6 +11,8 @@ import { parsePaginationParams, createPaginatedResponse } from '@/lib/performanc
 import { getOrSet, cacheKeys, cacheTTL } from '@/lib/performance/cache'
 import { measureQuery } from '@/lib/performance/monitoring'
 
+const getReportSchedule = () => (prisma as any).reportSchedule
+
 const createScheduleSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
@@ -45,7 +47,8 @@ export async function GET(request: NextRequest) {
     { resource: 'reports', action: 'READ' },
     async (req, userInfo) => {
       try {
-        if (!prisma.reportSchedule) {
+        const reportSchedule = getReportSchedule()
+        if (!reportSchedule) {
           return NextResponse.json({ schedules: [] })
         }
 
@@ -73,12 +76,12 @@ export async function GET(request: NextRequest) {
           async () => {
             // Get total count
             const total = await measureQuery('schedules.count', () =>
-              prisma.reportSchedule.count({ where })
+              reportSchedule.count({ where })
             )
 
             // Get paginated schedules
             const schedules = await measureQuery('schedules.findMany', () =>
-              prisma.reportSchedule.findMany({
+              reportSchedule.findMany({
                 where,
                 skip: pagination.offset,
                 take: pagination.limit,
@@ -117,7 +120,7 @@ export async function GET(request: NextRequest) {
               })
             )
 
-            return createPaginatedResponse(schedules, total, pagination)
+            return createPaginatedResponse(schedules as any[], total as number, pagination)
           },
           cacheTTL.short // Cache for 1 minute
         )
@@ -141,7 +144,8 @@ export async function POST(request: NextRequest) {
     { resource: 'reports', action: 'CREATE' },
     async (req, userInfo) => {
       try {
-        if (!prisma.reportSchedule) {
+        const reportSchedule = getReportSchedule()
+        if (!reportSchedule) {
           return NextResponse.json(
             { error: 'Schedule model not available' },
             { status: 500 }
@@ -166,7 +170,7 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        const schedule = await prisma.reportSchedule.create({
+        const schedule = await reportSchedule.create({
           data: {
             tenantId: userInfo.tenantId,
             name: data.name,

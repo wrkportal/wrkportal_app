@@ -44,19 +44,9 @@ export async function POST(
     const updated = await prisma.invoice.update({
       where: { id: params.id },
       data: {
-        approvedAt: data.approved ? new Date() : null,
-        approvedBy: data.approved
-          ? {
-              connect: { id: (session.user as any).id },
-            }
-          : undefined,
+        sentAt: data.approved ? new Date() : invoice.sentAt,
         status: data.approved ? 'SENT' : invoice.status,
         notes: data.comments ? `${invoice.notes || ''}\n[${new Date().toISOString()}] ${data.comments}`.trim() : invoice.notes,
-      },
-      include: {
-        approvedBy: {
-          select: { id: true, name: true, email: true },
-        },
       },
     })
 

@@ -2,8 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
-import { PrismaClientKnownRequestError } from '@prisma/client'
 
+type OperationsResource = {
+  utilization: number | string
+}
+
+type OperationsAttendance = {
+  status: string
+}
+
+type OperationsWorkOrder = {
+  status: string
+  scheduledDate: Date | null
+  completedDate: Date | null
+  qualityScore: number | null
+}
 // Helper to safely query Prisma models that might not exist
 const safeQuery = async <T>(
   queryFn: () => Promise<T>,
@@ -14,11 +27,10 @@ const safeQuery = async <T>(
   } catch (error: any) {
     // Check if it's a Prisma error about missing model or TypeError from undefined
     if (
-      error instanceof PrismaClientKnownRequestError &&
-      (error.code === 'P2001' ||
-        error.message?.includes('does not exist') ||
-        error.message?.includes('Unknown model') ||
-        error.message?.includes('model does not exist'))
+      error?.code === 'P2001' ||
+      error?.message?.includes('does not exist') ||
+      error?.message?.includes('Unknown model') ||
+      error?.message?.includes('model does not exist')
     ) {
       console.warn('Prisma model not found, using default value:', error.message)
       return defaultValue
@@ -60,7 +72,7 @@ export async function GET(req: NextRequest) {
             const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1)
             const monthEnd = new Date(today.getFullYear(), today.getMonth() - i + 1, 0)
             
-            const resources = await safeQuery(
+            const resources = await safeQuery<OperationsResource[]>(
               () => (prisma as any).operationsResource.findMany({
                 where: {
                   tenantId: userInfo.tenantId,
@@ -71,10 +83,10 @@ export async function GET(req: NextRequest) {
             )
 
             const capacityUtilization = resources.length > 0
-              ? resources.reduce((sum, r) => sum + Number(r.utilization), 0) / resources.length
+              ? resources.reduce((sum, r: OperationsResource) => sum + Number(r.utilization), 0) / resources.length
               : 0
 
-            const attendanceRecords = await safeQuery(
+            const attendanceRecords = await safeQuery<OperationsAttendance[]>(
               () => (prisma as any).operationsAttendance.findMany({
                 where: {
                   tenantId: userInfo.tenantId,
@@ -88,7 +100,7 @@ export async function GET(req: NextRequest) {
             )
 
             const attendanceRate = attendanceRecords.length > 0
-              ? (attendanceRecords.filter(a => a.status === 'PRESENT').length / attendanceRecords.length) * 100
+              ? (attendanceRecords.filter((a: OperationsAttendance) => a.status === 'PRESENT').length / attendanceRecords.length) * 100
               : 0
 
             const attritionCount = await safeQuery(
@@ -135,7 +147,7 @@ export async function GET(req: NextRequest) {
             const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1)
             const monthEnd = new Date(today.getFullYear(), today.getMonth() - i + 1, 0)
             
-            const workOrders = await safeQuery(
+            const workOrders = await safeQuery<OperationsWorkOrder[]>(
               () => (prisma as any).operationsWorkOrder.findMany({
                 where: {
                   tenantId: userInfo.tenantId,
@@ -148,9 +160,9 @@ export async function GET(req: NextRequest) {
               []
             )
 
-            const completedWorkOrders = workOrders.filter(wo => wo.status === 'COMPLETED')
+            const completedWorkOrders = workOrders.filter((wo: OperationsWorkOrder) => wo.status === 'COMPLETED')
             const avgTAT = completedWorkOrders.length > 0
-              ? completedWorkOrders.reduce((sum, wo) => {
+              ? completedWorkOrders.reduce((sum, wo: OperationsWorkOrder) => {
                   if (wo.scheduledDate && wo.completedDate) {
                     const hours = (wo.completedDate.getTime() - wo.scheduledDate.getTime()) / (1000 * 60 * 60)
                     return sum + hours

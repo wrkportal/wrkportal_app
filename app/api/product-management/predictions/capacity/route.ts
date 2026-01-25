@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
         >()
 
         // Process current and future tasks
-        tasks.forEach((task) => {
+        tasks.forEach((task: any) => {
           if (!task.assigneeId) return
 
           const user = userCapacityMap.get(task.assigneeId) || {
@@ -121,11 +121,11 @@ export async function GET(req: NextRequest) {
         })
 
         // Calculate historical velocity from sprints
-        sprints.forEach((sprint) => {
+        sprints.forEach((sprint: any) => {
           const sprintTasks = sprint.tasks || []
-          const completedTasks = sprintTasks.filter((t) => t.status === 'DONE')
+          const completedTasks = sprintTasks.filter((t: any) => t.status === 'DONE')
 
-          completedTasks.forEach((task) => {
+          completedTasks.forEach((task: any) => {
             if (!task.assigneeId) return
             const user = userCapacityMap.get(task.assigneeId)
             if (user) {

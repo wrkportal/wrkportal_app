@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { LeadSource } from '@prisma/client'
 // Webhook secret verification (can use crypto if needed)
 
 /**
@@ -162,15 +163,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function mapSourceToLeadSource(source: string): string {
-  const mapping: Record<string, string> = {
-    WEBSITE_DEMO: 'WEB_FORM',
-    WEBSITE_CONTACT: 'WEB_FORM',
-    LINKEDIN_FORM: 'LINKEDIN',
-    EVENT: 'EVENT',
-    EMAIL: 'EMAIL',
+function mapSourceToLeadSource(source: string): LeadSource {
+  const mapping: Record<string, LeadSource> = {
+    WEBSITE_DEMO: LeadSource.WEB_FORM,
+    WEBSITE_CONTACT: LeadSource.WEB_FORM,
+    LINKEDIN_FORM: LeadSource.LINKEDIN,
+    EVENT: LeadSource.EVENT,
+    EMAIL: LeadSource.EMAIL,
   }
-  return mapping[source] || 'OTHER'
+  return mapping[source] || LeadSource.OTHER
 }
 
 async function triggerAutomation(tenantId: string, triggerType: string, data: any) {

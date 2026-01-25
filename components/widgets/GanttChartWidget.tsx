@@ -67,6 +67,7 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
     const [statusFilter, setStatusFilter] = useState<string>('ALL')
     const [priorityFilter, setPriorityFilter] = useState<string>('ALL')
     const [dueDateFilter, setDueDateFilter] = useState<string>('ALL')
+    const [hideCompleted, setHideCompleted] = useState(false)
     const [personFilter, setPersonFilter] = useState<string[]>([])
     const [sortBy, setSortBy] = useState<'none' | 'name' | 'date' | 'status'>('none')
     const [showFilters, setShowFilters] = useState(false)
@@ -451,13 +452,13 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
             if (dueDateFilter !== 'ALL') {
                 const today = new Date()
                 today.setHours(0, 0, 0, 0)
-                
+
                 tasks = tasks.filter(task => {
                     if (!task.dueDate) return dueDateFilter === 'NO_DUE_DATE'
-                    
+
                     const dueDate = new Date(task.dueDate)
                     dueDate.setHours(0, 0, 0, 0)
-                    
+
                     switch (dueDateFilter) {
                         case 'OVERDUE':
                             return dueDate < today
@@ -492,7 +493,14 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                     return new Date(a.date).getTime() - new Date(b.date).getTime()
                 })
             } else if (sortBy === 'status') {
-                const statusOrder = { 'TODO': 0, 'IN_PROGRESS': 1, 'COMPLETED': 2 }
+                const statusOrder: Record<GanttTask['status'], number> = {
+                    TODO: 0,
+                    IN_PROGRESS: 1,
+                    IN_REVIEW: 2,
+                    BLOCKED: 3,
+                    DONE: 4,
+                    CANCELLED: 5,
+                }
                 tasks.sort((a, b) => statusOrder[a.status] - statusOrder[b.status])
             }
 
@@ -920,7 +928,14 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
     }
 
     const getGroupStatusCounts = (tasks: GanttTask[]) => {
-        const counts = { TODO: 0, IN_PROGRESS: 0, COMPLETED: 0 }
+        const counts: Record<GanttTask['status'], number> = {
+            TODO: 0,
+            IN_PROGRESS: 0,
+            IN_REVIEW: 0,
+            BLOCKED: 0,
+            DONE: 0,
+            CANCELLED: 0,
+        }
         tasks.forEach(task => {
             counts[task.status]++
         })
@@ -1543,7 +1558,7 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                                                         const total = group.tasks.length
                                                         return (
                                                             <>
-                                                                {counts.COMPLETED > 0 && <div className="bg-green-500" style={{ width: `${(counts.COMPLETED / total) * 100}%` }} />}
+                                                                {counts.DONE > 0 && <div className="bg-green-500" style={{ width: `${(counts.DONE / total) * 100}%` }} />}
                                                                 {counts.IN_PROGRESS > 0 && <div className="bg-orange-500" style={{ width: `${(counts.IN_PROGRESS / total) * 100}%` }} />}
                                                             </>
                                                         )
@@ -1680,8 +1695,8 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                                                         style={{
                                                             gridTemplateColumns: getGridTemplateColumns(),
                                                             color: taskStyles[task.id]?.fontColor,
-                                                            backgroundColor: dragOverTask?.taskId === task.id && dragOverTask?.groupId === group.id 
-                                                                ? undefined 
+                                                            backgroundColor: dragOverTask?.taskId === task.id && dragOverTask?.groupId === group.id
+                                                                ? undefined
                                                                 : taskStyles[task.id]?.backgroundColor
                                                         }}
                                                         draggable
@@ -1917,7 +1932,7 @@ export function GanttChartWidget(props: GanttChartWidgetProps) {
                                                                             gridTemplateColumns: getGridTemplateColumns(),
                                                                             color: taskStyles[subtask.id]?.fontColor,
                                                                             backgroundColor: dragOverTask?.taskId === subtask.id && dragOverTask?.groupId === group.id && dragOverTask?.parentId === task.id
-                                                                                ? undefined 
+                                                                                ? undefined
                                                                                 : taskStyles[subtask.id]?.backgroundColor
                                                                         }}
                                                                         draggable

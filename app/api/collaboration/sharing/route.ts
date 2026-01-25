@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
-import { UserRole, SharePermission, ShareAccessType } from '@prisma/client'
+import { UserRole, SharePermission, ShareAccessType, Prisma } from '@prisma/client'
 import { createActivityFeed } from '@/lib/collaboration/activity-feed'
 import { randomBytes } from 'crypto'
 
@@ -56,7 +56,36 @@ export async function GET(request: NextRequest) {
           ]
         }
 
-        const shares = await prisma.resourceShare.findMany({
+        type ResourceShareWithIncludes = Prisma.ResourceShareGetPayload<{
+          include: {
+            sharedBy: {
+              select: {
+                id: true
+                email: true
+                firstName: true
+                lastName: true
+                avatar: true
+              }
+            }
+            sharedWith: {
+              select: {
+                id: true
+                email: true
+                firstName: true
+                lastName: true
+                avatar: true
+              }
+            }
+            orgUnit: {
+              select: {
+                id: true
+                name: true
+              }
+            }
+          }
+        }>
+
+        const shares: ResourceShareWithIncludes[] = await prisma.resourceShare.findMany({
           where,
           include: {
             sharedBy: {
@@ -91,7 +120,7 @@ export async function GET(request: NextRequest) {
 
         // Filter out expired shares
         const now = new Date()
-        const activeShares = shares.filter(share => 
+        const activeShares = shares.filter((share: ResourceShareWithIncludes) => 
           !share.expiresAt || share.expiresAt > now
         )
 

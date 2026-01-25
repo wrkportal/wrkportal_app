@@ -37,14 +37,6 @@ export async function GET(
             tenantId: userInfo.tenantId,
           },
           include: {
-            asset: {
-              select: {
-                id: true,
-                name: true,
-                serialNumber: true,
-                category: true,
-              },
-            },
             vendor: {
               select: {
                 id: true,
@@ -146,13 +138,6 @@ export async function PATCH(
           where: { id: params.id },
           data: updateData,
           include: {
-            asset: {
-              select: {
-                id: true,
-                name: true,
-                serialNumber: true,
-              },
-            },
             vendor: {
               select: {
                 id: true,

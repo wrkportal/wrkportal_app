@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,14 +14,15 @@ interface RAIDDialogProps {
     open: boolean
     onClose: () => void
     onSubmit: (data: any, type: 'risk' | 'issue') => void
+    projectId?: string
 }
 
-export function RAIDDialog({ open, onClose, onSubmit }: RAIDDialogProps) {
+export function RAIDDialog({ open, onClose, onSubmit, projectId }: RAIDDialogProps) {
     const [type, setType] = useState<'risk' | 'issue'>('risk')
     const [riskData, setRiskData] = useState({
         title: '',
         description: '',
-        projectId: '',
+        projectId: projectId || '',
         category: 'TECHNICAL',
         priority: 'MEDIUM',
         probability: 50,
@@ -33,12 +34,18 @@ export function RAIDDialog({ open, onClose, onSubmit }: RAIDDialogProps) {
     const [issueData, setIssueData] = useState({
         title: '',
         description: '',
-        projectId: '',
+        projectId: projectId || '',
         category: 'TECHNICAL',
         priority: 'MEDIUM',
         assigneeId: '',
         resolution: '',
     })
+
+    useEffect(() => {
+        if (!projectId) return
+        setRiskData((prev) => ({ ...prev, projectId }))
+        setIssueData((prev) => ({ ...prev, projectId }))
+    }, [projectId])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()

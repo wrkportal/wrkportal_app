@@ -576,7 +576,7 @@ function AccountsInner() {
         sampleRows={sampleRows}
         onConfirm={handleMappingConfirm}
         loading={uploading}
-        standardFields={ACCOUNT_STANDARD_FIELDS}
+        standardFields={[...ACCOUNT_STANDARD_FIELDS]}
       />
 
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>

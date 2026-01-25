@@ -3,6 +3,11 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsAsset model
+function getOperationsAsset() {
+  return (prisma as any).operationsAsset as any
+}
+
 // GET - List network devices
 // Note: This would ideally integrate with network monitoring systems
 export async function GET(req: NextRequest) {
@@ -18,7 +23,15 @@ export async function GET(req: NextRequest) {
         // - Custom network inventory
 
         // For now, we can use OperationsAsset with category 'Network Device'
-        const networkDevices = await prisma.operationsAsset.findMany({
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available', devices: [], stats: { totalDevices: 0, onlineDevices: 0, offlineDevices: 0, avgUptime: 0, totalBandwidth: 0 } },
+            { status: 503 }
+          )
+        }
+
+        const networkDevices = await (operationsAsset as any).findMany({
           where: {
             tenantId: userInfo.tenantId,
             category: { contains: 'Network', mode: 'insensitive' },
@@ -33,7 +46,7 @@ export async function GET(req: NextRequest) {
           },
         })
 
-        const devices = networkDevices.map((device) => ({
+        const devices = networkDevices.map((device: any) => ({
           id: device.id,
           name: device.name,
           type: device.category || 'Network Device',
@@ -46,10 +59,10 @@ export async function GET(req: NextRequest) {
 
         const stats = {
           totalDevices: devices.length,
-          onlineDevices: devices.filter(d => d.status === 'ONLINE').length,
-          offlineDevices: devices.filter(d => d.status === 'OFFLINE').length,
-          avgUptime: devices.length > 0 ? devices.reduce((sum, d) => sum + d.uptime, 0) / devices.length : 0,
-          totalBandwidth: devices.reduce((sum, d) => sum + d.bandwidthUsage, 0),
+          onlineDevices: devices.filter((d: any) => d.status === 'ONLINE').length,
+          offlineDevices: devices.filter((d: any) => d.status === 'OFFLINE').length,
+          avgUptime: devices.length > 0 ? devices.reduce((sum: number, d: any) => sum + d.uptime, 0) / devices.length : 0,
+          totalBandwidth: devices.reduce((sum: number, d: any) => sum + d.bandwidthUsage, 0),
         }
 
         return NextResponse.json({

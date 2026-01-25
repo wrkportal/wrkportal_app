@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         }
         // Create activity logs for status changes
         await Promise.all(
-          candidates.map((candidate) =>
+          candidates.map((candidate: any) =>
             prisma.activityFeed.create({
               data: {
                 tenantId,
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         }
         // Create activity logs for tag additions
         await Promise.all(
-          candidates.map((candidate) =>
+          candidates.map((candidate: any) =>
             prisma.activityFeed.create({
               data: {
                 tenantId,
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         }
         // Create activity logs for tag removals
         await Promise.all(
-          candidates.map((candidate) =>
+          candidates.map((candidate: any) =>
             prisma.activityFeed.create({
               data: {
                 tenantId,
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
         })
         // Create activity logs for emails sent
         await Promise.all(
-          candidateEmails.map((candidate) =>
+          candidateEmails.map((candidate: any) =>
             prisma.activityFeed.create({
               data: {
                 tenantId,
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
         result = {
           action: 'EXPORT',
           exported: exportCandidates.length,
-          data: exportCandidates.map((c) => ({
+          data: exportCandidates.map((c: any) => ({
             name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email,
             email: c.email,
             phone: c.phone,

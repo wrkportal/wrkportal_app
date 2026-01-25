@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
+import { Prisma } from '@prisma/client'
 
 // GET - List IT users
 export async function GET(req: NextRequest) {
@@ -52,8 +53,29 @@ export async function GET(req: NextRequest) {
           },
         })
 
+        type UserWithSelected = Prisma.UserGetPayload<{
+          select: {
+            id: true
+            name: true
+            email: true
+            phone: true
+            status: true
+            role: true
+            lastLogin: true
+            createdAt: true
+            orgUnit: {
+              select: {
+                id: true
+                name: true
+              }
+            }
+          }
+        }>
+
+        const typedUsers: UserWithSelected[] = users as UserWithSelected[]
+
         // Format users for IT dashboard
-        const formattedUsers = users.map((user) => ({
+        const formattedUsers = typedUsers.map((user: UserWithSelected) => ({
           id: user.id,
           name: user.name || 'Unknown',
           email: user.email || '',
@@ -69,9 +91,9 @@ export async function GET(req: NextRequest) {
         // Calculate stats
         const stats = {
           total: formattedUsers.length,
-          active: formattedUsers.filter(u => u.status === 'ACTIVE').length,
-          inactive: formattedUsers.filter(u => u.status !== 'ACTIVE').length,
-          pending: formattedUsers.filter(u => u.status === 'PENDING').length,
+          active: formattedUsers.filter((u: any) => u.status === 'ACTIVE').length,
+          inactive: formattedUsers.filter((u: any) => u.status !== 'ACTIVE').length,
+          pending: formattedUsers.filter((u: any) => u.status === 'PENDING').length,
         }
 
         return NextResponse.json({

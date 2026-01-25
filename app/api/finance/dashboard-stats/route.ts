@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 // GET /api/finance/dashboard-stats - Get finance dashboard statistics
 export async function GET(request: NextRequest) {
@@ -36,7 +37,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Get revenue (from paid invoices)
-    const paidInvoices = await prisma.invoice.findMany({
+    type InvoiceWithSelected = Prisma.InvoiceGetPayload<{
+      select: {
+        totalAmount: true
+        paid: true
+      }
+    }>
+
+    const paidInvoices: InvoiceWithSelected[] = await prisma.invoice.findMany({
       where: {
         tenantId,
         status: 'PAID',
@@ -50,12 +58,20 @@ export async function GET(request: NextRequest) {
         paid: true,
       },
     })
-    const revenue = paidInvoices.reduce((sum, inv) => sum + Number(inv.paid || inv.totalAmount), 0)
+    const revenue = paidInvoices.reduce((sum: number, inv: InvoiceWithSelected) => sum + Number(inv.paid || inv.totalAmount), 0)
 
     // Get expenses (from approved cost actuals)
-    const expenses = await prisma.costActual.findMany({
+    type CostActualWithSelected = Prisma.CostActualGetPayload<{
+      select: {
+        amount: true
+      }
+    }>
+
+    const expenses: CostActualWithSelected[] = await prisma.costActual.findMany({
       where: {
-        tenantId,
+        project: {
+          tenantId,
+        },
         approvedAt: { not: null },
         date: {
           gte: startDate,
@@ -66,10 +82,10 @@ export async function GET(request: NextRequest) {
         amount: true,
       },
     })
-    const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0)
+    const totalExpenses = expenses.reduce((sum: number, exp: CostActualWithSelected) => sum + Number(exp.amount), 0)
 
     // Get cash on hand (total paid - total expenses)
-    const allPaidInvoices = await prisma.invoice.findMany({
+    const allPaidInvoices: InvoiceWithSelected[] = await prisma.invoice.findMany({
       where: {
         tenantId,
         status: 'PAID',
@@ -79,21 +95,31 @@ export async function GET(request: NextRequest) {
         totalAmount: true,
       },
     })
-    const allExpenses = await prisma.costActual.findMany({
+    const allExpenses: CostActualWithSelected[] = await prisma.costActual.findMany({
       where: {
-        tenantId,
+        project: {
+          tenantId,
+        },
         approvedAt: { not: null },
       },
       select: {
         amount: true,
       },
     })
-    const totalPaid = allPaidInvoices.reduce((sum, inv) => sum + Number(inv.paid || inv.totalAmount), 0)
-    const totalExpensesAll = allExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0)
+    const totalPaid = allPaidInvoices.reduce((sum: number, inv: InvoiceWithSelected) => sum + Number(inv.paid || inv.totalAmount), 0)
+    const totalExpensesAll = allExpenses.reduce((sum: number, exp: CostActualWithSelected) => sum + Number(exp.amount), 0)
     const cashOnHand = totalPaid - totalExpensesAll
 
     // Get outstanding receivables (invoices not fully paid)
-    const outstandingInvoices = await prisma.invoice.findMany({
+    type InvoiceWithPayments = Prisma.InvoiceGetPayload<{
+      include: {
+        payments: true
+      }
+    }>
+
+    type Payment = InvoiceWithPayments['payments'][0]
+
+    const outstandingInvoices: InvoiceWithPayments[] = await prisma.invoice.findMany({
       where: {
         tenantId,
         status: { notIn: ['PAID', 'CANCELLED'] },
@@ -102,14 +128,26 @@ export async function GET(request: NextRequest) {
         payments: true,
       },
     })
-    const outstandingReceivables = outstandingInvoices.reduce((sum, inv) => {
-      const paid = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0)
+    const outstandingReceivables = outstandingInvoices.reduce((sum: number, inv: InvoiceWithPayments) => {
+      const paid = inv.payments.reduce((pSum: number, p: Payment) => pSum + Number(p.amount), 0)
       const balance = Number(inv.totalAmount) - paid
       return sum + (balance > 0 ? balance : 0)
     }, 0)
 
     // Get recent invoices for dashboard
-    const recentInvoices = await prisma.invoice.findMany({
+    type InvoiceWithProjectAndPayments = Prisma.InvoiceGetPayload<{
+      include: {
+        project: {
+          select: {
+            id: true
+            name: true
+          }
+        }
+        payments: true
+      }
+    }>
+
+    const recentInvoices: InvoiceWithProjectAndPayments[] = await prisma.invoice.findMany({
       where: {
         tenantId,
       },
@@ -125,8 +163,8 @@ export async function GET(request: NextRequest) {
       take: 5,
     })
 
-    const invoicesForDashboard = recentInvoices.map((inv) => {
-      const paid = inv.payments.reduce((sum, p) => sum + Number(p.amount), 0)
+    const invoicesForDashboard = recentInvoices.map((inv: InvoiceWithProjectAndPayments) => {
+      const paid = inv.payments.reduce((sum: number, p: Payment) => sum + Number(p.amount), 0)
       const balance = Number(inv.totalAmount) - paid
       const isOverdue = new Date(inv.dueDate) < new Date() && balance > 0 && inv.status !== 'PAID'
       
@@ -146,7 +184,9 @@ export async function GET(request: NextRequest) {
     const expenseCategories = await prisma.costActual.groupBy({
       by: ['costType'],
       where: {
-        tenantId,
+        project: {
+          tenantId,
+        },
         approvedAt: { not: null },
         date: {
           gte: startDate,
@@ -158,7 +198,14 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const expensesBreakdown = expenseCategories.map((cat) => {
+    type ExpenseCategoryGroupBy = {
+      costType: string | null
+      _sum: {
+        amount: number | null
+      }
+    }
+
+    const expensesBreakdown = expenseCategories.map((cat: ExpenseCategoryGroupBy) => {
       const amount = Number(cat._sum.amount || 0)
       const trend = 'Stable' // Could be calculated by comparing with previous period
       
@@ -170,7 +217,16 @@ export async function GET(request: NextRequest) {
     })
 
     // Get forecast data (from Forecast model)
-    const forecasts = await prisma.forecast.findMany({
+    type ForecastWithSelected = Prisma.ForecastGetPayload<{
+      select: {
+        forecastedAmount: true
+        confidence: true
+        validUntil: true
+        name: true
+      }
+    }>
+
+    const forecasts: ForecastWithSelected[] = await prisma.forecast.findMany({
       where: {
         budget: {
           tenantId,
@@ -191,7 +247,7 @@ export async function GET(request: NextRequest) {
       take: 3,
     })
 
-    const forecastData = forecasts.map((f) => {
+    const forecastData = forecasts.map((f: ForecastWithSelected) => {
       const amount = Number(f.forecastedAmount)
       const daysUntil = f.validUntil ? Math.ceil((new Date(f.validUntil).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 30
       

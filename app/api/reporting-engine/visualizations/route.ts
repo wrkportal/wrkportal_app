@@ -15,14 +15,20 @@ export async function GET(request: NextRequest) {
     const tenantId = session.user.tenantId
 
     const where: any = {
-      OR: [
-        { tenantId: tenantId },
-        { tenantId: null }, // Global visualizations
-        { isPublic: true }, // Public visualizations
-      ],
-      OR: [
-        { createdById: session.user.id },
-        { isPublic: true },
+      AND: [
+        {
+          OR: [
+            { tenantId: tenantId },
+            { tenantId: null }, // Global visualizations
+            { isPublic: true }, // Public visualizations
+          ],
+        },
+        {
+          OR: [
+            { createdById: session.user.id },
+            { isPublic: true },
+          ],
+        },
       ],
     }
 

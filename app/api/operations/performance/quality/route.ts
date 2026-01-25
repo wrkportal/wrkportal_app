@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsQualityCheck model
+function getOperationsQualityCheck() {
+  return (prisma as any).operationsQualityCheck as any
+}
+
 const createQualityCheckSchema = z.object({
   checkType: z.string().min(1),
   passed: z.number().int().min(0),
@@ -47,8 +52,16 @@ export async function GET(req: NextRequest) {
           }
         }
 
+        const operationsQualityCheck = getOperationsQualityCheck()
+        if (!operationsQualityCheck) {
+          return NextResponse.json(
+            { error: 'Operations quality check model not available' },
+            { status: 503 }
+          )
+        }
+
         const [qualityChecks, total] = await Promise.all([
-          prisma.operationsQualityCheck.findMany({
+          operationsQualityCheck.findMany({
             where,
             orderBy: {
               date: 'desc',
@@ -56,20 +69,20 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsQualityCheck.count({ where }),
+          operationsQualityCheck.count({ where }),
         ])
 
         // Calculate overall stats
         const overallQuality = qualityChecks.length > 0
-          ? Number((qualityChecks.reduce((sum, q) => sum + Number(q.passRate), 0) / qualityChecks.length).toFixed(1))
+          ? Number((qualityChecks.reduce((sum: number, q: any) => sum + Number(q.passRate), 0) / qualityChecks.length).toFixed(1))
           : 0
 
         const stats = {
-          total: await prisma.operationsQualityCheck.count({
+          total: await operationsQualityCheck.count({
             where: { tenantId: userInfo.tenantId },
           }),
-          passed: qualityChecks.reduce((sum, q) => sum + q.passed, 0),
-          failed: qualityChecks.reduce((sum, q) => sum + q.failed, 0),
+          passed: qualityChecks.reduce((sum: number, q: any) => sum + q.passed, 0),
+          failed: qualityChecks.reduce((sum: number, q: any) => sum + q.failed, 0),
           overallQuality,
         }
 
@@ -116,7 +129,15 @@ export async function POST(req: NextRequest) {
           status = 'WARNING'
         }
 
-        const qualityCheck = await prisma.operationsQualityCheck.create({
+        const operationsQualityCheck = getOperationsQualityCheck()
+        if (!operationsQualityCheck) {
+          return NextResponse.json(
+            { error: 'Operations quality check model not available' },
+            { status: 503 }
+          )
+        }
+
+        const qualityCheck = await operationsQualityCheck.create({
           data: {
             checkType: validatedData.checkType,
             passed: validatedData.passed,

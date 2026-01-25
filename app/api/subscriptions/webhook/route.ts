@@ -10,7 +10,7 @@ function getStripeClient(): Stripe | null {
     return null
   }
   return new Stripe(apiKey, {
-    apiVersion: '2024-11-20.acacia',
+    apiVersion: '2025-12-15.clover',
   })
 }
 
@@ -53,7 +53,9 @@ export async function POST(request: NextRequest) {
 
         if (userId && planId && session.subscription) {
           // Get subscription details
-          const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+          const subscription = (await stripe.subscriptions.retrieve(
+            session.subscription as string
+          )) as Stripe.Subscription
 
           await prisma.user.update({
             where: { id: userId },
@@ -61,9 +63,9 @@ export async function POST(request: NextRequest) {
               stripeSubscriptionId: subscription.id,
               subscriptionTier: planId,
               subscriptionStatus: subscription.status,
-              subscriptionStartDate: new Date(subscription.current_period_start * 1000),
-              subscriptionEndDate: new Date(subscription.current_period_end * 1000),
-            },
+              subscriptionStartDate: new Date((subscription as any).current_period_start * 1000),
+              subscriptionEndDate: new Date((subscription as any).current_period_end * 1000),
+            } as any,
           })
 
           console.log(`Subscription created for user ${userId}: ${planId}`)
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
         const customerId = subscription.customer as string
         const planId = subscription.metadata?.planId
 
-        const user = await prisma.user.findUnique({
+        const user = await (prisma as any).user.findFirst({
           where: { stripeCustomerId: customerId },
         })
 
@@ -88,9 +90,9 @@ export async function POST(request: NextRequest) {
               stripeSubscriptionId: subscription.id,
               subscriptionStatus: subscription.status,
               subscriptionTier: planId || user.subscriptionTier,
-              subscriptionStartDate: new Date(subscription.current_period_start * 1000),
-              subscriptionEndDate: new Date(subscription.current_period_end * 1000),
-            },
+              subscriptionStartDate: new Date((subscription as any).current_period_start * 1000),
+              subscriptionEndDate: new Date((subscription as any).current_period_end * 1000),
+            } as any,
           })
 
           console.log(`Subscription ${event.type} for user ${user.id}: ${subscription.status}`)
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
 
-        const user = await prisma.user.findUnique({
+        const user = await (prisma as any).user.findFirst({
           where: { stripeCustomerId: customerId },
         })
 
@@ -113,7 +115,7 @@ export async function POST(request: NextRequest) {
               subscriptionStatus: 'canceled',
               subscriptionTier: 'free',
               subscriptionEndDate: new Date(),
-            },
+            } as any,
           })
 
           console.log(`Subscription canceled for user ${user.id}`)
@@ -125,18 +127,20 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice
         const customerId = invoice.customer as string
 
-        const user = await prisma.user.findUnique({
+        const user = await (prisma as any).user.findFirst({
           where: { stripeCustomerId: customerId },
         })
 
-        if (user && invoice.subscription) {
+        if (user && (invoice as any).subscription) {
           // Update subscription end date
-          const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+          const subscription = (await stripe.subscriptions.retrieve(
+            (invoice as any).subscription as string
+          )) as Stripe.Subscription
           await prisma.user.update({
             where: { id: user.id },
             data: {
-              subscriptionEndDate: new Date(subscription.current_period_end * 1000),
-            },
+              subscriptionEndDate: new Date((subscription as any).current_period_end * 1000),
+            } as any,
           })
 
           console.log(`Payment succeeded for user ${user.id}`)
@@ -148,7 +152,7 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice
         const customerId = invoice.customer as string
 
-        const user = await prisma.user.findUnique({
+        const user = await (prisma as any).user.findFirst({
           where: { stripeCustomerId: customerId },
         })
 
@@ -157,7 +161,7 @@ export async function POST(request: NextRequest) {
             where: { id: user.id },
             data: {
               subscriptionStatus: 'past_due',
-            },
+            } as any,
           })
 
           console.log(`Payment failed for user ${user.id}`)

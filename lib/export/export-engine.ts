@@ -4,7 +4,15 @@
  * Handles export of reports, dashboards to various formats
  */
 
-import { ExportFormat } from '@prisma/client'
+// Define enum locally since it may not be exported if no model uses it
+export enum ExportFormat {
+  PDF = 'PDF',
+  EXCEL = 'EXCEL',
+  CSV = 'CSV',
+  JSON = 'JSON',
+  PNG = 'PNG',
+  HTML = 'HTML',
+}
 
 export interface ExportOptions {
   format: ExportFormat
@@ -54,17 +62,17 @@ export async function generateExport(
 
 function getFileExtension(format: ExportFormat): string {
   switch (format) {
-    case 'PDF':
+    case ExportFormat.PDF:
       return 'pdf'
-    case 'EXCEL':
+    case ExportFormat.EXCEL:
       return 'xlsx'
-    case 'CSV':
+    case ExportFormat.CSV:
       return 'csv'
-    case 'JSON':
+    case ExportFormat.JSON:
       return 'json'
-    case 'PNG':
+    case ExportFormat.PNG:
       return 'png'
-    case 'HTML':
+    case ExportFormat.HTML:
       return 'html'
     default:
       return 'pdf'
@@ -73,17 +81,17 @@ function getFileExtension(format: ExportFormat): string {
 
 function getMimeType(format: ExportFormat): string {
   switch (format) {
-    case 'PDF':
+    case ExportFormat.PDF:
       return 'application/pdf'
-    case 'EXCEL':
+    case ExportFormat.EXCEL:
       return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    case 'CSV':
+    case ExportFormat.CSV:
       return 'text/csv'
-    case 'JSON':
+    case ExportFormat.JSON:
       return 'application/json'
-    case 'PNG':
+    case ExportFormat.PNG:
       return 'image/png'
-    case 'HTML':
+    case ExportFormat.HTML:
       return 'text/html'
     default:
       return 'application/pdf'

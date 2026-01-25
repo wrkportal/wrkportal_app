@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsOnboarding model
+function getOperationsOnboarding() {
+  return (prisma as any).operationsOnboarding as any
+}
+
 const updateProgressSchema = z.object({
   progress: z.number().int().min(0).max(100),
   status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'ON_HOLD']).optional(),
@@ -22,7 +27,15 @@ export async function PATCH(
         const body = await request.json()
         const validatedData = updateProgressSchema.parse(body)
 
-        const onboarding = await prisma.operationsOnboarding.findFirst({
+        const operationsOnboarding = getOperationsOnboarding()
+        if (!operationsOnboarding) {
+          return NextResponse.json(
+            { error: 'Operations onboarding model not available' },
+            { status: 503 }
+          )
+        }
+
+        const onboarding = await operationsOnboarding.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -53,7 +66,7 @@ export async function PATCH(
           }
         }
 
-        const updated = await prisma.operationsOnboarding.update({
+        const updated = await operationsOnboarding.update({
           where: { id: params.id },
           data: updateData,
           include: {

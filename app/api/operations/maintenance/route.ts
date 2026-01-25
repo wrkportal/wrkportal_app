@@ -69,13 +69,6 @@ export async function GET(req: NextRequest) {
           prisma.operationsMaintenance.findMany({
             where,
             include: {
-              asset: {
-                select: {
-                  id: true,
-                  name: true,
-                  serialNumber: true,
-                },
-              },
               vendor: {
                 select: {
                   id: true,
@@ -156,13 +149,6 @@ export async function POST(req: NextRequest) {
             cost: validatedData.cost ? validatedData.cost : undefined,
           },
           include: {
-            asset: {
-              select: {
-                id: true,
-                name: true,
-                serialNumber: true,
-              },
-            },
             vendor: {
               select: {
                 id: true,

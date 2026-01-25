@@ -13,7 +13,7 @@
 import { PrismaClient } from '@prisma/client'
 import { 
   getUserTier, 
-  getUserTierLimits, 
+  getUserInfrastructure,
   canUseAI, 
   canExecuteAIQuery,
   canCreateAutomation,
@@ -25,7 +25,6 @@ import {
   getAIConfigForUser,
   hasPremiumAIModel,
 } from '../lib/utils/ai-model-selection'
-import { getUserInfrastructure } from '../lib/infrastructure/routing'
 
 const prisma = new PrismaClient()
 

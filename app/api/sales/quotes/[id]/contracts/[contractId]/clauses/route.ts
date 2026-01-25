@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
+const getContractClause = () => (prisma as any).contractClause
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string; contractId: string } }
@@ -12,7 +14,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const clauses = await prisma.contractClause.findMany({
+    const contractClause = getContractClause()
+    if (!contractClause) {
+      return NextResponse.json({ error: 'Contract clauses are unavailable' }, { status: 503 })
+    }
+
+    const clauses = await (contractClause as any).findMany({
       where: {
         contractId: params.contractId,
         contract: {
@@ -52,7 +59,12 @@ export async function POST(
     // Get clause suggestion based on industry and type
     const suggestedClause = getClauseSuggestion(clauseType, industry)
 
-    const clause = await prisma.contractClause.create({
+    const contractClause = getContractClause()
+    if (!contractClause) {
+      return NextResponse.json({ error: 'Contract clauses are unavailable' }, { status: 503 })
+    }
+
+    const clause = await (contractClause as any).create({
       data: {
         contractId: params.contractId,
         clauseType,

@@ -88,8 +88,8 @@ export async function analyzeWinRates(
     }
   })
 
-  const closedWon = opportunities.filter(opp => opp.stage === 'CLOSED_WON')
-  const closedLost = opportunities.filter(opp => opp.stage === 'CLOSED_LOST')
+  const closedWon = opportunities.filter((opp: any) => opp.stage === 'CLOSED_WON')
+  const closedLost = opportunities.filter((opp: any) => opp.stage === 'CLOSED_LOST')
   const totalClosed = closedWon.length + closedLost.length
 
   const overall = {
@@ -105,7 +105,7 @@ export async function analyzeWinRates(
   const stageMap = new Map<OpportunityStage, { won: number, lost: number }>()
   
   // Get all opportunities that reached each stage (simplified - assumes current stage is the last reached)
-  opportunities.forEach(opp => {
+  opportunities.forEach((opp: any) => {
     // For closed opportunities, track by the stage they were in before closing
     // This is simplified - in production, track stage history
     const stage = opp.stage
@@ -137,7 +137,7 @@ export async function analyzeWinRates(
 
   // By rep
   const repMap = new Map<string, { won: number, lost: number, name: string }>()
-  opportunities.forEach(opp => {
+  opportunities.forEach((opp: any) => {
     const repId = opp.ownerId
     if (!repMap.has(repId)) {
       repMap.set(repId, {
@@ -172,7 +172,7 @@ export async function analyzeWinRates(
 
   // By source
   const sourceMap = new Map<string, { won: number, lost: number }>()
-  opportunities.forEach(opp => {
+  opportunities.forEach((opp: any) => {
     const source = opp.leadSource || 'UNKNOWN'
     if (!sourceMap.has(source)) {
       sourceMap.set(source, { won: 0, lost: 0 })
@@ -202,7 +202,7 @@ export async function analyzeWinRates(
 
   // By industry
   const industryMap = new Map<string, { won: number, lost: number }>()
-  opportunities.forEach(opp => {
+  opportunities.forEach((opp: any) => {
     const industry = opp.account?.industry || 'Unknown'
     if (!industryMap.has(industry)) {
       industryMap.set(industry, { won: 0, lost: 0 })

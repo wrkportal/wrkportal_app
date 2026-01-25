@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 // Cost creation schema
 const createCostSchema = z.object({
@@ -59,7 +60,52 @@ export async function GET(request: NextRequest) {
       where.approvedAt = null
     }
 
-    const costs = await prisma.costActual.findMany({
+    type CostActualWithIncludes = Prisma.CostActualGetPayload<{
+      include: {
+        budget: {
+          select: {
+            id: true
+            name: true
+            totalAmount: true
+          }
+        }
+        category: {
+          select: {
+            id: true
+            name: true
+          }
+        }
+        project: {
+          select: {
+            id: true
+            name: true
+            code: true
+          }
+        }
+        task: {
+          select: {
+            id: true
+            title: true
+          }
+        }
+        createdBy: {
+          select: {
+            id: true
+            name: true
+            email: true
+          }
+        }
+        approvedByUser: {
+          select: {
+            id: true
+            name: true
+            email: true
+          }
+        }
+      }
+    }>
+
+    const costs: CostActualWithIncludes[] = await prisma.costActual.findMany({
       where,
       include: {
         budget: {
@@ -88,13 +134,13 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate totals
-    const totalAmount = costs.reduce((sum, cost) => sum + Number(cost.amount), 0)
+    const totalAmount = costs.reduce((sum: number, cost: CostActualWithIncludes) => sum + Number(cost.amount), 0)
     const approvedAmount = costs
-      .filter((c) => c.approvedAt)
-      .reduce((sum, cost) => sum + Number(cost.amount), 0)
+      .filter((c: CostActualWithIncludes) => c.approvedAt)
+      .reduce((sum: number, cost: CostActualWithIncludes) => sum + Number(cost.amount), 0)
     const pendingAmount = costs
-      .filter((c) => !c.approvedAt)
-      .reduce((sum, cost) => sum + Number(cost.amount), 0)
+      .filter((c: CostActualWithIncludes) => !c.approvedAt)
+      .reduce((sum: number, cost: CostActualWithIncludes) => sum + Number(cost.amount), 0)
 
     return NextResponse.json({
       costs,
@@ -156,7 +202,7 @@ export async function POST(request: NextRequest) {
     const existingCosts = await prisma.costActual.findMany({
       where: { budgetId: data.budgetId },
     })
-    const totalSpent = existingCosts.reduce((sum, c) => sum + Number(c.amount), 0)
+    const totalSpent = existingCosts.reduce((sum: number, c: Prisma.CostActualGetPayload<{}>) => sum + Number(c.amount), 0)
     const budgetTotal = Number(budget.totalAmount)
 
     // Auto-approve if amount is below threshold (e.g., $1000)

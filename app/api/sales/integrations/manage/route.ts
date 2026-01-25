@@ -51,7 +51,11 @@ export async function POST(request: NextRequest) {
     // Update sync settings if provided
     if (syncDirection || syncFrequency) {
       const { prisma } = await import('@/lib/prisma')
-      await prisma.salesIntegration.update({
+      const salesIntegration = (prisma as any).salesIntegration
+      if (!salesIntegration) {
+        return NextResponse.json({ error: 'Integrations are unavailable' }, { status: 503 })
+      }
+      await salesIntegration.update({
         where: { id: integrationId },
         data: {
           syncDirection: syncDirection ? (syncDirection as any) : undefined,

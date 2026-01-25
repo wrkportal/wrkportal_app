@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Transform users to candidate format
-    const candidates = users.map((u) => ({
+    const candidates = users.map((u: any) => ({
       id: u.id,
       firstName: u.firstName || '',
       lastName: u.lastName || '',

@@ -4,6 +4,15 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsOnboarding model
+function getOperationsOnboarding() {
+  return (prisma as any).operationsOnboarding as any
+}
+
+type OnboardingRecord = {
+  progress: number
+}
+
 const createOnboardingSchema = z.object({
   newHireId: z.string().optional(),
   employeeId: z.string().optional(),
@@ -36,8 +45,16 @@ export async function GET(req: NextRequest) {
           where.status = status
         }
 
+        const operationsOnboarding = getOperationsOnboarding()
+        if (!operationsOnboarding) {
+          return NextResponse.json(
+            { error: 'Operations onboarding model not available' },
+            { status: 503 }
+          )
+        }
+
         const [onboarding, total] = await Promise.all([
-          prisma.operationsOnboarding.findMany({
+          (operationsOnboarding as any).findMany({
             where,
             include: {
               newHire: {
@@ -56,28 +73,28 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsOnboarding.count({ where }),
+          (operationsOnboarding as any).count({ where }),
         ])
 
         // Calculate stats
         const stats = {
-          total: await prisma.operationsOnboarding.count({
+          total: await (operationsOnboarding as any).count({
             where: { tenantId: userInfo.tenantId },
           }),
-          inProgress: await prisma.operationsOnboarding.count({
+          inProgress: await (operationsOnboarding as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'IN_PROGRESS',
             },
           }),
-          completed: await prisma.operationsOnboarding.count({
+          completed: await (operationsOnboarding as any).count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'COMPLETED',
             },
           }),
           avgProgress: onboarding.length > 0
-            ? Number((onboarding.reduce((sum, o) => sum + o.progress, 0) / onboarding.length).toFixed(1))
+            ? Number(((onboarding as OnboardingRecord[]).reduce((sum: number, o: OnboardingRecord) => sum + o.progress, 0) / onboarding.length).toFixed(1))
             : 0,
         }
 
@@ -121,7 +138,15 @@ export async function POST(req: NextRequest) {
 
         // Verify new hire exists if provided
         if (validatedData.newHireId) {
-          const newHire = await prisma.operationsNewHire.findFirst({
+          const operationsNewHire = (prisma as any).operationsNewHire
+          if (!operationsNewHire) {
+            return NextResponse.json(
+              { error: 'Operations new hire model not available' },
+              { status: 503 }
+            )
+          }
+
+          const newHire = await operationsNewHire.findFirst({
             where: {
               id: validatedData.newHireId,
               tenantId: userInfo.tenantId,
@@ -153,7 +178,15 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        const onboarding = await prisma.operationsOnboarding.create({
+        const operationsOnboarding = getOperationsOnboarding()
+        if (!operationsOnboarding) {
+          return NextResponse.json(
+            { error: 'Operations onboarding model not available' },
+            { status: 503 }
+          )
+        }
+
+        const onboarding = await (operationsOnboarding as any).create({
           data: {
             newHireId: validatedData.newHireId,
             employeeId: validatedData.employeeId,

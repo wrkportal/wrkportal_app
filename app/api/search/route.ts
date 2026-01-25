@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
     // Transform results into a unified format
     const results = [
       // Projects
-      ...projects.map((p) => ({
+      ...projects.map((p: any) => ({
         id: p.id,
         type: 'project',
         title: p.name,
@@ -151,7 +151,7 @@ export async function GET(req: NextRequest) {
       })),
 
       // Tasks
-      ...tasks.map((t) => ({
+      ...tasks.map((t: any) => ({
         id: t.id,
         type: 'task',
         title: t.title,
@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
       })),
 
       // Users
-      ...users.map((u) => ({
+      ...users.map((u: any) => ({
         id: u.id,
         type: 'user',
         title: `${u.firstName} ${u.lastName}`,
@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
       })),
 
       // Programs
-      ...programs.map((p) => ({
+      ...programs.map((p: any) => ({
         id: p.id,
         type: 'program',
         title: p.name,

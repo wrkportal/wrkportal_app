@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsWorkOrder model
+function getOperationsWorkOrder() {
+  return (prisma as any).operationsWorkOrder as any
+}
+
 const createWorkOrderSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
@@ -58,8 +63,16 @@ export async function GET(req: NextRequest) {
           ]
         }
 
+        const operationsWorkOrder = getOperationsWorkOrder()
+        if (!operationsWorkOrder) {
+          return NextResponse.json(
+            { error: 'Operations work order model not available' },
+            { status: 503 }
+          )
+        }
+
         const [workOrders, total] = await Promise.all([
-          prisma.operationsWorkOrder.findMany({
+          (operationsWorkOrder as any).findMany({
             where,
             include: {
               assignedTo: {
@@ -96,7 +109,7 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsWorkOrder.count({ where }),
+          (operationsWorkOrder as any).count({ where }),
         ])
 
         return NextResponse.json({
@@ -130,12 +143,20 @@ export async function POST(req: NextRequest) {
         const validatedData = createWorkOrderSchema.parse(body)
 
         // Generate work order number
-        const count = await prisma.operationsWorkOrder.count({
+        const operationsWorkOrder = getOperationsWorkOrder()
+        if (!operationsWorkOrder) {
+          return NextResponse.json(
+            { error: 'Operations work order model not available' },
+            { status: 503 }
+          )
+        }
+
+        const count = await (operationsWorkOrder as any).count({
           where: { tenantId: userInfo.tenantId },
         })
         const workOrderNumber = `WO-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`
 
-        const workOrder = await prisma.operationsWorkOrder.create({
+        const workOrder = await (operationsWorkOrder as any).create({
           data: {
             workOrderNumber,
             title: validatedData.title,

@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsIncident model
+function getOperationsIncident() {
+  return (prisma as any).operationsIncident as any
+}
+
 const updateIncidentSchema = z.object({
   status: z.enum(['OPEN', 'INVESTIGATING', 'RESOLVED', 'CLOSED']).optional(),
   severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
@@ -20,7 +25,15 @@ export async function GET(
     { resource: 'operations', action: 'READ' },
     async (request, userInfo) => {
       try {
-        const incident = await prisma.operationsIncident.findFirst({
+        const operationsIncident = getOperationsIncident()
+        if (!operationsIncident) {
+          return NextResponse.json(
+            { error: 'Operations incident model not available' },
+            { status: 503 }
+          )
+        }
+
+        const incident = await (operationsIncident as any).findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -69,7 +82,15 @@ export async function PATCH(
         const body = await request.json()
         const validatedData = updateIncidentSchema.parse(body)
 
-        const incident = await prisma.operationsIncident.findFirst({
+        const operationsIncident = getOperationsIncident()
+        if (!operationsIncident) {
+          return NextResponse.json(
+            { error: 'Operations incident model not available' },
+            { status: 503 }
+          )
+        }
+
+        const incident = await (operationsIncident as any).findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -97,7 +118,7 @@ export async function PATCH(
           updateData.resolution = validatedData.resolution
         }
 
-        const updated = await prisma.operationsIncident.update({
+        const updated = await (operationsIncident as any).update({
           where: { id: params.id },
           data: updateData,
           include: {

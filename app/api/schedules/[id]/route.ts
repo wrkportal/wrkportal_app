@@ -8,6 +8,8 @@ import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 import { calculateNextRun } from '@/lib/scheduling/scheduler'
 import { z } from 'zod'
 
+const getReportSchedule = () => (prisma as any).reportSchedule
+
 const updateScheduleSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().optional(),
@@ -41,14 +43,15 @@ export async function GET(
       try {
         const resolvedParams = 'then' in params ? await params : params
         
-        if (!prisma.reportSchedule) {
+        const reportSchedule = getReportSchedule()
+        if (!reportSchedule) {
           return NextResponse.json(
             { error: 'Schedule model not available' },
             { status: 500 }
           )
         }
 
-        const schedule = await prisma.reportSchedule.findUnique({
+        const schedule = await reportSchedule.findUnique({
           where: { id: resolvedParams.id },
           include: {
             createdBy: {
@@ -104,14 +107,15 @@ export async function PATCH(
       try {
         const resolvedParams = 'then' in params ? await params : params
         
-        if (!prisma.reportSchedule) {
+        const reportSchedule = getReportSchedule()
+        if (!reportSchedule) {
           return NextResponse.json(
             { error: 'Schedule model not available' },
             { status: 500 }
           )
         }
 
-        const schedule = await prisma.reportSchedule.findUnique({
+        const schedule = await reportSchedule.findUnique({
           where: { id: resolvedParams.id },
         })
 
@@ -151,7 +155,7 @@ export async function PATCH(
           updateData.endDate = data.endDate ? new Date(data.endDate) : null
         }
 
-        const updated = await prisma.reportSchedule.update({
+        const updated = await reportSchedule.update({
           where: { id: resolvedParams.id },
           data: updateData,
           include: {
@@ -196,14 +200,15 @@ export async function DELETE(
       try {
         const resolvedParams = 'then' in params ? await params : params
         
-        if (!prisma.reportSchedule) {
+        const reportSchedule = getReportSchedule()
+        if (!reportSchedule) {
           return NextResponse.json(
             { error: 'Schedule model not available' },
             { status: 500 }
           )
         }
 
-        const schedule = await prisma.reportSchedule.findUnique({
+        const schedule = await reportSchedule.findUnique({
           where: { id: resolvedParams.id },
         })
 
@@ -214,7 +219,7 @@ export async function DELETE(
           )
         }
 
-        await prisma.reportSchedule.delete({
+        await reportSchedule.delete({
           where: { id: resolvedParams.id },
         })
 

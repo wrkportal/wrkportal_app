@@ -32,7 +32,7 @@ export async function POST(
         }
 
         // Get transformation with steps
-        const transformation = await prisma.reportingTransformation.findUnique({
+        const transformation = await (prisma as any).reportingTransformation.findUnique({
           where: { id: resolvedParams.id },
           include: {
             inputDataset: true,
@@ -41,7 +41,7 @@ export async function POST(
               where: stepId ? { id: stepId } : {},
             },
           },
-        })
+        }) as any
 
         if (!transformation || transformation.tenantId !== userInfo.tenantId) {
           return NextResponse.json(

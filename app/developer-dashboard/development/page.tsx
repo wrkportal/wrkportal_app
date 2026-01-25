@@ -40,13 +40,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { 
-  Plus, 
-  Search, 
-  FolderKanban, 
-  Server, 
-  Users, 
-  Settings, 
+import {
+  Plus,
+  Search,
+  FolderKanban,
+  Server,
+  Users,
+  Settings,
   GitBranch,
   Activity,
   AlertCircle,
@@ -131,7 +131,7 @@ export default function DevelopmentPage() {
       // Example: const response = await fetch('/api/teams')
       // const data = await response.json()
       // setTeams(data.teams || [])
-      
+
       // For now, using empty array - teams will be fetched from API
       setTeams([])
     } catch (error) {
@@ -147,7 +147,7 @@ export default function DevelopmentPage() {
       // Example: const response = await fetch('/api/developer/workspaces')
       // const data = await response.json()
       // setWorkspaces(data.workspaces || [])
-      
+
       setWorkspaces([])
       setProjects([])
       setEnvironments([])
@@ -218,14 +218,14 @@ export default function DevelopmentPage() {
     //   body: JSON.stringify({ team: configData.team, environments: configData.environments })
     // })
 
-    setWorkspaces(workspaces.map(w => 
-      w.id === selectedWorkspace.id 
-        ? { 
-            ...w, 
-            team: teams.find(t => t.id === configData.team)?.name || configData.team || w.team,
-            environments: configData.environments.length > 0 ? configData.environments : w.environments,
-            updatedAt: new Date().toISOString() 
-          }
+    setWorkspaces(workspaces.map(w =>
+      w.id === selectedWorkspace.id
+        ? {
+          ...w,
+          team: teams.find(t => t.id === configData.team)?.name || configData.team || w.team,
+          environments: configData.environments.length > 0 ? configData.environments : w.environments,
+          updatedAt: new Date().toISOString()
+        }
         : w
     ))
 
@@ -249,14 +249,14 @@ export default function DevelopmentPage() {
     // TODO: Replace with actual API call
     // Example: await fetch(`/api/developer/workspaces/${selectedWorkspace.id}`, { method: 'PUT', body: JSON.stringify(formData) })
 
-    setWorkspaces(workspaces.map(w => 
-      w.id === selectedWorkspace.id 
+    setWorkspaces(workspaces.map(w =>
+      w.id === selectedWorkspace.id
         ? { ...w, name: formData.name, description: formData.description, updatedAt: new Date().toISOString() }
         : w
     ))
 
     // Reset form and close dialog
-    setFormData({ name: '', description: '', type: 'dev' })
+    setFormData({ name: '', description: '', type: 'dev', team: '', environments: ['dev', 'staging', 'prod'] })
     setSelectedWorkspace(null)
     setEditDialogOpen(false)
   }
@@ -265,8 +265,8 @@ export default function DevelopmentPage() {
     // TODO: Replace with actual API call
     // Example: await fetch(`/api/developer/workspaces/${workspaceId}/archive`, { method: 'POST' })
 
-    setWorkspaces(workspaces.map(w => 
-      w.id === workspaceId 
+    setWorkspaces(workspaces.map(w =>
+      w.id === workspaceId
         ? { ...w, status: 'archived' as const, updatedAt: new Date().toISOString() }
         : w
     ))
@@ -280,8 +280,8 @@ export default function DevelopmentPage() {
   }
 
   return (
-    <DeveloperPageLayout 
-      title="Development" 
+    <DeveloperPageLayout
+      title="Development"
       description="Manage workspaces, projects, services, and environments"
     >
       <div className="space-y-6">
@@ -360,11 +360,11 @@ export default function DevelopmentPage() {
                       {activeTab === 'workspaces' ? 'Create Workspace' : activeTab === 'projects' ? 'Create Project' : 'Create Environment'}
                     </DialogTitle>
                     <DialogDescription>
-                      {activeTab === 'workspaces' 
+                      {activeTab === 'workspaces'
                         ? 'Create a new workspace for your team'
                         : activeTab === 'projects'
-                        ? 'Add a new project or service'
-                        : 'Configure a new environment'}
+                          ? 'Add a new project or service'
+                          : 'Configure a new environment'}
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={(e) => {
@@ -373,8 +373,8 @@ export default function DevelopmentPage() {
                   }} className="space-y-4 py-4">
                     <div className="space-y-2">
                       <Label>Name</Label>
-                      <Input 
-                        placeholder="Enter name" 
+                      <Input
+                        placeholder="Enter name"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         required
@@ -382,8 +382,8 @@ export default function DevelopmentPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Description</Label>
-                      <Textarea 
-                        placeholder="Enter description" 
+                      <Textarea
+                        placeholder="Enter description"
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       />
@@ -392,8 +392,8 @@ export default function DevelopmentPage() {
                       <>
                         <div className="space-y-2">
                           <Label>Team</Label>
-                          <Select 
-                            value={formData.team} 
+                          <Select
+                            value={formData.team}
                             onValueChange={(value) => setFormData({ ...formData, team: value })}
                           >
                             <SelectTrigger>
@@ -539,8 +539,8 @@ export default function DevelopmentPage() {
               }} className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Name</Label>
-                  <Input 
-                    placeholder="Enter name" 
+                  <Input
+                    placeholder="Enter name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
@@ -548,8 +548,8 @@ export default function DevelopmentPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Description</Label>
-                  <Textarea 
-                    placeholder="Enter description" 
+                  <Textarea
+                    placeholder="Enter description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
@@ -575,8 +575,8 @@ export default function DevelopmentPage() {
                 }} className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>Team Assignment</Label>
-                    <Select 
-                      value={configData.team} 
+                    <Select
+                      value={configData.team}
                       onValueChange={(value) => setConfigData({ ...configData, team: value })}
                     >
                       <SelectTrigger>
@@ -692,7 +692,13 @@ export default function DevelopmentPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 setSelectedWorkspace(workspace)
-                                setFormData({ name: workspace.name, description: workspace.description, type: 'dev' })
+                                setFormData({
+                                  name: workspace.name,
+                                  description: workspace.description,
+                                  type: 'dev',
+                                  team: workspace.team || '',
+                                  environments: workspace.environments ? [...workspace.environments] : [],
+                                })
                                 setEditDialogOpen(true)
                               }}>
                                 <Edit className="h-4 w-4 mr-2" />
@@ -702,9 +708,9 @@ export default function DevelopmentPage() {
                                 setSelectedWorkspace(workspace)
                                 // Find team ID if team name exists in teams list
                                 const teamId = teams.find(t => t.name === workspace.team)?.id || ''
-                                setConfigData({ 
-                                  team: teamId, 
-                                  environments: [...workspace.environments] 
+                                setConfigData({
+                                  team: teamId,
+                                  environments: [...workspace.environments]
                                 })
                                 setConfigureDialogOpen(true)
                               }}>

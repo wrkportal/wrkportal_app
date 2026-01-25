@@ -3,6 +3,63 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsInventoryDistribution model
+function getOperationsInventoryDistribution() {
+  return (prisma as any).operationsInventoryDistribution as any
+}
+
+// Helper function to safely access operationsComplianceTraining model
+function getOperationsComplianceTraining() {
+  return (prisma as any).operationsComplianceTraining as any
+}
+
+// Helper function to safely access operationsIncident model
+function getOperationsIncident() {
+  return (prisma as any).operationsIncident as any
+}
+
+// Helper function to safely access operationsWorkOrder model
+function getOperationsWorkOrder() {
+  return (prisma as any).operationsWorkOrder as any
+}
+
+// Helper function to safely access operationsInventoryItem model
+function getOperationsInventoryItem() {
+  return (prisma as any).operationsInventoryItem as any
+}
+
+type InventoryDistribution = {
+  id: string
+  item: { name: string; category: string }
+  location: string
+  distributedAt: Date
+}
+
+type ComplianceTraining = {
+  id: string
+  name: string
+  completedDate: Date
+}
+
+type OperationsIncident = {
+  id: string
+  title: string
+  reportedAt: Date
+  status: string
+}
+
+type OperationsWorkOrder = {
+  id: string
+  title: string
+  completedDate: Date
+}
+
+type OperationsInventoryItem = {
+  id: string
+  name: string
+  updatedAt: Date
+}
+
 // GET - Get recent activities for dashboard
 export async function GET(req: NextRequest) {
   return withPermissionCheck(
@@ -37,24 +94,28 @@ export async function GET(req: NextRequest) {
         }
 
         // Get recent inventory distributions
-        const distributions = await safeQuery(
-          () => prisma.operationsInventoryDistribution?.findMany({
-            where: { tenantId: userInfo.tenantId },
-            include: {
-              item: {
-                select: { name: true, category: true },
-              },
-              distributedBy: {
-                select: { name: true },
-              },
-            },
-            orderBy: { distributedAt: 'desc' },
-            take: limit,
-          }) || Promise.resolve([]),
+        const operationsInventoryDistribution = getOperationsInventoryDistribution()
+        const distributions = await safeQuery<InventoryDistribution[]>(
+          () =>
+            operationsInventoryDistribution
+              ? operationsInventoryDistribution.findMany({
+                  where: { tenantId: userInfo.tenantId },
+                  include: {
+                    item: {
+                      select: { name: true, category: true },
+                    },
+                    distributedBy: {
+                      select: { name: true },
+                    },
+                  },
+                  orderBy: { distributedAt: 'desc' },
+                  take: limit,
+                })
+              : Promise.resolve([]),
           []
         )
 
-        distributions.forEach((dist) => {
+        distributions.forEach((dist: InventoryDistribution) => {
           activities.push({
             id: `dist-${dist.id}`,
             type: 'DISTRIBUTION',
@@ -66,25 +127,29 @@ export async function GET(req: NextRequest) {
         })
 
         // Get recent training completions
-        const trainings = await safeQuery(
-          () => prisma.operationsComplianceTraining?.findMany({
-            where: {
-              tenantId: userInfo.tenantId,
-              status: 'COMPLETED',
-              completedDate: { not: null },
-            },
-            include: {
-              assignedTo: {
-                select: { name: true },
-              },
-            },
-            orderBy: { completedDate: 'desc' },
-            take: limit,
-          }) || Promise.resolve([]),
+        const operationsComplianceTraining = getOperationsComplianceTraining()
+        const trainings = await safeQuery<ComplianceTraining[]>(
+          () =>
+            operationsComplianceTraining
+              ? operationsComplianceTraining.findMany({
+                  where: {
+                    tenantId: userInfo.tenantId,
+                    status: 'COMPLETED',
+                    completedDate: { not: null },
+                  },
+                  include: {
+                    assignedTo: {
+                      select: { name: true },
+                    },
+                  },
+                  orderBy: { completedDate: 'desc' },
+                  take: limit,
+                })
+              : Promise.resolve([]),
           []
         )
 
-        trainings.forEach((training) => {
+        trainings.forEach((training: ComplianceTraining) => {
           activities.push({
             id: `training-${training.id}`,
             type: 'TRAINING',
@@ -96,16 +161,20 @@ export async function GET(req: NextRequest) {
         })
 
         // Get recent incidents
-        const incidents = await safeQuery(
-          () => prisma.operationsIncident?.findMany({
-            where: { tenantId: userInfo.tenantId },
-            orderBy: { reportedAt: 'desc' },
-            take: limit,
-          }) || Promise.resolve([]),
+        const operationsIncident = getOperationsIncident()
+        const incidents = await safeQuery<OperationsIncident[]>(
+          () =>
+            operationsIncident
+              ? operationsIncident.findMany({
+                  where: { tenantId: userInfo.tenantId },
+                  orderBy: { reportedAt: 'desc' },
+                  take: limit,
+                })
+              : Promise.resolve([]),
           []
         )
 
-        incidents.forEach((incident) => {
+        incidents.forEach((incident: OperationsIncident) => {
           activities.push({
             id: `incident-${incident.id}`,
             type: 'INCIDENT',
@@ -117,20 +186,24 @@ export async function GET(req: NextRequest) {
         })
 
         // Get recent work order completions
-        const workOrders = await safeQuery(
-          () => prisma.operationsWorkOrder?.findMany({
-            where: {
-              tenantId: userInfo.tenantId,
-              status: 'COMPLETED',
-              completedDate: { not: null },
-            },
-            orderBy: { completedDate: 'desc' },
-            take: limit,
-          }) || Promise.resolve([]),
+        const operationsWorkOrder = getOperationsWorkOrder()
+        const workOrders = await safeQuery<OperationsWorkOrder[]>(
+          () =>
+            operationsWorkOrder
+              ? operationsWorkOrder.findMany({
+                  where: {
+                    tenantId: userInfo.tenantId,
+                    status: 'COMPLETED',
+                    completedDate: { not: null },
+                  },
+                  orderBy: { completedDate: 'desc' },
+                  take: limit,
+                })
+              : Promise.resolve([]),
           []
         )
 
-        workOrders.forEach((wo) => {
+        workOrders.forEach((wo: OperationsWorkOrder) => {
           activities.push({
             id: `wo-${wo.id}`,
             type: 'PERFORMANCE',
@@ -143,22 +216,26 @@ export async function GET(req: NextRequest) {
 
         // Get low stock alerts
         // Note: Simplified query since we can't use field references in Prisma
-        const lowStockItems = await safeQuery(
-          () => prisma.operationsInventoryItem?.findMany({
-            where: {
-              tenantId: userInfo.tenantId,
-              OR: [
-                { status: 'LOW_STOCK' },
-                { status: 'OUT_OF_STOCK' },
-              ],
-            },
-            orderBy: { updatedAt: 'desc' },
-            take: limit,
-          }) || Promise.resolve([]),
+        const operationsInventoryItem = getOperationsInventoryItem()
+        const lowStockItems = await safeQuery<OperationsInventoryItem[]>(
+          () =>
+            operationsInventoryItem
+              ? operationsInventoryItem.findMany({
+                  where: {
+                    tenantId: userInfo.tenantId,
+                    OR: [
+                      { status: 'LOW_STOCK' },
+                      { status: 'OUT_OF_STOCK' },
+                    ],
+                  },
+                  orderBy: { updatedAt: 'desc' },
+                  take: limit,
+                })
+              : Promise.resolve([]),
           []
         )
 
-        lowStockItems.forEach((item) => {
+        lowStockItems.forEach((item: OperationsInventoryItem) => {
           activities.push({
             id: `stock-${item.id}`,
             type: 'INVENTORY',

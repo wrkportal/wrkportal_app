@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { WorkspaceType, UserRole, GroupRole } from '@/types'
 import { canInviteUsers } from '@/lib/permissions'
+import { AuditAction, AuditEntity } from '@prisma/client'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
@@ -135,16 +136,17 @@ export async function POST(request: NextRequest) {
       data: {
         tenantId: user.tenantId,
         userId: user.id,
-        userEmail: user.email,
-        action: 'INVITE_SENT',
-        entityType: 'INVITATION',
+        action: AuditAction.CREATE,
+        entity: AuditEntity.USER,
         entityId: invitation.id,
+        entityName: email,
         ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',
         metadata: {
           invitedEmail: email,
           role: user.tenant.type === 'GROUP' ? groupRole : role,
           workspaceType: user.tenant.type,
+          invitationId: invitation.id,
         },
       },
     })

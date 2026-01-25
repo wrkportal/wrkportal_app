@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
-import { IntegrationType, IntegrationStatus } from '@prisma/client'
+import { IntegrationType, IntegrationStatus, Prisma } from '@prisma/client'
 
 const createIntegrationSchema = z.object({
   type: z.nativeEnum(IntegrationType),
@@ -64,7 +64,31 @@ export async function GET(request: NextRequest) {
 
         console.log(`Found ${integrations.length} integration(s) for tenant ${userInfo.tenantId}`)
         if (integrations.length > 0) {
-          console.log('Integrations:', integrations.map(i => ({ id: i.id, name: i.name, type: i.type })))
+          type IntegrationWithIncludes = Prisma.IntegrationGetPayload<{
+            include: {
+              createdBy: {
+                select: {
+                  id: true
+                  email: true
+                  firstName: true
+                  lastName: true
+                }
+              }
+              oauthTokens: {
+                select: {
+                  id: true
+                  expiresAt: true
+                }
+              }
+              _count: {
+                select: {
+                  syncJobs: true
+                }
+              }
+            }
+          }>
+          const typedIntegrations: IntegrationWithIncludes[] = integrations as IntegrationWithIncludes[]
+          console.log('Integrations:', typedIntegrations.map((i: IntegrationWithIncludes) => ({ id: i.id, name: i.name, type: i.type })))
         }
 
         return NextResponse.json({ integrations })
@@ -95,12 +119,10 @@ export async function POST(request: NextRequest) {
         const data = createIntegrationSchema.parse(body)
 
         // Check if integration of this type already exists
-        const existing = await prisma.integration.findUnique({
+        const existing = await prisma.integration.findFirst({
           where: {
-            tenantId_type: {
-              tenantId: userInfo.tenantId,
-              type: data.type,
-            },
+            tenantId: userInfo.tenantId,
+            type: data.type,
           },
         })
 

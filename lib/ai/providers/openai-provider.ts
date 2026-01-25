@@ -31,12 +31,23 @@ export class OpenAIProvider implements AIProvider {
     options?: ChatCompletionOptions
   ): Promise<ChatCompletion> {
     try {
-      const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = messages.map(msg => ({
-        role: msg.role as 'system' | 'user' | 'assistant' | 'tool',
-        content: msg.content,
-        name: msg.name,
-        tool_call_id: msg.tool_call_id,
-      }))
+      const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = messages.map(
+        (msg): OpenAI.Chat.ChatCompletionMessageParam => {
+          if (msg.role === 'tool') {
+            return {
+              role: 'tool',
+              content: msg.content,
+              tool_call_id: msg.tool_call_id ?? '',
+            }
+          }
+
+          return {
+            role: msg.role,
+            content: msg.content,
+            name: msg.name,
+          }
+        }
+      )
 
       // Use model from options if provided (tier-based), otherwise use default
       const model = options?.model || this.model
@@ -60,14 +71,21 @@ export class OpenAIProvider implements AIProvider {
           message: {
             role: choice.message.role,
             content: choice.message.content,
-            tool_calls: choice.message.tool_calls?.map(tc => ({
-              id: tc.id,
-              type: tc.type,
-              function: {
-                name: tc.function.name,
-                arguments: tc.function.arguments,
-              },
-            })),
+            tool_calls: choice.message.tool_calls
+              ?.flatMap((tc) => {
+                if (tc.type !== 'function' || !('function' in tc)) {
+                  return []
+                }
+
+                return [{
+                  id: tc.id,
+                  type: 'function' as const,
+                  function: {
+                    name: String(tc.function.name),
+                    arguments: String(tc.function.arguments),
+                  },
+                }]
+              }),
           },
           finish_reason: choice.finish_reason,
         })),
@@ -85,12 +103,23 @@ export class OpenAIProvider implements AIProvider {
     options?: ChatCompletionOptions
   ): Promise<AsyncIterable<ChatCompletion>> {
     try {
-      const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = messages.map(msg => ({
-        role: msg.role as 'system' | 'user' | 'assistant' | 'tool',
-        content: msg.content,
-        name: msg.name,
-        tool_call_id: msg.tool_call_id,
-      }))
+      const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = messages.map(
+        (msg): OpenAI.Chat.ChatCompletionMessageParam => {
+          if (msg.role === 'tool') {
+            return {
+              role: 'tool',
+              content: msg.content,
+              tool_call_id: msg.tool_call_id ?? '',
+            }
+          }
+
+          return {
+            role: msg.role,
+            content: msg.content,
+            name: msg.name,
+          }
+        }
+      )
 
       const stream = await this.client.chat.completions.create({
         model: this.model,
@@ -115,22 +144,33 @@ export class OpenAIProvider implements AIProvider {
     for await (const chunk of stream) {
       yield {
         id: chunk.id,
-        choices: chunk.choices.map(choice => ({
-          index: choice.index,
-          message: {
-            role: choice.delta.role || 'assistant',
-            content: choice.delta.content || null,
-            tool_calls: choice.delta.tool_calls?.map(tc => ({
-              id: tc.id || '',
-              type: tc.type,
-              function: {
-                name: tc.function?.name || '',
-                arguments: tc.function?.arguments || '',
-              },
-            })),
-          },
-          finish_reason: choice.finish_reason,
-        })),
+        choices: chunk.choices.map(choice => {
+          const role = choice.delta.role === 'developer' ? 'system' : (choice.delta.role || 'assistant')
+
+          return ({
+            index: choice.index,
+            message: {
+              role,
+              content: choice.delta.content || null,
+              tool_calls: choice.delta.tool_calls
+                ?.flatMap((tc) => {
+                  if (tc.type !== 'function') {
+                    return []
+                  }
+
+                  return [{
+                    id: tc.id || '',
+                    type: 'function' as const,
+                    function: {
+                      name: tc.function?.name || '',
+                      arguments: tc.function?.arguments || '',
+                    },
+                  }]
+                }),
+            },
+            finish_reason: choice.finish_reason,
+          })
+        }),
         model: chunk.model,
         usage: undefined, // Streaming doesn't include usage
       }

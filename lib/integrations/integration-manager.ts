@@ -23,7 +23,7 @@ export class IntegrationManager {
    * Get integration instance
    */
   static async getIntegration(integrationId: string): Promise<BaseIntegration | null> {
-    const integration = await prisma.salesIntegration.findUnique({
+    const integration = await prisma.integration.findUnique({
       where: { id: integrationId },
     })
 
@@ -91,15 +91,18 @@ export class IntegrationManager {
     const { encryptCredentials } = require('./credential-encryption')
     const encryptedCredentials = encryptCredentials(credentials)
 
-    const integration = await prisma.salesIntegration.create({
+    const integration = await prisma.integration.create({
       data: {
         tenantId,
-        provider,
         type: type as any,
         name,
-        credentials: encryptedCredentials as any,
-        settings: settings as any,
-        status: 'PENDING',
+        description: provider ? `Integration with ${provider}` : undefined,
+        configuration: {
+          credentials: encryptedCredentials,
+          settings: settings,
+          provider: provider,
+        } as any,
+        status: 'INACTIVE',
         createdById,
       },
     })
@@ -108,10 +111,10 @@ export class IntegrationManager {
     const instance = this.createIntegrationInstance(integration as any)
     const isConnected = await instance.testConnection()
 
-    await prisma.salesIntegration.update({
+    await prisma.integration.update({
       where: { id: integration.id },
       data: {
-        status: isConnected ? 'CONNECTED' : 'ERROR',
+        status: isConnected ? 'ACTIVE' : 'ERROR',
       },
     })
 
@@ -125,7 +128,7 @@ export class IntegrationManager {
     integrationId: string,
     direction?: 'FROM_EXTERNAL' | 'TO_EXTERNAL' | 'BIDIRECTIONAL'
   ): Promise<void> {
-    const integration = await prisma.salesIntegration.findUnique({
+    const integration = await prisma.integration.findUnique({
       where: { id: integrationId },
     })
 
@@ -136,12 +139,15 @@ export class IntegrationManager {
     const instance = this.createIntegrationInstance(integration as any)
     const syncDirection = direction || (integration.syncDirection as any)
 
-    // Create sync log
-    const syncLog = await prisma.salesIntegrationSyncLog.create({
+    // Create sync job
+    const syncJob = await prisma.integrationSyncJob.create({
       data: {
         integrationId,
-        direction: syncDirection as any,
-        status: 'IN_PROGRESS',
+        tenantId: integration.tenantId,
+        syncType: syncDirection === 'BIDIRECTIONAL' ? 'FULL_SYNC' : 'INCREMENTAL',
+        status: 'RUNNING',
+        configuration: { direction: syncDirection },
+        startedAt: new Date(),
       },
     })
 
@@ -154,28 +160,30 @@ export class IntegrationManager {
         result = await instance.syncToExternal([])
       }
 
-      await prisma.salesIntegrationSyncLog.update({
-        where: { id: syncLog.id },
+      await prisma.integrationSyncJob.update({
+        where: { id: syncJob.id },
         data: {
-          status: result.success ? 'SUCCESS' : 'FAILED',
-          recordsSynced: result.recordsSynced,
-          errors: result.errors as any,
+          status: result.success ? 'COMPLETED' : 'FAILED',
+          recordsProcessed: result.recordsSynced,
+          recordsCreated: result.recordsSynced,
+          recordsFailed: result.errors.length,
+          errorMessage: result.errors.length > 0 ? result.errors.join(', ') : null,
           completedAt: new Date(),
         },
       })
 
-      await prisma.salesIntegration.update({
+      await prisma.integration.update({
         where: { id: integrationId },
         data: {
           lastSyncAt: new Date(),
         },
       })
     } catch (error) {
-      await prisma.salesIntegrationSyncLog.update({
-        where: { id: syncLog.id },
+      await prisma.integrationSyncJob.update({
+        where: { id: syncJob.id },
         data: {
           status: 'FAILED',
-          errors: [(error as Error).message] as any,
+          errorMessage: (error as Error).message,
           completedAt: new Date(),
         },
       })
@@ -187,7 +195,7 @@ export class IntegrationManager {
    * Get all integrations for tenant
    */
   static async getTenantIntegrations(tenantId: string) {
-    return await prisma.salesIntegration.findMany({
+    return await prisma.integration.findMany({
       where: { tenantId },
       include: {
         createdBy: {
@@ -196,7 +204,7 @@ export class IntegrationManager {
             email: true,
           },
         },
-        syncLogs: {
+        syncJobs: {
           orderBy: {
             startedAt: 'desc',
           },
@@ -213,7 +221,7 @@ export class IntegrationManager {
    * Get integration sync history
    */
   static async getSyncHistory(integrationId: string, limit: number = 50) {
-    return await prisma.salesIntegrationSyncLog.findMany({
+    return await prisma.integrationSyncJob.findMany({
       where: { integrationId },
       orderBy: {
         startedAt: 'desc',

@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsAsset model
+function getOperationsAsset() {
+  return (prisma as any).operationsAsset as any
+}
+
 const createAssetSchema = z.object({
   name: z.string().min(1),
   category: z.string().optional(),
@@ -53,8 +58,16 @@ export async function GET(req: NextRequest) {
           ]
         }
 
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available' },
+            { status: 503 }
+          )
+        }
+
         const [assets, total] = await Promise.all([
-          prisma.operationsAsset.findMany({
+          operationsAsset.findMany({
             where,
             include: {
               assignedTo: {
@@ -72,27 +85,27 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsAsset.count({ where }),
+          operationsAsset.count({ where }),
         ])
 
         // Calculate stats
         const stats = {
-          total: await prisma.operationsAsset.count({
+          total: await operationsAsset.count({
             where: { tenantId: userInfo.tenantId },
           }),
-          assigned: await prisma.operationsAsset.count({
+          assigned: await operationsAsset.count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'ASSIGNED',
             },
           }),
-          available: await prisma.operationsAsset.count({
+          available: await operationsAsset.count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'AVAILABLE',
             },
           }),
-          maintenance: await prisma.operationsAsset.count({
+          maintenance: await operationsAsset.count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'MAINTENANCE',
@@ -131,7 +144,15 @@ export async function POST(req: NextRequest) {
         const body = await request.json()
         const validatedData = createAssetSchema.parse(body)
 
-        const asset = await prisma.operationsAsset.create({
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available' },
+            { status: 503 }
+          )
+        }
+
+        const asset = await operationsAsset.create({
           data: {
             name: validatedData.name,
             category: validatedData.category,

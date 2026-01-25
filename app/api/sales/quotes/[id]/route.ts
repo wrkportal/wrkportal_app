@@ -165,7 +165,7 @@ export async function PATCH(
         where: { quoteId: params.id },
       })
       const subtotal = existingItems.reduce(
-        (sum, item) => sum + parseFloat(item.totalPrice.toString()),
+        (sum: number, item: any) => sum + parseFloat(item.totalPrice.toString()),
         0
       )
       const discountAmount =

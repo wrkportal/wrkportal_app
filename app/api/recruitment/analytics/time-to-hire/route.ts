@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     const avgTimeToHire =
       users.length > 0
         ? Math.round(
-            users.reduce((sum, user) => {
+            users.reduce((sum: number, user: any) => {
               // Simulate time-to-hire (7-45 days)
               const days = Math.floor(Math.random() * 38) + 7
               return sum + days
@@ -67,7 +67,8 @@ export async function GET(request: NextRequest) {
         : 0
 
     // Time-to-hire by department
-    const byDepartment = users.reduce((acc, user) => {
+    const byDepartment = users.reduce(
+      (acc: Record<string, { count: number; totalDays: number }>, user: any) => {
       const dept = user.department || 'Unassigned'
       if (!acc[dept]) {
         acc[dept] = { count: 0, totalDays: 0 }
@@ -75,22 +76,24 @@ export async function GET(request: NextRequest) {
       acc[dept].count++
       acc[dept].totalDays += Math.floor(Math.random() * 38) + 7
       return acc
-    }, {} as Record<string, { count: number; totalDays: number }>)
+      },
+      {} as Record<string, { count: number; totalDays: number }>
+    )
 
-    const departmentMetrics = Object.entries(byDepartment).map(
-      ([dept, data]) => ({
+    const departmentMetrics = (
+      Object.entries(byDepartment) as [string, { count: number; totalDays: number }][]
+    ).map(([dept, data]) => ({
         department: dept,
         averageDays: Math.round(data.totalDays / data.count),
         hires: data.count,
-      })
-    )
+      }))
 
     // Time-to-hire trend (monthly)
     const monthlyData = []
     for (let i = 5; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthUsers = users.filter(
-        (u) =>
+        (u: any) =>
           new Date(u.createdAt).getMonth() === date.getMonth() &&
           new Date(u.createdAt).getFullYear() === date.getFullYear()
       )
@@ -98,7 +101,7 @@ export async function GET(request: NextRequest) {
         monthUsers.length > 0
           ? Math.round(
               monthUsers.reduce(
-                (sum) => sum + (Math.floor(Math.random() * 38) + 7),
+                (sum: number) => sum + (Math.floor(Math.random() * 38) + 7),
                 0
               ) / monthUsers.length
             )

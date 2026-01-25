@@ -67,12 +67,12 @@ export async function GET(req: NextRequest) {
 
         // Predict risks for each project
         const riskPredictions = await Promise.all(
-          projects.map(async (project) => {
+          projects.map(async (project: any) => {
             const tasks = project.tasks || []
             const totalTasks = tasks.length
-            const completedTasks = tasks.filter((t) => t.status === 'DONE').length
-            const blockedTasks = tasks.filter((t) => t.status === 'BLOCKED').length
-            const overdueTasks = tasks.filter((t) => {
+            const completedTasks = tasks.filter((t: any) => t.status === 'DONE').length
+            const blockedTasks = tasks.filter((t: any) => t.status === 'BLOCKED').length
+            const overdueTasks = tasks.filter((t: any) => {
               if (!t.dueDate || t.status === 'DONE') return false
               return new Date(t.dueDate) < new Date()
             }).length
@@ -131,11 +131,11 @@ export async function GET(req: NextRequest) {
             // Predict release risks if requested
             let releaseRisks: any[] = []
             if (includeReleases && project.releases) {
-              releaseRisks = project.releases.map((release) => {
+              releaseRisks = project.releases.map((release: any) => {
                 const releaseTasks = release.tasks || []
                 const releaseTotalTasks = releaseTasks.length
-                const releaseCompleted = releaseTasks.filter((t) => t.status === 'DONE').length
-                const releaseBlocked = releaseTasks.filter((t) => t.status === 'BLOCKED').length
+                const releaseCompleted = releaseTasks.filter((t: any) => t.status === 'DONE').length
+                const releaseBlocked = releaseTasks.filter((t: any) => t.status === 'BLOCKED').length
 
                 const releaseProgress =
                   releaseTotalTasks > 0 ? Math.round((releaseCompleted / releaseTotalTasks) * 100) : 0
@@ -200,19 +200,19 @@ export async function GET(req: NextRequest) {
         )
 
         // Sort by risk score (highest first)
-        riskPredictions.sort((a, b) => b.riskScore - a.riskScore)
+        riskPredictions.sort((a: any, b: any) => b.riskScore - a.riskScore)
 
         return NextResponse.json({
           predictions: riskPredictions,
           summary: {
             totalProjects: riskPredictions.length,
-            critical: riskPredictions.filter((p) => p.riskLevel === 'CRITICAL').length,
-            high: riskPredictions.filter((p) => p.riskLevel === 'HIGH').length,
-            medium: riskPredictions.filter((p) => p.riskLevel === 'MEDIUM').length,
-            low: riskPredictions.filter((p) => p.riskLevel === 'LOW').length,
+            critical: riskPredictions.filter((p: any) => p.riskLevel === 'CRITICAL').length,
+            high: riskPredictions.filter((p: any) => p.riskLevel === 'HIGH').length,
+            medium: riskPredictions.filter((p: any) => p.riskLevel === 'MEDIUM').length,
+            low: riskPredictions.filter((p: any) => p.riskLevel === 'LOW').length,
             avgRiskScore:
               riskPredictions.length > 0
-                ? Math.round(riskPredictions.reduce((sum, p) => sum + p.riskScore, 0) / riskPredictions.length)
+                ? Math.round(riskPredictions.reduce((sum: number, p: any) => sum + p.riskScore, 0) / riskPredictions.length)
                 : 0,
           },
         })

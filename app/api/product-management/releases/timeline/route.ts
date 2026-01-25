@@ -62,12 +62,12 @@ export async function GET(req: NextRequest) {
         })
 
         // Calculate release metrics
-        const timelineReleases = releases.map((release) => {
+        const timelineReleases = releases.map((release: any) => {
           const tasks = release.tasks || []
           const totalTasks = tasks.length
-          const completedTasks = tasks.filter((t) => t.status === 'DONE').length
-          const blockedTasks = tasks.filter((t) => t.status === 'BLOCKED').length
-          const delayedTasks = tasks.filter((t) => {
+          const completedTasks = tasks.filter((t: any) => t.status === 'DONE').length
+          const blockedTasks = tasks.filter((t: any) => t.status === 'BLOCKED').length
+          const delayedTasks = tasks.filter((t: any) => {
             if (!t.dueDate || t.status === 'DONE') return false
             return new Date(t.dueDate) < new Date()
           }).length

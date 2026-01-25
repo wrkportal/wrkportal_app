@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    completedTasks.forEach((task) => {
+    completedTasks.forEach((task: { id: string; title: string; completedAt: Date | null }) => {
       if (task.completedAt) {
         activities.push({
           id: `task-${task.id}`,
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    updatedProjects.forEach((project) => {
+    updatedProjects.forEach((project: { id: string; name: string; updatedAt: Date; createdAt: Date }) => {
       // Only show as "updated" if it was actually modified (not just created)
       const isUpdate = project.updatedAt.getTime() > project.createdAt.getTime() + 5000 // 5 second buffer
       if (isUpdate) {
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    recentTimesheets.forEach((timesheet) => {
+    recentTimesheets.forEach((timesheet: { id: string; hours: number; date: Date; project: { name: string } }) => {
       activities.push({
         id: `timesheet-${timesheet.id}`,
         action: 'Logged timesheet',
@@ -121,7 +121,6 @@ export async function GET(request: NextRequest) {
     const recentGoals = await prisma.goal.findMany({
       where: {
         ownerId: userId,
-        deletedAt: null,
       },
       orderBy: {
         createdAt: 'desc',
@@ -134,7 +133,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    recentGoals.forEach((goal) => {
+    recentGoals.forEach((goal: { id: string; title: string; createdAt: Date }) => {
       activities.push({
         id: `goal-${goal.id}`,
         action: 'Created goal',

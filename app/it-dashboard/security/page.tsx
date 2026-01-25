@@ -43,7 +43,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts'
-import { 
+import {
   Shield,
   AlertTriangle,
   Lock,
@@ -166,8 +166,8 @@ export default function SecurityPage() {
   }
 
   return (
-    <ITPageLayout 
-      title="Security" 
+    <ITPageLayout
+      title="Security"
       description="Monitor security alerts, vulnerabilities, and incidents"
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -196,8 +196,8 @@ export default function SecurityPage() {
                 <Shield className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{securityStats.vulnerabilities}</div>
-                <p className="text-xs text-muted-foreground">{securityStats.criticalVulns} critical</p>
+                <div className="text-2xl font-bold">{securityStats.totalVulnerabilities}</div>
+                <p className="text-xs text-muted-foreground">{securityStats.criticalVulnerabilities} critical</p>
               </CardContent>
             </Card>
             <Card>
@@ -216,7 +216,7 @@ export default function SecurityPage() {
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{securityStats.blockedThreats}</div>
+                <div className="text-2xl font-bold">{securityStats.resolvedAlerts}</div>
                 <p className="text-xs text-muted-foreground">This month</p>
               </CardContent>
             </Card>

@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
+import { Prisma } from '@prisma/client'
 
 const createTicketSchema = z.object({
   title: z.string().min(1),
@@ -82,14 +83,42 @@ export async function GET(req: NextRequest) {
           },
         })
 
+        type TaskWithIncludes = Prisma.TaskGetPayload<{
+          include: {
+            assignee: {
+              select: {
+                id: true
+                name: true
+                email: true
+              }
+            }
+            createdBy: {
+              select: {
+                id: true
+                name: true
+                email: true
+              }
+            }
+            project: {
+              select: {
+                id: true
+                name: true
+                code: true
+              }
+            }
+          }
+        }>
+
+        const typedTickets: TaskWithIncludes[] = tickets as TaskWithIncludes[]
+
         // Transform to ticket format
-        const formattedTickets = tickets.map((task) => ({
+        const formattedTickets = typedTickets.map((task: TaskWithIncludes) => ({
           id: task.id,
           title: task.title,
           description: task.description || '',
           priority: task.priority || 'MEDIUM',
           status: task.status,
-          category: task.category || '',
+          category: task.tags?.[0] || '',
           requester: task.createdBy?.name || 'Unknown',
           requesterId: task.createdById,
           assignee: task.assignee?.name || null,
@@ -104,9 +133,9 @@ export async function GET(req: NextRequest) {
         // Calculate stats
         const stats = {
           total: formattedTickets.length,
-          open: formattedTickets.filter(t => t.status === 'TO_DO' || t.status === 'IN_PROGRESS').length,
-          inProgress: formattedTickets.filter(t => t.status === 'IN_PROGRESS').length,
-          resolved: formattedTickets.filter(t => t.status === 'DONE').length,
+          open: formattedTickets.filter((t: any) => t.status === 'TODO' || t.status === 'IN_PROGRESS').length,
+          inProgress: formattedTickets.filter((t: any) => t.status === 'IN_PROGRESS').length,
+          resolved: formattedTickets.filter((t: any) => t.status === 'DONE').length,
         }
 
         return NextResponse.json({
@@ -141,8 +170,8 @@ export async function POST(req: NextRequest) {
             title: data.title,
             description: data.description || '',
             priority: data.priority,
-            status: 'TO_DO',
-            category: data.category || 'IT Support',
+            status: 'TODO',
+            tags: data.category ? [data.category] : ['IT Support'],
             createdById: userInfo.userId,
             assigneeId: data.assigneeId,
             projectId: data.projectId,
@@ -171,7 +200,7 @@ export async function POST(req: NextRequest) {
           description: ticket.description || '',
           priority: ticket.priority || 'MEDIUM',
           status: ticket.status,
-          category: ticket.category || '',
+          category: ticket.tags?.[0] || '',
           requester: ticket.createdBy?.name || 'Unknown',
           requesterId: ticket.createdById,
           assignee: ticket.assignee?.name || null,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const approveBudgetSchema = z.object({
   action: z.enum(['approve', 'reject']),
@@ -27,7 +28,15 @@ export async function POST(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
-    const budget = await prisma.budget.findFirst({
+    type BudgetWithApprovals = Prisma.BudgetGetPayload<{
+      include: {
+        approvals: true
+      }
+    }>
+
+    type BudgetApproval = BudgetWithApprovals['approvals'][0]
+
+    const budget = (await prisma.budget.findFirst({
       where: {
         id: params.id,
         tenantId: (session.user as any).tenantId,
@@ -37,7 +46,7 @@ export async function POST(
           orderBy: { level: 'asc' },
         },
       },
-    })
+    })) as BudgetWithApprovals | null
 
     if (!budget) {
       return NextResponse.json({ error: 'Budget not found' }, { status: 404 })
@@ -48,14 +57,14 @@ export async function POST(
 
     // Determine approval level
     const approvalLevel = data.level || (budget.approvals.length > 0 
-      ? Math.max(...budget.approvals.map(a => a.level)) + 1 
+      ? Math.max(...budget.approvals.map((a: BudgetApproval) => a.level)) + 1 
       : 1)
 
     if (data.action === 'approve') {
       // Create or update approval record
       await prisma.budgetApproval.upsert({
         where: {
-          id: budget.approvals.find(a => a.approverId === (session.user as any).id && a.level === approvalLevel)?.id || '',
+          id: budget.approvals.find((a: BudgetApproval) => a.approverId === (session.user as any).id && a.level === approvalLevel)?.id || '',
         },
         create: {
           budgetId: budget.id,
@@ -75,11 +84,13 @@ export async function POST(
       // Check if all required approvals are complete
       // For now, if this is level 1 or the only approval, mark budget as approved
       // In a real system, you'd have configurable approval workflows
+      type BudgetApprovalModel = Prisma.BudgetApprovalGetPayload<{}>
+
       const allApprovals = await prisma.budgetApproval.findMany({
         where: { budgetId: budget.id },
       })
 
-      const allApproved = allApprovals.every(a => a.status === 'APPROVED')
+      const allApproved = allApprovals.every((a: BudgetApprovalModel) => a.status === 'APPROVED')
       
       if (allApproved || approvalLevel === 1) {
         await prisma.budget.update({
@@ -103,7 +114,7 @@ export async function POST(
       // Reject
       await prisma.budgetApproval.upsert({
         where: {
-          id: budget.approvals.find(a => a.approverId === (session.user as any).id && a.level === approvalLevel)?.id || '',
+          id: budget.approvals.find((a: BudgetApproval) => a.approverId === (session.user as any).id && a.level === approvalLevel)?.id || '',
         },
         create: {
           budgetId: budget.id,

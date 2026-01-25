@@ -73,7 +73,7 @@ export async function getApplicableRLSRules(
   })
 
   // Filter out inherited rules if inheritance is disabled
-  const applicableRules = rules.filter(rule => {
+  const applicableRules = rules.filter((rule: any) => {
     if (rule.userId === userId) return true
     if (rule.orgUnitId === orgUnitId) return true
     if (rule.role === role && !rule.userId && !rule.orgUnitId) return true

@@ -3,6 +3,11 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsInventoryDistribution model
+function getOperationsInventoryDistribution() {
+  return (prisma as any).operationsInventoryDistribution as any
+}
+
 // GET - Get distribution history
 export async function GET(req: NextRequest) {
   return withPermissionCheck(
@@ -43,8 +48,16 @@ export async function GET(req: NextRequest) {
           }
         }
 
+        const operationsInventoryDistribution = getOperationsInventoryDistribution()
+        if (!operationsInventoryDistribution) {
+          return NextResponse.json(
+            { error: 'Operations inventory distribution model not available' },
+            { status: 503 }
+          )
+        }
+
         const [distributions, total] = await Promise.all([
-          prisma.operationsInventoryDistribution.findMany({
+          operationsInventoryDistribution.findMany({
             where,
             include: {
               item: {
@@ -68,7 +81,7 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsInventoryDistribution.count({ where }),
+          operationsInventoryDistribution.count({ where }),
         ])
 
         return NextResponse.json({

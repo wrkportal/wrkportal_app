@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { SalesAutomationEngine } from '@/lib/sales/automation-engine'
 import { AutoActivityCapture } from '@/lib/sales/auto-activity-capture'
 
@@ -122,22 +123,7 @@ export async function PATCH(
     }
 
     // Build update data object
-    const updateData: {
-      name?: string
-      description?: string | null
-      stage?: any
-      amount?: number | null
-      probability?: number | null
-      expectedCloseDate?: Date
-      actualCloseDate?: Date | null
-      type?: any
-      nextStep?: string | null
-      nextContactDate?: Date | null
-      competitorInfo?: string | null
-      lossReason?: string | null
-      status?: any
-      ownerId?: string
-    } = {}
+    const updateData: Prisma.SalesOpportunityUpdateInput = {}
 
     if (name) updateData.name = name
     if (description !== undefined) updateData.description = description
@@ -151,7 +137,7 @@ export async function PATCH(
     if (competitorInfo !== undefined) updateData.competitorInfo = competitorInfo
     if (lossReason !== undefined) updateData.lossReason = lossReason
     if (status) updateData.status = status
-    if (ownerId) updateData.ownerId = ownerId
+    if (ownerId) updateData.owner = { connect: { id: ownerId } }
 
     // Handle nextContactDate separately
     if (nextContactDate !== undefined) {
@@ -159,15 +145,15 @@ export async function PATCH(
         try {
           const date = new Date(nextContactDate)
           if (!isNaN(date.getTime())) {
-            updateData.nextContactDate = date
+            ;(updateData as any).nextContactDate = date
           } else {
-            updateData.nextContactDate = null
+            ;(updateData as any).nextContactDate = null
           }
         } catch {
-          updateData.nextContactDate = null
+          ;(updateData as any).nextContactDate = null
         }
       } else {
-        updateData.nextContactDate = null
+        ;(updateData as any).nextContactDate = null
       }
     }
 

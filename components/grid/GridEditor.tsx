@@ -63,7 +63,7 @@ export function GridEditor({
       isLocked: false,
     }))
   )
-  
+
   const [selectedCell, setSelectedCell] = useState<{ row: number; column: number } | null>(null)
   const [editingCell, setEditingCell] = useState<{ row: number; column: number; value: string } | null>(null)
   const [scrollPosition, setScrollPosition] = useState({ top: 0, left: 0 })
@@ -184,7 +184,7 @@ export function GridEditor({
   // Get cell style based on conditional formatting (placeholder for future API integration)
   const getCellStyle = useCallback((row: number, column: number, cell: GridCell): React.CSSProperties => {
     const style: React.CSSProperties = {}
-    
+
     // Basic conditional formatting based on data type
     if (cell.dataType === 'ERROR') {
       style.backgroundColor = 'rgb(254 242 242)' // red-50
@@ -197,7 +197,7 @@ export function GridEditor({
 
     // Future: Load conditional formatting from API
     // const format = await fetch(`/api/grids/${gridId}/formats?row=${row}&col=${column}`)
-    
+
     return style
   }, [])
 
@@ -346,7 +346,7 @@ export function GridEditor({
   const [copiedRange, setCopiedRange] = useState<{ startRow: number; startCol: number; endRow: number; endCol: number } | null>(null)
 
   // Handle copy
-  const handleCopy = useCallback((e: React.ClipboardEvent | KeyboardEvent) => {
+  const handleCopy = useCallback((e: React.ClipboardEvent<Element> | React.KeyboardEvent<Element>) => {
     if (!selectedCell || readOnly) return
     e.preventDefault()
 
@@ -359,7 +359,7 @@ export function GridEditor({
 
     // Copy to clipboard as TSV (tab-separated values) for Excel compatibility
     const clipboardText = cell.displayValue || cell.value || ''
-    if (e instanceof ClipboardEvent && e.clipboardData) {
+    if ('clipboardData' in e && e.clipboardData) {
       e.clipboardData.setData('text/plain', clipboardText)
       e.clipboardData.setData('text/html', clipboardText)
     } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -533,7 +533,6 @@ export function GridEditor({
         onCopy={handleCopy}
         onPaste={handlePaste}
         tabIndex={0}
-        tabIndex={0}
       >
         {/* Grid content */}
         <div style={{ width: totalWidth, height: totalHeight, position: 'relative' }}>
@@ -551,7 +550,7 @@ export function GridEditor({
             {columns.slice(visibleRange.startCol, visibleRange.endCol).map((col, idx) => {
               const actualIdx = visibleRange.startCol + idx
               const left = ROW_NUMBER_WIDTH + columns.slice(0, actualIdx).reduce((sum, c) => sum + c.width, 0)
-              
+
               return (
                 <div
                   key={actualIdx}
@@ -592,7 +591,7 @@ export function GridEditor({
                   const left = ROW_NUMBER_WIDTH + columns.slice(0, column).reduce((sum, c) => sum + c.width, 0)
 
                   const cellStyle = getCellStyle(row, column, cell)
-                  
+
                   return (
                     <div
                       key={column}
@@ -601,10 +600,10 @@ export function GridEditor({
                         isSelected && 'ring-2 ring-primary ring-offset-1 rounded-md',
                         cell.isLocked && 'bg-gray-100 dark:bg-gray-800 opacity-60'
                       )}
-                      style={{ 
-                        width: col.width, 
-                        height: DEFAULT_CELL_HEIGHT, 
-                        position: 'absolute', 
+                      style={{
+                        width: col.width,
+                        height: DEFAULT_CELL_HEIGHT,
+                        position: 'absolute',
                         left,
                         ...cellStyle
                       }}

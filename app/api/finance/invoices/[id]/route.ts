@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const updateInvoiceSchema = z.object({
   invoiceNumber: z.string().min(1).optional(),
   clientName: z.string().min(1).optional(),
   clientEmail: z.string().email().optional(),
   clientAddress: z.string().optional(),
+  subject: z.string().min(1).optional(),
+  description: z.string().optional(),
   invoiceDate: z.string().transform((str) => new Date(str)).optional(),
   dueDate: z.string().transform((str) => new Date(str)).optional(),
   status: z.enum(['DRAFT', 'SENT', 'VIEWED', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED']).optional(),
@@ -36,7 +39,36 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const invoice = await prisma.invoice.findFirst({
+    type InvoiceWithIncludes = Prisma.InvoiceGetPayload<{
+      include: {
+        project: {
+          select: {
+            id: true
+            name: true
+            code: true
+          }
+        }
+        quote: {
+          select: {
+            id: true
+            quoteNumber: true
+          }
+        }
+        lineItems: true
+        payments: true
+        createdBy: {
+          select: {
+            id: true
+            name: true
+            email: true
+          }
+        }
+      }
+    }>
+
+    type Payment = InvoiceWithIncludes['payments'][0]
+
+    const invoice: InvoiceWithIncludes | null = await prisma.invoice.findFirst({
       where: {
         id: params.id,
         tenantId: (session.user as any).tenantId,
@@ -55,9 +87,6 @@ export async function GET(
         createdBy: {
           select: { id: true, name: true, email: true },
         },
-        approvedBy: {
-          select: { id: true, name: true, email: true },
-        },
       },
     })
 
@@ -68,7 +97,7 @@ export async function GET(
     const subtotal = Number(invoice.subtotal)
     const tax = Number(invoice.taxAmount)
     const total = Number(invoice.totalAmount)
-    const paid = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0)
+    const paid = invoice.payments.reduce((sum: number, p: Payment) => sum + Number(p.amount), 0)
     const balance = total - paid
 
     return NextResponse.json({

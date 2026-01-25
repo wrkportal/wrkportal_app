@@ -11,7 +11,7 @@ export interface ScheduledSyncResult {
   integrationId: string
   integrationName: string
   success: boolean
-  recordsSynced: number
+  recordsProcessed: number
   errors: string[]
   duration: number
 }
@@ -24,51 +24,54 @@ export async function processScheduledSyncs(): Promise<ScheduledSyncResult[]> {
   const now = new Date()
 
   // Get all integrations that are connected and have scheduled sync enabled
-  const integrations = await prisma.salesIntegration.findMany({
+  const integrations = await prisma.integration.findMany({
     where: {
-      status: 'CONNECTED',
-      syncFrequency: {
-        in: ['HOURLY', 'DAILY', 'WEEKLY', 'REAL_TIME'],
-      },
+      status: 'ACTIVE',
+      isActive: true,
     },
   })
 
   for (const integration of integrations) {
     const startTime = Date.now()
     let success = false
-    let recordsSynced = 0
+    let recordsProcessed = 0
     const errors: string[] = []
 
     try {
+      // Get sync frequency from configuration
+      const config = (integration.configuration as any) || {}
+      const syncFrequency = config.syncFrequency || 'MANUAL'
+      
       // Check if sync is due based on frequency
-      if (!shouldSync(integration.syncFrequency as string, integration.lastSyncAt)) {
+      if (!shouldSync(syncFrequency, integration.lastSyncAt)) {
         continue
       }
 
       // Perform sync
+      const syncDirection = config.syncDirection || 'BIDIRECTIONAL'
       await IntegrationManager.syncIntegration(
         integration.id,
-        integration.syncDirection as any
+        syncDirection as any
       )
 
-      // Get the latest sync log to get records synced count
-      const latestLog = await prisma.salesIntegrationSyncLog.findFirst({
+      // Get the latest sync job to get records synced count
+      const latestJob = await prisma.integrationSyncJob.findFirst({
         where: { integrationId: integration.id },
         orderBy: { startedAt: 'desc' },
       })
 
-      success = latestLog?.status === 'SUCCESS'
-      recordsSynced = latestLog?.recordsSynced || 0
+      success = latestJob?.status === 'COMPLETED' || false
+      recordsProcessed = latestJob?.recordsProcessed || 0
       
-      if (latestLog?.errors && Array.isArray(latestLog.errors)) {
-        errors.push(...(latestLog.errors as string[]))
+      if (latestJob?.errorMessage) {
+        errors.push(latestJob.errorMessage)
       }
 
       results.push({
         integrationId: integration.id,
         integrationName: integration.name,
         success,
-        recordsSynced,
+        recordsProcessed,
         errors,
         duration: Date.now() - startTime,
       })
@@ -79,17 +82,17 @@ export async function processScheduledSyncs(): Promise<ScheduledSyncResult[]> {
         integrationId: integration.id,
         integrationName: integration.name,
         success: false,
-        recordsSynced: 0,
+        recordsProcessed: 0,
         errors,
         duration: Date.now() - startTime,
       })
 
       // Update integration status to ERROR if sync fails
-      await prisma.salesIntegration.update({
+      await prisma.integration.update({
         where: { id: integration.id },
         data: {
           status: 'ERROR',
-          errorMessage: (error as Error).message,
+          lastError: (error as Error).message,
         },
       })
     }
@@ -138,11 +141,11 @@ function shouldSync(frequency: string, lastSyncAt: Date | null): boolean {
 export async function processIntegrationSync(integrationId: string): Promise<ScheduledSyncResult> {
   const startTime = Date.now()
   let success = false
-  let recordsSynced = 0
+  let recordsProcessed = 0
   const errors: string[] = []
 
   try {
-    const integration = await prisma.salesIntegration.findUnique({
+    const integration = await prisma.integration.findUnique({
       where: { id: integrationId },
     })
 
@@ -150,34 +153,38 @@ export async function processIntegrationSync(integrationId: string): Promise<Sch
       throw new Error('Integration not found')
     }
 
-    if (integration.status !== 'CONNECTED') {
-      throw new Error('Integration is not connected')
+    if (integration.status !== 'ACTIVE') {
+      throw new Error('Integration is not active')
     }
+
+    // Get sync direction from configuration
+    const config = (integration.configuration as any) || {}
+    const syncDirection = config.syncDirection || 'BIDIRECTIONAL'
 
     // Perform sync
     await IntegrationManager.syncIntegration(
       integration.id,
-      integration.syncDirection as any
+      syncDirection as any
     )
 
-    // Get the latest sync log
-    const latestLog = await prisma.salesIntegrationSyncLog.findFirst({
+    // Get the latest sync job
+    const latestJob = await prisma.integrationSyncJob.findFirst({
       where: { integrationId: integration.id },
       orderBy: { startedAt: 'desc' },
     })
 
-    success = latestLog?.status === 'SUCCESS' || false
-    recordsSynced = latestLog?.recordsSynced || 0
+    success = latestJob?.status === 'COMPLETED' || false
+    recordsProcessed = latestJob?.recordsProcessed || 0
     
-    if (latestLog?.errors && Array.isArray(latestLog.errors)) {
-      errors.push(...(latestLog.errors as string[]))
+    if (latestJob?.errorMessage) {
+      errors.push(latestJob.errorMessage)
     }
 
     return {
       integrationId: integration.id,
       integrationName: integration.name,
       success,
-      recordsSynced,
+      recordsProcessed,
       errors,
       duration: Date.now() - startTime,
     }
@@ -188,7 +195,7 @@ export async function processIntegrationSync(integrationId: string): Promise<Sch
       integrationId,
       integrationName: 'Unknown',
       success: false,
-      recordsSynced: 0,
+      recordsProcessed: 0,
       errors,
       duration: Date.now() - startTime,
     }
@@ -201,13 +208,13 @@ export async function processIntegrationSync(integrationId: string): Promise<Sch
 export async function getSyncStatistics(tenantId?: string) {
   const where = tenantId ? { tenantId } : {}
 
-  const integrations = await prisma.salesIntegration.findMany({
+  const integrations = await prisma.integration.findMany({
     where: {
       ...where,
-      status: 'CONNECTED',
+      status: 'ACTIVE',
     },
     include: {
-      syncLogs: {
+      syncJobs: {
         orderBy: { startedAt: 'desc' },
         take: 1,
       },
@@ -216,9 +223,10 @@ export async function getSyncStatistics(tenantId?: string) {
 
   const stats = {
     totalIntegrations: integrations.length,
-    syncingIntegrations: integrations.filter(i => 
-      i.syncFrequency !== 'MANUAL'
-    ).length,
+    syncingIntegrations: integrations.filter((i: any) => {
+      const config = (i.configuration as any) || {}
+      return config.syncFrequency !== 'MANUAL'
+    }).length,
     last24Hours: {
       successful: 0,
       failed: 0,
@@ -230,21 +238,23 @@ export async function getSyncStatistics(tenantId?: string) {
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
   for (const integration of integrations) {
-    const latestLog = integration.syncLogs[0]
+    const latestJob = integration.syncJobs[0]
     
-    if (latestLog && latestLog.startedAt >= oneDayAgo) {
-      if (latestLog.status === 'SUCCESS') {
+    if (latestJob && latestJob.startedAt >= oneDayAgo) {
+      if (latestJob.status === 'COMPLETED') {
         stats.last24Hours.successful++
       } else {
         stats.last24Hours.failed++
       }
-      stats.last24Hours.totalRecords += latestLog.recordsSynced || 0
+      stats.last24Hours.totalRecords += latestJob.recordsProcessed || 0
     }
 
     // Calculate next sync time
-    if (integration.syncFrequency !== 'MANUAL' && integration.lastSyncAt) {
+    const config = (integration.configuration as any) || {}
+    const syncFrequency = config.syncFrequency || 'MANUAL'
+    if (syncFrequency !== 'MANUAL' && integration.lastSyncAt) {
       const nextSyncAt = calculateNextSyncTime(
-        integration.syncFrequency as string,
+        syncFrequency,
         integration.lastSyncAt
       )
       stats.nextSyncs.push({

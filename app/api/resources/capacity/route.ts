@@ -46,9 +46,9 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate capacity for each user
-    const capacityData = users.map((user) => {
+    const capacityData = users.map((user: any) => {
       // Get active project allocations
-      const activeProjects = user.teamMemberships.filter((pm) => {
+      const activeProjects = user.teamMemberships.filter((pm: any) => {
         const project = pm.project
         if (!project.startDate || !project.endDate) return false
         const projectStart = new Date(project.startDate)
@@ -57,12 +57,12 @@ export async function GET(request: NextRequest) {
       })
 
       // Calculate total allocation percentage
-      const totalAllocation = activeProjects.reduce((sum, pm) => {
+      const totalAllocation = activeProjects.reduce((sum: number, pm: any) => {
         return sum + (Number(pm.allocation) || 0)
       }, 0)
 
       // Calculate hours logged in period
-      const totalHoursLogged = user.timesheets.reduce((sum, ts) => {
+      const totalHoursLogged = user.timesheets.reduce((sum: number, ts: any) => {
         return sum + Number(ts.hours)
       }, 0)
 
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
         isOverAllocated,
         hoursLogged: Math.round(totalHoursLogged * 10) / 10,
         estimatedCapacity: Math.round(estimatedCapacity * 10) / 10,
-        activeProjects: activeProjects.map((pm) => ({
+        activeProjects: activeProjects.map((pm: any) => ({
           projectId: pm.project.id,
           projectName: pm.project.name,
           allocation: Number(pm.allocation) || 0,
@@ -94,10 +94,10 @@ export async function GET(request: NextRequest) {
 
     // Calculate summary statistics
     const totalResources = capacityData.length
-    const overAllocated = capacityData.filter((u) => u.isOverAllocated).length
-    const available = capacityData.filter((u) => u.availableCapacity > 20).length // >20% available
+    const overAllocated = capacityData.filter((u: any) => u.isOverAllocated).length
+    const available = capacityData.filter((u: any) => u.availableCapacity > 20).length // >20% available
     const avgUtilization = capacityData.length > 0
-      ? capacityData.reduce((sum, u) => sum + u.totalAllocation, 0) / capacityData.length
+      ? capacityData.reduce((sum: number, u: any) => sum + u.totalAllocation, 0) / capacityData.length
       : 0
 
     // Group by week for heatmap
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
       const weekStart = new Date(currentDate)
       weekStart.setDate(weekStart.getDate() - weekStart.getDay()) // Start of week (Sunday)
 
-      const weekData = capacityData.map((user) => ({
+      const weekData = capacityData.map((user: any) => ({
         userId: user.userId,
         name: user.name,
         allocation: user.totalAllocation,

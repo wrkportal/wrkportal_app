@@ -51,7 +51,7 @@ export async function POST(
 
     // Create template data from quote
     const templateData = {
-      lineItems: quote.lineItems.map((item) => ({
+      lineItems: quote.lineItems.map((item: any) => ({
         productId: item.productId,
         name: item.name,
         description: item.description,

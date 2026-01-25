@@ -137,9 +137,9 @@ export async function detectLeadDuplicates(
         tenantId,
         OR: [
           { email: lead.email },
-          { personalEmail: lead.email },
-        ],
-      },
+          { personalEmail: lead.email } as any,
+        ] as any,
+      } as any,
       select: {
         id: true,
         firstName: true,
@@ -193,24 +193,24 @@ export async function detectContactDuplicates(
   const duplicates: DuplicateMatch[] = []
 
   // Find contacts with same email
-  const emails = [contact.email, contact.personalEmail].filter(Boolean) as string[]
+  const emails = [contact.email, (contact as any).personalEmail].filter(Boolean) as string[]
   for (const email of emails) {
     const emailMatches = await prisma.salesContact.findMany({
       where: {
         tenantId,
         OR: [
           { email },
-          { personalEmail: email },
-        ],
+          { personalEmail: email } as any,
+        ] as any,
         id: { not: contactId },
-      },
+      } as any,
       select: {
         id: true,
         firstName: true,
         lastName: true,
         email: true,
         personalEmail: true,
-      },
+      } as any,
     })
 
     for (const match of emailMatches) {

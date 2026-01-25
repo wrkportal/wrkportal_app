@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsAttendance model
+function getOperationsAttendance() {
+  return (prisma as any).operationsAttendance as any
+}
+
 const checkOutSchema = z.object({
   employeeId: z.string().optional(),
   checkOut: z.string().optional(), // ISO date string
@@ -24,8 +29,16 @@ export async function POST(req: NextRequest) {
         const today = new Date(checkOutTime)
         today.setHours(0, 0, 0, 0)
 
+        const operationsAttendance = getOperationsAttendance()
+        if (!operationsAttendance) {
+          return NextResponse.json(
+            { error: 'Operations attendance model not available' },
+            { status: 503 }
+          )
+        }
+
         // Find today's attendance record
-        const attendance = await prisma.operationsAttendance.findFirst({
+        const attendance = await operationsAttendance.findFirst({
           where: {
             employeeId,
             tenantId: userInfo.tenantId,
@@ -50,7 +63,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Update record
-        const updated = await prisma.operationsAttendance.update({
+        const updated = await operationsAttendance.update({
           where: { id: attendance.id },
           data: {
             checkOut: checkOutTime,

@@ -3,6 +3,8 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { createApprovalWorkflow } from '@/lib/sales/approval-workflows'
 
+const getSalesApprovalWorkflow = () => (prisma as any).salesApprovalWorkflow
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
@@ -25,7 +27,15 @@ export async function GET(request: NextRequest) {
       where.isActive = isActive === 'true'
     }
 
-    const workflows = await prisma.salesApprovalWorkflow.findMany({
+    const salesApprovalWorkflow = getSalesApprovalWorkflow()
+    if (!salesApprovalWorkflow) {
+      return NextResponse.json(
+        { error: 'Approval workflows are unavailable' },
+        { status: 503 }
+      )
+    }
+
+    const workflows = await (salesApprovalWorkflow as any).findMany({
       where,
       include: {
         createdBy: {

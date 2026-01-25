@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsTimesheet model
+function getOperationsTimesheet() {
+  return (prisma as any).operationsTimesheet as any
+}
+
 const approveTimesheetSchema = z.object({
   notes: z.string().optional(),
 })
@@ -21,7 +26,15 @@ export async function POST(
         const body = await request.json()
         const validatedData = approveTimesheetSchema.parse(body)
 
-        const timesheet = await prisma.operationsTimesheet.findFirst({
+        const operationsTimesheet = getOperationsTimesheet()
+        if (!operationsTimesheet) {
+          return NextResponse.json(
+            { error: 'Operations timesheet model not available' },
+            { status: 503 }
+          )
+        }
+
+        const timesheet = await (operationsTimesheet as any).findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -42,7 +55,7 @@ export async function POST(
           )
         }
 
-        const updated = await prisma.operationsTimesheet.update({
+        const updated = await (operationsTimesheet as any).update({
           where: { id: params.id },
           data: {
             status: 'APPROVED',

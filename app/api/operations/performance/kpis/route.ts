@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsKPI model
+function getOperationsKPI() {
+  return (prisma as any).operationsKPI as any
+}
+
 const createKPISchema = z.object({
   name: z.string().min(1),
   currentValue: z.number(),
@@ -55,7 +60,15 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        const kpis = await prisma.operationsKPI.findMany({
+        const operationsKPI = getOperationsKPI()
+        if (!operationsKPI) {
+          return NextResponse.json(
+            { error: 'Operations KPI model not available' },
+            { status: 503 }
+          )
+        }
+
+        const kpis = await operationsKPI.findMany({
           where,
           orderBy: [
             { date: 'desc' },
@@ -66,10 +79,10 @@ export async function GET(req: NextRequest) {
         // Calculate overall stats
         const stats = {
           total: kpis.length,
-          onTrack: kpis.filter(k => k.status === 'ON_TRACK').length,
-          atRisk: kpis.filter(k => k.status === 'AT_RISK').length,
-          offTrack: kpis.filter(k => k.status === 'OFF_TRACK').length,
-          exceeded: kpis.filter(k => k.status === 'EXCEEDED').length,
+          onTrack: kpis.filter((k: any) => k.status === 'ON_TRACK').length,
+          atRisk: kpis.filter((k: any) => k.status === 'AT_RISK').length,
+          offTrack: kpis.filter((k: any) => k.status === 'OFF_TRACK').length,
+          exceeded: kpis.filter((k: any) => k.status === 'EXCEEDED').length,
         }
 
         return NextResponse.json({
@@ -109,7 +122,15 @@ export async function POST(req: NextRequest) {
           status = 'AT_RISK'
         }
 
-        const kpi = await prisma.operationsKPI.create({
+        const operationsKPI = getOperationsKPI()
+        if (!operationsKPI) {
+          return NextResponse.json(
+            { error: 'Operations KPI model not available' },
+            { status: 503 }
+          )
+        }
+
+        const kpi = await operationsKPI.create({
           data: {
             name: validatedData.name,
             currentValue: validatedData.currentValue,

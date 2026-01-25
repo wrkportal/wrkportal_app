@@ -59,7 +59,7 @@ export default function ScheduleForm({ schedule, onSuccess, onCancel }: Schedule
     try {
       const payload = {
         ...formData,
-        recipients: formData.recipients.split(',').map(r => r.trim()).filter(Boolean),
+        recipients: formData.recipients.split(',').map((r: string) => r.trim()).filter(Boolean),
         startDate: formData.startDate || undefined,
         endDate: formData.endDate || undefined,
         cronExpression: formData.frequency === 'CUSTOM' ? formData.cronExpression : undefined,
@@ -337,7 +337,7 @@ export default function ScheduleForm({ schedule, onSuccess, onCancel }: Schedule
                         } else {
                           setFormData({
                             ...formData,
-                            deliveryChannels: formData.deliveryChannels.filter((c) => c !== channel),
+                            deliveryChannels: formData.deliveryChannels.filter((c: string) => c !== channel),
                           })
                         }
                       }}

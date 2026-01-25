@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
@@ -25,7 +26,7 @@ export function WBSExecution({ planningData, executionData, onUpdate }: WBSExecu
         }
     }
 
-    const renderTasks = (tasks: any[], depth = 0) => {
+    const renderTasks = (tasks: any[], depth = 0): ReactNode => {
         return tasks.map((task) => (
             <>
                 <tr key={task.id} className="border-b hover:bg-muted/50">

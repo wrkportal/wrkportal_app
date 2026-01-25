@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     const opportunityActivities = await prisma.salesActivity.findMany({
       where: {
         tenantId,
-        opportunityId: { in: opportunities.map((o) => o.id) },
+        opportunityId: { in: opportunities.map((o: any) => o.id) },
       },
       select: {
         opportunityId: true,
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Group activities by opportunity (get most recent per opportunity)
-    const activitiesByOpportunity = opportunityActivities.reduce((acc: any, activity) => {
+    const activitiesByOpportunity = opportunityActivities.reduce((acc: any, activity: any) => {
       if (activity.opportunityId && (!acc[activity.opportunityId] || new Date(activity.createdAt) > new Date(acc[activity.opportunityId].createdAt))) {
         acc[activity.opportunityId] = activity
       }
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate today's top priorities (ranked by revenue impact + urgency)
     const topPriorities = opportunities
-      .map((opp) => {
+      .map((opp: any) => {
         const amount = Number(opp.amount || 0)
         const daysUntilClose = opp.expectedCloseDate
           ? Math.ceil((new Date(opp.expectedCloseDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
@@ -135,11 +135,11 @@ export async function GET(request: NextRequest) {
           stage: opp.stage,
         }
       })
-      .sort((a, b) => b.priorityScore - a.priorityScore)
+      .sort((a: any, b: any) => b.priorityScore - a.priorityScore)
       .slice(0, 10)
 
     // Deal Risk Radar (red/yellow/green)
-    const dealRiskRadar = opportunities.map((opp) => {
+    const dealRiskRadar = opportunities.map((opp: any) => {
       const amount = Number(opp.amount || 0)
       const lastActivity = activitiesByOpportunity[opp.id]
       const daysSinceLastActivity = lastActivity
@@ -193,10 +193,10 @@ export async function GET(request: NextRequest) {
     })
 
     // Next Best Actions (calls, emails, proposals, etc.)
-    const nextBestActions = []
+    const nextBestActions: any[] = []
     
     // Add activities for today
-    activities.forEach((activity) => {
+    activities.forEach((activity: any) => {
       nextBestActions.push({
         type: activity.type,
         id: activity.id,
@@ -212,14 +212,14 @@ export async function GET(request: NextRequest) {
 
       // Add high-priority opportunities without recent activities
       opportunities
-        .filter((opp) => {
+        .filter((opp: any) => {
           const lastActivity = activitiesByOpportunity[opp.id]
           if (!lastActivity) return true
           const daysSince = Math.ceil((new Date().getTime() - new Date(lastActivity.createdAt).getTime()) / (1000 * 60 * 60 * 24))
           return daysSince > 7
         })
         .slice(0, 5)
-        .forEach((opp) => {
+        .forEach((opp: any) => {
           const amount = Number(opp.amount || 0)
           if (amount > 10000) {
             nextBestActions.push({
@@ -237,13 +237,13 @@ export async function GET(request: NextRequest) {
 
     // Sort by priority
     const priorityOrder = { HIGH: 3, MEDIUM: 2, LOW: 1 }
-    nextBestActions.sort((a, b) => (priorityOrder[b.priority as keyof typeof priorityOrder] || 0) - (priorityOrder[a.priority as keyof typeof priorityOrder] || 0))
+    nextBestActions.sort((a: any, b: any) => (priorityOrder[b.priority as keyof typeof priorityOrder] || 0) - (priorityOrder[a.priority as keyof typeof priorityOrder] || 0))
 
     // Fetch activities for leads
     const leadActivities = await prisma.salesActivity.findMany({
       where: {
         tenantId,
-        leadId: { in: leads.map((l) => l.id) },
+        leadId: { in: leads.map((l: any) => l.id) },
       },
       select: {
         leadId: true,
@@ -253,7 +253,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Group activities by lead (get most recent per lead)
-    const activitiesByLead = leadActivities.reduce((acc: any, activity) => {
+    const activitiesByLead = leadActivities.reduce((acc: any, activity: any) => {
       if (activity.leadId && (!acc[activity.leadId] || new Date(activity.createdAt) > new Date(acc[activity.leadId].createdAt))) {
         acc[activity.leadId] = activity
       }
@@ -261,7 +261,7 @@ export async function GET(request: NextRequest) {
     }, {})
 
     // SLA Timers (how long leads have been waiting)
-    const slaTimers = leads.map((lead) => {
+    const slaTimers = leads.map((lead: any) => {
       const createdAt = new Date(lead.createdAt)
       const now = new Date()
       const hoursSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60))
@@ -284,7 +284,7 @@ export async function GET(request: NextRequest) {
         hasResponse,
         lastActivityDate: lastActivity?.createdAt || null,
       }
-    }).sort((a, b) => b.hoursSinceCreation - a.hoursSinceCreation)
+    }).sort((a: any, b: any) => b.hoursSinceCreation - a.hoursSinceCreation)
 
     // Personal Scoreboard
     const wonOpps = await prisma.salesOpportunity.findMany({
@@ -306,7 +306,7 @@ export async function GET(request: NextRequest) {
     const totalClosed = wonOpps.length + lostOpps.length
     const conversionRate = totalClosed > 0 ? (wonOpps.length / totalClosed) * 100 : 0
     
-    const pipelineValue = opportunities.reduce((sum, opp) => sum + Number(opp.amount || 0), 0)
+    const pipelineValue = opportunities.reduce((sum: number, opp: any) => sum + Number(opp.amount || 0), 0)
     
     // Count meetings (MEETING activities)
     const meetings = await prisma.salesActivity.count({
@@ -327,12 +327,12 @@ export async function GET(request: NextRequest) {
       conversionRate: conversionRate.toFixed(1),
       openDeals: opportunities.length,
       wonDeals: wonOpps.length,
-      totalRevenue: wonOpps.reduce((sum, opp) => sum + Number(opp.amount || 0), 0),
+      totalRevenue: wonOpps.reduce((sum: number, opp: any) => sum + Number(opp.amount || 0), 0),
     }
 
     // AI Task Triage: Top 5 things to do today
     const aiTaskTriage = [
-      ...topPriorities.slice(0, 3).map((opp, idx) => ({
+      ...topPriorities.slice(0, 3).map((opp: any, idx: number) => ({
         rank: idx + 1,
         type: 'opportunity' as const,
         title: `Follow up: ${opp.name}`,
@@ -342,9 +342,9 @@ export async function GET(request: NextRequest) {
         priority: 'high' as const,
       })),
       ...slaTimers
-        .filter((lead) => lead.slaStatus === 'red' && !lead.hasResponse)
+        .filter((lead: any) => lead.slaStatus === 'red' && !lead.hasResponse)
         .slice(0, 2)
-        .map((lead, idx) => ({
+        .map((lead: any, idx: number) => ({
           rank: topPriorities.length + idx + 1,
           type: 'lead' as const,
           title: `Respond to ${lead.name}`,

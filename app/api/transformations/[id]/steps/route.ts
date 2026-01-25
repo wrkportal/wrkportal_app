@@ -7,6 +7,8 @@ import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 import { z } from 'zod'
 
+const getTransformationStep = () => (prisma as any).transformationStep
+
 const createStepSchema = z.object({
   stepOrder: z.number().int().min(0),
   operator: z.string(),
@@ -34,7 +36,8 @@ export async function GET(
       try {
         const resolvedParams = 'then' in params ? await params : params
         
-        if (!prisma.transformationStep) {
+        const transformationStep = getTransformationStep()
+        if (!transformationStep) {
           return NextResponse.json({ steps: [] })
         }
 
@@ -50,7 +53,7 @@ export async function GET(
           )
         }
 
-        const steps = await prisma.transformationStep.findMany({
+        const steps = await transformationStep.findMany({
           where: { transformationId: resolvedParams.id },
           orderBy: { stepOrder: 'asc' },
         })
@@ -81,7 +84,8 @@ export async function POST(
         const body = await req.json()
         const data = createStepSchema.parse(body)
 
-        if (!prisma.transformationStep) {
+        const transformationStep = getTransformationStep()
+        if (!transformationStep) {
           return NextResponse.json(
             { error: 'TransformationStep model not available' },
             { status: 500 }
@@ -100,7 +104,7 @@ export async function POST(
           )
         }
 
-        const step = await prisma.transformationStep.create({
+        const step = await transformationStep.create({
           data: {
             transformationId: resolvedParams.id,
             stepOrder: data.stepOrder,

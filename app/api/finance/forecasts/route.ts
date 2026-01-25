@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { forecastBudget } from '@/lib/ai/services/budget-forecaster'
+import { Prisma } from '@prisma/client'
 
 const createForecastSchema = z.object({
   budgetId: z.string(),
@@ -87,7 +88,14 @@ export async function POST(request: NextRequest) {
     const data = createForecastSchema.parse(body)
 
     // Verify budget exists
-    const budget = await prisma.budget.findFirst({
+    type BudgetWithIncludes = Prisma.BudgetGetPayload<{
+      include: {
+        categories: true
+        actuals: true
+      }
+    }>
+
+    const budget: BudgetWithIncludes | null = await prisma.budget.findFirst({
       where: {
         id: data.budgetId,
         tenantId: (session.user as any).tenantId,
@@ -103,6 +111,8 @@ export async function POST(request: NextRequest) {
     if (!budget) {
       return NextResponse.json({ error: 'Budget not found' }, { status: 404 })
     }
+
+    type CostActual = BudgetWithIncludes['actuals'][0]
 
     let forecastedAmount: number
     let confidence: number
@@ -128,32 +138,41 @@ export async function POST(request: NextRequest) {
       const remainingDays = Math.max(0, Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
 
       // Prepare historical spend data
-      const historicalSpend = budget.actuals.map((cost) => ({
+      const historicalSpend = budget.actuals.map((cost: CostActual) => ({
         date: cost.date,
         amount: Number(cost.amount),
       }))
 
       // Calculate committed (pending costs)
-      const pendingCosts = await prisma.costActual.findMany({
+      const pendingCosts: Prisma.CostActualGetPayload<{}>[] = await prisma.costActual.findMany({
         where: {
           budgetId: budget.id,
           approvedAt: null,
         },
       })
-      const committed = pendingCosts.reduce((sum, c) => sum + Number(c.amount), 0)
-      const spentToDate = budget.actuals.reduce((sum, c) => sum + Number(c.amount), 0)
+      const committed = pendingCosts.reduce((sum: number, c: Prisma.CostActualGetPayload<{}>) => sum + Number(c.amount), 0)
+      const spentToDate = budget.actuals.reduce((sum: number, c: CostActual) => sum + Number(c.amount), 0)
       const totalBudget = Number(budget.totalAmount)
       const variance = totalBudget - spentToDate
 
       // Call AI forecasting service
+      // Determine entity type and ID
+      const entityId = budget.projectId || budget.programId || budget.portfolioId || budget.id
+      const entityType = budget.projectId ? 'PROJECT' : budget.programId ? 'PROGRAM' : 'PORTFOLIO'
+
       const aiForecast = await forecastBudget({
         budget: {
+          id: budget.id,
+          entityId,
+          entityType: entityType as 'PROJECT' | 'PROGRAM' | 'PORTFOLIO',
+          type: 'CAPEX' as any, // Default to CAPEX since type is not in Prisma schema
+          currency: budget.currency,
           totalBudget,
           spentToDate,
           committed,
           forecast: totalBudget, // Initial forecast equals budget
           variance,
-          categories: budget.categories.map((cat) => ({
+          categories: budget.categories.map((cat: BudgetWithIncludes['categories'][0]) => ({
             name: cat.name,
             allocated: Number(cat.allocatedAmount),
             spent: Number(cat.spentAmount),
@@ -198,7 +217,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Scenario-based forecast
       const baseAmount = Number(budget.totalAmount)
-      const currentSpend = budget.actuals.reduce((sum, c) => sum + Number(c.amount), 0)
+      const currentSpend = budget.actuals.reduce((sum: number, c: CostActual) => sum + Number(c.amount), 0)
       const remainingBudget = baseAmount - currentSpend
 
       switch (data.scenario) {

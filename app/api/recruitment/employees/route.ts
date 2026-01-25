@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Transform users to employee format
-    const employees = users.map((u) => ({
+    const employees = users.map((u: any) => ({
       id: u.id,
       name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
       email: u.email,

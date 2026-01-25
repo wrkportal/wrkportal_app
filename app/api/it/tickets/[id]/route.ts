@@ -105,19 +105,23 @@ export async function PUT(
         const body = await request.json()
         const data = updateTicketSchema.parse(body)
 
+        const updateData: any = {}
+        
+        if (data.title) updateData.title = data.title
+        if (data.description !== undefined) updateData.description = data.description
+        if (data.priority) updateData.priority = data.priority
+        if (data.status) updateData.status = data.status
+        if (data.category !== undefined) updateData.category = data.category
+        if (data.assigneeId !== undefined) {
+          updateData.assigneeId = data.assigneeId === null ? null : data.assigneeId
+        }
+
         const ticket = await prisma.task.update({
           where: {
             id,
             tenantId: userInfo.tenantId,
           },
-          data: {
-            ...(data.title && { title: data.title }),
-            ...(data.description !== undefined && { description: data.description }),
-            ...(data.priority && { priority: data.priority }),
-            ...(data.status && { status: data.status }),
-            ...(data.category !== undefined && { category: data.category }),
-            ...(data.assigneeId !== undefined && { assigneeId: data.assigneeId }),
-          },
+          data: updateData as any,
           include: {
             assignee: {
               select: {

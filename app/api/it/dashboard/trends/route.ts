@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
-import { PrismaClientKnownRequestError } from '@prisma/client'
 
 // Helper to safely query Prisma models that might not exist
 const safeQuery = async <T>(
@@ -14,13 +13,12 @@ const safeQuery = async <T>(
   } catch (error: any) {
     // Check if it's a Prisma error about missing model or TypeError from undefined
     if (
-      error instanceof PrismaClientKnownRequestError &&
-      (error.code === 'P2001' ||
-        error.message?.includes('does not exist') ||
-        error.message?.includes('Unknown model') ||
-        error.message?.includes('model does not exist'))
+      (error?.code === 'P2001' ||
+        error?.message?.includes('does not exist') ||
+        error?.message?.includes('Unknown model') ||
+        error?.message?.includes('model does not exist'))
     ) {
-      console.warn('Prisma model not found, using default value:', error.message)
+      console.warn('Prisma model not found, using default value:', error?.message)
       return defaultValue
     }
     // Catch TypeError from accessing undefined properties

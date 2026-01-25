@@ -13,7 +13,7 @@ export function convertOpenAIMessage(
   message: OpenAI.Chat.ChatCompletionMessageParam
 ): ChatMessage {
   return {
-    role: message.role,
+    role: message.role === 'developer' ? 'system' : (message.role === 'function' ? 'tool' : message.role),
     content: typeof message.content === 'string' ? message.content : '',
     name: 'name' in message ? message.name : undefined,
     tool_call_id: 'tool_call_id' in message ? message.tool_call_id : undefined,
@@ -26,11 +26,18 @@ export function convertOpenAIMessage(
 export function convertToOpenAIMessage(
   message: ChatMessage
 ): OpenAI.Chat.ChatCompletionMessageParam {
+  if (message.role === 'tool') {
+    return {
+      role: 'tool',
+      content: message.content,
+      tool_call_id: message.tool_call_id ?? '',
+    }
+  }
+
   return {
-    role: message.role as 'system' | 'user' | 'assistant' | 'tool',
+    role: message.role,
     content: message.content,
     name: message.name,
-    tool_call_id: message.tool_call_id,
   }
 }
 
@@ -38,9 +45,24 @@ export function convertToOpenAIMessage(
  * Convert OpenAI ChatCompletionTool to ChatTool
  */
 export function convertOpenAITool(tool: OpenAI.Chat.ChatCompletionTool): ChatTool {
+  if (tool.type === 'function') {
+    return {
+      type: 'function',
+      function: {
+        name: tool.function.name,
+        description: tool.function.description ?? '',
+        parameters: tool.function.parameters ?? {},
+      },
+    }
+  }
+
   return {
     type: 'function',
-    function: tool.function,
+    function: {
+      name: 'custom_tool',
+      description: 'Converted custom tool',
+      parameters: {},
+    },
   }
 }
 

@@ -99,25 +99,25 @@ export async function GET(req: NextRequest) {
 
         // Calculate stats
         const activeProjects = projects.filter(
-          (p) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'
+          (p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'
         ).length
 
         const upcomingReleases = releases.filter(
-          (r) => r.status === 'PLANNED' || r.status === 'IN_PROGRESS'
+          (r: any) => r.status === 'PLANNED' || r.status === 'IN_PROGRESS'
         ).length
 
-        const delayedTasks = tasks.filter((t) => {
+        const delayedTasks = tasks.filter((t: any) => {
           if (!t.dueDate || t.status === 'DONE' || t.status === 'CANCELLED') return false
           return new Date(t.dueDate) < new Date()
         }).length
 
-        const blockedTasks = tasks.filter((t) => t.status === 'BLOCKED').length
+        const blockedTasks = tasks.filter((t: any) => t.status === 'BLOCKED').length
 
         // Calculate roadmap items from projects
         const roadmapItems = projects
-          .filter((p) => p.status !== 'COMPLETED' && p.status !== 'CANCELLED')
+          .filter((p: any) => p.status !== 'COMPLETED' && p.status !== 'CANCELLED')
           .slice(0, 10)
-          .map((p) => ({
+          .map((p: any) => ({
             id: p.id,
             title: p.name,
             status:
@@ -139,9 +139,9 @@ export async function GET(req: NextRequest) {
 
         // Calculate blockers from blocked tasks
         const blockerItems = tasks
-          .filter((t) => t.status === 'BLOCKED')
+          .filter((t: any) => t.status === 'BLOCKED')
           .slice(0, 10)
-          .map((t) => ({
+          .map((t: any) => ({
             id: t.id,
             title: t.title,
             team: t.project?.name || 'Unassigned',
@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
           string,
           { tasks: number; load: number; name: string; userId: string }
         >()
-        tasks.forEach((t) => {
+        tasks.forEach((t: any) => {
           if (t.assigneeId && t.status !== 'DONE' && t.status !== 'CANCELLED') {
             const current = teamMap.get(t.assigneeId) || {
               tasks: 0,
@@ -189,23 +189,23 @@ export async function GET(req: NextRequest) {
 
         // Calculate metrics from real data
         const totalTasks = tasks.length
-        const completedTasks = tasks.filter((t) => t.status === 'DONE').length
+        const completedTasks = tasks.filter((t: any) => t.status === 'DONE').length
         const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : '0'
 
-        const overdueTasks = tasks.filter((t) => {
+        const overdueTasks = tasks.filter((t: any) => {
           if (!t.dueDate || t.status === 'DONE' || t.status === 'CANCELLED') return false
           return new Date(t.dueDate) < new Date()
         }).length
         const overdueRate = totalTasks > 0 ? ((overdueTasks / totalTasks) * 100).toFixed(1) : '0'
 
         // Calculate sprint velocity (average story points completed per sprint)
-        const completedSprints = sprints.filter((s) => s.status === 'COMPLETED')
+        const completedSprints = sprints.filter((s: any) => s.status === 'COMPLETED')
         let avgVelocity = 0
         if (completedSprints.length > 0) {
-          const totalCompletedPoints = completedSprints.reduce((sum, sprint) => {
+          const totalCompletedPoints = completedSprints.reduce((sum: number, sprint: any) => {
             const completedPoints = sprint.tasks
-              .filter((t) => t.status === 'DONE')
-              .reduce((points, t) => points + (t.estimatedHours || 0), 0)
+              .filter((t: any) => t.status === 'DONE')
+              .reduce((points: number, t: any) => points + (t.estimatedHours || 0), 0)
             return sum + completedPoints
           }, 0)
           avgVelocity = Math.round(totalCompletedPoints / completedSprints.length)
@@ -214,7 +214,7 @@ export async function GET(req: NextRequest) {
         // Calculate release success rate
         const totalReleases = releases.length
         const successfulReleases = releases.filter(
-          (r) => r.status === 'RELEASED' && r.releaseDate
+          (r: any) => r.status === 'RELEASED' && r.releaseDate
         ).length
         const releaseSuccessRate =
           totalReleases > 0 ? ((successfulReleases / totalReleases) * 100).toFixed(1) : '0'

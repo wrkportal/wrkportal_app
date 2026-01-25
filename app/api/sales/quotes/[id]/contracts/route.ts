@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
+const getSalesContract = () => (prisma as any).salesContract
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -12,7 +14,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const contracts = await prisma.salesContract.findMany({
+    const salesContract = getSalesContract()
+    if (!salesContract) {
+      return NextResponse.json({ error: 'Contracts are unavailable' }, { status: 503 })
+    }
+
+    const contracts = await (salesContract as any).findMany({
       where: {
         quoteId: params.id,
         tenantId: session.user.tenantId!,
@@ -77,12 +84,17 @@ export async function POST(
     const { name, type, opportunityId } = body
 
     // Generate contract number
-    const contractCount = await prisma.salesContract.count({
+    const salesContract = getSalesContract()
+    if (!salesContract) {
+      return NextResponse.json({ error: 'Contracts are unavailable' }, { status: 503 })
+    }
+
+    const contractCount = await (salesContract as any).count({
       where: { tenantId: session.user.tenantId! },
     })
     const contractNumber = `CONTRACT-${String(contractCount + 1).padStart(6, '0')}`
 
-    const contract = await prisma.salesContract.create({
+    const contract = await (salesContract as any).create({
       data: {
         tenantId: session.user.tenantId!,
         quoteId: params.id,

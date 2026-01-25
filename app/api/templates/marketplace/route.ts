@@ -73,12 +73,6 @@ export async function GET(request: NextRequest) {
                 lastName: true,
               },
             },
-            _count: {
-              select: {
-                reviews: true,
-                installations: true,
-              },
-            },
           },
           orderBy,
           take: limit,
@@ -94,7 +88,9 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
           templates,
-          categories: categories.map(c => c.category).filter(Boolean),
+          categories: categories
+            .map((c: { category: string | null }) => c.category)
+            .filter(Boolean),
           total: templates.length,
         })
       } catch (error: any) {

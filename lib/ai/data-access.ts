@@ -198,7 +198,7 @@ export async function getTeamMembersForAI(tenantId: string, projectId?: string) 
       where: { projectId },
       select: { userId: true },
     })
-    where.id = { in: projectMembers.map(pm => pm.userId) }
+    where.id = { in: projectMembers.map((pm: any) => pm.userId) }
   }
 
   const users = await prisma.user.findMany({

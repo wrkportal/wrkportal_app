@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
 
         // Format activity feed
         const activities = [
-          ...recentTasks.map((task) => ({
+          ...recentTasks.map((task: any) => ({
             id: `task-${task.id}`,
             type: 'TASK_UPDATE',
             title: `Task "${task.title}" updated`,
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
             entityId: task.id,
             entityType: 'TASK',
           })),
-          ...recentProjects.map((project) => ({
+          ...recentProjects.map((project: any) => ({
             id: `project-${project.id}`,
             type: 'PROJECT_UPDATE',
             title: `Project "${project.name}" updated`,
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
             entityId: project.id,
             entityType: 'PROJECT',
           })),
-          ...recentReleases.map((release) => ({
+          ...recentReleases.map((release: any) => ({
             id: `release-${release.id}`,
             type: 'RELEASE_UPDATE',
             title: `Release "${release.name}" updated`,

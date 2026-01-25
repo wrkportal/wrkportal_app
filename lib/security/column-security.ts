@@ -59,16 +59,16 @@ export async function getApplicableColumnRules(
   const prioritizedRules: any[] = []
   
   // Add user-specific rules first (highest priority)
-  prioritizedRules.push(...rules.filter(r => r.userId === userId))
+  prioritizedRules.push(...rules.filter((r: any) => r.userId === userId))
   
   // Add org unit rules
-  prioritizedRules.push(...rules.filter(r => r.orgUnitId === orgUnitId && !r.userId))
+  prioritizedRules.push(...rules.filter((r: any) => r.orgUnitId === orgUnitId && !r.userId))
   
   // Add role rules
-  prioritizedRules.push(...rules.filter(r => r.role === role && !r.userId && !r.orgUnitId))
+  prioritizedRules.push(...rules.filter((r: any) => r.role === role && !r.userId && !r.orgUnitId))
   
   // Add global rules last
-  prioritizedRules.push(...rules.filter(r => !r.userId && !r.orgUnitId && !r.role))
+  prioritizedRules.push(...rules.filter((r: any) => !r.userId && !r.orgUnitId && !r.role))
 
   // Deduplicate by column (keep first occurrence = highest priority)
   const uniqueRules = new Map<string, any>()
@@ -94,7 +94,9 @@ export async function applyColumnSecurity<T extends Record<string, any>>(
     return data
   }
 
-  const securedData = { ...data }
+  // Create a mutable copy to allow property assignment
+  // Use Object.assign to create a new object that's explicitly mutable
+  const securedData: Record<string, any> = Object.assign({}, data)
 
   for (const rule of rules) {
     const column = rule.column
@@ -111,20 +113,22 @@ export async function applyColumnSecurity<T extends Record<string, any>>(
 
       case ColumnSecurityAction.MASK:
         // Mask the value
-        securedData[column] = maskValue(
+        const maskedValue = maskValue(
           securedData[column],
           rule.maskingType || MaskingType.FULL,
           rule.maskingConfig as any
         )
+        securedData[column] = maskedValue
         break
 
       case ColumnSecurityAction.PARTIAL_MASK:
         // Partial masking
-        securedData[column] = maskValue(
+        const partialMaskedValue = maskValue(
           securedData[column],
           MaskingType.PARTIAL,
           rule.maskingConfig as any
         )
+        securedData[column] = partialMaskedValue
         break
 
       case ColumnSecurityAction.READ_ONLY:
@@ -134,7 +138,7 @@ export async function applyColumnSecurity<T extends Record<string, any>>(
     }
   }
 
-  return securedData
+  return securedData as T
 }
 
 /**
@@ -160,8 +164,8 @@ export async function buildColumnSelectClause(
 
   const hiddenColumns = new Set(
     rules
-      .filter(r => r.action === ColumnSecurityAction.HIDE)
-      .map(r => r.column)
+      .filter((r: any) => r.action === ColumnSecurityAction.HIDE)
+      .map((r: any) => r.column)
   )
 
   if (hiddenColumns.size === 0) {

@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsAsset model
+function getOperationsAsset() {
+  return (prisma as any).operationsAsset as any
+}
+
 const updateAssetSchema = z.object({
   name: z.string().min(1).optional(),
   category: z.string().optional().nullable(),
@@ -27,7 +32,15 @@ export async function GET(
     { resource: 'operations', action: 'READ' },
     async (request, userInfo) => {
       try {
-        const asset = await prisma.operationsAsset.findFirst({
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available' },
+            { status: 503 }
+          )
+        }
+
+        const asset = await operationsAsset.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -90,7 +103,15 @@ export async function PATCH(
         const body = await request.json()
         const validatedData = updateAssetSchema.parse(body)
 
-        const existing = await prisma.operationsAsset.findFirst({
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available' },
+            { status: 503 }
+          )
+        }
+
+        const existing = await operationsAsset.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -128,7 +149,7 @@ export async function PATCH(
         }
         if (validatedData.notes !== undefined) updateData.notes = validatedData.notes
 
-        const asset = await prisma.operationsAsset.update({
+        const asset = await operationsAsset.update({
           where: { id: params.id },
           data: updateData,
           include: {
@@ -171,7 +192,15 @@ export async function DELETE(
     { resource: 'operations', action: 'DELETE' },
     async (request, userInfo) => {
       try {
-        const asset = await prisma.operationsAsset.findFirst({
+        const operationsAsset = getOperationsAsset()
+        if (!operationsAsset) {
+          return NextResponse.json(
+            { error: 'Operations asset model not available' },
+            { status: 503 }
+          )
+        }
+
+        const asset = await operationsAsset.findFirst({
           where: {
             id: params.id,
             tenantId: userInfo.tenantId,
@@ -185,7 +214,7 @@ export async function DELETE(
           )
         }
 
-        await prisma.operationsAsset.delete({
+        await operationsAsset.delete({
           where: { id: params.id },
         })
 

@@ -53,7 +53,7 @@ export async function createDashboard(
     sharedWith?: string[]
   }
 ) {
-  const dashboard = await prisma.salesDashboard.create({
+  const dashboard = await (prisma as any).salesDashboard.create({
     data: {
       tenantId,
       ownerId,
@@ -79,7 +79,7 @@ export async function getDashboard(
   tenantId: string,
   userId?: string
 ) {
-  const dashboard = await prisma.salesDashboard.findFirst({
+  const dashboard = await (prisma as any).salesDashboard.findFirst({
     where: {
       id: dashboardId,
       tenantId,
@@ -135,7 +135,7 @@ export async function getDashboards(
     ]
   }
 
-  const dashboards = await prisma.salesDashboard.findMany({
+  const dashboards = await (prisma as any).salesDashboard.findMany({
     where,
     include: {
       owner: {
@@ -175,7 +175,7 @@ export async function updateDashboard(
   }
 ) {
   // Verify ownership
-  const dashboard = await prisma.salesDashboard.findFirst({
+  const dashboard = await (prisma as any).salesDashboard.findFirst({
     where: {
       id: dashboardId,
       tenantId,
@@ -189,7 +189,7 @@ export async function updateDashboard(
 
   // If setting as default, unset other defaults
   if (data.isDefault === true) {
-    await prisma.salesDashboard.updateMany({
+    await (prisma as any).salesDashboard.updateMany({
       where: {
         tenantId,
         ownerId,
@@ -201,7 +201,7 @@ export async function updateDashboard(
     })
   }
 
-  const updated = await prisma.salesDashboard.update({
+  const updated = await (prisma as any).salesDashboard.update({
     where: { id: dashboardId },
     data: {
       name: data.name,
@@ -226,7 +226,7 @@ export async function deleteDashboard(
   tenantId: string,
   ownerId: string
 ) {
-  const dashboard = await prisma.salesDashboard.findFirst({
+  const dashboard = await (prisma as any).salesDashboard.findFirst({
     where: {
       id: dashboardId,
       tenantId,
@@ -238,7 +238,7 @@ export async function deleteDashboard(
     throw new Error('Dashboard not found or access denied')
   }
 
-  await prisma.salesDashboard.delete({
+  await (prisma as any).salesDashboard.delete({
     where: { id: dashboardId },
   })
 
@@ -252,7 +252,7 @@ export async function getDefaultDashboard(
   tenantId: string,
   userId: string
 ) {
-  const dashboard = await prisma.salesDashboard.findFirst({
+  const dashboard = await (prisma as any).salesDashboard.findFirst({
     where: {
       tenantId,
       ownerId: userId,

@@ -1088,7 +1088,6 @@ export function EditableTable({
                                   cancelEdit()
                                 }
                               }}
-                              className="rounded-md border-b-4 border-primary focus-visible:ring-0 focus-visible:ring-offset-0"
                               className="h-8 text-sm rounded-md border-0 border-b-4 border-primary focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-b-4 focus-visible:border-primary"
                               onClick={(e) => e.stopPropagation()}
                               autoFocus

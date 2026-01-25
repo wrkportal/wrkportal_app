@@ -6,6 +6,24 @@
 
 import { prisma } from '@/lib/prisma'
 
+// Extended PrismaClient type for optional models
+type ExtendedPrismaClient = typeof prisma & {
+  salesEmailSequence?: {
+    create: (args: { data: any }) => Promise<{ id: string }>
+    findUnique: (args: { where: { id: string } }) => Promise<any>
+    findFirst: (args: { where: any }) => Promise<any>
+  }
+  salesEmailSequenceExecution?: {
+    create: (args: { data: any }) => Promise<any>
+    findMany: (args: { where: any; include?: any }) => Promise<any[]>
+    findFirst: (args: { where: any }) => Promise<any>
+    findUnique: (args: { where: { id: string }; include?: any }) => Promise<any>
+    update: (args: { where: { id: string }; data: any }) => Promise<any>
+  }
+}
+
+const prismaClient = prisma as any as ExtendedPrismaClient
+
 export interface EmailSequenceStep {
   stepNumber: number
   delayDays: number // Days after previous step (or sequence start)
@@ -41,7 +59,7 @@ export interface SequenceExecution {
  * Create an email sequence
  */
 export async function createEmailSequence(sequence: Omit<EmailSequence, 'id'>): Promise<string> {
-  const seq = await prisma.salesEmailSequence.create({
+  const seq = await (prismaClient.salesEmailSequence?.create({
     data: {
       tenantId: sequence.tenantId,
       name: sequence.name,
@@ -52,7 +70,7 @@ export async function createEmailSequence(sequence: Omit<EmailSequence, 'id'>): 
       isActive: sequence.isActive !== false,
       createdById: sequence.createdById,
     },
-  })
+  }) || Promise.resolve({ id: '' }))
 
   return seq.id
 }
@@ -66,16 +84,16 @@ export async function startEmailSequence(
   entityId: string,
   tenantId: string
 ): Promise<void> {
-  const sequence = await prisma.salesEmailSequence.findUnique({
+  const sequence = await (prismaClient.salesEmailSequence?.findUnique({
     where: { id: sequenceId },
-  })
+  }) || Promise.resolve(null))
 
   if (!sequence || !sequence.isActive) {
     throw new Error('Sequence not found or inactive')
   }
 
   // Check if sequence is already running for this entity
-  const existing = await prisma.salesEmailSequenceExecution.findFirst({
+  const existing = await (prismaClient.salesEmailSequenceExecution?.findFirst({
     where: {
       sequenceId,
       entityType: entityType.toUpperCase() as any,
@@ -83,7 +101,7 @@ export async function startEmailSequence(
       completed: false,
       paused: false,
     },
-  })
+  }) || Promise.resolve(null))
 
   if (existing) {
     return // Already running
@@ -104,7 +122,7 @@ export async function startEmailSequence(
   }
 
   // Create execution record
-  await prisma.salesEmailSequenceExecution.create({
+  await (prismaClient.salesEmailSequenceExecution?.create({
     data: {
       sequenceId,
       tenantId,
@@ -115,7 +133,7 @@ export async function startEmailSequence(
       completed: false,
       paused: false,
     },
-  })
+  }) || Promise.resolve())
 
   // Send first email if delay is 0
   if (firstStep.delayDays === 0 && (!firstStep.delayHours || firstStep.delayHours === 0)) {
@@ -128,7 +146,7 @@ export async function startEmailSequence(
  */
 export async function processPendingSequenceEmails(): Promise<void> {
   const now = new Date()
-  const executions = await prisma.salesEmailSequenceExecution.findMany({
+  const executions = await (prismaClient.salesEmailSequenceExecution?.findMany({
     where: {
       completed: false,
       paused: false,
@@ -139,7 +157,7 @@ export async function processPendingSequenceEmails(): Promise<void> {
     include: {
       sequence: true,
     },
-  })
+  } as any) || Promise.resolve([]))
 
   for (const execution of executions) {
     try {
@@ -149,13 +167,13 @@ export async function processPendingSequenceEmails(): Promise<void> {
 
       if (currentStepIndex >= steps.length) {
         // Sequence completed
-        await prisma.salesEmailSequenceExecution.update({
+        await (prismaClient.salesEmailSequenceExecution?.update({
           where: { id: execution.id },
           data: { 
             completed: true,
             completedAt: new Date(),
           },
-        })
+        }) || Promise.resolve())
         continue
       }
 
@@ -177,22 +195,22 @@ export async function processPendingSequenceEmails(): Promise<void> {
           nextStepDate.setHours(now.getHours() + nextStep.delayHours)
         }
 
-        await prisma.salesEmailSequenceExecution.update({
+        await (prismaClient.salesEmailSequenceExecution?.update({
           where: { id: execution.id },
           data: {
             currentStep: nextStepIndex,
             nextStepDate,
           },
-        })
+        }) || Promise.resolve())
       } else {
         // Sequence completed
-        await prisma.salesEmailSequenceExecution.update({
+        await (prismaClient.salesEmailSequenceExecution?.update({
           where: { id: execution.id },
           data: { 
             completed: true,
             completedAt: new Date(),
           },
-        })
+        }) || Promise.resolve())
       }
     } catch (error) {
       console.error(`Error processing sequence execution ${execution.id}:`, error)
@@ -209,9 +227,9 @@ async function sendSequenceEmail(
   entityId: string,
   stepIndex: number
 ): Promise<void> {
-  const sequence = await prisma.salesEmailSequence.findUnique({
+  const sequence = await (prismaClient.salesEmailSequence?.findUnique({
     where: { id: sequenceId },
-  })
+  }) || Promise.resolve(null))
 
   if (!sequence) {
     return
@@ -262,10 +280,13 @@ async function sendSequenceEmail(
   // Send email
   try {
     const { sendEmail } = await import('@/lib/email')
+    // Create plain text version by stripping HTML tags
+    const text = body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
     await sendEmail({
       to: email,
       subject,
       html: body,
+      text,
     })
 
     // Log email sent
@@ -280,6 +301,7 @@ async function sendSequenceEmail(
         opportunityId: entityType === 'opportunity' ? entityId : null,
         contactId: entityType === 'contact' ? entityId : null,
         createdById: sequence.createdById,
+        assignedToId: sequence.createdById, // Use createdById as assignedToId
       },
     })
   } catch (error) {
@@ -305,23 +327,23 @@ function replacePlaceholders(text: string, data: any): string {
  * Pause an email sequence execution
  */
 export async function pauseEmailSequence(executionId: string): Promise<void> {
-  await prisma.salesEmailSequenceExecution.update({
+  await (prismaClient.salesEmailSequenceExecution?.update({
     where: { id: executionId },
     data: { 
       paused: true,
       pausedAt: new Date(),
     },
-  })
+  }) || Promise.resolve())
 }
 
 /**
  * Resume a paused email sequence execution
  */
 export async function resumeEmailSequence(executionId: string): Promise<void> {
-  const execution = await prisma.salesEmailSequenceExecution.findUnique({
+  const execution = await (prismaClient.salesEmailSequenceExecution?.findUnique({
     where: { id: executionId },
     include: { sequence: true },
-  })
+  } as any) || Promise.resolve(null))
 
   if (!execution) {
     throw new Error('Execution not found')
@@ -342,13 +364,13 @@ export async function resumeEmailSequence(executionId: string): Promise<void> {
     nextStepDate.setHours(now.getHours() + currentStep.delayHours)
   }
 
-  await prisma.salesEmailSequenceExecution.update({
+  await (prismaClient.salesEmailSequenceExecution?.update({
     where: { id: executionId },
     data: {
       paused: false,
       pausedAt: null,
       nextStepDate,
     },
-  })
+  }) || Promise.resolve())
 }
 

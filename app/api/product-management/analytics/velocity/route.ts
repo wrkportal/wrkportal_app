@@ -3,6 +3,22 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+type SprintTask = {
+  status: string
+  estimatedHours: number | null
+  updatedAt: Date | null
+}
+
+type Sprint = {
+  id: string
+  name: string
+  status: string
+  startDate: Date
+  endDate: Date | null
+  storyPoints?: number | null
+  tasks: SprintTask[]
+}
+
 // GET - Fetch velocity and burndown data
 export async function GET(req: NextRequest) {
   return withPermissionCheck(
@@ -52,12 +68,12 @@ export async function GET(req: NextRequest) {
         })
 
         // Calculate velocity trend (last 10 sprints)
-        const velocityTrend = sprints
-          .filter((s) => s.status === 'COMPLETED')
-          .map((sprint) => {
+        const velocityTrend = (sprints as Sprint[])
+          .filter((s: Sprint) => s.status === 'COMPLETED')
+          .map((sprint: Sprint) => {
             const completedPoints = sprint.tasks
-              .filter((t) => t.status === 'DONE')
-              .reduce((sum, t) => sum + (t.estimatedHours || 0), 0)
+              .filter((t: SprintTask) => t.status === 'DONE')
+              .reduce((sum: number, t: SprintTask) => sum + (t.estimatedHours || 0), 0)
             return {
               sprintName: sprint.name,
               sprintId: sprint.id,
@@ -68,22 +84,22 @@ export async function GET(req: NextRequest) {
           .reverse() // Oldest first
 
         // Calculate average velocity
-        const velocities = velocityTrend.map((v) => v.velocity)
+        const velocities = velocityTrend.map((v: { velocity: number }) => v.velocity)
         const avgVelocity =
           velocities.length > 0
-            ? Math.round(velocities.reduce((a, b) => a + b, 0) / velocities.length)
+            ? Math.round(velocities.reduce((a: number, b: number) => a + b, 0) / velocities.length)
             : 0
 
         // Get active sprint for burndown
-        const activeSprint = sprints.find((s) => s.status === 'ACTIVE')
+        const activeSprint = (sprints as Sprint[]).find((s: Sprint) => s.status === 'ACTIVE')
         let burndownData: any[] = []
 
         if (activeSprint) {
-          const totalPoints = activeSprint.storyPoints || 
-            activeSprint.tasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0)
+          const totalPoints = activeSprint.storyPoints ||
+            activeSprint.tasks.reduce((sum: number, t: SprintTask) => sum + (t.estimatedHours || 0), 0)
           
           const startDate = new Date(activeSprint.startDate)
-          const endDate = new Date(activeSprint.endDate)
+          const endDate = new Date(activeSprint.endDate ?? activeSprint.startDate)
           const sprintDuration = Math.ceil(
             (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
           )
@@ -104,7 +120,7 @@ export async function GET(req: NextRequest) {
           }
 
           // Calculate actual burndown based on task updates
-          activeSprint.tasks.forEach((task) => {
+          activeSprint.tasks.forEach((task: SprintTask) => {
             if (task.status === 'DONE' && task.updatedAt) {
               const taskDate = new Date(task.updatedAt)
               const taskDateKey = taskDate.toISOString().split('T')[0]

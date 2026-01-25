@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { forecastRevenue } from '@/lib/ai/services/sales/revenue-forecaster'
+import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +23,14 @@ export async function POST(request: NextRequest) {
     const twelveMonthsAgo = new Date()
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
 
-    const wonOpportunities = await prisma.salesOpportunity.findMany({
+    type WonOpportunity = Prisma.SalesOpportunityGetPayload<{
+      select: {
+        amount: true
+        actualCloseDate: true
+      }
+    }>
+
+    const wonOpportunities: WonOpportunity[] = await prisma.salesOpportunity.findMany({
       where: {
         tenantId,
         status: 'WON',
@@ -39,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Group by period
     const historicalMap = new Map<string, { actualRevenue: number; wonDeals: number }>()
     
-    wonOpportunities.forEach(opp => {
+    wonOpportunities.forEach((opp: WonOpportunity) => {
       if (!opp.actualCloseDate) return
       
       const date = new Date(opp.actualCloseDate)
@@ -69,7 +77,15 @@ export async function POST(request: NextRequest) {
     }))
 
     // Fetch current pipeline
-    const openOpportunities = await prisma.salesOpportunity.findMany({
+    type OpenOpportunity = Prisma.SalesOpportunityGetPayload<{
+      select: {
+        amount: true
+        probability: true
+        stage: true
+      }
+    }>
+
+    const openOpportunities: OpenOpportunity[] = await prisma.salesOpportunity.findMany({
       where: {
         tenantId,
         status: 'OPEN',
@@ -81,15 +97,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const totalValue = openOpportunities.reduce((sum, opp) => sum + Number(opp.amount || 0), 0)
+    const totalValue = openOpportunities.reduce((sum: number, opp: OpenOpportunity) => sum + Number(opp.amount || 0), 0)
     const weightedValue = openOpportunities.reduce(
-      (sum, opp) => sum + (Number(opp.amount || 0) * (opp.probability || 0)) / 100,
+      (sum: number, opp: OpenOpportunity) => sum + (Number(opp.amount || 0) * (opp.probability || 0)) / 100,
       0
     )
 
     const stageMap = new Map<string, { count: number; value: number; weightedValue: number }>()
     
-    openOpportunities.forEach(opp => {
+    openOpportunities.forEach((opp: OpenOpportunity) => {
       const stage = opp.stage
       const amount = Number(opp.amount || 0)
       const weighted = (amount * (opp.probability || 0)) / 100

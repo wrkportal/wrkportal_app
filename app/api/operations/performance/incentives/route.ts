@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsIncentive model
+function getOperationsIncentive() {
+  return (prisma as any).operationsIncentive as any
+}
+
 const createIncentiveSchema = z.object({
   employeeId: z.string().min(1),
   type: z.enum(['PERFORMANCE', 'QUALITY', 'PRODUCTIVITY']),
@@ -53,8 +58,16 @@ export async function GET(req: NextRequest) {
           where.status = status
         }
 
+        const operationsIncentive = getOperationsIncentive()
+        if (!operationsIncentive) {
+          return NextResponse.json(
+            { error: 'Operations incentive model not available' },
+            { status: 503 }
+          )
+        }
+
         const [incentives, total] = await Promise.all([
-          prisma.operationsIncentive.findMany({
+          operationsIncentive.findMany({
             where,
             include: {
               employee: {
@@ -79,34 +92,34 @@ export async function GET(req: NextRequest) {
             skip,
             take: limit,
           }),
-          prisma.operationsIncentive.count({ where }),
+          operationsIncentive.count({ where }),
         ])
 
         // Calculate stats
         const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
         const stats = {
-          total: await prisma.operationsIncentive.count({
+          total: await operationsIncentive.count({
             where: { tenantId: userInfo.tenantId },
           }),
-          thisMonth: await prisma.operationsIncentive.count({
+          thisMonth: await operationsIncentive.count({
             where: {
               tenantId: userInfo.tenantId,
               month: currentMonth,
             },
           }),
-          pending: await prisma.operationsIncentive.count({
+          pending: await operationsIncentive.count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'PENDING',
             },
           }),
-          approved: await prisma.operationsIncentive.count({
+          approved: await operationsIncentive.count({
             where: {
               tenantId: userInfo.tenantId,
               status: 'APPROVED',
             },
           }),
-          totalAmount: incentives.reduce((sum, i) => sum + Number(i.amount), 0),
+          totalAmount: incentives.reduce((sum: number, i: any) => sum + Number(i.amount), 0),
         }
 
         return NextResponse.json({
@@ -167,7 +180,15 @@ export async function POST(req: NextRequest) {
         const validatedData = createIncentiveSchema.parse(body)
 
         // Check if incentive already exists for this employee/month/type
-        const existing = await prisma.operationsIncentive.findFirst({
+        const operationsIncentive = getOperationsIncentive()
+        if (!operationsIncentive) {
+          return NextResponse.json(
+            { error: 'Operations incentive model not available' },
+            { status: 503 }
+          )
+        }
+
+        const existing = await operationsIncentive.findFirst({
           where: {
             employeeId: validatedData.employeeId,
             type: validatedData.type,
@@ -183,7 +204,7 @@ export async function POST(req: NextRequest) {
           )
         }
 
-        const incentive = await prisma.operationsIncentive.create({
+        const incentive = await operationsIncentive.create({
           data: {
             employeeId: validatedData.employeeId,
             type: validatedData.type,

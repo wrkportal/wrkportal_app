@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const createRateCardSchema = z.object({
   name: z.string().min(1),
@@ -91,32 +92,39 @@ export async function POST(request: NextRequest) {
     const data = createRateCardSchema.parse(body)
 
     // Create rate card with items
+    const rateCardData: Prisma.RateCardUncheckedCreateInput = {
+      tenantId: (session.user as any).tenantId,
+      name: data.name,
+      effectiveDate: data.effectiveDate,
+      currency: data.currency,
+      createdById: (session.user as any).id,
+    }
+
+    // Conditionally add optional fields
+    if (data.description) rateCardData.description = data.description
+    if (data.expiryDate) rateCardData.expiryDate = data.expiryDate
+
+    // Add rates
+    rateCardData.rates = {
+      create: data.items.map((item) => {
+        const rateData: Prisma.RateCardItemCreateWithoutRateCardInput = {
+          role: item.role,
+          costRate: item.costRate,
+          billableRate: item.billableRate,
+          currency: item.currency,
+          effectiveDate: item.effectiveDate,
+        }
+        if (item.region) rateData.region = item.region
+        if (item.expiryDate) rateData.expiryDate = item.expiryDate
+        if (item.notes) rateData.notes = item.notes
+        return rateData
+      }),
+    } as any
+
     const rateCard = await prisma.rateCard.create({
-      data: {
-        tenantId: (session.user as any).tenantId,
-        name: data.name,
-        description: data.description,
-        effectiveDate: data.effectiveDate,
-        expiryDate: data.expiryDate,
-        currency: data.currency,
-        createdBy: {
-          connect: { id: (session.user as any).id },
-        },
-        rates: {
-          create: data.items.map((item) => ({
-            role: item.role,
-            region: item.region,
-            costRate: item.costRate,
-            billableRate: item.billableRate,
-            currency: item.currency,
-            effectiveDate: item.effectiveDate,
-            expiryDate: item.expiryDate,
-            notes: item.notes,
-          })),
-        },
-      },
+      data: rateCardData as any,
       include: {
-        items: true,
+        rates: true,
         createdBy: {
           select: { id: true, name: true, email: true },
         },

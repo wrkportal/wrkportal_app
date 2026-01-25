@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 // GET - Fetch time tracking logs for a task or user
 export async function GET(request: NextRequest) {
@@ -68,11 +69,37 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    type TimeLogWithRelations = Prisma.TimeTrackingGetPayload<{
+      include: {
+        task: {
+          select: {
+            id: true
+            title: true
+            project: {
+              select: {
+                id: true
+                name: true
+                code: true
+              }
+            }
+          }
+        }
+        user: {
+          select: {
+            id: true
+            firstName: true
+            lastName: true
+            email: true
+          }
+        }
+      }
+    }>
+
     // Calculate total duration and group by date
     const groupedByDate: { [key: string]: any } = {}
     let totalDuration = 0
 
-    timeLogs.forEach((log) => {
+    timeLogs.forEach((log: TimeLogWithRelations) => {
       const dateKey = log.date.toISOString().split('T')[0]
       if (!groupedByDate[dateKey]) {
         groupedByDate[dateKey] = {

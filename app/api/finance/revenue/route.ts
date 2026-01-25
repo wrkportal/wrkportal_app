@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 // GET /api/finance/revenue - Get revenue data
 export async function GET(request: NextRequest) {
@@ -16,6 +17,22 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('projectId')
     const fromDate = searchParams.get('fromDate')
     const toDate = searchParams.get('toDate')
+
+    // Define types
+    type InvoiceWithIncludes = Prisma.InvoiceGetPayload<{
+      include: {
+        project: {
+          select: { id: true; name: true; code: true }
+        }
+        payments: true
+        lineItems: true
+      }
+    }>
+    type Payment = InvoiceWithIncludes['payments'][0]
+    type PreviousInvoiceWithPayments = Prisma.InvoiceGetPayload<{
+      include: { payments: true }
+    }>
+    type PreviousPayment = PreviousInvoiceWithPayments['payments'][0]
 
     // Calculate date range
     let startDate: Date
@@ -64,16 +81,18 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    const typedInvoices: InvoiceWithIncludes[] = invoices as InvoiceWithIncludes[]
+
     // Calculate totals
-    const totalRevenue = invoices.reduce((sum, inv) => {
-      const paid = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0)
+    const totalRevenue = typedInvoices.reduce((sum: number, inv: InvoiceWithIncludes) => {
+      const paid = inv.payments.reduce((pSum: number, p: Payment) => pSum + Number(p.amount), 0)
       return sum + (paid || Number(inv.totalAmount))
     }, 0)
 
     // Revenue by project
-    const revenueByProject = invoices.reduce((acc: any, inv) => {
+    const revenueByProject = typedInvoices.reduce((acc: any, inv: InvoiceWithIncludes) => {
       const projectName = inv.project?.name || 'No Project'
-      const paid = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0)
+      const paid = inv.payments.reduce((pSum: number, p: Payment) => pSum + Number(p.amount), 0)
       const amount = paid || Number(inv.totalAmount)
       
       if (!acc[projectName]) {
@@ -90,9 +109,9 @@ export async function GET(request: NextRequest) {
     }, {})
 
     // Revenue by month
-    const revenueByMonth = invoices.reduce((acc: any, inv) => {
+    const revenueByMonth = typedInvoices.reduce((acc: any, inv: InvoiceWithIncludes) => {
       const month = new Date(inv.invoiceDate).toISOString().substring(0, 7) // YYYY-MM
-      const paid = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0)
+      const paid = inv.payments.reduce((pSum: number, p: Payment) => pSum + Number(p.amount), 0)
       const amount = paid || Number(inv.totalAmount)
       
       if (!acc[month]) {
@@ -124,8 +143,10 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const previousRevenue = previousInvoices.reduce((sum, inv) => {
-      const paid = inv.payments.reduce((pSum, p) => pSum + Number(p.amount), 0)
+    const typedPreviousInvoices: PreviousInvoiceWithPayments[] = previousInvoices as PreviousInvoiceWithPayments[]
+
+    const previousRevenue = typedPreviousInvoices.reduce((sum: number, inv: PreviousInvoiceWithPayments) => {
+      const paid = inv.payments.reduce((pSum: number, p: PreviousPayment) => pSum + Number(p.amount), 0)
       return sum + (paid || Number(inv.totalAmount))
     }, 0)
 
@@ -136,17 +157,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       totalRevenue,
       revenueGrowth,
-      invoiceCount: invoices.length,
+      invoiceCount: typedInvoices.length,
       revenueByProject: Object.values(revenueByProject),
       revenueByMonth: Object.values(revenueByMonth).sort((a: any, b: any) => a.month.localeCompare(b.month)),
-      invoices: invoices.map(inv => ({
+      invoices: typedInvoices.map((inv: InvoiceWithIncludes) => ({
         id: inv.id,
         invoiceNumber: inv.invoiceNumber,
         clientName: inv.clientName,
         project: inv.project,
         invoiceDate: inv.invoiceDate,
         totalAmount: Number(inv.totalAmount),
-        paid: inv.payments.reduce((sum, p) => sum + Number(p.amount), 0),
+        paid: inv.payments.reduce((sum: number, p: Payment) => sum + Number(p.amount), 0),
         status: inv.status,
       })),
       period: {

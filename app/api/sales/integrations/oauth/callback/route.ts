@@ -9,6 +9,8 @@ import { auth } from '@/auth'
 import { IntegrationManager } from '@/lib/integrations/integration-manager'
 import { prisma } from '@/lib/prisma'
 
+const getSalesIntegration = () => (prisma as any).salesIntegration
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -45,7 +47,14 @@ export async function GET(request: NextRequest) {
     const userId = session?.user?.id || 'system'
 
     // Check if integration already exists
-    let integration = await prisma.salesIntegration.findFirst({
+    const salesIntegration = getSalesIntegration()
+    if (!salesIntegration) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/sales-dashboard/integrations?error=integrations_unavailable`
+      )
+    }
+
+    let integration = await (salesIntegration as any).findFirst({
       where: {
         tenantId,
         provider: provider.toLowerCase(),
@@ -66,7 +75,7 @@ export async function GET(request: NextRequest) {
     if (integration) {
       // Update existing integration
       const { encryptCredentials } = require('@/lib/integrations/credential-encryption')
-      await prisma.salesIntegration.update({
+      await (salesIntegration as any).update({
         where: { id: integration.id },
         data: {
           credentials: encryptCredentials(credentials) as any,
@@ -76,7 +85,7 @@ export async function GET(request: NextRequest) {
       })
     } else {
       // Create new integration
-      integration = await prisma.salesIntegration.create({
+      integration = await (salesIntegration as any).create({
         data: {
           tenantId,
           provider: provider.toLowerCase(),

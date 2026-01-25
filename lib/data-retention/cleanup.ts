@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { TaskStatus, ProjectStatus } from '@prisma/client'
 
 export interface CleanupResult {
   tenantId: string
@@ -73,7 +74,7 @@ export async function cleanupTenantData(tenantId: string): Promise<CleanupResult
           where: {
             tenantId: tenant.id,
             updatedAt: { lt: cutoffDate },
-            status: 'COMPLETED', // Only delete completed tasks
+            status: TaskStatus.DONE, // Only delete completed tasks
           },
         })
 
@@ -93,7 +94,7 @@ export async function cleanupTenantData(tenantId: string): Promise<CleanupResult
           where: {
             tenantId: tenant.id,
             updatedAt: { lt: cutoffDate },
-            status: 'ARCHIVED', // Only delete archived projects
+            status: ProjectStatus.COMPLETED, // Only delete completed projects
           },
         })
 
@@ -181,7 +182,7 @@ export async function getRetentionStats(tenantId: string) {
             where: {
               tenantId,
               updatedAt: { lt: taskCutoff },
-              status: 'COMPLETED',
+              status: TaskStatus.DONE,
             },
           })
         : 0,
@@ -190,7 +191,7 @@ export async function getRetentionStats(tenantId: string) {
             where: {
               tenantId,
               updatedAt: { lt: projectCutoff },
-              status: 'ARCHIVED',
+              status: ProjectStatus.COMPLETED,
             },
           })
         : 0,

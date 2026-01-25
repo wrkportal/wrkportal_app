@@ -226,6 +226,7 @@ const defaultLayouts: Layouts = {
 }
 
 function RecruitmentDashboardPageInner() {
+  const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const [stats, setStats] = useState<DashboardStats>({
     totalCandidates: 0,
@@ -332,7 +333,7 @@ function RecruitmentDashboardPageInner() {
     if (savedWidgets) {
       try {
         const parsed: Widget[] = JSON.parse(savedWidgets)
-        
+
         // Check if parsed widgets are valid and have the same structure
         if (parsed && Array.isArray(parsed) && parsed.length > 0) {
           // Migration: If all widgets are visible (old default), reset to invisible for welcome message
@@ -344,20 +345,20 @@ function RecruitmentDashboardPageInner() {
             localStorage.setItem('recruitment-widgets', JSON.stringify(firstLoginWidgets))
             return
           }
-          
+
           // Use saved widgets as-is if they match default widget IDs, otherwise merge
           const savedWidgetIds = new Set(parsed.map(w => w.id))
           const defaultWidgetIds = new Set(defaultWidgets.map(w => w.id))
-          
+
           // If saved widgets have all default IDs, use them directly (they're already saved)
-          if (savedWidgetIds.size === defaultWidgetIds.size && 
-              Array.from(savedWidgetIds).every(id => defaultWidgetIds.has(id))) {
+          if (savedWidgetIds.size === defaultWidgetIds.size &&
+            Array.from(savedWidgetIds).every(id => defaultWidgetIds.has(id))) {
             // All saved widget IDs match defaults, use saved preferences directly
             setWidgets(parsed)
             setWidgetsLoaded(true)
             return
           }
-          
+
           // Otherwise, merge saved with defaults
           const mergedWidgets = defaultWidgets.map(defaultWidget => {
             const savedWidget = parsed.find(w => w.id === defaultWidget.id)
@@ -3483,70 +3484,70 @@ function RecruitmentDashboardPageInner() {
           </div>
 
           {!isMounted ? (
-        /* Render desktop layout during SSR to avoid hydration mismatch */
-        <div className="recruitment-dashboard-grid" suppressHydrationWarning>
-          <Suspense fallback={<LoadingFallback />}>
-            <GridLayoutWrapper
-              className="layout"
-              layouts={layouts}
-              onLayoutChange={handleLayoutChange}
-              breakpoints={gridBreakpoints}
-              cols={gridCols}
-              rowHeight={80}
-              draggableHandle=".drag-handle"
-              isDraggable={false}
-              isResizable={false}
-            >
+            /* Render desktop layout during SSR to avoid hydration mismatch */
+            <div className="recruitment-dashboard-grid" suppressHydrationWarning>
+              <Suspense fallback={<LoadingFallback />}>
+                <GridLayoutWrapper
+                  className="layout"
+                  layouts={layouts}
+                  onLayoutChange={handleLayoutChange}
+                  breakpoints={gridBreakpoints}
+                  cols={gridCols}
+                  rowHeight={80}
+                  draggableHandle=".drag-handle"
+                  isDraggable={false}
+                  isResizable={false}
+                >
+                  {widgetIds.map((widgetId) => (
+                    <div key={widgetId} className="relative group">
+                      <div className="drag-handle absolute top-1 right-1 z-20 cursor-move bg-purple-500/90 backdrop-blur-sm rounded p-1.5 hover:bg-purple-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
+                        <GripVertical className="h-3.5 w-3.5 text-white" />
+                      </div>
+                      {renderWidget(widgetId)}
+                    </div>
+                  ))}
+                </GridLayoutWrapper>
+              </Suspense>
+            </div>
+          ) : isMobile ? (
+            /* Mobile: Simple Stacked Layout */
+            <div className="space-y-4">
               {widgetIds.map((widgetId) => (
-                <div key={widgetId} className="relative group">
-                  <div className="drag-handle absolute top-1 right-1 z-20 cursor-move bg-purple-500/90 backdrop-blur-sm rounded p-1.5 hover:bg-purple-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
-                    <GripVertical className="h-3.5 w-3.5 text-white" />
-                  </div>
+                <div key={widgetId} className="w-full">
                   {renderWidget(widgetId)}
                 </div>
               ))}
-            </GridLayoutWrapper>
-          </Suspense>
-        </div>
-      ) : isMobile ? (
-        /* Mobile: Simple Stacked Layout */
-        <div className="space-y-4">
-          {widgetIds.map((widgetId) => (
-            <div key={widgetId} className="w-full">
-              {renderWidget(widgetId)}
             </div>
-          ))}
-        </div>
-      ) : (
-        /* Desktop: Draggable Grid Layout */
-        <div className="recruitment-dashboard-grid">
-          <Suspense fallback={<LoadingFallback />}>
-            <GridLayoutWrapper
-              className="layout"
-              layouts={layouts}
-              breakpoints={gridBreakpoints}
-              cols={gridCols}
-              rowHeight={80}
-              onLayoutChange={handleLayoutChange}
-              draggableHandle=".drag-handle"
-              isDraggable={true}
-              isResizable={true}
-            >
-              {widgetIds.map((widgetId) => (
-                <div key={widgetId} className="relative group">
-                  {/* Drag Handle - appears on hover */}
-                  <div className="drag-handle absolute top-1 right-1 z-20 cursor-move bg-purple-500/90 backdrop-blur-sm rounded p-1.5 hover:bg-purple-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
-                    <GripVertical className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <div className="h-full overflow-auto">
-                    {renderWidget(widgetId)}
-                  </div>
-                </div>
-              ))}
-            </GridLayoutWrapper>
-          </Suspense>
-        </div>
-        )}
+          ) : (
+            /* Desktop: Draggable Grid Layout */
+            <div className="recruitment-dashboard-grid">
+              <Suspense fallback={<LoadingFallback />}>
+                <GridLayoutWrapper
+                  className="layout"
+                  layouts={layouts}
+                  breakpoints={gridBreakpoints}
+                  cols={gridCols}
+                  rowHeight={80}
+                  onLayoutChange={handleLayoutChange}
+                  draggableHandle=".drag-handle"
+                  isDraggable={true}
+                  isResizable={true}
+                >
+                  {widgetIds.map((widgetId) => (
+                    <div key={widgetId} className="relative group">
+                      {/* Drag Handle - appears on hover */}
+                      <div className="drag-handle absolute top-1 right-1 z-20 cursor-move bg-purple-500/90 backdrop-blur-sm rounded p-1.5 hover:bg-purple-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
+                        <GripVertical className="h-3.5 w-3.5 text-white" />
+                      </div>
+                      <div className="h-full overflow-auto">
+                        {renderWidget(widgetId)}
+                      </div>
+                    </div>
+                  ))}
+                </GridLayoutWrapper>
+              </Suspense>
+            </div>
+          )}
         </>
       )}
 

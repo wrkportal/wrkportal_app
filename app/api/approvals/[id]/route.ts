@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 // GET - Fetch single approval
 export async function GET(
@@ -14,7 +15,50 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const approval = await prisma.approval.findUnique({
+    type ApprovalWithIncludes = Prisma.ApprovalGetPayload<{
+      include: {
+        requestedBy: {
+          select: {
+            id: true
+            firstName: true
+            lastName: true
+            email: true
+            avatar: true
+          }
+        }
+        approvers: {
+          include: {
+            user: {
+              select: {
+                id: true
+                firstName: true
+                lastName: true
+                email: true
+                avatar: true
+              }
+            }
+          }
+        }
+        approvedBy: {
+          select: {
+            id: true
+            firstName: true
+            lastName: true
+          }
+        }
+        rejectedBy: {
+          select: {
+            id: true
+            firstName: true
+            lastName: true
+          }
+        }
+      }
+    }>
+
+    type ApprovalApprover = ApprovalWithIncludes['approvers'][0]
+
+    const approval = (await prisma.approval.findUnique({
       where: {
         id: params.id,
       },
@@ -56,7 +100,7 @@ export async function GET(
           },
         },
       },
-    })
+    })) as ApprovalWithIncludes | null
 
     if (!approval) {
       return NextResponse.json({ error: 'Approval not found' }, { status: 404 })
@@ -64,7 +108,7 @@ export async function GET(
 
     // Check if user has access to this approval
     const isApprover = approval.approvers.some(
-      (a) => a.userId === session.user.id
+      (a: ApprovalApprover) => a.userId === session.user.id
     )
     const isRequester = approval.requestedById === session.user.id
     const isInCC = approval.ccList.includes(session.user.id)

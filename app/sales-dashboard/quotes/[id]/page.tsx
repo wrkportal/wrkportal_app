@@ -135,23 +135,24 @@ export default function QuoteDetailPage() {
     description: '',
     isDefault: false,
   })
-  
+
   const [emailData, setEmailData] = useState({
     to: '',
     subject: '',
     message: '',
   })
-  
+
   const [approvalData, setApprovalData] = useState({
     approvalNotes: '',
   })
-  
+
   const [signatureData, setSignatureData] = useState({
     signedByName: '',
     signedByEmail: '',
     signatureData: null as any,
   })
-  
+  const [creatingInvoice, setCreatingInvoice] = useState(false)
+
   // Contract/SOW state
   const [contracts, setContracts] = useState<any[]>([])
   const [loadingContracts, setLoadingContracts] = useState(false)
@@ -161,7 +162,7 @@ export default function QuoteDetailPage() {
     fetchQuote()
     fetchContracts()
   }, [params.id])
-  
+
   const fetchContracts = async () => {
     try {
       setLoadingContracts(true)
@@ -179,7 +180,7 @@ export default function QuoteDetailPage() {
       setLoadingContracts(false)
     }
   }
-  
+
   const handleCreateContract = async () => {
     try {
       const response = await fetch(`/api/sales/quotes/${params.id}/contracts`, {
@@ -216,7 +217,7 @@ export default function QuoteDetailPage() {
       if (response.ok) {
         const data = await response.json()
         setQuote(data)
-        
+
         // Pre-fill email data
         if (data.account?.email) {
           setEmailData({
@@ -527,7 +528,7 @@ export default function QuoteDetailPage() {
               <Download className="mr-2 h-4 w-4" />
               Download PDF
             </Button>
-            
+
             <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">
@@ -1042,7 +1043,7 @@ export default function QuoteDetailPage() {
                     </TabsTrigger>
                   ))}
                 </TabsList>
-                
+
                 {contracts.map((contract) => (
                   <TabsContent key={contract.id} value={contract.id} className="space-y-6">
                     {/* Contract Overview */}
@@ -1078,12 +1079,11 @@ export default function QuoteDetailPage() {
                       {contract.riskFlags && contract.riskFlags.length > 0 ? (
                         <div className="space-y-2">
                           {contract.riskFlags.map((flag: any) => (
-                            <div key={flag.id} className={`p-3 border rounded-lg ${
-                              flag.severity === 'CRITICAL' ? 'border-red-300 bg-red-50' :
+                            <div key={flag.id} className={`p-3 border rounded-lg ${flag.severity === 'CRITICAL' ? 'border-red-300 bg-red-50' :
                               flag.severity === 'HIGH' ? 'border-orange-300 bg-orange-50' :
-                              flag.severity === 'MEDIUM' ? 'border-yellow-300 bg-yellow-50' :
-                              'border-gray-200'
-                            }`}>
+                                flag.severity === 'MEDIUM' ? 'border-yellow-300 bg-yellow-50' :
+                                  'border-gray-200'
+                              }`}>
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
@@ -1153,11 +1153,10 @@ export default function QuoteDetailPage() {
                       {contract.legalComments && contract.legalComments.length > 0 ? (
                         <div className="space-y-3">
                           {contract.legalComments.map((comment: any) => (
-                            <div key={comment.id} className={`border rounded-lg p-3 ${
-                              comment.commentType === 'CUSTOMER_REQUEST' ? 'border-blue-200 bg-blue-50' :
+                            <div key={comment.id} className={`border rounded-lg p-3 ${comment.commentType === 'CUSTOMER_REQUEST' ? 'border-blue-200 bg-blue-50' :
                               comment.commentType === 'LEGAL_REVIEW' ? 'border-purple-200 bg-purple-50' :
-                              'border-gray-200'
-                            }`}>
+                                'border-gray-200'
+                              }`}>
                               <div className="flex items-start justify-between mb-2">
                                 <Badge variant={comment.commentType === 'CUSTOMER_REQUEST' ? 'default' : comment.commentType === 'LEGAL_REVIEW' ? 'secondary' : 'outline'}>
                                   {comment.commentType.replace('_', ' ')}

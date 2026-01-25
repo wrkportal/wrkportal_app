@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
         // Calculate historical success rate
         const successfulReleases = historicalReleases.filter(
-          (r) => r.status === 'RELEASED' && r.releaseDate
+          (r: any) => r.status === 'RELEASED' && r.releaseDate
         ).length
         const historicalSuccessRate =
           historicalReleases.length > 0 ? (successfulReleases / historicalReleases.length) * 100 : 70
@@ -83,13 +83,13 @@ export async function GET(req: NextRequest) {
         })
 
         // Predict success probability for each release
-        const predictions = releases.map((release) => {
+        const predictions = releases.map((release: any) => {
           const tasks = release.tasks || []
           const totalTasks = tasks.length
-          const completedTasks = tasks.filter((t) => t.status === 'DONE').length
-          const inProgressTasks = tasks.filter((t) => t.status === 'IN_PROGRESS').length
-          const blockedTasks = tasks.filter((t) => t.status === 'BLOCKED').length
-          const overdueTasks = tasks.filter((t) => {
+          const completedTasks = tasks.filter((t: any) => t.status === 'DONE').length
+          const inProgressTasks = tasks.filter((t: any) => t.status === 'IN_PROGRESS').length
+          const blockedTasks = tasks.filter((t: any) => t.status === 'BLOCKED').length
+          const overdueTasks = tasks.filter((t: any) => {
             if (!t.dueDate || t.status === 'DONE') return false
             return new Date(t.dueDate) < new Date()
           }).length
@@ -183,20 +183,20 @@ export async function GET(req: NextRequest) {
         })
 
         // Sort by success probability (lowest first - most at risk)
-        predictions.sort((a, b) => a.successProbability - b.successProbability)
+        predictions.sort((a: any, b: any) => a.successProbability - b.successProbability)
 
         return NextResponse.json({
           predictions,
           summary: {
             totalReleases: predictions.length,
-            high: predictions.filter((p) => p.successLevel === 'HIGH').length,
-            medium: predictions.filter((p) => p.successLevel === 'MEDIUM').length,
-            low: predictions.filter((p) => p.successLevel === 'LOW').length,
-            critical: predictions.filter((p) => p.successLevel === 'CRITICAL').length,
+            high: predictions.filter((p: any) => p.successLevel === 'HIGH').length,
+            medium: predictions.filter((p: any) => p.successLevel === 'MEDIUM').length,
+            low: predictions.filter((p: any) => p.successLevel === 'LOW').length,
+            critical: predictions.filter((p: any) => p.successLevel === 'CRITICAL').length,
             avgSuccessProbability:
               predictions.length > 0
                 ? Math.round(
-                    predictions.reduce((sum, p) => sum + p.successProbability, 0) / predictions.length
+                    predictions.reduce((sum: number, p: any) => sum + p.successProbability, 0) / predictions.length
                   )
                 : 0,
             historicalSuccessRate: Math.round(historicalSuccessRate),

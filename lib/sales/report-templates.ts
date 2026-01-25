@@ -27,6 +27,7 @@ export function getReportTemplates(): ReportTemplate[] {
       description: 'Comprehensive pipeline analysis with stage distribution and value',
       category: 'ANALYTICS',
       config: {
+        name: 'Pipeline Overview',
         type: 'ANALYTICS',
         dataSource: 'opportunities',
         chartType: 'bar',
@@ -43,6 +44,7 @@ export function getReportTemplates(): ReportTemplate[] {
       description: 'Analyze won and lost opportunities with reasons',
       category: 'ANALYTICS',
       config: {
+        name: 'Win/Loss Analysis',
         type: 'ANALYTICS',
         dataSource: 'opportunities',
         chartType: 'pie',
@@ -61,6 +63,7 @@ export function getReportTemplates(): ReportTemplate[] {
       description: 'Sales rep performance metrics and rankings',
       category: 'PERFORMANCE',
       config: {
+        name: 'Rep Performance Report',
         type: 'PERFORMANCE',
         dataSource: 'opportunities',
         chartType: 'bar',
@@ -77,9 +80,10 @@ export function getReportTemplates(): ReportTemplate[] {
       description: 'Track lead conversion rates by source and status',
       category: 'ANALYTICS',
       config: {
+        name: 'Lead Conversion Report',
         type: 'ANALYTICS',
         dataSource: 'leads',
-        chartType: 'funnel',
+        chartType: 'bar',
         groupBy: 'leadSource',
         dateRange: {
           start: new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString(),
@@ -93,6 +97,7 @@ export function getReportTemplates(): ReportTemplate[] {
       description: 'Revenue forecast based on pipeline and historical data',
       category: 'FORECAST',
       config: {
+        name: 'Sales Forecast',
         type: 'FORECAST',
         dataSource: 'forecast',
         chartType: 'line',
@@ -108,6 +113,7 @@ export function getReportTemplates(): ReportTemplate[] {
       description: 'Summary of all sales activities and interactions',
       category: 'OPERATIONAL',
       config: {
+        name: 'Activity Summary',
         type: 'CUSTOM',
         dataSource: 'activities',
         chartType: 'table',
@@ -123,6 +129,7 @@ export function getReportTemplates(): ReportTemplate[] {
       description: 'Average time to close deals by stage and rep',
       category: 'ANALYTICS',
       config: {
+        name: 'Time to Close Analysis',
         type: 'ANALYTICS',
         dataSource: 'opportunities',
         chartType: 'bar',
@@ -141,6 +148,7 @@ export function getReportTemplates(): ReportTemplate[] {
       description: 'Distribution of deal sizes and average deal value',
       category: 'ANALYTICS',
       config: {
+        name: 'Deal Size Analysis',
         type: 'ANALYTICS',
         dataSource: 'opportunities',
         chartType: 'bar',
@@ -159,6 +167,7 @@ export function getReportTemplates(): ReportTemplate[] {
       description: 'Monthly sales performance with trends',
       category: 'PERFORMANCE',
       config: {
+        name: 'Monthly Sales Summary',
         type: 'PERFORMANCE',
         dataSource: 'opportunities',
         chartType: 'line',
@@ -182,6 +191,7 @@ export function getReportTemplates(): ReportTemplate[] {
       description: 'Comprehensive quarterly sales performance review',
       category: 'PERFORMANCE',
       config: {
+        name: 'Quarterly Sales Review',
         type: 'PERFORMANCE',
         dataSource: 'opportunities',
         chartType: 'table',

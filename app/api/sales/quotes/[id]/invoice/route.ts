@@ -64,7 +64,6 @@ export async function POST(
     const invoice = await prisma.invoice.create({
       data: {
         tenantId: session.user.tenantId!,
-        salesQuoteId: quote.id,
         invoiceNumber,
         clientName,
         clientEmail,
@@ -83,7 +82,7 @@ export async function POST(
         notes: quote.notes || null,
         createdById: session.user.id,
         lineItems: {
-          create: quote.lineItems.map((item) => ({
+          create: quote.lineItems.map((item: any) => ({
             name: item.name,
             description: item.description || null,
             quantity: item.quantity,
@@ -94,13 +93,6 @@ export async function POST(
       },
       include: {
         lineItems: true,
-        salesQuote: {
-          select: {
-            id: true,
-            quoteNumber: true,
-            name: true,
-          },
-        },
         createdBy: {
           select: {
             id: true,

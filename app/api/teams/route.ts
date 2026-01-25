@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 
 const createTeamSchema = z.object({
@@ -60,10 +61,30 @@ export async function GET(req: NextRequest) {
     })
 
     // Get project counts for each team (count projects where team members are assigned)
+    type TeamWithMembers = Prisma.TeamGetPayload<{
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true
+                firstName: true
+                lastName: true
+                email: true
+                avatar: true
+              }
+            }
+          }
+        }
+      }
+    }>
+
+    type TeamMember = TeamWithMembers['members'][0]
+
     const teamsWithStats = await Promise.all(
-      teams.map(async (team) => {
+      (teams as TeamWithMembers[]).map(async (team: TeamWithMembers) => {
         // Get all user IDs in this team
-        const userIds = team.members.map(m => m.user.id)
+        const userIds = team.members.map((m: TeamMember) => m.user.id)
         
         // Count projects where these users are team members
         const projectCount = await prisma.project.count({
@@ -95,7 +116,7 @@ export async function GET(req: NextRequest) {
           status: team.status,
           createdAt: team.createdAt.toISOString().split('T')[0],
           projects: projectCount,
-          members: team.members.map((m) => ({
+          members: team.members.map((m: TeamMember) => ({
             id: m.user.id,
             firstName: m.user.firstName || '',
             lastName: m.user.lastName || '',

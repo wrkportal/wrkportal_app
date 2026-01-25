@@ -290,7 +290,7 @@ function groupBy(data: any[], config: TransformationConfig): any[] {
   const groups = new Map<string, any[]>()
   
   data.forEach(row => {
-    const key = columns.map(col => row[col]).join('|')
+    const key = columns.map((col: string) => row[col]).join('|')
     if (!groups.has(key)) {
       groups.set(key, [])
     }

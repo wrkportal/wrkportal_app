@@ -106,11 +106,7 @@ export async function GET(request: NextRequest) {
       where: {
         tenantId,
         createdAt: { gte: sevenDaysAgo },
-        OR: [
-          { action: 'LOGIN_FAILED' },
-          { action: 'UNAUTHORIZED_ACCESS' },
-          { action: 'SUSPICIOUS_ACTIVITY' }
-        ]
+        action: 'LOGIN_FAILED'
       }
     })
 

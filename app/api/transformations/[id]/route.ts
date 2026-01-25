@@ -35,7 +35,7 @@ export async function GET(
           )
         }
 
-        const transformation = await prisma.reportingTransformation.findUnique({
+        const transformation = await (prisma as any).reportingTransformation.findUnique({
           where: { id: resolvedParams.id },
           include: {
             inputDataset: {
@@ -65,7 +65,7 @@ export async function GET(
               },
             },
           },
-        })
+        }) as any
 
         if (!transformation || transformation.tenantId !== userInfo.tenantId) {
           return NextResponse.json(
@@ -119,7 +119,7 @@ export async function PATCH(
           )
         }
 
-        const transformation = await prisma.reportingTransformation.update({
+        const transformation = await (prisma as any).reportingTransformation.update({
           where: { id: resolvedParams.id },
           data: {
             ...data,
@@ -138,7 +138,7 @@ export async function PATCH(
               },
             },
           },
-        })
+        }) as any
 
         return NextResponse.json({ transformation })
       } catch (error: any) {

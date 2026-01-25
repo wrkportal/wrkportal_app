@@ -285,10 +285,14 @@ async function syncGoogleCalendar(config: any) {
           email: a.email,
           name: a.displayName,
         })),
-        duration: event.start && event.end
-          ? new Date(event.end.dateTime || event.end.date).getTime() -
-            new Date(event.start.dateTime || event.start.date).getTime()
-          : null,
+        duration: (() => {
+          const startValue = event.start?.dateTime || event.start?.date
+          const endValue = event.end?.dateTime || event.end?.date
+          if (typeof startValue !== 'string' || typeof endValue !== 'string') {
+            return null
+          }
+          return new Date(endValue).getTime() - new Date(startValue).getTime()
+        })(),
         videoCallLink, // Google Meet link
         conferenceData: event.conferenceData, // Full conference data for reference
       }

@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { TransformationStatus } from '@prisma/client'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 import { z } from 'zod'
 
@@ -30,9 +31,14 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(req.url)
         const isVisual = searchParams.get('visual') === 'true'
-        const status = searchParams.get('status')
+        const statusParam = searchParams.get('status')
+        const isValidStatus = (value: string | null): value is TransformationStatus =>
+          !!value && Object.values(TransformationStatus).includes(value as TransformationStatus)
+        const status: TransformationStatus | undefined = isValidStatus(statusParam)
+          ? (statusParam as TransformationStatus)
+          : undefined
 
-        const transformations = await prisma.reportingTransformation.findMany({
+        const transformations = await (prisma as any).reportingTransformation.findMany({
           where: {
             tenantId: userInfo.tenantId,
             ...(isVisual !== null ? { isVisual } : {}),
@@ -112,7 +118,7 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        const transformation = await prisma.reportingTransformation.create({
+        const transformation = await (prisma as any).reportingTransformation.create({
           data: {
             tenantId: userInfo.tenantId,
             name: data.name,
@@ -132,7 +138,7 @@ export async function POST(request: NextRequest) {
             },
             steps: true,
           },
-        })
+        }) as any
 
         return NextResponse.json({ transformation }, { status: 201 })
       } catch (error: any) {

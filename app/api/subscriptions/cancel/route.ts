@@ -10,7 +10,7 @@ function getStripeClient(): Stripe | null {
     return null
   }
   return new Stripe(apiKey, {
-    apiVersion: '2024-11-20.acacia',
+    apiVersion: '2025-12-15.clover',
   })
 }
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       where: { id: session.user.id },
       data: {
         subscriptionStatus: 'canceled',
-      },
+      } as any,
     })
 
     return NextResponse.json({

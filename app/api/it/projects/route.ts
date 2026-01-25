@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
+import { Prisma } from '@prisma/client'
 
 // GET - List IT projects
 export async function GET(req: NextRequest) {
@@ -59,8 +60,34 @@ export async function GET(req: NextRequest) {
           },
         })
 
+        type ProjectWithIncludes = Prisma.ProjectGetPayload<{
+          include: {
+            manager: {
+              select: {
+                id: true
+                name: true
+                email: true
+              }
+            }
+            teamMembers: {
+              include: {
+                user: {
+                  select: {
+                    id: true
+                    name: true
+                    email: true
+                  }
+                }
+              }
+            }
+          }
+        }>
+        type TeamMember = ProjectWithIncludes['teamMembers'][0]
+
+        const typedProjects: ProjectWithIncludes[] = projects as ProjectWithIncludes[]
+
         // Format projects for IT dashboard
-        const formattedProjects = projects.map((project) => ({
+        const formattedProjects = typedProjects.map((project: ProjectWithIncludes) => ({
           id: project.id,
           name: project.name,
           description: project.description || '',
@@ -70,7 +97,7 @@ export async function GET(req: NextRequest) {
           endDate: project.endDate.toISOString().split('T')[0],
           progress: project.progress || 0,
           manager: project.manager?.name || 'Unassigned',
-          teamMembers: project.teamMembers.map((tm) => tm.user.name),
+          teamMembers: project.teamMembers.map((tm: TeamMember) => tm.user.name),
         }))
 
         return NextResponse.json({

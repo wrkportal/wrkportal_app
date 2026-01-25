@@ -6,12 +6,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
-import { createSyncJob, executeSyncJob, getSyncJobHistory, getSyncLogs } from '@/lib/integrations/sync-framework'
+import { createSyncJob, executeSyncJob, getSyncJobHistory, getSyncLogs, SyncConfiguration } from '@/lib/integrations/sync-framework'
 import { SyncType } from '@prisma/client'
 
 const createSyncJobSchema = z.object({
   syncType: z.nativeEnum(SyncType),
-  configuration: z.record(z.any()),
+  configuration: z.object({
+    resourceType: z.string(),
+    direction: z.enum(['pull', 'push', 'bidirectional']),
+    fields: z.array(z.string()).optional(),
+    filters: z.record(z.any()).optional(),
+    schedule: z.string().optional(),
+  }),
 })
 
 // POST /api/integrations/[id]/sync - Trigger sync

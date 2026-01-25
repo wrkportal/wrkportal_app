@@ -251,8 +251,8 @@ export class MailchimpIntegration extends BaseIntegration {
               lastName: mappedData.lastName || contact.merge_fields?.LNAME || '',
               company: mappedData.company || contact.merge_fields?.COMPANY,
               phone: mappedData.phone || contact.merge_fields?.PHONE,
-              leadSource: 'EMAIL_MARKETING',
-              status: 'NEW',
+              leadSource: 'EMAIL_MARKETING' as any,
+              status: 'NEW' as any,
               ownerId: this.config.tenantId,
             },
           })

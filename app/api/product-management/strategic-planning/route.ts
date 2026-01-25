@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
         })
 
         // Filter by quarter if specified
-        const filteredGoals = goals.filter((goal) => {
+        const filteredGoals = goals.filter((goal: any) => {
           const goalQuarter = goal.quarter
           if (quarter && !goalQuarter.includes(currentQuarter)) return false
           if (year && !goalQuarter.includes(currentYear.toString())) return false
@@ -90,9 +90,9 @@ export async function GET(req: NextRequest) {
         })
 
         // Map goals to strategic initiatives
-        const strategicInitiatives = filteredGoals.map((goal) => {
+        const strategicInitiatives = filteredGoals.map((goal: any) => {
           // Find related projects (by name matching or description)
-          const relatedProjects = projects.filter((p) => {
+          const relatedProjects = projects.filter((p: any) => {
             const projectText = `${p.name} ${p.description || ''}`.toLowerCase()
             const goalText = `${goal.title} ${goal.description || ''}`.toLowerCase()
             return projectText.includes(goalText) || goalText.includes(projectText)
@@ -100,8 +100,8 @@ export async function GET(req: NextRequest) {
 
           // Calculate goal progress
           const keyResults = goal.keyResults || []
-          const totalWeight = keyResults.reduce((sum, kr) => sum + (kr.weight || 0), 0)
-          const weightedProgress = keyResults.reduce((sum, kr) => {
+          const totalWeight = keyResults.reduce((sum: number, kr: any) => sum + (kr.weight || 0), 0)
+          const weightedProgress = keyResults.reduce((sum: number, kr: any) => {
             const progress = ((kr.currentValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100
             const clampedProgress = Math.max(0, Math.min(100, progress))
             return sum + (clampedProgress * (kr.weight || 0))
@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
 
           // Calculate confidence
           const avgConfidence = keyResults.length > 0
-            ? Math.round(keyResults.reduce((sum, kr) => sum + (kr.confidence || 5), 0) / keyResults.length)
+            ? Math.round(keyResults.reduce((sum: number, kr: any) => sum + (kr.confidence || 5), 0) / keyResults.length)
             : 5
 
           return {
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
             status: goal.status,
             progress: overallProgress,
             confidence: avgConfidence,
-            keyResults: keyResults.map((kr) => {
+            keyResults: keyResults.map((kr: any) => {
               const progress = ((kr.currentValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100
               const clampedProgress = Math.max(0, Math.min(100, progress))
               return {
@@ -138,13 +138,13 @@ export async function GET(req: NextRequest) {
                 latestCheckIn: kr.checkIns && kr.checkIns.length > 0 ? kr.checkIns[0] : null,
               }
             }),
-            relatedProjects: relatedProjects.map((p) => ({
+            relatedProjects: relatedProjects.map((p: any) => ({
               id: p.id,
               name: p.name,
               status: p.status,
               progress: p.progress || 0,
               totalTasks: p.tasks.length,
-              completedTasks: p.tasks.filter((t) => t.status === 'DONE').length,
+              completedTasks: p.tasks.filter((t: any) => t.status === 'DONE').length,
               upcomingReleases: p.releases.length,
             })),
           }
@@ -152,7 +152,7 @@ export async function GET(req: NextRequest) {
 
         // Group by quarter
         const quarterlyView: { [key: string]: any[] } = {}
-        strategicInitiatives.forEach((initiative) => {
+        strategicInitiatives.forEach((initiative: any) => {
           const quarterKey = initiative.quarter
           if (!quarterlyView[quarterKey]) {
             quarterlyView[quarterKey] = []
@@ -163,15 +163,15 @@ export async function GET(req: NextRequest) {
         // Calculate summary statistics
         const summary = {
           totalInitiatives: strategicInitiatives.length,
-          activeInitiatives: strategicInitiatives.filter((i) => i.status === 'ACTIVE').length,
+          activeInitiatives: strategicInitiatives.filter((i: any) => i.status === 'ACTIVE').length,
           avgProgress: strategicInitiatives.length > 0
-            ? Math.round(strategicInitiatives.reduce((sum, i) => sum + i.progress, 0) / strategicInitiatives.length)
+            ? Math.round(strategicInitiatives.reduce((sum: number, i: any) => sum + i.progress, 0) / strategicInitiatives.length)
             : 0,
           avgConfidence: strategicInitiatives.length > 0
-            ? Math.round(strategicInitiatives.reduce((sum, i) => sum + i.confidence, 0) / strategicInitiatives.length)
+            ? Math.round(strategicInitiatives.reduce((sum: number, i: any) => sum + i.confidence, 0) / strategicInitiatives.length)
             : 0,
           totalProjects: projects.length,
-          alignedProjects: strategicInitiatives.reduce((sum, i) => sum + i.relatedProjects.length, 0),
+          alignedProjects: strategicInitiatives.reduce((sum: number, i: any) => sum + i.relatedProjects.length, 0),
         }
 
         return NextResponse.json({

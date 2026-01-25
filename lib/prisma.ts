@@ -38,14 +38,17 @@ function getPrismaClient() {
   }
 
   if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = new PrismaClient({
-      // Prisma 7+ requires adapter for direct database connection
+    // Prisma 7+ requires adapter for direct database connection
+    // Type assertion needed: Prisma 7.2.0 type definitions don't include adapter property
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const prismaOptions: any = {
       adapter: globalForPrisma.adapter,
       log:
         process.env.NODE_ENV === 'development'
           ? ['error', 'warn']
           : ['error'],
-    })
+    }
+    globalForPrisma.prisma = new PrismaClient(prismaOptions)
   }
 
   return globalForPrisma.prisma

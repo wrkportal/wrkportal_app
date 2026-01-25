@@ -3,6 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { extractStructuredData } from '@/lib/ai/ai-service'
 import { PROMPTS } from '@/lib/ai/prompts'
+import { Prisma } from '@prisma/client'
 
 /**
  * POST - Generate AI daily briefing for projects
@@ -45,8 +46,21 @@ export async function POST(request: NextRequest) {
       whereClause.id = projectId
     }
 
+    // Build context for AI
+    type ProjectWithIncludes = Prisma.ProjectGetPayload<{
+      include: {
+        tasks: true
+        risks: true
+        issues: true
+      }
+    }>
+    
+    type Task = ProjectWithIncludes['tasks'][0]
+    type Risk = ProjectWithIncludes['risks'][0]
+    type Issue = ProjectWithIncludes['issues'][0]
+
     // Fetch projects with related data
-    const projects = await prisma.project.findMany({
+    const projects = (await prisma.project.findMany({
       where: whereClause,
       include: {
         tasks: {
@@ -76,18 +90,17 @@ export async function POST(request: NextRequest) {
       orderBy: {
         updatedAt: 'desc',
       },
-    })
+    })) as ProjectWithIncludes[]
 
-    // Build context for AI
-    const projectSummaries = projects.map(project => {
+    const projectSummaries = projects.map((project: ProjectWithIncludes) => {
       const recentTasks = project.tasks || []
-      const newTasks = recentTasks.filter(t => 
+      const newTasks = recentTasks.filter((t: Task) => 
         new Date(t.createdAt) >= yesterday
       )
-      const completedTasks = recentTasks.filter(t => 
+      const completedTasks = recentTasks.filter((t: Task) => 
         t.status === 'DONE' && new Date(t.updatedAt) >= yesterday
       )
-      const updatedTasks = recentTasks.filter(t => 
+      const updatedTasks = recentTasks.filter((t: Task) => 
         t.status !== 'DONE' && new Date(t.updatedAt) >= yesterday
       )
 
@@ -101,10 +114,10 @@ export async function POST(request: NextRequest) {
 - Updated tasks: ${updatedTasks.length}
 - Active risks: ${project.risks.length}
 - Open issues: ${project.issues.length}
-${newTasks.length > 0 ? `\n  New Tasks:\n${newTasks.slice(0, 5).map(t => `    - ${t.title}`).join('\n')}` : ''}
-${completedTasks.length > 0 ? `\n  Completed:\n${completedTasks.slice(0, 5).map(t => `    - ${t.title}`).join('\n')}` : ''}
-${project.risks.length > 0 ? `\n  Risks:\n${project.risks.slice(0, 3).map(r => `    - [${r.level}] ${r.title}`).join('\n')}` : ''}
-${project.issues.length > 0 ? `\n  Issues:\n${project.issues.slice(0, 3).map(i => `    - [${i.severity}] ${i.title}`).join('\n')}` : ''}
+${newTasks.length > 0 ? `\n  New Tasks:\n${newTasks.slice(0, 5).map((t: Task) => `    - ${t.title}`).join('\n')}` : ''}
+${completedTasks.length > 0 ? `\n  Completed:\n${completedTasks.slice(0, 5).map((t: Task) => `    - ${t.title}`).join('\n')}` : ''}
+${project.risks.length > 0 ? `\n  Risks:\n${project.risks.slice(0, 3).map((r: Risk) => `    - [${r.level}] ${r.title}`).join('\n')}` : ''}
+${project.issues.length > 0 ? `\n  Issues:\n${project.issues.slice(0, 3).map((i: Issue) => `    - [${i.severity}] ${i.title}`).join('\n')}` : ''}
       `
     }).join('\n\n')
 

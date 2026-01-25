@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
+import { Prisma } from '@prisma/client'
 
 // GET - Get recent IT activities for dashboard
 export async function GET(req: NextRequest) {
@@ -30,7 +31,20 @@ export async function GET(req: NextRequest) {
           take: limit,
         })
 
-        recentTickets.forEach((ticket) => {
+        type SalesCaseWithIncludes = Prisma.SalesCaseGetPayload<{
+          include: {
+            assignedTo: {
+              select: { name: true }
+            }
+            createdBy: {
+              select: { name: true }
+            }
+          }
+        }>
+
+        const typedTickets: SalesCaseWithIncludes[] = recentTickets as SalesCaseWithIncludes[]
+
+        typedTickets.forEach((ticket: SalesCaseWithIncludes) => {
           const formatTimeAgo = (date: Date) => {
             const now = new Date()
             const diffMs = now.getTime() - date.getTime()
@@ -56,7 +70,7 @@ export async function GET(req: NextRequest) {
         })
 
         // Sort by time and limit
-        activities.sort((a, b) => 
+        activities.sort((a: any, b: any) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )
 

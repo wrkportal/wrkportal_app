@@ -4,6 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 
+// Helper function to safely access operationsTraining model
+function getOperationsTraining() {
+  return (prisma as any).operationsTraining as any
+}
+
+// Helper function to safely access operationsTrainingEnrollment model
+function getOperationsTrainingEnrollment() {
+  return (prisma as any).operationsTrainingEnrollment as any
+}
+
 const createTrainingSchema = z.object({
   name: z.string().min(1),
   type: z.enum(['MANDATORY', 'OPTIONAL']),
@@ -38,7 +48,16 @@ export async function GET(req: NextRequest) {
           where.type = type
         }
 
-        const trainings = await prisma.operationsTraining.findMany({
+        const operationsTraining = getOperationsTraining()
+        const operationsTrainingEnrollment = getOperationsTrainingEnrollment()
+        if (!operationsTraining || !operationsTrainingEnrollment) {
+          return NextResponse.json(
+            { error: 'Operations training models not available' },
+            { status: 503 }
+          )
+        }
+
+        const trainings = await operationsTraining.findMany({
           where,
           include: {
             enrollments: includeEnrollments ? {
@@ -61,8 +80,8 @@ export async function GET(req: NextRequest) {
 
         // Calculate stats for each training
         const trainingsWithStats = await Promise.all(
-          trainings.map(async (training) => {
-            const enrollments = await prisma.operationsTrainingEnrollment.findMany({
+          trainings.map(async (training: any) => {
+            const enrollments = await operationsTrainingEnrollment.findMany({
               where: {
                 trainingId: training.id,
                 tenantId: userInfo.tenantId,
@@ -72,7 +91,7 @@ export async function GET(req: NextRequest) {
             return {
               ...training,
               enrolled: enrollments.length,
-              completed: enrollments.filter(e => e.status === 'COMPLETED').length,
+              completed: enrollments.filter((e: any) => e.status === 'COMPLETED').length,
               employees: includeEnrollments && training.enrollments
                 ? training.enrollments.length
                 : enrollments.length,
@@ -83,9 +102,9 @@ export async function GET(req: NextRequest) {
         // Calculate overall stats
         const stats = {
           total: trainings.length,
-          active: trainings.filter(t => t.status === 'ONGOING').length,
-          completed: trainings.filter(t => t.status === 'COMPLETED').length,
-          totalEnrolled: await prisma.operationsTrainingEnrollment.count({
+          active: trainings.filter((t: any) => t.status === 'ONGOING').length,
+          completed: trainings.filter((t: any) => t.status === 'COMPLETED').length,
+          totalEnrolled: await operationsTrainingEnrollment.count({
             where: { tenantId: userInfo.tenantId },
           }),
         }
@@ -115,7 +134,15 @@ export async function POST(req: NextRequest) {
         const body = await request.json()
         const validatedData = createTrainingSchema.parse(body)
 
-        const training = await prisma.operationsTraining.create({
+        const operationsTraining = getOperationsTraining()
+        if (!operationsTraining) {
+          return NextResponse.json(
+            { error: 'Operations training model not available' },
+            { status: 503 }
+          )
+        }
+
+        const training = await operationsTraining.create({
           data: {
             name: validatedData.name,
             type: validatedData.type,

@@ -5,7 +5,19 @@
  */
 
 import { prisma } from '@/lib/prisma'
-import { ScheduleFrequency, ScheduleStatus } from '@prisma/client'
+
+// Type definitions for schedule enums (may not be exported from Prisma Client)
+export type ScheduleFrequency = 'ONCE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTOM'
+export type ScheduleStatus = 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'FAILED'
+
+// Extended Prisma client type to include reportSchedule model that may not be in schema yet
+type ExtendedPrismaClient = typeof prisma & {
+  reportSchedule?: {
+    findMany: (args?: { where?: any; include?: any }) => Promise<any[]>
+    findUnique: (args?: { where?: any }) => Promise<any | null>
+    update: (args?: { where?: any; data?: any }) => Promise<any>
+  }
+}
 
 export interface NextRunCalculation {
   nextRunAt: Date
@@ -116,26 +128,34 @@ export function shouldRunNow(schedule: {
  * Get schedules due to run
  */
 export async function getSchedulesDueToRun(): Promise<any[]> {
-  if (!prisma.reportSchedule) {
+  const prismaClient = prisma as ExtendedPrismaClient
+  
+  if (!prismaClient.reportSchedule) {
     return []
   }
 
   const now = new Date()
   
-  return await prisma.reportSchedule.findMany({
+  return await (prismaClient.reportSchedule.findMany({
     where: {
       isActive: true,
       status: 'ACTIVE',
       nextRunAt: {
         lte: now,
       },
-      OR: [
-        { startDate: null },
-        { startDate: { lte: now } },
-      ],
-      OR: [
-        { endDate: null },
-        { endDate: { gte: now } },
+      AND: [
+        {
+          OR: [
+            { startDate: null },
+            { startDate: { lte: now } },
+          ],
+        },
+        {
+          OR: [
+            { endDate: null },
+            { endDate: { gte: now } },
+          ],
+        },
       ],
     },
     include: {
@@ -149,7 +169,7 @@ export async function getSchedulesDueToRun(): Promise<any[]> {
         },
       },
     },
-  })
+  }) || Promise.resolve([]))
 }
 
 /**
@@ -159,13 +179,15 @@ export async function updateScheduleAfterRun(
   scheduleId: string,
   success: boolean
 ): Promise<void> {
-  if (!prisma.reportSchedule) {
+  const prismaClient = prisma as ExtendedPrismaClient
+  
+  if (!prismaClient.reportSchedule) {
     return
   }
 
-  const schedule = await prisma.reportSchedule.findUnique({
+  const schedule = await (prismaClient.reportSchedule.findUnique({
     where: { id: scheduleId },
-  })
+  }) || Promise.resolve(null))
 
   if (!schedule) return
 
@@ -178,7 +200,7 @@ export async function updateScheduleAfterRun(
   )
 
   // Update schedule
-  await prisma.reportSchedule.update({
+  await (prismaClient.reportSchedule.update({
     where: { id: scheduleId },
     data: {
       lastRunAt: new Date(),
@@ -188,6 +210,6 @@ export async function updateScheduleAfterRun(
       failureCount: success ? undefined : { increment: 1 },
       status: schedule.frequency === 'ONCE' ? 'COMPLETED' : 'ACTIVE',
     },
-  })
+  }) || Promise.resolve())
 }
 

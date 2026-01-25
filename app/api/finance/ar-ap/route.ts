@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 // GET /api/finance/ar-ap - Get Accounts Receivable and Payable data
 export async function GET(request: NextRequest) {
@@ -17,7 +18,23 @@ export async function GET(request: NextRequest) {
     // Accounts Receivable (AR) - Unpaid invoices
     let accountsReceivable: any[] = []
     if (type === 'all' || type === 'ar') {
-      const unpaidInvoices = await prisma.invoice.findMany({
+      type InvoiceWithIncludes = Prisma.InvoiceGetPayload<{
+        include: {
+          project: {
+            select: {
+              id: true
+              name: true
+              code: true
+            }
+          }
+          payments: true
+          lineItems: true
+        }
+      }>
+
+      type Payment = InvoiceWithIncludes['payments'][0]
+
+      const unpaidInvoices: InvoiceWithIncludes[] = await prisma.invoice.findMany({
         where: {
           tenantId,
           status: { notIn: ['PAID', 'CANCELLED'] },
@@ -36,8 +53,8 @@ export async function GET(request: NextRequest) {
         },
       })
 
-      accountsReceivable = unpaidInvoices.map(inv => {
-        const paid = inv.payments.reduce((sum, p) => sum + Number(p.amount), 0)
+      accountsReceivable = unpaidInvoices.map((inv: InvoiceWithIncludes) => {
+        const paid = inv.payments.reduce((sum: number, p: Payment) => sum + Number(p.amount), 0)
         const balance = Number(inv.totalAmount) - paid
         const isOverdue = new Date(inv.dueDate) < new Date() && balance > 0
         
@@ -64,10 +81,37 @@ export async function GET(request: NextRequest) {
     // Accounts Payable (AP) - Unpaid expenses/costs
     let accountsPayable: any[] = []
     if (type === 'all' || type === 'ap') {
+      type CostActualWithIncludes = Prisma.CostActualGetPayload<{
+        include: {
+          project: {
+            select: {
+              id: true
+              name: true
+              code: true
+            }
+          }
+          budget: {
+            select: {
+              id: true
+              name: true
+            }
+          }
+          createdBy: {
+            select: {
+              id: true
+              name: true
+              email: true
+            }
+          }
+        }
+      }>
+
       // Get expenses that haven't been paid (linked to invoices that are unpaid)
-      const unpaidExpenses = await prisma.costActual.findMany({
+      const unpaidExpenses: CostActualWithIncludes[] = await prisma.costActual.findMany({
         where: {
-          tenantId,
+          project: {
+            tenantId: tenantId,
+          },
           approvedAt: { not: null },
           invoiceId: null, // Expenses not linked to invoices
         },
@@ -87,7 +131,7 @@ export async function GET(request: NextRequest) {
         },
       })
 
-      accountsPayable = unpaidExpenses.map(exp => {
+      accountsPayable = unpaidExpenses.map((exp: CostActualWithIncludes) => {
         const daysSince = Math.floor((Date.now() - new Date(exp.date).getTime()) / (1000 * 60 * 60 * 24))
         const isOverdue = daysSince > 30 // Consider overdue if more than 30 days old
         

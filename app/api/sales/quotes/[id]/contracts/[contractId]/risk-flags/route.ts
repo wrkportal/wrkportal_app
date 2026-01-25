@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
+const getContractRiskFlag = () => (prisma as any).contractRiskFlag
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string; contractId: string } }
@@ -12,7 +14,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const riskFlags = await prisma.contractRiskFlag.findMany({
+    const contractRiskFlag = getContractRiskFlag()
+    if (!contractRiskFlag) {
+      return NextResponse.json({ error: 'Contract risk flags are unavailable' }, { status: 503 })
+    }
+
+    const riskFlags = await (contractRiskFlag as any).findMany({
       where: {
         contractId: params.contractId,
         contract: {
@@ -49,7 +56,12 @@ export async function POST(
     const body = await request.json()
     const { riskType, severity, description, clauseReference } = body
 
-    const riskFlag = await prisma.contractRiskFlag.create({
+    const contractRiskFlag = getContractRiskFlag()
+    if (!contractRiskFlag) {
+      return NextResponse.json({ error: 'Contract risk flags are unavailable' }, { status: 503 })
+    }
+
+    const riskFlag = await (contractRiskFlag as any).create({
       data: {
         contractId: params.contractId,
         riskType,
@@ -88,7 +100,12 @@ export async function PATCH(
     const body = await request.json()
     const { resolved } = body
 
-    const riskFlag = await prisma.contractRiskFlag.update({
+    const contractRiskFlag = getContractRiskFlag()
+    if (!contractRiskFlag) {
+      return NextResponse.json({ error: 'Contract risk flags are unavailable' }, { status: 503 })
+    }
+
+    const riskFlag = await (contractRiskFlag as any).update({
       where: { id: flagId },
       data: {
         resolved: resolved !== undefined ? resolved : false,

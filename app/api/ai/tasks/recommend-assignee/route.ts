@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { recommendTaskAssignment } from '@/lib/ai/services/task-assignment'
+import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,7 +56,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch available users from the same tenant
-    const users = await prisma.user.findMany({
+    type UserWithSkills = Prisma.UserGetPayload<{
+      select: {
+        id: true
+        firstName: true
+        lastName: true
+        email: true
+        role: true
+        skills: true
+      }
+    }>
+
+    const users: UserWithSkills[] = await prisma.user.findMany({
       where: {
         tenantId: session.user.tenantId,
         status: 'ACTIVE',
@@ -72,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate actual workload from tasks assigned to each user
     const userWorkloads = await Promise.all(
-      users.map(async (user) => {
+      users.map(async (user: UserWithSkills) => {
         const activeTasks = await prisma.task.count({
           where: {
             assigneeId: user.id,

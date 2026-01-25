@@ -12,6 +12,7 @@
  * ```
  */
 
+import React from 'react'
 import { MyTasksWidget } from '@/components/widgets/MyTasksWidget'
 import { QuickActionsWidget } from '@/components/widgets/QuickActionsWidget'
 import { UsefulLinksWidget } from '@/components/widgets/UsefulLinksWidget'
@@ -124,7 +125,7 @@ export function renderWidget(
     console.warn(`Widget type "${type}" not found in registry`)
     return null
   }
-  return <Component {...props} />
+  return React.createElement(Component, props)
 }
 
 /**

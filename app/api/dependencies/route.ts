@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const createDependencySchema = z.object({
   name: z.string().min(1),
@@ -56,6 +57,8 @@ export async function GET(req: NextRequest) {
       whereClause.type = type
     }
 
+    type Dependency = Prisma.DependencyGetPayload<{}>
+
     const dependencies = await prisma.dependency.findMany({
       where: whereClause,
       orderBy: {
@@ -65,7 +68,7 @@ export async function GET(req: NextRequest) {
 
     // Enrich dependencies with source and target item details
     const enrichedDependencies = await Promise.all(
-      dependencies.map(async (dep) => {
+      dependencies.map(async (dep: Dependency) => {
         let sourceItem: any = { id: dep.sourceId, name: 'Unknown', type: dep.sourceType }
         let targetItem: any = { id: dep.targetId, name: 'Unknown', type: dep.targetType }
 

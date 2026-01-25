@@ -3,6 +3,8 @@ import { auth } from '@/auth'
 import { IntegrationManager } from '@/lib/integrations/integration-manager'
 import { prisma } from '@/lib/prisma'
 
+const getSalesIntegration = () => (prisma as any).salesIntegration
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -13,7 +15,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const integration = await prisma.salesIntegration.findUnique({
+    const salesIntegration = getSalesIntegration()
+    if (!salesIntegration) {
+      return NextResponse.json({ error: 'Integrations are unavailable' }, { status: 503 })
+    }
+
+    const integration = await (salesIntegration as any).findUnique({
       where: { id: params.id },
       include: {
         createdBy: {
@@ -58,7 +65,12 @@ export async function PATCH(
     const body = await request.json()
     const { status, settings, syncDirection, syncFrequency } = body
 
-    const integration = await prisma.salesIntegration.findUnique({
+    const salesIntegration = getSalesIntegration()
+    if (!salesIntegration) {
+      return NextResponse.json({ error: 'Integrations are unavailable' }, { status: 503 })
+    }
+
+    const integration = await (salesIntegration as any).findUnique({
       where: { id: params.id },
     })
 
@@ -72,7 +84,7 @@ export async function PATCH(
     if (syncDirection) updateData.syncDirection = syncDirection
     if (syncFrequency) updateData.syncFrequency = syncFrequency
 
-    const updated = await prisma.salesIntegration.update({
+    const updated = await (salesIntegration as any).update({
       where: { id: params.id },
       data: updateData,
     })
@@ -97,7 +109,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const integration = await prisma.salesIntegration.findUnique({
+    const salesIntegration = getSalesIntegration()
+    if (!salesIntegration) {
+      return NextResponse.json({ error: 'Integrations are unavailable' }, { status: 503 })
+    }
+
+    const integration = await (salesIntegration as any).findUnique({
       where: { id: params.id },
     })
 
@@ -105,7 +122,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Integration not found' }, { status: 404 })
     }
 
-    await prisma.salesIntegration.delete({
+    await (salesIntegration as any).delete({
       where: { id: params.id },
     })
 

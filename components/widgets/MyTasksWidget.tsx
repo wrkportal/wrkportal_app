@@ -927,12 +927,12 @@ export function MyTasksWidget({
                           style={
                             isDraggable
                               ? ({
-                                  userSelect: 'none',
-                                  WebkitUserSelect: 'none',
-                                  touchAction: 'none',
-                                  WebkitTouchCallout: 'none',
-                                  cursor: 'grab',
-                                } as React.CSSProperties)
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                touchAction: 'none',
+                                WebkitTouchCallout: 'none',
+                                cursor: 'grab',
+                              } as React.CSSProperties)
                               : undefined
                           }
                           onClick={(e) => {
@@ -1232,15 +1232,14 @@ export function MyTasksWidget({
                                   <div className="font-medium truncate">{task.title || 'Untitled Task'}</div>
                                   <div className="flex items-center gap-2">
                                     <div
-                                      className={`h-2 w-2 rounded-full ${
-                                        task.status === 'DONE'
-                                          ? 'bg-green-500'
-                                          : task.status === 'IN_PROGRESS'
-                                            ? 'bg-blue-500'
-                                            : task.status === 'BLOCKED'
-                                              ? 'bg-red-500'
-                                              : 'bg-gray-400'
-                                      }`}
+                                      className={`h-2 w-2 rounded-full ${task.status === 'DONE'
+                                        ? 'bg-green-500'
+                                        : task.status === 'IN_PROGRESS'
+                                          ? 'bg-blue-500'
+                                          : task.status === 'BLOCKED'
+                                            ? 'bg-red-500'
+                                            : 'bg-gray-400'
+                                        }`}
                                     />
                                     <span>{task.status || 'TODO'}</span>
                                   </div>
@@ -1284,33 +1283,33 @@ export function MyTasksWidget({
                 {ganttGroups.map((group) =>
                   group.expanded
                     ? group.tasks.map((task: any) => {
-                        const position = getTaskPosition(task)
-                        if (!position) return null
+                      const position = getTaskPosition(task)
+                      if (!position) return null
 
-                        return (
-                          <div
-                            key={task.id}
-                            className="absolute h-8 border rounded px-2 flex items-center text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                            style={{
-                              left: `${position.startOffset * 50}px`,
-                              width: `${position.duration * 50}px`,
-                              backgroundColor:
-                                task.priority === 'CRITICAL'
-                                  ? '#ef4444'
-                                  : task.priority === 'HIGH'
-                                    ? '#f59e0b'
-                                    : task.priority === 'MEDIUM'
-                                      ? '#eab308'
-                                      : '#3b82f6',
-                              color: 'white',
-                            }}
-                            onClick={() => handleTaskClick(task)}
-                            title={task.title}
-                          >
-                            <span className="truncate">{task.title}</span>
-                          </div>
-                        )
-                      })
+                      return (
+                        <div
+                          key={task.id}
+                          className="absolute h-8 border rounded px-2 flex items-center text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                          style={{
+                            left: `${position.startOffset * 50}px`,
+                            width: `${position.duration * 50}px`,
+                            backgroundColor:
+                              task.priority === 'CRITICAL'
+                                ? '#ef4444'
+                                : task.priority === 'HIGH'
+                                  ? '#f59e0b'
+                                  : task.priority === 'MEDIUM'
+                                    ? '#eab308'
+                                    : '#3b82f6',
+                            color: 'white',
+                          }}
+                          onClick={() => handleTaskClick(task)}
+                          title={task.title}
+                        >
+                          <span className="truncate">{task.title}</span>
+                        </div>
+                      )
+                    })
                     : null
                 )}
               </div>
@@ -1332,15 +1331,15 @@ export function MyTasksWidget({
         style={
           fullscreen
             ? {
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                zIndex: 9999,
-                margin: 0,
-                borderRadius: 0,
-              }
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 9999,
+              margin: 0,
+              borderRadius: 0,
+            }
             : undefined
         }
       >
@@ -1520,9 +1519,8 @@ export function MyTasksWidget({
             setTimerNotesDialogOpen(false)
             setPendingTimerTask(null)
           }}
-          taskId={pendingTimerTask.id}
           taskTitle={pendingTimerTask.title}
-          onStartTimer={async () => {
+          onSubmit={async () => {
             await startTimer(pendingTimerTask.id, pendingTimerTask.title)
             setTimerNotesDialogOpen(false)
             setPendingTimerTask(null)

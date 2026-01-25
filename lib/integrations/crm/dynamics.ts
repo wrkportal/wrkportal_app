@@ -142,7 +142,7 @@ export class DynamicsIntegration extends BaseIntegration {
                 const { prisma } = await import('@/lib/prisma')
                 await prisma.salesLead.update({
                   where: { id: lead.id },
-                  data: { externalId: match[1] },
+                  data: { externalId: match[1] } as any,
                 })
               }
             }
@@ -268,14 +268,14 @@ export class DynamicsIntegration extends BaseIntegration {
           where: {
             tenantId: this.tenantId,
             OR: [
-              { externalId: externalId?.toString() },
+              { externalId: externalId?.toString() } as any,
               { email },
-            ],
-          },
+            ] as any,
+          } as any,
         })
 
         if (existing) {
-          await prisma.salesLead.update({
+          await (prisma.salesLead.update as any)({
             where: { id: existing.id },
             data: {
               externalId: externalId?.toString() || existing.externalId,
@@ -298,10 +298,10 @@ export class DynamicsIntegration extends BaseIntegration {
               company: mappedData.companyname || lead.companyname,
               phone: mappedData.telephone1 || lead.telephone1,
               title: mappedData.jobtitle || lead.jobtitle,
-              leadSource: this.mapDynamicsLeadSource(lead.leadsourcecode) || 'OTHER',
+              leadSource: (this.mapDynamicsLeadSource(lead.leadsourcecode) || 'OTHER') as any,
               status: 'NEW',
               ownerId: this.config.tenantId,
-            },
+            } as any,
           })
         }
         synced++
@@ -325,10 +325,10 @@ export class DynamicsIntegration extends BaseIntegration {
           where: {
             tenantId: this.tenantId,
             OR: [
-              { externalId: opp.opportunityid?.toString() },
+              { externalId: opp.opportunityid?.toString() } as any,
               { name: opp.name },
-            ],
-          },
+            ] as any,
+          } as any,
         })
 
         if (existing) {
@@ -337,11 +337,11 @@ export class DynamicsIntegration extends BaseIntegration {
             data: {
               externalId: opp.opportunityid?.toString(),
               name: opp.name,
-              amount: opp.estimatedvalue ? parseFloat(opp.estimatedvalue.toString()) : null,
-              stage: this.mapDynamicsStage(opp.statuscode),
+              amount: opp.estimatedvalue ? parseFloat(opp.estimatedvalue.toString()) : undefined,
+              stage: this.mapDynamicsStage(opp.statuscode) as any,
               closeDate: opp.actualclosedate ? new Date(opp.actualclosedate) : null,
-              probability: opp.closeprobability ? parseFloat(opp.closeprobability.toString()) : null,
-            },
+              probability: opp.closeprobability ? parseFloat(opp.closeprobability.toString()) : undefined,
+            } as any,
           })
         } else {
           await prisma.salesOpportunity.create({
@@ -349,12 +349,12 @@ export class DynamicsIntegration extends BaseIntegration {
               tenantId: this.tenantId,
               externalId: opp.opportunityid?.toString(),
               name: opp.name,
-              amount: opp.estimatedvalue ? parseFloat(opp.estimatedvalue.toString()) : null,
-              stage: this.mapDynamicsStage(opp.statuscode) || 'PROSPECTING',
+              amount: opp.estimatedvalue ? parseFloat(opp.estimatedvalue.toString()) : undefined,
+              stage: (this.mapDynamicsStage(opp.statuscode) || 'PROSPECTING') as any,
               closeDate: opp.actualclosedate ? new Date(opp.actualclosedate) : null,
-              probability: opp.closeprobability ? parseFloat(opp.closeprobability.toString()) : null,
+              probability: opp.closeprobability ? parseFloat(opp.closeprobability.toString()) : undefined,
               ownerId: this.config.tenantId,
-            },
+            } as any,
           })
         }
         synced++
@@ -379,10 +379,10 @@ export class DynamicsIntegration extends BaseIntegration {
           where: {
             tenantId: this.tenantId,
             OR: [
-              { externalId: contact.contactid?.toString() },
+              { externalId: contact.contactid?.toString() } as any,
               { email },
-            ],
-          },
+            ] as any,
+          } as any,
         })
 
         if (existing) {
@@ -396,7 +396,7 @@ export class DynamicsIntegration extends BaseIntegration {
               phone: contact.telephone1 || existing.phone,
               mobile: contact.mobilephone || existing.mobile,
               title: contact.jobtitle || existing.title,
-            },
+            } as any,
           })
         } else {
           await prisma.salesContact.create({
@@ -410,7 +410,7 @@ export class DynamicsIntegration extends BaseIntegration {
               mobile: contact.mobilephone,
               title: contact.jobtitle,
               ownerId: this.config.tenantId,
-            },
+            } as any,
           })
         }
         synced++

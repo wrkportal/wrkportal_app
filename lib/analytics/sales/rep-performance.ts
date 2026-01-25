@@ -112,7 +112,7 @@ export async function analyzeRepPerformance(
   const activities = await prisma.salesActivity.findMany({
     where: {
       tenantId,
-      userId: repId,
+      assignedToId: repId,
       ...(startDate || endDate ? {
         createdAt: {
           ...(startDate ? { gte: startDate } : {}),
@@ -146,11 +146,11 @@ export async function analyzeRepPerformance(
   })
 
   // Calculate metrics
-  const openOpps = opportunities.filter(opp => opp.status === 'OPEN')
-  const closedWon = opportunities.filter(opp => opp.stage === 'CLOSED_WON')
-  const closedLost = opportunities.filter(opp => opp.stage === 'CLOSED_LOST')
-  const totalValue = opportunities.reduce((sum, opp) => sum + Number(opp.amount), 0)
-  const wonValue = closedWon.reduce((sum, opp) => sum + Number(opp.amount), 0)
+  const openOpps = opportunities.filter((opp: any) => opp.status === 'OPEN')
+  const closedWon = opportunities.filter((opp: any) => opp.stage === 'CLOSED_WON')
+  const closedLost = opportunities.filter((opp: any) => opp.stage === 'CLOSED_LOST')
+  const totalValue = opportunities.reduce((sum: number, opp: any) => sum + Number(opp.amount), 0)
+  const wonValue = closedWon.reduce((sum: number, opp: any) => sum + Number(opp.amount), 0)
 
   // Calculate average deal size (won deals)
   const avgDealSize = closedWon.length > 0
@@ -158,9 +158,9 @@ export async function analyzeRepPerformance(
     : 0
 
   // Activity breakdown
-  const calls = activities.filter(a => a.type === 'CALL').length
-  const emails = activities.filter(a => a.type === 'EMAIL').length
-  const meetings = activities.filter(a => a.type === 'MEETING').length
+  const calls = activities.filter((a: any) => a.type === 'CALL').length
+  const emails = activities.filter((a: any) => a.type === 'EMAIL').length
+  const meetings = activities.filter((a: any) => a.type === 'MEETING').length
 
   // Calculate weeks in period
   const periodDays = startDate && endDate
@@ -184,9 +184,9 @@ export async function analyzeRepPerformance(
     : 0
 
   // Velocity metrics
-  const closedWonWithDate = closedWon.filter(opp => opp.actualCloseDate)
+  const closedWonWithDate = closedWon.filter((opp: any) => opp.actualCloseDate)
   const avgTimeToClose = closedWonWithDate.length > 0
-    ? closedWonWithDate.reduce((sum, opp) => {
+    ? closedWonWithDate.reduce((sum: number, opp: any) => {
         const days = Math.round(
           (opp.actualCloseDate!.getTime() - opp.createdAt.getTime()) / (1000 * 60 * 60 * 24)
         )
