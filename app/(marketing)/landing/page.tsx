@@ -412,11 +412,20 @@ export default function LandingPage() {
     const router = useRouter()
     const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly')
     const [openFAQ, setOpenFAQ] = useState<number | null>(1)
-    const [selectedCategory, setSelectedCategory] = useState<'projects' | 'reporting' | 'clients' | 'tasks' | 'sales' | 'finance' | 'ops' | 'hr' | 'it' | 'customer-service'>('projects')
+    const [selectedCategory, setSelectedCategory] = useState<'projects' | 'reporting' | 'clients' | 'sales' | 'finance' | 'ops' | 'hr' | 'it' | 'customer-service'>('projects')
 
     useEffect(() => {
         markAsVisited()
         document.title = "wrkportal.com - AI-Powered Business Platform"
+        // Prevent loading delay by preloading critical resources
+        if (typeof window !== 'undefined') {
+            // Preload fonts and critical assets
+            const link = document.createElement('link')
+            link.rel = 'preload'
+            link.as = 'font'
+            link.crossOrigin = 'anonymous'
+            document.head.appendChild(link)
+        }
     }, [])
 
     // Feature details for each category
@@ -441,13 +450,6 @@ export default function LandingPage() {
             { icon: FileText, title: "Project Portals", description: "Dedicated portals for client collaboration" },
             { icon: Shield, title: "Secure Access", description: "Role-based access control and permissions" },
             { icon: CheckCircle2, title: "Client Satisfaction", description: "Track feedback and satisfaction metrics" },
-        ],
-        tasks: [
-            { icon: ClipboardList, title: "Task Lists", description: "Organize tasks with lists and boards" },
-            { icon: Clock, title: "Time Tracking", description: "Track time spent on tasks and projects" },
-            { icon: Zap, title: "Task Automation", description: "Automate recurring tasks and workflows" },
-            { icon: CheckCircle2, title: "Status Management", description: "Track task status and completion" },
-            { icon: Users, title: "Task Assignment", description: "Assign and delegate tasks to team members" },
         ],
         sales: [
             { icon: TrendingUp, title: "Lead Management", description: "Track and manage sales leads through the pipeline" },
@@ -691,9 +693,9 @@ export default function LandingPage() {
                 <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col items-center text-center max-w-6xl mx-auto">
                         {/* Badge with Animation */}
-                        <Badge className="mb-3 lg:mb-2 px-4 lg:px-5 py-1.5 lg:py-2 text-xs lg:text-sm bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md animate-fade-in-up">
-                            <Sparkles className="mr-2 h-3 w-3 lg:h-4 lg:w-4 animate-spin text-purple-600" style={{ animationDuration: '3s' }} />
-                            The Only Platform You Need
+                        <Badge className="mb-3 md:mb-3 lg:mb-3 px-4 md:px-5 lg:px-6 py-1.5 md:py-2 lg:py-2 text-xs md:text-sm lg:text-sm bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md animate-fade-in-up inline-flex items-center">
+                            <Sparkles className="mr-2 h-3 w-3 md:h-4 md:w-4 lg:h-4 lg:w-4 animate-spin text-purple-600" style={{ animationDuration: '3s' }} />
+                            <span className="whitespace-nowrap">The Only Platform You Need</span>
                         </Badge>
 
                         {/* Main Headline */}
@@ -723,82 +725,85 @@ export default function LandingPage() {
                             </span>
                         </p>
 
-                        {/* Feature Cards Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-4 my-6 lg:my-8 w-full max-w-6xl animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                            <FloatingFeatureCard
-                                title="Projects"
-                                gradient="from-purple-600 to-pink-600"
-                                onClick={() => setSelectedCategory('projects')}
-                                isSelected={selectedCategory === 'projects'}
-                            />
-                            <FloatingFeatureCard
-                                title="Reporting"
-                                gradient="from-blue-600 to-purple-600"
-                                onClick={() => setSelectedCategory('reporting')}
-                                isSelected={selectedCategory === 'reporting'}
-                            />
-                            <FloatingFeatureCard
-                                title="Clients"
-                                gradient="from-pink-600 to-orange-600"
-                                onClick={() => setSelectedCategory('clients')}
-                                isSelected={selectedCategory === 'clients'}
-                            />
-                            <FloatingFeatureCard
-                                title="Tasks"
-                                gradient="from-indigo-600 to-blue-600"
-                                onClick={() => setSelectedCategory('tasks')}
-                                isSelected={selectedCategory === 'tasks'}
-                            />
-                            <FloatingFeatureCard
-                                title="Sales"
-                                gradient="from-green-600 to-emerald-600"
-                                onClick={() => setSelectedCategory('sales')}
-                                isSelected={selectedCategory === 'sales'}
-                            />
-                            <FloatingFeatureCard
-                                title="Finance"
-                                gradient="from-yellow-600 to-orange-600"
-                                onClick={() => setSelectedCategory('finance')}
-                                isSelected={selectedCategory === 'finance'}
-                            />
-                            <FloatingFeatureCard
-                                title="Ops"
-                                gradient="from-cyan-600 to-blue-600"
-                                onClick={() => setSelectedCategory('ops')}
-                                isSelected={selectedCategory === 'ops'}
-                            />
-                            <FloatingFeatureCard
-                                title="HR"
-                                gradient="from-rose-600 to-pink-600"
-                                onClick={() => setSelectedCategory('hr')}
-                                isSelected={selectedCategory === 'hr'}
-                            />
-                            <FloatingFeatureCard
-                                title="IT"
-                                gradient="from-violet-600 to-purple-600"
-                                onClick={() => setSelectedCategory('it')}
-                                isSelected={selectedCategory === 'it'}
-                            />
-                            <FloatingFeatureCard
-                                title="Support"
-                                gradient="from-teal-600 to-cyan-600"
-                                onClick={() => setSelectedCategory('customer-service')}
-                                isSelected={selectedCategory === 'customer-service'}
-                            />
+                        {/* Advanced Feature Selector - Interactive Pills */}
+                        <div className="w-full max-w-6xl my-6 lg:my-8 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                            <div className="flex flex-wrap justify-center gap-2 md:gap-3 lg:gap-4">
+                                {[
+                                    { id: 'projects', label: 'Projects', gradient: 'from-purple-600 to-pink-600', icon: Target },
+                                    { id: 'reporting', label: 'Reporting', gradient: 'from-blue-600 to-purple-600', icon: BarChart3 },
+                                    { id: 'clients', label: 'Clients', gradient: 'from-pink-600 to-orange-600', icon: Users },
+                                    { id: 'sales', label: 'Sales', gradient: 'from-green-600 to-emerald-600', icon: TrendingUp },
+                                    { id: 'finance', label: 'Finance', gradient: 'from-yellow-600 to-orange-600', icon: DollarSign },
+                                    { id: 'ops', label: 'Operations', gradient: 'from-cyan-600 to-blue-600', icon: Activity },
+                                    { id: 'hr', label: 'HR', gradient: 'from-rose-600 to-pink-600', icon: UserCheck },
+                                    { id: 'it', label: 'IT', gradient: 'from-violet-600 to-purple-600', icon: Cpu },
+                                    { id: 'customer-service', label: 'Support', gradient: 'from-teal-600 to-cyan-600', icon: MessageSquare },
+                                ].map((func) => {
+                                    const Icon = func.icon
+                                    const isSelected = selectedCategory === func.id
+                                    return (
+                                        <button
+                                            key={func.id}
+                                            onClick={() => setSelectedCategory(func.id as any)}
+                                            className={`
+                                                group relative px-4 md:px-5 lg:px-6 py-2.5 md:py-3 lg:py-3.5
+                                                rounded-full font-semibold text-sm md:text-base
+                                                transition-all duration-300 ease-out
+                                                transform hover:scale-110 active:scale-95
+                                                ${isSelected
+                                                    ? `bg-gradient-to-r ${func.gradient} text-white shadow-xl shadow-purple-400/50 scale-105`
+                                                    : 'bg-white/90 text-gray-700 hover:bg-gradient-to-r hover:' + func.gradient + ' hover:text-white border-2 border-purple-200 hover:border-transparent shadow-md hover:shadow-lg'
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Icon className={`h-4 w-4 md:h-5 md:w-5 transition-transform duration-300 ${isSelected ? 'scale-110' : 'group-hover:scale-110'}`} />
+                                                <span className="whitespace-nowrap">{func.label}</span>
+                                            </div>
+                                            {isSelected && (
+                                                <div className="absolute -inset-0.5 bg-gradient-to-r opacity-75 blur rounded-full -z-10 animate-pulse"></div>
+                                            )}
+                                        </button>
+                                    )
+                                })}
+                            </div>
                         </div>
 
-                        {/* Feature Details Cards */}
+                        {/* Advanced Feature Details - Animated Grid */}
                         <div className="w-full max-w-6xl mt-8 mb-12 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                                {categoryFeatures[selectedCategory].map((feature, index) => (
-                                    <FeatureDetailCard
-                                        key={index}
-                                        icon={feature.icon}
-                                        title={feature.title}
-                                        description={feature.description}
-                                        delay={index * 0.1}
-                                    />
-                                ))}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
+                                {categoryFeatures[selectedCategory].map((feature, index) => {
+                                    const Icon = feature.icon
+                                    return (
+                                        <div
+                                            key={index}
+                                            className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 border-2 border-purple-200/50 p-6 md:p-7 lg:p-8 transition-all duration-500 hover:border-purple-400 hover:shadow-2xl hover:shadow-purple-300/30 hover:scale-[1.02] animate-fade-in-up"
+                                            style={{ animationDelay: `${0.5 + index * 0.1}s` }}
+                                        >
+                                            {/* Animated Background Gradient */}
+                                            <div className={`absolute inset-0 bg-gradient-to-br ${categoryFeatures[selectedCategory][0]?.icon === Icon ? 'from-purple-500/10 to-pink-500/10' : 'from-blue-500/10 to-purple-500/10'} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                                            
+                                            {/* Icon with Glow Effect */}
+                                            <div className="relative mb-4">
+                                                <div className="inline-flex h-14 w-14 md:h-16 md:w-16 lg:h-18 lg:w-18 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-400/50 group-hover:shadow-purple-500/70 group-hover:scale-110 transition-all duration-300">
+                                                    <Icon className="h-7 w-7 md:h-8 md:w-8 lg:h-9 lg:w-9 text-white" />
+                                                </div>
+                                                <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-pink-400 rounded-xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300 -z-10"></div>
+                                            </div>
+                                            
+                                            {/* Content */}
+                                            <h4 className="text-lg md:text-xl font-bold text-gray-900 mb-2 group-hover:text-purple-700 transition-colors duration-300">
+                                                {feature.title}
+                                            </h4>
+                                            <p className="text-sm md:text-base text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors duration-300">
+                                                {feature.description}
+                                            </p>
+                                            
+                                            {/* Hover Accent Line */}
+                                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
 

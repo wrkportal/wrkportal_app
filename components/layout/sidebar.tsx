@@ -1103,8 +1103,12 @@ export function Sidebar() {
         }
     }, [user, isMounted])
 
-    // Don't render until mounted (hydrated) to prevent flash
-    if (!isMounted || !user || !sidebarOpen) return null
+    // Render immediately but with opacity transition to sync with header
+    // This prevents the sidebar from appearing after the header
+    if (!user || !sidebarOpen) return null
+    
+    // Use opacity transition instead of conditional rendering for better sync
+    const sidebarStyle = !isMounted ? { opacity: 0 } : { opacity: 1, transition: 'opacity 0.2s ease-in' }
 
     // Be robust if user.role isn't hydrated yet or not properly set
     const effectiveRole = (user.role && Object.values(UserRole).includes(user.role as UserRole))
@@ -1194,13 +1198,15 @@ export function Sidebar() {
             )}
 
             {/* Sidebar */}
-            <aside className={cn(
-                "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card/95 backdrop-blur-xl transition-all duration-300 shadow-sm",
-                // Mobile: slide in from left, Desktop: always visible
-                "md:translate-x-0",
-                sidebarOpen ? "translate-x-0" : "-translate-x-full",
-                sidebarCollapsed ? "w-14" : "w-56"
-            )}
+            <aside 
+                className={cn(
+                    "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card/95 backdrop-blur-xl transition-all duration-300 shadow-sm",
+                    // Mobile: slide in from left, Desktop: always visible
+                    "md:translate-x-0",
+                    sidebarOpen ? "translate-x-0" : "-translate-x-full",
+                    sidebarCollapsed ? "w-14" : "w-56"
+                )}
+                style={sidebarStyle}
             >
                 <div className="flex h-full flex-col px-2 py-4">
                     {/* Collapse Toggle */}
