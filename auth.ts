@@ -170,28 +170,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               // This works around missing columns like ssoEnabled that may not exist in DB yet
               tenant = await withRetry(
                 async () => {
-                  const tenantId = `tenant_${Date.now()}_${Math.random().toString(36).substring(7)}`
                   const tenantName = `${profile.name || email}'s Organization`
                   
-                  // Insert using raw SQL to avoid Prisma schema validation
+                  // Insert using raw SQL, letting database generate ID via default
+                  // Only insert fields that definitely exist (name, domain)
                   await prisma.$executeRaw`
-                    INSERT INTO "Tenant" (id, name, domain, "createdAt", "updatedAt")
-                    VALUES (${tenantId}, ${tenantName}, ${domain}, NOW(), NOW())
+                    INSERT INTO "Tenant" (name, domain, "createdAt", "updatedAt")
+                    VALUES (${tenantName}, ${domain}, NOW(), NOW())
                     ON CONFLICT (domain) DO NOTHING
                   `
                   
-                  // Fetch the created tenant
+                  // Fetch the created tenant (or existing if conflict)
                   const created = await prisma.tenant.findFirst({
                     where: { domain },
                     select: { id: true, name: true },
                   })
                   
                   if (!created) {
-                    // If domain conflict, try to find existing
-                    return await prisma.tenant.findFirst({
-                      where: { domain },
-                      select: { id: true, name: true },
-                    })
+                    throw new Error('Failed to create or find tenant after insert')
                   }
                   
                   return created
