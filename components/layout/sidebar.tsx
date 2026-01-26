@@ -1178,20 +1178,21 @@ export function Sidebar() {
         // Super user sees everything
         if (isSuperUser) return true
         
-        // If user has allowedSections set (not null), check if this section is allowed
-        if (allowedSections !== null) {
-            // If allowedSections is empty array, user has no access
-            if (allowedSections.length === 0) {
-                // Only show wrkboard and collaborate
-                return item.title === 'wrkboard' || item.title === 'Collaborate'
-            }
-            // Check if this section is in the allowed list
-            return allowedSections.includes(item.title) || item.title === 'wrkboard' || item.title === 'Collaborate'
+        // If allowedSections is null, user has full access (first-time signup or self-joined user)
+        // Show all sections regardless of role
+        if (allowedSections === null) {
+            return true
         }
         
-        // If allowedSections is null, user has full access (first-time signup)
-        // Check role-based access as fallback
-        return item.roles && Array.isArray(item.roles) && item.roles.includes(effectiveRole)
+        // If user has allowedSections set (not null), check if this section is allowed
+        // If allowedSections is empty array, user has no access
+        if (allowedSections.length === 0) {
+            // Only show wrkboard and collaborate
+            return item.title === 'wrkboard' || item.title === 'Collaborate'
+        }
+        
+        // Check if this section is in the allowed list
+        return allowedSections.includes(item.title) || item.title === 'wrkboard' || item.title === 'Collaborate'
     })
 
     // Toggle program expansion

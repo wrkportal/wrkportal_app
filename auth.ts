@@ -272,6 +272,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   tenantId: tenant!.id,
                   role: userRole,
                   emailVerified: null, // require verification
+                  allowedSections: null, // null = full access for first-time signup
                 },
               }),
             'Create User',
