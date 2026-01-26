@@ -1192,7 +1192,15 @@ export function Sidebar() {
         }
         
         // Check if this section is in the allowed list
-        return allowedSections.includes(item.title) || item.title === 'wrkboard' || item.title === 'Collaborate'
+        // Handle both formats: "Finance" and "Finance:Dashboard"
+        const isAllowed = allowedSections.some((section: string) => {
+          // Direct match (e.g., "Finance" === "Finance")
+          if (section === item.title) return true
+          // Format match (e.g., "Finance:Dashboard" starts with "Finance:")
+          if (section.includes(':') && section.split(':')[0] === item.title) return true
+          return false
+        })
+        return isAllowed || item.title === 'wrkboard' || item.title === 'Collaborate'
     })
 
     // Toggle program expansion

@@ -278,7 +278,35 @@ export async function POST(request: Request) {
         const parsed = typeof invitation.allowedSections === 'string'
           ? JSON.parse(invitation.allowedSections)
           : invitation.allowedSections
-        allowedSections = Array.isArray(parsed) ? parsed : null
+        
+        // Handle nested structure with sections and settings
+        let sectionsArray: string[] = []
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          // Nested format: { sections: [...], settings: {...} }
+          if (parsed.sections && Array.isArray(parsed.sections)) {
+            sectionsArray = parsed.sections
+          }
+        } else if (Array.isArray(parsed)) {
+          // Simple array format
+          sectionsArray = parsed
+        }
+        
+        // Extract unique function names from section format "Function:Section"
+        // e.g., "Finance:Dashboard" -> "Finance"
+        const functionNames = new Set<string>()
+        sectionsArray.forEach((section: string) => {
+          if (typeof section === 'string' && section.includes(':')) {
+            const functionName = section.split(':')[0].trim()
+            if (functionName) {
+              functionNames.add(functionName)
+            }
+          } else if (typeof section === 'string') {
+            // If it's already just a function name, use it directly
+            functionNames.add(section)
+          }
+        })
+        
+        allowedSections = functionNames.size > 0 ? Array.from(functionNames) : null
       } else {
         // No sections specified in invitation - null means full access
         allowedSections = null

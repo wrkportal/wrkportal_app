@@ -273,7 +273,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   role: userRole,
                   emailVerified: null, // require verification
                   allowedSections: null, // null = full access for first-time signup
-                },
+                } as any,
               }),
             'Create User',
             3,
