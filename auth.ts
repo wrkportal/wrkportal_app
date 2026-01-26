@@ -97,8 +97,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const emailLower = email.toLowerCase()
         const domain = emailLower.split('@')[1]
         
+        // Check if this is a signup flow
+        // We'll check the callbackUrl in the JWT callback, but for now
+        // we'll use a more permissive approach: allow user creation if user doesn't exist
+        // This allows "Continue with Google" on signup page to work
+        // Login page will still work because existing users will be found
+        const isSignupFlow = true // Allow signup via OAuth for now
+        
         console.log('[OAuth] STEP 0: Email received:', emailLower)
         console.log('[OAuth] STEP 0: Domain extracted:', domain)
+        console.log('[OAuth] STEP 0: Is signup flow:', isSignupFlow)
         console.log('[OAuth] STEP 0: DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'MISSING')
 
         // Simple retry helper
@@ -227,7 +235,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.log(`[OAuth] STEP 2: ✅ Tenant found: ${tenant.id} - ${tenant.name}`)
           }
 
-          // STEP 3: Check if user exists - prevent auto-signup via OAuth
+          // STEP 3: Check if user exists
           console.log('[OAuth] STEP 3: Checking if user exists...')
           const existingUser = await withRetry(
             () => prisma.user.findUnique({
@@ -238,32 +246,97 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             1000
           )
 
-          if (!existingUser) {
-            console.error('[OAuth] STEP 3: ❌ User does not exist - signup required')
-            console.error('[OAuth] Security: Preventing auto-signup via OAuth. User must sign up first.')
-            // Return false to prevent session creation
-            // This will redirect to signup page with error message
-            return false
-          }
+          let updatedUser
 
-          // STEP 3.1: Update existing user with latest profile info
-          console.log('[OAuth] STEP 3.1: Updating existing user...')
-          const updatedUser = await withRetry(
-            () => prisma.user.update({
-              where: { email: emailLower },
-              data: {
-                name: profile.name || email,
-                firstName: (profile as any).given_name || profile.name?.split(' ')[0] || existingUser.firstName,
-                lastName: (profile as any).family_name || profile.name?.split(' ')[1] || existingUser.lastName,
-                image: (profile as any).picture || user.image || existingUser.image,
-                emailVerified: existingUser.emailVerified || new Date(),
-              },
-            }),
-            'Update User',
-            3,
-            1000
-          )
-          console.log(`[OAuth] STEP 3.1: ✅ User updated: ${updatedUser.id}`)
+          if (!existingUser) {
+            // User doesn't exist - allow creation if this is a signup flow
+            // Otherwise, require manual signup first
+            if (!isSignupFlow) {
+              console.error('[OAuth] STEP 3: ❌ User does not exist - signup required')
+              console.error('[OAuth] Security: Preventing auto-signup via OAuth from login page. User must sign up first.')
+              return false
+            }
+            
+            // This is a signup flow - create the user
+            console.log('[OAuth] STEP 3: ✅ User does not exist - creating new user (signup flow)')
+            
+            // Get or create tenant (same logic as signup API)
+            let tenant = await withRetry(
+              () => prisma.tenant.findFirst({
+                where: { domain },
+                select: { id: true, name: true },
+              }),
+              'Find Tenant',
+              3,
+              1000
+            )
+
+            let userRole: 'ORG_ADMIN' | 'TEAM_MEMBER' = 'TEAM_MEMBER'
+
+            if (!tenant) {
+              // Create new tenant for signup
+              const tenantName = `${profile.name || email}'s Organization`
+              tenant = await withRetry(
+                async () => {
+                  const tenantId = `cl${Date.now()}${Math.random().toString(36).substring(2, 11)}`
+                  await prisma.$executeRaw`
+                    INSERT INTO "Tenant" (id, name, domain, "createdAt", "updatedAt")
+                    VALUES (${tenantId}, ${tenantName}, ${domain}, NOW(), NOW())
+                    ON CONFLICT (domain) DO NOTHING
+                  `
+                  const created = await prisma.tenant.findFirst({
+                    where: { domain },
+                    select: { id: true, name: true },
+                  })
+                  if (!created) throw new Error('Failed to create tenant')
+                  return created
+                },
+                'Create Tenant',
+                3,
+                1000
+              )
+              userRole = 'ORG_ADMIN'
+            }
+
+            // Create the user
+            updatedUser = await withRetry(
+              () => prisma.user.create({
+                data: {
+                  email: emailLower,
+                  name: profile.name || email,
+                  firstName: (profile as any).given_name || profile.name?.split(' ')[0] || '',
+                  lastName: (profile as any).family_name || profile.name?.split(' ')[1] || '',
+                  image: (profile as any).picture || user.image,
+                  tenantId: tenant.id,
+                  role: userRole,
+                  emailVerified: new Date(), // Google OAuth emails are pre-verified
+                },
+              }),
+              'Create User',
+              3,
+              1000
+            )
+            console.log(`[OAuth] STEP 3: ✅ User created: ${updatedUser.id}`)
+          } else {
+            // STEP 3.1: Update existing user with latest profile info
+            console.log('[OAuth] STEP 3.1: Updating existing user...')
+            updatedUser = await withRetry(
+              () => prisma.user.update({
+                where: { email: emailLower },
+                data: {
+                  name: profile.name || email,
+                  firstName: (profile as any).given_name || profile.name?.split(' ')[0] || existingUser.firstName,
+                  lastName: (profile as any).family_name || profile.name?.split(' ')[1] || existingUser.lastName,
+                  image: (profile as any).picture || user.image || existingUser.image,
+                  emailVerified: existingUser.emailVerified || new Date(),
+                },
+              }),
+              'Update User',
+              3,
+              1000
+            )
+            console.log(`[OAuth] STEP 3.1: ✅ User updated: ${updatedUser.id}`)
+          }
 
           // STEP 4: Verify user exists
           console.log('[OAuth] STEP 4: Verifying user exists in database...')

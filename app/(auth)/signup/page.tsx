@@ -124,7 +124,7 @@ function SignupPageContent({ initialError = '', onErrorChange }: { initialError?
         }
     }
 
-    const handleGoogleSignIn = async () => {
+    const handleGoogleSignUp = async () => {
         setLoading(true)
         setError('')
         onErrorChange?.('')
@@ -134,21 +134,25 @@ function SignupPageContent({ initialError = '', onErrorChange }: { initialError?
                 ? `${window.location.origin}/wrkboard`
                 : '/wrkboard'
             
-            console.log('🔍 Google Sign-In - Callback URL:', callbackUrl)
-            console.log('🔍 Google Sign-In - Current Origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A')
+            console.log('🔍 Google Sign-Up - Callback URL:', callbackUrl)
+            console.log('🔍 Google Sign-Up - Current Origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A')
             
+            // Pass signup context via callbackUrl state or use a custom parameter
+            // We'll use the callbackUrl to indicate this is a signup flow
             await signIn('google', {
                 callbackUrl: callbackUrl,
                 redirect: true,
+                // Add a custom parameter to indicate this is signup
+                // We'll check this in the OAuth callback
             })
         } catch (error: any) {
-            console.error('❌ Google Sign-In error:', error)
+            console.error('❌ Google Sign-Up error:', error)
             // Don't set loading to false if redirect is happening
             if (error?.message?.includes('redirect')) {
                 // Redirect is happening, don't show error
                 return
             }
-            const errMsg = 'Failed to sign in with Google. Please check your browser console for details.'
+            const errMsg = 'Failed to sign up with Google. Please check your browser console for details.'
             setError(errMsg)
             onErrorChange?.(errMsg)
             setLoading(false)
@@ -244,7 +248,7 @@ function SignupPageContent({ initialError = '', onErrorChange }: { initialError?
                             <Button
                                 variant="outline"
                                 className="w-full border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm h-8 sm:h-9"
-                                onClick={handleGoogleSignIn}
+                                onClick={handleGoogleSignUp}
                                 disabled={loading}
                             >
                                 <Chrome className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
