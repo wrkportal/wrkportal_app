@@ -25,6 +25,7 @@
     "db:delete-all-users": "tsx scripts/delete-all-users.ts",
     "db:migrate-sections": "tsx scripts/run-migration.ts",
     "postinstall": "prisma generate --schema=prisma/schema.prisma",
+    "vercel-build": "prisma generate --schema=prisma/schema.prisma && next build",
     "electron:dev": "electron .",
     "electron:build": "cross-env ELECTRON_BUILD=true next build || (echo Build completed with warnings, continuing with electron-builder... && electron-builder)",
     "desktop": "next build && electron ."

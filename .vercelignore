@@ -64,3 +64,14 @@ electron/
 
 # Vercel
 .vercel/
+
+# E2E tests (not needed in production)
+e2e/
+playwright.config.ts
+
+# Scripts (not needed in production)
+scripts/
+
+# Large markdown files
+*.md
+!README.md

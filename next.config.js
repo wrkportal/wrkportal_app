@@ -3,8 +3,21 @@ const nextConfig = {
   reactStrictMode: true,
   // Note: swcMinify is no longer needed in Next.js 16 (SWC is default)
   typescript: {
-    // Disable type checking during production builds
+    // Disable type checking during production builds for faster builds
     ignoreBuildErrors: true,
+  },
+  eslint: {
+    // Disable ESLint during builds for faster deployment
+    ignoreDuringBuilds: true,
+  },
+  // Enable SWC minification (already default, but explicit for clarity)
+  swcMinify: true,
+  // Optimize production builds
+  compress: true,
+  // Enable experimental features for faster builds
+  experimental: {
+    // Optimize package imports
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-dropdown-menu', '@radix-ui/react-dialog'],
   },
   images: {
     remotePatterns: [

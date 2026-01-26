@@ -54,6 +54,20 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    "out",
+    "dist",
+    "build",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "e2e",
+    "playwright.config.ts",
+    "jest.config.js",
+    "jest.setup.js",
+    "electron"
   ]
 }

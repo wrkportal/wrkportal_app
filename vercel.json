@@ -8,6 +8,17 @@
       "path": "/api/cron/follow-up-automation",
       "schedule": "0 0 * * *"
     }
-  ]
+  ],
+  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm ci --prefer-offline",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "functions": {
+    "app/**/*.ts": {
+      "maxDuration": 30
+    },
+    "app/**/*.tsx": {
+      "maxDuration": 30
+    }
+  }
 }
-
