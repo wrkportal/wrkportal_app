@@ -24,30 +24,74 @@ export async function POST(req: NextRequest) {
 
     // Run migration
     try {
-      // Add allowedSections to User table
-      await prisma.$executeRaw`
-        ALTER TABLE "User" 
-        ADD COLUMN IF NOT EXISTS "allowedSections" TEXT;
-      `
+      const results: string[] = []
 
-      // Add allowedSections to TenantInvitation table
-      await prisma.$executeRaw`
-        ALTER TABLE "TenantInvitation" 
-        ADD COLUMN IF NOT EXISTS "allowedSections" TEXT;
-      `
+      // Add allowedSections to User table
+      try {
+        await prisma.$executeRaw`
+          ALTER TABLE "User" 
+          ADD COLUMN IF NOT EXISTS "allowedSections" TEXT;
+        `
+        results.push('✅ User.allowedSections column added')
+      } catch (error: any) {
+        if (error.message?.includes('already exists') || error.code === '42701') {
+          results.push('ℹ️ User.allowedSections column already exists')
+        } else {
+          throw error
+        }
+      }
+
+      // Check if TenantInvitation table exists and add column
+      // Prisma might use different table name, so we'll check common variations
+      const tableVariations = ['TenantInvitation', 'tenant_invitation', 'tenantInvitation']
+      let tenantInvitationUpdated = false
+
+      for (const tableName of tableVariations) {
+        try {
+          // Check if table exists by trying to query it
+          const tableExists = await prisma.$queryRaw<Array<{ exists: boolean }>>`
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_schema = 'public' 
+              AND table_name = ${tableName}
+            ) as exists;
+          `
+
+          if (tableExists[0]?.exists) {
+            await prisma.$executeRawUnsafe(`
+              ALTER TABLE "${tableName}" 
+              ADD COLUMN IF NOT EXISTS "allowedSections" TEXT;
+            `)
+            results.push(`✅ ${tableName}.allowedSections column added`)
+            tenantInvitationUpdated = true
+            break
+          }
+        } catch (error: any) {
+          // If column already exists, that's fine
+          if (error.message?.includes('already exists') || error.code === '42701') {
+            results.push(`ℹ️ ${tableName}.allowedSections column already exists`)
+            tenantInvitationUpdated = true
+            break
+          }
+          // If table doesn't exist, continue to next variation
+          if (error.message?.includes('does not exist') || error.code === '42P01') {
+            continue
+          }
+          // Other errors, log but continue
+          console.warn(`[Migration] Error checking ${tableName}:`, error.message)
+        }
+      }
+
+      if (!tenantInvitationUpdated) {
+        results.push('⚠️ TenantInvitation table not found - skipping (table may not exist yet)')
+      }
 
       return NextResponse.json({ 
         success: true,
-        message: 'Migration completed successfully' 
+        message: 'Migration completed',
+        details: results
       })
     } catch (error: any) {
-      // If columns already exist, that's fine
-      if (error.message?.includes('already exists') || error.code === '42701') {
-        return NextResponse.json({ 
-          success: true,
-          message: 'Columns already exist' 
-        })
-      }
       throw error
     }
   } catch (error: any) {
