@@ -48,16 +48,17 @@ export async function POST(req: NextRequest) {
 
       for (const tableName of tableVariations) {
         try {
-          // Check if table exists by trying to query it
+          // Check if table exists by querying information_schema
           const tableExists = await prisma.$queryRaw<Array<{ exists: boolean }>>`
             SELECT EXISTS (
-              SELECT FROM information_schema.tables 
+              SELECT 1 
+              FROM information_schema.tables 
               WHERE table_schema = 'public' 
               AND table_name = ${tableName}
-            ) as exists;
+            ) AS exists
           `
 
-          if (tableExists[0]?.exists) {
+          if (tableExists && tableExists.length > 0 && tableExists[0]?.exists) {
             await prisma.$executeRawUnsafe(`
               ALTER TABLE "${tableName}" 
               ADD COLUMN IF NOT EXISTS "allowedSections" TEXT;
