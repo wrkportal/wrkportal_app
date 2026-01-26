@@ -34,8 +34,13 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
                 if (fetchedUser) {
                     setUser(fetchedUser)
                 }
-            } catch (error) {
-                console.error('Error loading user:', error)
+                // If fetchedUser is null, that's OK - user is just not logged in
+                // Don't treat this as an error
+            } catch (error: any) {
+                // Only log actual errors, not 401 responses
+                if (error?.status !== 401) {
+                    console.error('Error loading user:', error)
+                }
             } finally {
                 setIsLoadingUser(false)
             }
