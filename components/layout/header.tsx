@@ -239,16 +239,24 @@ export function Header() {
 
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage src={user.avatar} alt={user.firstName} />
-                                            <AvatarFallback className="bg-primary text-primary-foreground font-medium text-sm">
+                                    <Button 
+                                        variant="ghost" 
+                                        className="relative h-9 w-9 rounded-full hover:bg-accent focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                        aria-label="User menu"
+                                    >
+                                        <Avatar className="h-9 w-9 ring-2 ring-background">
+                                            <AvatarImage 
+                                                src={user.avatar} 
+                                                alt={`${user.firstName} ${user.lastName}`} 
+                                                className="opacity-100 object-cover" 
+                                            />
+                                            <AvatarFallback className="bg-primary text-primary-foreground font-medium text-sm opacity-100">
                                                 {getInitials(user.firstName, user.lastName)}
                                             </AvatarFallback>
                                         </Avatar>
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56" align="end" forceMount>
+                                <DropdownMenuContent className="w-56 z-[100]" align="end" forceMount>
                                     <DropdownMenuLabel className="font-normal">
                                         <div className="flex flex-col space-y-1">
                                             <p className="text-sm font-medium leading-none">

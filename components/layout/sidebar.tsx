@@ -1130,7 +1130,6 @@ export function Sidebar() {
                     sidebarOpen ? "translate-x-0" : "-translate-x-full",
                     sidebarCollapsed ? "w-14" : "w-56"
                 )}
-                style={{ opacity: 0.5 }}
             >
                 <div className="flex h-full flex-col items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -1139,7 +1138,7 @@ export function Sidebar() {
         )
     }
     
-    // Use opacity transition for smooth appearance
+    // Use opacity transition for smooth appearance - ensure full opacity when mounted
     const sidebarStyle = !isMounted ? { opacity: 0 } : { opacity: 1, transition: 'opacity 0.2s ease-in' }
 
     // Be robust if user.role isn't hydrated yet or not properly set
@@ -1232,11 +1231,13 @@ export function Sidebar() {
             {/* Sidebar */}
             <aside 
                 className={cn(
-                    "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card/95 backdrop-blur-xl transition-all duration-300 shadow-sm",
+                    "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card backdrop-blur-xl transition-all duration-300 shadow-sm",
                     // Mobile: slide in from left, Desktop: always visible
                     "md:translate-x-0",
                     sidebarOpen ? "translate-x-0" : "-translate-x-full",
-                    sidebarCollapsed ? "w-14" : "w-56"
+                    sidebarCollapsed ? "w-14" : "w-56",
+                    // Ensure sidebar is always visible when mounted and user exists
+                    isMounted ? "opacity-100" : "opacity-0"
                 )}
                 style={sidebarStyle}
             >

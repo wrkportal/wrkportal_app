@@ -227,54 +227,61 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.log(`[OAuth] STEP 2: ✅ Tenant found: ${tenant.id} - ${tenant.name}`)
           }
 
-          // STEP 3: Create or update user
-          console.log('[OAuth] STEP 3: Creating/updating user...')
-          const upsertedUser = await withRetry(
-            () => prisma.user.upsert({
+          // STEP 3: Check if user exists - prevent auto-signup via OAuth
+          console.log('[OAuth] STEP 3: Checking if user exists...')
+          const existingUser = await withRetry(
+            () => prisma.user.findUnique({
               where: { email: emailLower },
-              update: {
-                name: profile.name || email,
-                firstName: (profile as any).given_name || profile.name?.split(' ')[0] || undefined,
-                lastName: (profile as any).family_name || profile.name?.split(' ')[1] || undefined,
-                image: (profile as any).picture || user.image || undefined,
-                emailVerified: new Date(),
-              },
-              create: {
-                email: emailLower,
-                name: profile.name || email,
-                firstName: (profile as any).given_name || profile.name?.split(' ')[0] || '',
-                lastName: (profile as any).family_name || profile.name?.split(' ')[1] || '',
-                image: (profile as any).picture || user.image,
-                tenantId: tenant.id,
-                role: userRole,
-                emailVerified: new Date(),
-              },
             }),
-            'Upsert User',
+            'Find User',
             3,
             1000
           )
-          console.log(`[OAuth] STEP 3: ✅ User upserted: ${upsertedUser.id}`)
+
+          if (!existingUser) {
+            console.error('[OAuth] STEP 3: ❌ User does not exist - signup required')
+            console.error('[OAuth] Security: Preventing auto-signup via OAuth. User must sign up first.')
+            return false
+          }
+
+          // STEP 3.1: Update existing user with latest profile info
+          console.log('[OAuth] STEP 3.1: Updating existing user...')
+          const updatedUser = await withRetry(
+            () => prisma.user.update({
+              where: { email: emailLower },
+              data: {
+                name: profile.name || email,
+                firstName: (profile as any).given_name || profile.name?.split(' ')[0] || existingUser.firstName,
+                lastName: (profile as any).family_name || profile.name?.split(' ')[1] || existingUser.lastName,
+                image: (profile as any).picture || user.image || existingUser.image,
+                emailVerified: existingUser.emailVerified || new Date(),
+              },
+            }),
+            'Update User',
+            3,
+            1000
+          )
+          console.log(`[OAuth] STEP 3.1: ✅ User updated: ${updatedUser.id}`)
 
           // STEP 4: Verify user exists
           console.log('[OAuth] STEP 4: Verifying user exists in database...')
           const verifyUser = await prisma.user.findUnique({
-            where: { id: upsertedUser.id },
+            where: { id: updatedUser.id },
             select: { id: true, email: true, tenantId: true },
           })
 
           if (!verifyUser) {
-            console.error('[OAuth] STEP 4: ❌ Verification failed - user not found after creation')
+            console.error('[OAuth] STEP 4: ❌ Verification failed - user not found after update')
             return false
           }
           console.log(`[OAuth] STEP 4: ✅ Verification passed: ${verifyUser.id}`)
 
           console.log('[OAuth] ========== SUCCESS - All steps completed ==========')
           console.log('[OAuth] Final user data:', {
-            id: upsertedUser.id,
-            email: upsertedUser.email,
-            tenantId: upsertedUser.tenantId,
-            role: upsertedUser.role,
+            id: updatedUser.id,
+            email: updatedUser.email,
+            tenantId: updatedUser.tenantId,
+            role: updatedUser.role,
           })
 
           return true
@@ -307,7 +314,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, trigger, session }) {
       // Initial sign in
       if (user) {
-        // For OAuth, user MUST exist in DB (created in signIn callback)
+        // For OAuth, user MUST exist in DB (verified in signIn callback)
         // Security: Only allow sign-in if user exists in database
         if (user.email) {
           const dbUser = await prisma.user.findUnique({
@@ -317,6 +324,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               email: true,
               role: true,
               tenantId: true,
+              emailVerified: true,
             },
           })
 
@@ -326,10 +334,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.email = dbUser.email
             token.role = dbUser.role
             token.tenantId = dbUser.tenantId
+            token.emailVerified = dbUser.emailVerified
           } else {
-            // Security: User should have been created in signIn callback
-            // If not found, this is an error state
-            console.error('[JWT] ❌ User not found in DB - should have been created in signIn callback:', user.email)
+            // Security: User should have been verified in signIn callback
+            // If not found, this is an error state - prevent authentication
+            console.error('[JWT] ❌ User not found in DB - signup required:', user.email)
             // Don't set token.id - this will cause API routes to return 401
             // This ensures security: no access without valid DB user
           }
@@ -339,6 +348,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.email = user.email!
           token.role = (user as any).role
           token.tenantId = (user as any).tenantId
+          token.emailVerified = (user as any).emailVerified
         }
       }
 
