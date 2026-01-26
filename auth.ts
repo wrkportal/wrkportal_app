@@ -13,7 +13,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          prompt: 'select_account',
+          prompt: 'consent',
           access_type: 'offline',
           response_type: 'code',
           // Note: The application name shown in the OAuth prompt is configured
@@ -88,23 +88,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === 'google' && profile) {
         console.log('[OAuth] ========== START OAuth signIn callback ==========')
         
-        const email = user.email!
+        // SECURITY: Verify that Google OAuth authentication was successful
+        if (!account.access_token) {
+          console.error('[OAuth] ❌ SECURITY: No access_token - OAuth authentication failed')
+          return false
+        }
+        
+        if (!account.id_token) {
+          console.error('[OAuth] ❌ SECURITY: No id_token - OAuth authentication failed')
+          return false
+        }
+        
+        const email = user.email || profile.email
         if (!email) {
           console.error('[OAuth] ❌ STEP 0: No email provided')
+          return false
+        }
+
+        // SECURITY: Verify email is verified by Google
+        const emailVerified = profile.email_verified !== false && profile.email_verified !== undefined
+        if (!emailVerified) {
+          console.error('[OAuth] ❌ SECURITY: Email not verified by Google')
           return false
         }
 
         const emailLower = email.toLowerCase()
         const domain = emailLower.split('@')[1]
         
-        // Check if this is a signup flow by checking if callbackUrl contains signup indicator
-        // We'll allow signup via OAuth since Google OAuth is secure (email is verified by Google)
-        // This enables "Continue with Google" on signup page to work
-        // For login page, if user doesn't exist, they'll get an error (which is correct)
-        // Note: We allow signup via OAuth because Google verifies the email, making it secure
-        const isSignupFlow = true // Allow OAuth signup (secure via Google verification)
+        // Check if this is a signup flow - only allow signup from signup page
+        // We need to detect this from the callback URL or state
+        // For now, we'll be more restrictive - only allow signup if explicitly from signup page
+        // This prevents unauthorized user creation
+        const isSignupFlow = false // Default to false - require explicit signup flow
         
         console.log('[OAuth] STEP 0: Email received:', emailLower)
+        console.log('[OAuth] STEP 0: Email verified by Google:', emailVerified)
         console.log('[OAuth] STEP 0: Domain extracted:', domain)
         console.log('[OAuth] STEP 0: Is signup flow:', isSignupFlow)
         console.log('[OAuth] STEP 0: DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'MISSING')

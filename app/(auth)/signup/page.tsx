@@ -129,21 +129,22 @@ function SignupPageContent({ initialError = '', onErrorChange }: { initialError?
         setError('')
         onErrorChange?.('')
         try {
+            // Store signup flag in sessionStorage to detect signup flow in OAuth callback
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('oauth_signup_flow', 'true')
+            }
+            
             // Use current origin to ensure correct redirect
             const callbackUrl = typeof window !== 'undefined' 
-                ? `${window.location.origin}/wrkboard`
+                ? `${window.location.origin}/wrkboard?signup=success`
                 : '/wrkboard'
             
             console.log('🔍 Google Sign-Up - Callback URL:', callbackUrl)
             console.log('🔍 Google Sign-Up - Current Origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A')
             
-            // Pass signup context via callbackUrl state or use a custom parameter
-            // We'll use the callbackUrl to indicate this is a signup flow
             await signIn('google', {
                 callbackUrl: callbackUrl,
                 redirect: true,
-                // Add a custom parameter to indicate this is signup
-                // We'll check this in the OAuth callback
             })
         } catch (error: any) {
             console.error('❌ Google Sign-Up error:', error)
@@ -221,7 +222,7 @@ function SignupPageContent({ initialError = '', onErrorChange }: { initialError?
         <div className="min-h-screen flex relative bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
             {/* Form Container - Left Side */}
             <div className="relative z-10 w-full lg:w-1/2 min-h-screen flex items-center justify-center p-3 sm:p-4 lg:p-8 py-6 sm:py-8">
-                <div className="w-full max-w-[400px] sm:max-w-[450px] md:max-w-[500px] lg:max-w-[520px]">
+                <div className="w-full max-w-[380px] sm:max-w-[420px] md:max-w-[450px] lg:max-w-[480px]">
                     {/* Logo/Brand */}
                     <div className="text-center mb-3 sm:mb-4">
                         <div className="flex items-center justify-center gap-2 mb-1.5">

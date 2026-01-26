@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from "@/components/ui/button"
+import dynamic from 'next/dynamic'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -674,7 +675,7 @@ export default function LandingPage() {
             </nav>
 
             {/* Hero Section */}
-            <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden pt-4 pb-4">
+            <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden pt-20 pb-4">
                 {/* Animated Grid Background */}
                 <div className="absolute inset-0 opacity-20">
                     <div className="absolute inset-0" style={{
@@ -693,7 +694,7 @@ export default function LandingPage() {
                 <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col items-center text-center max-w-6xl mx-auto">
                         {/* Badge with Animation */}
-                        <Badge className="mb-3 md:mb-3 lg:mb-3 px-4 md:px-5 lg:px-6 py-1.5 md:py-2 lg:py-2 text-xs md:text-sm lg:text-sm bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md animate-fade-in-up inline-flex items-center">
+                        <Badge className="mb-6 md:mb-6 lg:mb-8 px-4 md:px-5 lg:px-6 py-1.5 md:py-2 lg:py-2 text-xs md:text-sm lg:text-sm bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 border-purple-300 shadow-md animate-fade-in-up inline-flex items-center">
                             <Sparkles className="mr-2 h-3 w-3 md:h-4 md:w-4 lg:h-4 lg:w-4 animate-spin text-purple-600" style={{ animationDuration: '3s' }} />
                             <span className="whitespace-nowrap">The Only Platform You Need</span>
                         </Badge>
