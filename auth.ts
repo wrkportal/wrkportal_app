@@ -376,7 +376,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   firstName: (profile as any).given_name || profile.name?.split(' ')[0] || existingUser.firstName,
                   lastName: (profile as any).family_name || profile.name?.split(' ')[1] || existingUser.lastName,
                   image: (profile as any).picture || user.image || existingUser.image,
-                  emailVerified: existingUser.emailVerified || new Date(),
+                  // Don't change emailVerified for existing users - keep their current status
+                  emailVerified: existingUser.emailVerified,
                 },
               }),
               'Update User',
