@@ -260,7 +260,9 @@ function ProjectDashboardInner() {
           setTimeout(() => {
             const url = new URL(window.location.href)
             url.searchParams.delete('widget')
-            router.replace(url.pathname + url.search)
+            if (router) {
+              router.replace(url.pathname + url.search)
+            }
           }, 1500) // Give time for state to update and widget to render
         }
     }
@@ -672,7 +674,13 @@ function ProjectDashboardInner() {
                 <Card
                   key={project.id}
                   className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => router.push(`/projects/${project.id}`)}
+                  onClick={() => {
+                    if (!router) {
+                      console.error('[ProjectDashboard] Router not available')
+                      return
+                    }
+                    router.push(`/projects/${project.id}`)
+                  }}
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
@@ -947,7 +955,13 @@ function ProjectDashboardInner() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => router.push('/tasks/new')}
+                    onClick={() => {
+                      if (!router) {
+                        console.error('[ProjectDashboard] Router not available')
+                        return
+                      }
+                      router.push('/tasks/new')
+                    }}
                     className="text-xs"
                     title="Add New Task"
                   >
@@ -1038,7 +1052,13 @@ function ProjectDashboardInner() {
                       <div
                         key={task.id}
                         className="flex items-start gap-3 p-2 border rounded-lg hover:bg-accent transition-colors cursor-pointer"
-                        onClick={() => router.push(`/tasks/${task.id}`)}
+                        onClick={() => {
+                          if (!router) {
+                            console.error('[ProjectDashboard] Router not available')
+                            return
+                          }
+                          router.push(`/tasks/${task.id}`)
+                        }}
                       >
                         <div className="flex-1 space-y-1">
                           <p className="text-sm font-medium">{task.title}</p>
@@ -1070,7 +1090,13 @@ function ProjectDashboardInner() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push('/tasks/new')}
+                        onClick={() => {
+                      if (!router) {
+                        console.error('[ProjectDashboard] Router not available')
+                        return
+                      }
+                      router.push('/tasks/new')
+                    }}
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Create Your First Task
@@ -1239,7 +1265,13 @@ function ProjectDashboardInner() {
                                         task.priority === 'MEDIUM' ? 'bg-yellow-500 text-white' :
                                         task.priority === 'LOW' ? 'bg-blue-500 text-white' : 'bg-gray-500 text-white'
                                       } hover:opacity-80 transition-opacity`}
-                                      onClick={() => router.push(`/tasks/${task.id}`)}
+                                      onClick={() => {
+                          if (!router) {
+                            console.error('[ProjectDashboard] Router not available')
+                            return
+                          }
+                          router.push(`/tasks/${task.id}`)
+                        }}
                                       title={task.title}
                                     >
                                       {task.title}
@@ -1274,7 +1306,13 @@ function ProjectDashboardInner() {
                                     task.priority === 'MEDIUM' ? 'bg-yellow-500 text-white' :
                                     task.priority === 'LOW' ? 'bg-blue-500 text-white' : 'bg-gray-500 text-white'
                                   } hover:opacity-80`}
-                                  onClick={() => router.push(`/tasks/${task.id}`)}
+                                  onClick={() => {
+                          if (!router) {
+                            console.error('[ProjectDashboard] Router not available')
+                            return
+                          }
+                          router.push(`/tasks/${task.id}`)
+                        }}
                                 >
                                   {task.title}
                                 </div>

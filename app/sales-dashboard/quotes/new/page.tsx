@@ -260,7 +260,9 @@ function NewQuotePageInner() {
           title: 'Success',
           description: 'Quote created successfully',
         })
-        router.push('/sales-dashboard/quotes')
+        if (router) {
+          router.push('/sales-dashboard/quotes')
+        }
       } else {
         const error = await response.json()
         toast({

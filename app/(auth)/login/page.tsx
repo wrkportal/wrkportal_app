@@ -27,6 +27,10 @@ function OAuthErrorHandler({ onError }: { onError: (error: string) => void }) {
         if (errorParam === 'AccessDenied' && emailParam && providerParam === 'google') {
             // Redirect to verify-email page with email parameter
             const verifyUrl = `/verify-email?email=${encodeURIComponent(emailParam)}&provider=google&reason=${reasonParam || 'unverified'}`
+            if (!router) {
+              console.error('[Login] Router not available')
+              return
+            }
             router.push(verifyUrl)
             return
         }

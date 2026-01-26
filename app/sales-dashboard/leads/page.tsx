@@ -2022,7 +2022,13 @@ function LeadsInner() {
                             <TableRow
                               key={lead.id}
                               className="cursor-pointer hover:bg-muted/50"
-                              onClick={() => router.push(`/sales-dashboard/leads/${lead.id}`)}
+                              onClick={() => {
+                                if (!router) {
+                                  console.error('[Leads] Router not available')
+                                  return
+                                }
+                                router.push(`/sales-dashboard/leads/${lead.id}`)
+                              }}
                             >
                               <TableCell className="font-medium">
                                 {lead.firstName} {lead.lastName}

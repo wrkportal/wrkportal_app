@@ -302,7 +302,9 @@ export default function CandidateDetailPage() {
       setInterviewDialogOpen(false)
       setInterviewData({ date: '', time: '', type: 'VIDEO', interviewer: '', location: '', notes: '' })
       // Navigate to interviews page or show success message
-      router.push('/recruitment-dashboard/interviews')
+      if (router) {
+        router.push('/recruitment-dashboard/interviews')
+      }
     } catch (error) {
       console.error('Error scheduling interview:', error)
     }
@@ -425,7 +427,13 @@ export default function CandidateDetailPage() {
       <RecruitmentPageLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <div className="text-muted-foreground">Candidate not found</div>
-          <Button onClick={() => router.push('/recruitment-dashboard/candidates')}>
+          <Button onClick={() => {
+            if (!router) {
+              console.error('[CandidateDetail] Router not available')
+              return
+            }
+            router.push('/recruitment-dashboard/candidates')
+          }}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Candidates
           </Button>
@@ -446,7 +454,13 @@ export default function CandidateDetailPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => router.push('/recruitment-dashboard/candidates')}
+                onClick={() => {
+                  if (!router) {
+                    console.error('[CandidateDetail] Router not available')
+                    return
+                  }
+                  router.push('/recruitment-dashboard/candidates')
+                }}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back

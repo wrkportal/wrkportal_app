@@ -1468,7 +1468,13 @@ function OpportunitiesInner() {
                             <TableRow
                               key={opp.id}
                               className="cursor-pointer hover:bg-muted/50"
-                              onClick={() => router.push(`/sales-dashboard/opportunities/${opp.id}`)}
+                              onClick={() => {
+                                if (!router) {
+                                  console.error('[Opportunities] Router not available')
+                                  return
+                                }
+                                router.push(`/sales-dashboard/opportunities/${opp.id}`)
+                              }}
                             >
                               <TableCell className="font-medium">
                                 {opp.name}
@@ -1545,7 +1551,13 @@ function OpportunitiesInner() {
                                       <Card
                                         key={opp.id}
                                         className="p-2 hover:shadow-md transition-shadow cursor-pointer"
-                                        onClick={() => router.push(`/sales-dashboard/opportunities/${opp.id}`)}
+                                        onClick={() => {
+                                if (!router) {
+                                  console.error('[Opportunities] Router not available')
+                                  return
+                                }
+                                router.push(`/sales-dashboard/opportunities/${opp.id}`)
+                              }}
                                       >
                                         <div className="font-medium text-xs mb-1">{opp.name}</div>
                                         {opp.account && (

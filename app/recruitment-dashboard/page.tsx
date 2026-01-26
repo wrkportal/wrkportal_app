@@ -3444,7 +3444,13 @@ function RecruitmentDashboardPageInner() {
           <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
             <Button
               variant="outline"
-              onClick={() => router.push('/recruitment-dashboard')}
+              onClick={() => {
+                if (!router) {
+                  console.error('[RecruitmentDashboard] Router not available')
+                  return
+                }
+                router.push('/recruitment-dashboard')
+              }}
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
@@ -3452,7 +3458,13 @@ function RecruitmentDashboardPageInner() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => router.push('/recruitment-dashboard/candidates')}
+              onClick={() => {
+                if (!router) {
+                  console.error('[RecruitmentDashboard] Router not available')
+                  return
+                }
+                router.push('/recruitment-dashboard/candidates')
+              }}
               className="flex items-center gap-2"
             >
               <UserCheck className="h-4 w-4" />

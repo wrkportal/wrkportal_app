@@ -196,6 +196,10 @@ export function SearchBar() {
 
     const handleResultClick = (result: SearchResult) => {
         setShowResults(false)
+        if (!router) {
+            console.error('[SearchBar] Router not available')
+            return
+        }
         router.push(result.url)
     }
 

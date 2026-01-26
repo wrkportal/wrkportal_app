@@ -260,7 +260,9 @@ export default function QuoteDetailPage() {
           title: 'Success',
           description: 'Invoice created successfully',
         })
-        router.push(`/sales-dashboard/invoices`)
+        if (router) {
+          router.push(`/sales-dashboard/invoices`)
+        }
       } else {
         const error = await response.json()
         toast({
@@ -359,7 +361,9 @@ export default function QuoteDetailPage() {
           title: 'Success',
           description: 'New version created successfully',
         })
-        router.push(`/sales-dashboard/quotes/${newVersion.id}`)
+        if (router) {
+          router.push(`/sales-dashboard/quotes/${newVersion.id}`)
+        }
       } else {
         const error = await response.json()
         toast({

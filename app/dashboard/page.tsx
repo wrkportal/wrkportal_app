@@ -9,6 +9,10 @@ export default function DashboardPage() {
 
     useEffect(() => {
         // Redirect to project dashboard
+        if (!router) {
+          console.error('[Dashboard] Router not available')
+          return
+        }
         router.replace('/projects/dashboard')
     }, [router])
 

@@ -126,7 +126,13 @@ function VerifyEmailInner() {
                 // Show "verified" state - user clicked link and verified
                 <Button
                   className="w-full bg-purple-600 hover:bg-purple-700"
-                  onClick={() => router.push('/login')}
+                  onClick={() => {
+                    if (!router) {
+                      console.error('[VerifyEmail] Router not available')
+                      return
+                    }
+                    router.push('/login')
+                  }}
                 >
                   Continue to Login
                 </Button>

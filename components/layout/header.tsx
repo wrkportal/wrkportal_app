@@ -135,7 +135,9 @@ export function Header() {
         } catch (error) {
             console.error('Logout error:', error)
             // Even if signOut fails, redirect to login
-            router.push('/login')
+            if (router) {
+                router.push('/login')
+            }
         }
     }
 
@@ -176,7 +178,13 @@ export function Header() {
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
-                                    onClick={() => router.push("/ai-assistant")}
+                                    onClick={() => {
+                                        if (!router) {
+                                            console.error('[Header] Router not available')
+                                            return
+                                        }
+                                        router.push("/ai-assistant")
+                                    }}
                                     variant="ghost"
                                     size="icon"
                                     className="h-9 w-9"
@@ -222,7 +230,13 @@ export function Header() {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => router.push("/notifications")}
+                                onClick={() => {
+                                    if (!router) {
+                                        console.error('[Header] Router not available')
+                                        return
+                                    }
+                                    router.push("/notifications")
+                                }}
                                 className="relative h-9 w-9"
                                 title={`${alertsCount} notification(s)`}
                             >
@@ -271,11 +285,23 @@ export function Header() {
                                         </div>
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => router.push("/profile")}>
+                                    <DropdownMenuItem onClick={() => {
+                                        if (!router) {
+                                            console.error('[Header] Router not available')
+                                            return
+                                        }
+                                        router.push("/profile")
+                                    }}>
                                         <User className="mr-2 h-4 w-4" />
                                         <span>Profile</span>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => router.push("/settings")}>
+                                    <DropdownMenuItem onClick={() => {
+                                        if (!router) {
+                                            console.error('[Header] Router not available')
+                                            return
+                                        }
+                                        router.push("/settings")
+                                    }}>
                                         <Settings className="mr-2 h-4 w-4" />
                                         <span>Settings</span>
                                     </DropdownMenuItem>

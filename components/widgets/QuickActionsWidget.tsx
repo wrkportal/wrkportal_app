@@ -104,6 +104,10 @@ export function QuickActionsWidget({
     if (action.onClick) {
       action.onClick()
     } else if (action.href) {
+      if (!router) {
+        console.error('[QuickActionsWidget] Router not available')
+        return
+      }
       router.push(action.href)
     }
   }

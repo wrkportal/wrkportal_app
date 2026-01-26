@@ -150,7 +150,9 @@ export default function RoleSelectionPage() {
 
         if (hasSelectedRole) {
           console.log('[Role Selection Page] ✅ User has already selected role, redirecting to landing page')
-          router.replace(authenticatedUser.landingPage || '/wrkboard')
+          if (router) {
+            router.replace(authenticatedUser.landingPage || '/wrkboard')
+          }
           return
         } else {
           console.log('[Role Selection Page] ❌ User has NOT selected role, showing role selection form')
@@ -159,7 +161,9 @@ export default function RoleSelectionPage() {
       } else {
         // Not authenticated, redirect to login
         console.log('[Role Selection Page] No authenticated user, redirecting to login')
-        router.replace('/login')
+        if (router) {
+          router.replace('/login')
+        }
         return
       }
     }
@@ -171,7 +175,9 @@ export default function RoleSelectionPage() {
   const handleRoleSelection = async (roleValue: string) => {
     const currentUser = user || (await fetchAuthenticatedUser())
     if (!currentUser) {
-      router.push('/login')
+      if (router) {
+        router.push('/login')
+      }
       return
     }
 

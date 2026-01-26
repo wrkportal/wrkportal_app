@@ -499,9 +499,13 @@ export default function LandingPage() {
     const handleCtaClick = () => {
         const isReturningVisitor = hasVisitedBefore()
         if (isReturningVisitor) {
-            router.push('/login')
+            if (router) {
+              router.push('/login')
+            }
         } else {
-            router.push('/signup')
+            if (router) {
+              router.push('/signup')
+            }
         }
     }
 
@@ -659,11 +663,23 @@ export default function LandingPage() {
                             </a>
                         </div>
                         <div className="flex items-center gap-3">
-                            <Button variant="ghost" onClick={() => router.push('/login')} className="text-gray-700 hover:text-purple-600 hover:bg-purple-50">
+                            <Button variant="ghost" onClick={() => {
+                              if (!router) {
+                                console.error('[Landing] Router not available')
+                                return
+                              }
+                              router.push('/login')
+                            }} className="text-gray-700 hover:text-purple-600 hover:bg-purple-50">
                                 Sign In
                             </Button>
                             <Button
-                                onClick={() => router.push('/signup')}
+                                onClick={() => {
+                                  if (!router) {
+                                    console.error('[Landing] Router not available')
+                                    return
+                                  }
+                                  router.push('/signup')
+                                }}
                                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium shadow-lg shadow-purple-300/50"
                             >
                                 Start Free Trial
@@ -812,7 +828,13 @@ export default function LandingPage() {
                         <div className="flex flex-col sm:flex-row gap-4 mb-6 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
                             <Button
                                 size="lg"
-                                onClick={() => router.push('/signup')}
+                                onClick={() => {
+                                  if (!router) {
+                                    console.error('[Landing] Router not available')
+                                    return
+                                  }
+                                  router.push('/signup')
+                                }}
                                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg px-10 py-7 shadow-2xl shadow-purple-300/50 hover:shadow-purple-400/70 transition-all duration-300 hover:scale-105 group"
                             >
                                 <Plus className="mr-2 h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
@@ -882,7 +904,13 @@ export default function LandingPage() {
                                 </li>
                             </ul>
                             <Button
-                                onClick={() => router.push('/signup')}
+                                onClick={() => {
+                                  if (!router) {
+                                    console.error('[Landing] Router not available')
+                                    return
+                                  }
+                                  router.push('/signup')
+                                }}
                                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white mt-6 shadow-lg shadow-purple-300/50"
                             >
                                 <Plus className="mr-2 h-4 w-4" />
@@ -949,7 +977,13 @@ export default function LandingPage() {
                                 With wrkportal.com AI, you can chat smarter, not harder. Master the art of AI-powered conversations and unleash the power of automated intelligence for your projects.
                             </p>
                             <Button
-                                onClick={() => router.push('/signup')}
+                                onClick={() => {
+                                  if (!router) {
+                                    console.error('[Landing] Router not available')
+                                    return
+                                  }
+                                  router.push('/signup')
+                                }}
                                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-300/50"
                             >
                                 Start Chat
@@ -976,7 +1010,13 @@ export default function LandingPage() {
                                 That includes you. By leveraging our leading AI text-to-speech reader, you can breeze through presentations, reports, and documentation with ease.
                             </p>
                             <Button
-                                onClick={() => router.push('/signup')}
+                                onClick={() => {
+                                  if (!router) {
+                                    console.error('[Landing] Router not available')
+                                    return
+                                  }
+                                  router.push('/signup')
+                                }}
                                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-300/50"
                             >
                                 Try AI Video
@@ -1050,7 +1090,13 @@ export default function LandingPage() {
                                 </li>
                             </ul>
                             <Button
-                                onClick={() => router.push('/signup')}
+                                onClick={() => {
+                                  if (!router) {
+                                    console.error('[Landing] Router not available')
+                                    return
+                                  }
+                                  router.push('/signup')
+                                }}
                                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-300/50"
                             >
                                 <Plus className="mr-2 h-4 w-4" />
@@ -1169,7 +1215,13 @@ export default function LandingPage() {
                                         ))}
                                     </ul>
                                     <Button
-                                        onClick={() => router.push('/signup')}
+                                        onClick={() => {
+                                  if (!router) {
+                                    console.error('[Landing] Router not available')
+                                    return
+                                  }
+                                  router.push('/signup')
+                                }}
                                         className={`w-full ${plan.popular
                                             ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-300/50'
                                             : 'bg-white hover:bg-purple-50 text-purple-700 border-2 border-purple-300 hover:border-purple-400 shadow-md'
@@ -1247,7 +1299,13 @@ export default function LandingPage() {
                             </div>
                             <Button
                                 size="lg"
-                                onClick={() => router.push('/signup')}
+                                onClick={() => {
+                                  if (!router) {
+                                    console.error('[Landing] Router not available')
+                                    return
+                                  }
+                                  router.push('/signup')
+                                }}
                                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-lg px-12 py-7 font-bold shadow-2xl shadow-purple-300/50"
                             >
                                 <Sparkles className="mr-2 h-5 w-5" />

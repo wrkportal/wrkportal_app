@@ -436,7 +436,13 @@ export default function JobDetailPage() {
       <RecruitmentPageLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <div className="text-muted-foreground">Job not found</div>
-          <Button onClick={() => router.push('/recruitment-dashboard/jobs')}>
+          <Button onClick={() => {
+            if (!router) {
+              console.error('[JobDetail] Router not available')
+              return
+            }
+            router.push('/recruitment-dashboard/jobs')
+          }}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Jobs
           </Button>
@@ -455,7 +461,13 @@ export default function JobDetailPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => router.push('/recruitment-dashboard/jobs')}
+                onClick={() => {
+                  if (!router) {
+                    console.error('[JobDetail] Router not available')
+                    return
+                  }
+                  router.push('/recruitment-dashboard/jobs')
+                }}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back

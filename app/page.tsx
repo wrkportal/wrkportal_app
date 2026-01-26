@@ -21,6 +21,11 @@ export default function HomePage() {
                     new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000))
                 ])
 
+                if (!router) {
+                    console.error('[HomePage] Router not available')
+                    return
+                }
+
                 if (authenticatedUser) {
                     setUser(authenticatedUser)
                     router.replace('/wrkboard')
@@ -30,7 +35,9 @@ export default function HomePage() {
                 }
             } catch (error) {
                 // On any error, redirect to landing immediately
-                router.replace('/landing')
+                if (router) {
+                    router.replace('/landing')
+                }
             }
         }
 

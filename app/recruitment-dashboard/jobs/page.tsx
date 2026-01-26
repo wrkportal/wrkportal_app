@@ -881,7 +881,13 @@ function JobsPageInner() {
                 </TableHeader>
                 <TableBody>
                   {filteredJobs.map((job) => (
-                    <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/recruitment-dashboard/jobs/${job.id}`)}>
+                    <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50" onClick={() => {
+                      if (!router) {
+                        console.error('[Jobs] Router not available')
+                        return
+                      }
+                      router.push(`/recruitment-dashboard/jobs/${job.id}`)
+                    }}>
                       <TableCell className="font-medium">
                         <Link href={`/recruitment-dashboard/jobs/${job.id}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>
                           {job.title}

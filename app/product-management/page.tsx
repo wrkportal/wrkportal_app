@@ -3728,7 +3728,13 @@ export default function PMDashboardLandingPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => router.push('/projects/new')}
+                  onClick={() => {
+                    if (!router) {
+                      console.error('[ProductManagement] Router not available')
+                      return
+                    }
+                    router.push('/projects/new')
+                  }}
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   New
@@ -3745,7 +3751,13 @@ export default function PMDashboardLandingPage() {
                       <div
                         key={project.id}
                         className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent cursor-pointer transition-colors"
-                        onClick={() => router.push(`/projects/${project.id}`)}
+                        onClick={() => {
+                          if (!router) {
+                            console.error('[ProductManagement] Router not available')
+                            return
+                          }
+                          router.push(`/projects/${project.id}`)
+                        }}
                       >
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2">
@@ -3780,7 +3792,13 @@ export default function PMDashboardLandingPage() {
                   <Button
                     variant="link"
                     className="mt-2"
-                    onClick={() => router.push('/projects/new')}
+                    onClick={() => {
+                    if (!router) {
+                      console.error('[ProductManagement] Router not available')
+                      return
+                    }
+                    router.push('/projects/new')
+                  }}
                   >
                     Create your first project →
                   </Button>
@@ -3813,7 +3831,13 @@ export default function PMDashboardLandingPage() {
                       <div
                         key={task.id}
                         className="flex items-start gap-3 p-2 border rounded-lg hover:bg-accent transition-colors cursor-pointer"
-                        onClick={() => router.push(`/tasks/${task.id}`)}
+                        onClick={() => {
+                          if (!router) {
+                            console.error('[ProductManagement] Router not available')
+                            return
+                          }
+                          router.push(`/tasks/${task.id}`)
+                        }}
                       >
                         <div className="flex-1 space-y-1">
                           <p className="text-sm font-medium">{task.title}</p>
@@ -3895,7 +3919,13 @@ export default function PMDashboardLandingPage() {
                     <div
                       key={goal.id}
                       className="space-y-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => router.push('/okrs')}
+                      onClick={() => {
+                        if (!router) {
+                          console.error('[ProductManagement] Router not available')
+                          return
+                        }
+                        router.push('/okrs')
+                      }}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -3938,7 +3968,13 @@ export default function PMDashboardLandingPage() {
                     <Button
                       variant="ghost"
                       className="w-full"
-                      onClick={() => router.push('/okrs')}
+                      onClick={() => {
+                        if (!router) {
+                          console.error('[ProductManagement] Router not available')
+                          return
+                        }
+                        router.push('/okrs')
+                      }}
                     >
                       View all {userGoals.length} goals →
                     </Button>
@@ -4138,7 +4174,13 @@ export default function PMDashboardLandingPage() {
                       <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
                         <Button
                           variant="outline"
-                          onClick={() => router.push('/product-management')}
+                          onClick={() => {
+                            if (!router) {
+                              console.error('[ProductManagement] Router not available')
+                              return
+                            }
+                            router.push('/product-management')
+                          }}
                           className="flex items-center gap-2"
                         >
                           <Plus className="h-4 w-4" />
@@ -4146,7 +4188,13 @@ export default function PMDashboardLandingPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => router.push('/projects')}
+                          onClick={() => {
+                            if (!router) {
+                              console.error('[ProductManagement] Router not available')
+                              return
+                            }
+                            router.push('/projects')
+                          }}
                           className="flex items-center gap-2"
                         >
                           <Briefcase className="h-4 w-4" />

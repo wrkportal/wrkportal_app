@@ -346,7 +346,13 @@ export default function OpportunityDetailPage() {
         <div className="flex items-center justify-center h-[calc(100vh-200px)]">
           <div className="text-center">
             <div className="text-lg font-medium mb-2">Opportunity not found</div>
-            <Button onClick={() => router.push('/sales-dashboard/opportunities')} variant="outline">
+            <Button onClick={() => {
+              if (!router) {
+                console.error('[OpportunityDetail] Router not available')
+                return
+              }
+              router.push('/sales-dashboard/opportunities')
+            }} variant="outline">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Opportunities
             </Button>
@@ -363,7 +369,13 @@ export default function OpportunityDetailPage() {
       <div className="space-y-6">
         {/* Header with Back Button */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/sales-dashboard/opportunities')}>
+          <Button variant="ghost" size="sm" onClick={() => {
+            if (!router) {
+              console.error('[OpportunityDetail] Router not available')
+              return
+            }
+            router.push('/sales-dashboard/opportunities')
+          }}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Opportunities
           </Button>
@@ -816,7 +828,13 @@ export default function OpportunityDetailPage() {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => router.push('/sales-dashboard/accounts?create=true')}
+                    onClick={() => {
+                      if (!router) {
+                        console.error('[OpportunityDetail] Router not available')
+                        return
+                      }
+                      router.push('/sales-dashboard/accounts?create=true')
+                    }}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add
@@ -824,7 +842,13 @@ export default function OpportunityDetailPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => router.push('/sales-dashboard/accounts?upload=true')}
+                    onClick={() => {
+                      if (!router) {
+                        console.error('[OpportunityDetail] Router not available')
+                        return
+                      }
+                      router.push('/sales-dashboard/accounts?upload=true')
+                    }}
                     title="Upload Accounts"
                   >
                     <Upload className="h-4 w-4" />
@@ -854,7 +878,13 @@ export default function OpportunityDetailPage() {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => router.push(`/sales-dashboard/contacts?create=true&opportunityId=${opportunityId}`)}
+                    onClick={() => {
+                      if (!router) {
+                        console.error('[OpportunityDetail] Router not available')
+                        return
+                      }
+                      router.push(`/sales-dashboard/contacts?create=true&opportunityId=${opportunityId}`)
+                    }}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add
@@ -862,7 +892,13 @@ export default function OpportunityDetailPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => router.push('/sales-dashboard/contacts?upload=true')}
+                    onClick={() => {
+                      if (!router) {
+                        console.error('[OpportunityDetail] Router not available')
+                        return
+                      }
+                      router.push('/sales-dashboard/contacts?upload=true')
+                    }}
                     title="Upload Contacts"
                   >
                     <Upload className="h-4 w-4" />
@@ -897,7 +933,13 @@ export default function OpportunityDetailPage() {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => router.push(`/sales-dashboard/quotes/new?opportunityId=${opportunityId}`)}
+                    onClick={() => {
+                      if (!router) {
+                        console.error('[OpportunityDetail] Router not available')
+                        return
+                      }
+                      router.push(`/sales-dashboard/quotes/new?opportunityId=${opportunityId}`)
+                    }}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add
@@ -937,7 +979,13 @@ export default function OpportunityDetailPage() {
                     variant="outline"
                     size="sm"
                     className="flex-1"
-                    onClick={() => router.push(`/sales-dashboard/products?create=true&opportunityId=${opportunityId}`)}
+                    onClick={() => {
+                      if (!router) {
+                        console.error('[OpportunityDetail] Router not available')
+                        return
+                      }
+                      router.push(`/sales-dashboard/products?create=true&opportunityId=${opportunityId}`)
+                    }}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add
@@ -945,7 +993,13 @@ export default function OpportunityDetailPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => router.push('/sales-dashboard/products?upload=true')}
+                    onClick={() => {
+                      if (!router) {
+                        console.error('[OpportunityDetail] Router not available')
+                        return
+                      }
+                      router.push('/sales-dashboard/products?upload=true')
+                    }}
                     title="Upload Products"
                   >
                     <Upload className="h-4 w-4" />
