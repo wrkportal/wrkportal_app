@@ -10,7 +10,7 @@
     }
   ],
   "buildCommand": "npm run vercel-build",
-  "installCommand": "npm ci --prefer-offline",
+  "installCommand": "npm ci --legacy-peer-deps --prefer-offline",
   "framework": "nextjs",
   "regions": ["iad1"],
   "functions": {
