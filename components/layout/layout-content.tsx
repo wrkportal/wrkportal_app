@@ -86,7 +86,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
 
     // Redirect logged-in users from root path to /wrkboard
     useEffect(() => {
-        if (user && pathname === '/') {
+        if (user && pathname === '/' && router) {
             router.push('/wrkboard')
         }
     }, [user, pathname, router])

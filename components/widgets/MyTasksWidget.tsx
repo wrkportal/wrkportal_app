@@ -317,6 +317,14 @@ export function MyTasksWidget({
         return
       }
 
+      // Defensive check: ensure router is available
+      if (!router) {
+        console.error('[MyTasksWidget] Router is not available')
+        setSelectedTaskId(task.id)
+        setTaskDetailDialogOpen(true)
+        return
+      }
+
       // Default routing based on task source and dashboard type
       const taskSource = (task as any).source || (task as any).sourceType
 
