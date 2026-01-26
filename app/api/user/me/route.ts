@@ -14,62 +14,83 @@ export async function GET(req: NextRequest) {
     // If session.user.id exists, use it; otherwise try email
     let user = null
 
+    // Base select fields (always available)
+    const baseSelect = {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      tenantId: true,
+      avatar: true,
+      timezone: true,
+      locale: true,
+      landingPage: true,
+      primaryWorkflowType: true,
+      phone: true,
+      location: true,
+      department: true,
+      assistantName: true,
+      voiceSampleUrl: true,
+      status: true,
+      lastLogin: true,
+      emailVerified: true,
+      createdAt: true,
+    }
+
     if (session.user.id) {
       // Query by ID (most reliable)
-      user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          tenantId: true,
-          avatar: true,
-          timezone: true,
-          locale: true,
-          landingPage: true,
-          primaryWorkflowType: true,
-          phone: true,
-          location: true,
-          department: true,
-          assistantName: true,
-          voiceSampleUrl: true,
-          status: true,
-          lastLogin: true,
-          emailVerified: true,
-          createdAt: true,
-          allowedSections: true,
-        },
-      })
+      // Try with allowedSections first, fallback if column doesn't exist
+      try {
+        user = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: {
+            ...baseSelect,
+            allowedSections: true,
+          },
+        })
+      } catch (error: any) {
+        // If column doesn't exist, query without it
+        if (error.code === 'P2022' || error.message?.includes('does not exist')) {
+          console.warn('[ME] allowedSections column not found, querying without it')
+          user = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: baseSelect,
+          })
+          // Add null for allowedSections to maintain API contract
+          if (user) {
+            (user as any).allowedSections = null
+          }
+        } else {
+          throw error
+        }
+      }
     } else if (session.user.email) {
       // Fallback: query by email (shouldn't happen if signIn callback worked)
-      user = await prisma.user.findUnique({
-        where: { email: session.user.email.toLowerCase() },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          tenantId: true,
-          avatar: true,
-          timezone: true,
-          locale: true,
-          landingPage: true,
-          primaryWorkflowType: true,
-          phone: true,
-          location: true,
-          department: true,
-          assistantName: true,
-          voiceSampleUrl: true,
-          status: true,
-          lastLogin: true,
-          emailVerified: true,
-          createdAt: true,
-          allowedSections: true,
-        },
-      })
+      try {
+        user = await prisma.user.findUnique({
+          where: { email: session.user.email.toLowerCase() },
+          select: {
+            ...baseSelect,
+            allowedSections: true,
+          },
+        })
+      } catch (error: any) {
+        // If column doesn't exist, query without it
+        if (error.code === 'P2022' || error.message?.includes('does not exist')) {
+          console.warn('[ME] allowedSections column not found, querying without it')
+          user = await prisma.user.findUnique({
+            where: { email: session.user.email.toLowerCase() },
+            select: baseSelect,
+          })
+          // Add null for allowedSections to maintain API contract
+          if (user) {
+            (user as any).allowedSections = null
+          }
+        } else {
+          throw error
+        }
+      }
     }
 
     // Security: If user doesn't exist, return 404

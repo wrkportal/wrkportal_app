@@ -46,12 +46,16 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
 
     // Check if current page is an auth page or public marketing page
     const isAuthPage =
+        pathname === '/' ||
         pathname?.startsWith('/login') ||
         pathname?.startsWith('/signup') ||
         pathname?.startsWith('/forgot-password') ||
         pathname?.startsWith('/verify-email') ||
         pathname?.startsWith('/reset-password') ||
-        pathname?.startsWith('/landing')
+        pathname?.startsWith('/landing') ||
+        pathname?.startsWith('/terms') ||
+        pathname?.startsWith('/privacy') ||
+        pathname?.startsWith('/security')
 
     // Check if current page is a dashboard page (full-width layout)
     const isDashboardPage =
@@ -82,8 +86,21 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         }
     }, [user, pathname, router])
 
-    // For auth pages, render without header/sidebar
+    // For auth pages and public pages, render without header/sidebar
     if (isAuthPage) {
+        return <>{children}</>
+    }
+
+    // Don't render header/sidebar until auth is confirmed
+    // This prevents navbar flash on public pages
+    if (!isHydrated || isLoadingUser) {
+        // Show nothing while loading - prevents FOUC
+        return null
+    }
+
+    // Only show header/sidebar for authenticated users
+    if (!user) {
+        // User is not authenticated, render without header/sidebar
         return <>{children}</>
     }
 
@@ -106,7 +123,8 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         )
     }
 
-    // ================= REGULAR PAGES =================
+    // ================= REGULAR PAGES (Authenticated only) =================
+    // At this point, user is authenticated
     return (
         <div className="flex min-h-screen flex-col">
             <Header />
