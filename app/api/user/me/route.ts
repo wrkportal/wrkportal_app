@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
           emailVerified: true,
           createdAt: true,
           allowedSections: true,
-        } as any,
+        },
       })
     } else if (session.user.email) {
       // Fallback: query by email (shouldn't happen if signIn callback worked)
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
           emailVerified: true,
           createdAt: true,
           allowedSections: true,
-        } as any,
+        },
       })
     }
 

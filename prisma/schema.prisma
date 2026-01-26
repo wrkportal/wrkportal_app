@@ -43,6 +43,7 @@ model User {
   workflowSettings               Json?
   assistantName                  String?
   voiceSampleUrl                 String?
+  allowedSections                String?                            // JSON array of allowed section names, null = full access
   accessAuditLogs                AccessAuditLog[]                   @relation("AccessAuditLogs")
   accounts                       Account[]
   activityFeeds                  ActivityFeed[]                     @relation("ActivityActor")
@@ -369,6 +370,7 @@ model TenantInvitation {
   email       String
   token       String           @unique
   role        UserRole         @default(TEAM_MEMBER)
+  allowedSections String?                            // JSON array of allowed section names, null = full access
   invitedById String
   status      InvitationStatus @default(PENDING)
   expiresAt   DateTime

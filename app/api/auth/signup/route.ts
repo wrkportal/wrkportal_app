@@ -137,10 +137,10 @@ export async function POST(request: Request) {
       if (existingUser) {
         // User already exists - this is a cross-tenant invitation
         // Update user to add access to the new tenant with limited sections
-        const allowedSections = (invitation as any).allowedSections
-          ? (typeof (invitation as any).allowedSections === 'string'
-              ? JSON.parse((invitation as any).allowedSections)
-              : (invitation as any).allowedSections)
+        const allowedSections = invitation.allowedSections
+          ? (typeof invitation.allowedSections === 'string'
+              ? JSON.parse(invitation.allowedSections)
+              : invitation.allowedSections)
           : null
 
         // Mark invitation as accepted
@@ -274,10 +274,10 @@ export async function POST(request: Request) {
         select: { allowedSections: true },
       })
       
-      if (invitation && (invitation as any).allowedSections) {
-        const parsed = typeof (invitation as any).allowedSections === 'string'
-          ? JSON.parse((invitation as any).allowedSections)
-          : (invitation as any).allowedSections
+      if (invitation && invitation.allowedSections) {
+        const parsed = typeof invitation.allowedSections === 'string'
+          ? JSON.parse(invitation.allowedSections)
+          : invitation.allowedSections
         allowedSections = Array.isArray(parsed) ? parsed : null
       } else {
         // No sections specified in invitation - null means full access
