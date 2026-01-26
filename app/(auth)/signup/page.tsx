@@ -17,13 +17,26 @@ import { WorkspaceType } from '@/types'
 // Component to handle OAuth error from URL params - wrapped in Suspense
 function OAuthErrorHandler({ onError }: { onError: (error: string) => void }) {
     const searchParams = useSearchParams()
+    const router = useRouter()
 
     useEffect(() => {
         const errorParam = searchParams.get('error')
+        const emailParam = searchParams.get('email')
+        const providerParam = searchParams.get('provider')
+        const reasonParam = searchParams.get('reason')
+
+        // Check if we need to redirect to verify-email page
+        if (errorParam === 'AccessDenied' && emailParam && providerParam === 'google') {
+            // Redirect to verify-email page with email parameter
+            const verifyUrl = `/verify-email?email=${encodeURIComponent(emailParam)}&provider=google&reason=${reasonParam || 'new'}`
+            router.push(verifyUrl)
+            return
+        }
+
         if (errorParam === 'AccessDenied') {
             onError('Account creation failed. This may be due to a temporary database issue. Please try again in a moment.')
         }
-    }, [searchParams, onError])
+    }, [searchParams, onError, router])
 
     return null
 }

@@ -19,6 +19,18 @@ function OAuthErrorHandler({ onError }: { onError: (error: string) => void }) {
 
     useEffect(() => {
         const errorParam = searchParams.get('error')
+        const emailParam = searchParams.get('email')
+        const providerParam = searchParams.get('provider')
+        const reasonParam = searchParams.get('reason')
+        
+        // Check if we need to redirect to verify-email page
+        if (errorParam === 'AccessDenied' && emailParam && providerParam === 'google') {
+            // Redirect to verify-email page with email parameter
+            const verifyUrl = `/verify-email?email=${encodeURIComponent(emailParam)}&provider=google&reason=${reasonParam || 'unverified'}`
+            router.push(verifyUrl)
+            return
+        }
+        
         if (errorParam === 'AccessDenied') {
             onError('Please sign up first before using Google sign-in. Click "Sign up" to create an account.')
         } else if (errorParam === 'Configuration') {
@@ -26,7 +38,7 @@ function OAuthErrorHandler({ onError }: { onError: (error: string) => void }) {
         } else if (errorParam === 'Verification') {
             onError('Email verification required. Please check your email and verify your account.')
         }
-    }, [searchParams, onError])
+    }, [searchParams, onError, router])
 
     return null
 }
