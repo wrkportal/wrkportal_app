@@ -110,6 +110,11 @@ function LoginPageContent({ initialError = '', onErrorChange }: { initialError?:
         onErrorChange?.('')
 
         try {
+            // Clear any signup flag to ensure login flow
+            if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('oauth_signup_flow')
+            }
+            
             console.log('Calling signIn with google provider...')
             // Use signIn from next-auth/react for proper OAuth flow
             await signIn('google', {

@@ -115,15 +115,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const emailLower = email.toLowerCase()
         const domain = emailLower.split('@')[1]
         
-        // Check if this is a signup flow - only allow signup from signup page
-        // We need to detect this from the callback URL or state
-        // For now, we'll be more restrictive - only allow signup if explicitly from signup page
-        // This prevents unauthorized user creation
-        const isSignupFlow = false // Default to false - require explicit signup flow
+        // Check if this is a signup flow - detect from callbackUrl
+        // The signup page sets callbackUrl with ?signup=success parameter
+        // This prevents unauthorized user creation via OAuth
+        const callbackUrl = (account as any).callbackUrl || ''
+        const isSignupFlow = callbackUrl.includes('signup=success') || false
         
         console.log('[OAuth] STEP 0: Email received:', emailLower)
         console.log('[OAuth] STEP 0: Email verified by Google:', emailVerified)
         console.log('[OAuth] STEP 0: Domain extracted:', domain)
+        console.log('[OAuth] STEP 0: Callback URL:', callbackUrl)
         console.log('[OAuth] STEP 0: Is signup flow:', isSignupFlow)
         console.log('[OAuth] STEP 0: DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'MISSING')
 
