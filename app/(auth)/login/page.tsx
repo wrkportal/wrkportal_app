@@ -20,7 +20,11 @@ function OAuthErrorHandler({ onError }: { onError: (error: string) => void }) {
     useEffect(() => {
         const errorParam = searchParams.get('error')
         if (errorParam === 'AccessDenied') {
-            onError('Account creation failed. This may be due to a temporary database issue. Please try again in a moment.')
+            onError('Please sign up first before using Google sign-in. Click "Sign up" to create an account.')
+        } else if (errorParam === 'Configuration') {
+            onError('Authentication configuration error. Please try again or contact support.')
+        } else if (errorParam === 'Verification') {
+            onError('Email verification required. Please check your email and verify your account.')
         }
     }, [searchParams, onError])
 

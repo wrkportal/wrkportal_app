@@ -241,6 +241,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (!existingUser) {
             console.error('[OAuth] STEP 3: ❌ User does not exist - signup required')
             console.error('[OAuth] Security: Preventing auto-signup via OAuth. User must sign up first.')
+            // Return false to prevent session creation
+            // This will redirect to signup page with error message
             return false
           }
 

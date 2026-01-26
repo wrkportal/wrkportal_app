@@ -93,11 +93,15 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Security: If user doesn't exist, return 404
-    // User should have been created in OAuth signIn callback
+    // Security: If user doesn't exist, return 401 with specific error
+    // This happens when OAuth signIn callback returned false (user must signup first)
     if (!user) {
-      console.error('[ME] ❌ User not found in DB - should have been created in signIn callback:', session.user.email)
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      console.error('[ME] ❌ User not found in DB - OAuth signIn was blocked (user must signup first):', session.user.email)
+      // Return 401 with specific error code so frontend can handle it
+      return NextResponse.json({ 
+        error: 'User not found - signup required',
+        code: 'USER_NOT_FOUND_SIGNUP_REQUIRED'
+      }, { status: 401 })
     }
 
     return NextResponse.json({ user })

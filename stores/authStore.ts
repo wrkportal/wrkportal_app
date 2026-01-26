@@ -193,6 +193,22 @@ export async function fetchAuthenticatedUser(forceRefresh = false): Promise<User
       return null
     }
     
+    // Handle 401 with signup required code
+    if (response.status === 401) {
+      const data = await response.json().catch(() => ({}))
+      if (data.code === 'USER_NOT_FOUND_SIGNUP_REQUIRED') {
+        // User has NextAuth session but no DB user - OAuth was blocked
+        // Clear the invalid session
+        console.warn('[AuthStore] User has NextAuth session but no DB user - signup required')
+        try {
+          await fetch('/api/auth/signout', { method: 'POST', credentials: 'include' })
+        } catch (e) {
+          // Ignore signout errors
+        }
+        return null
+      }
+    }
+    
     // 404 means user doesn't exist (shouldn't happen if OAuth worked)
     if (response.status === 404) {
       console.error('[AuthStore] User not found - OAuth sign-in may have failed')
