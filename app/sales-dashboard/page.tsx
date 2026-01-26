@@ -1742,7 +1742,13 @@ function SalesDashboardPageInner() {
           <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Leads Yet</h3>
           <p className="text-muted-foreground mb-4">Start by adding your first lead</p>
-          <Button onClick={() => router.push('/sales-dashboard/leads?create=true')}>
+          <Button onClick={() => {
+            if (!router) {
+              console.error('[SalesDashboard] Router not available')
+              return
+            }
+            router.push('/sales-dashboard/leads?create=true')
+          }}>
             Create Lead
           </Button>
         </div>
@@ -1754,7 +1760,13 @@ function SalesDashboardPageInner() {
         <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold mb-2">View Leads</h3>
         <p className="text-muted-foreground mb-4">Navigate to the Leads page to view all lead charts and analytics</p>
-        <Button onClick={() => router.push('/sales-dashboard/leads')}>
+        <Button onClick={() => {
+          if (!router) {
+            console.error('[SalesDashboard] Router not available')
+            return
+          }
+          router.push('/sales-dashboard/leads')
+        }}>
           Go to Leads Page
         </Button>
       </div>
@@ -1769,7 +1781,13 @@ function SalesDashboardPageInner() {
           <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Opportunities Yet</h3>
           <p className="text-muted-foreground mb-4">Start tracking your sales opportunities</p>
-          <Button onClick={() => router.push('/sales-dashboard/opportunities?create=true')}>
+          <Button onClick={() => {
+            if (!router) {
+              console.error('[SalesDashboard] Router not available')
+              return
+            }
+            router.push('/sales-dashboard/opportunities?create=true')
+          }}>
             Create Opportunity
           </Button>
         </div>
@@ -1781,7 +1799,13 @@ function SalesDashboardPageInner() {
         <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold mb-2">View Opportunities</h3>
         <p className="text-muted-foreground mb-4">Navigate to the Opportunities page to view all opportunities</p>
-        <Button onClick={() => router.push('/sales-dashboard/opportunities')}>
+        <Button onClick={() => {
+          if (!router) {
+            console.error('[SalesDashboard] Router not available')
+            return
+          }
+          router.push('/sales-dashboard/opportunities')
+        }}>
           Go to Opportunities Page
         </Button>
       </div>
@@ -1796,7 +1820,13 @@ function SalesDashboardPageInner() {
           <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Accounts Yet</h3>
           <p className="text-muted-foreground mb-4">Start by adding your first account</p>
-          <Button onClick={() => router.push('/sales-dashboard/accounts?create=true')}>
+          <Button onClick={() => {
+            if (!router) {
+              console.error('[SalesDashboard] Router not available')
+              return
+            }
+            router.push('/sales-dashboard/accounts?create=true')
+          }}>
             Create Account
           </Button>
         </div>
@@ -1808,7 +1838,13 @@ function SalesDashboardPageInner() {
         <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold mb-2">View Accounts</h3>
         <p className="text-muted-foreground mb-4">Navigate to the Accounts page to view all accounts</p>
-        <Button onClick={() => router.push('/sales-dashboard/accounts')}>
+        <Button onClick={() => {
+          if (!router) {
+            console.error('[SalesDashboard] Router not available')
+            return
+          }
+          router.push('/sales-dashboard/accounts')
+        }}>
           Go to Accounts Page
         </Button>
       </div>
@@ -1823,7 +1859,13 @@ function SalesDashboardPageInner() {
           <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Contacts Yet</h3>
           <p className="text-muted-foreground mb-4">Start by adding your first contact</p>
-          <Button onClick={() => router.push('/sales-dashboard/contacts?create=true')}>
+          <Button onClick={() => {
+            if (!router) {
+              console.error('[SalesDashboard] Router not available')
+              return
+            }
+            router.push('/sales-dashboard/contacts?create=true')
+          }}>
             Create Contact
           </Button>
         </div>
@@ -1835,7 +1877,13 @@ function SalesDashboardPageInner() {
         <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold mb-2">View Contacts</h3>
         <p className="text-muted-foreground mb-4">Navigate to the Contacts page to view all contacts</p>
-        <Button onClick={() => router.push('/sales-dashboard/contacts')}>
+        <Button onClick={() => {
+          if (!router) {
+            console.error('[SalesDashboard] Router not available')
+            return
+          }
+          router.push('/sales-dashboard/contacts')
+        }}>
           Go to Contacts Page
         </Button>
       </div>
@@ -1850,7 +1898,13 @@ function SalesDashboardPageInner() {
           <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Quotes Yet</h3>
           <p className="text-muted-foreground mb-4">Start by creating your first quote</p>
-          <Button onClick={() => router.push('/sales-dashboard/quotes?create=true')}>
+          <Button onClick={() => {
+            if (!router) {
+              console.error('[SalesDashboard] Router not available')
+              return
+            }
+            router.push('/sales-dashboard/quotes?create=true')
+          }}>
             Create Quote
           </Button>
         </div>
@@ -1862,7 +1916,13 @@ function SalesDashboardPageInner() {
         <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold mb-2">View Quotes</h3>
         <p className="text-muted-foreground mb-4">Navigate to the Quotes page to view all quotes</p>
-        <Button onClick={() => router.push('/sales-dashboard/quotes')}>
+        <Button onClick={() => {
+          if (!router) {
+            console.error('[SalesDashboard] Router not available')
+            return
+          }
+          router.push('/sales-dashboard/quotes')
+        }}>
           Go to Quotes Page
         </Button>
       </div>
@@ -1877,7 +1937,13 @@ function SalesDashboardPageInner() {
           <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Orders Yet</h3>
           <p className="text-muted-foreground mb-4">Orders will appear here once created</p>
-          <Button onClick={() => router.push('/sales-dashboard/orders')}>
+          <Button onClick={() => {
+            if (!router) {
+              console.error('[SalesDashboard] Router not available')
+              return
+            }
+            router.push('/sales-dashboard/orders')
+          }}>
             View Orders
           </Button>
         </div>
@@ -1889,7 +1955,13 @@ function SalesDashboardPageInner() {
         <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold mb-2">View Orders</h3>
         <p className="text-muted-foreground mb-4">Navigate to the Orders page to view all orders</p>
-        <Button onClick={() => router.push('/sales-dashboard/orders')}>
+        <Button onClick={() => {
+          if (!router) {
+            console.error('[SalesDashboard] Router not available')
+            return
+          }
+          router.push('/sales-dashboard/orders')
+        }}>
           Go to Orders Page
         </Button>
       </div>
@@ -1914,7 +1986,13 @@ function SalesDashboardPageInner() {
           <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
             <Button
               variant="outline"
-              onClick={() => router.push('/sales-dashboard/leads?create=true')}
+              onClick={() => {
+                if (!router) {
+                  console.error('[SalesDashboard] Router not available')
+                  return
+                }
+                router.push('/sales-dashboard/leads?create=true')
+              }}
               className="flex items-center gap-2"
             >
               <UserPlus className="h-4 w-4" />
@@ -1922,7 +2000,13 @@ function SalesDashboardPageInner() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => router.push('/sales-dashboard/opportunities?create=true')}
+              onClick={() => {
+                if (!router) {
+                  console.error('[SalesDashboard] Router not available')
+                  return
+                }
+                router.push('/sales-dashboard/opportunities?create=true')
+              }}
               className="flex items-center gap-2"
             >
               <Target className="h-4 w-4" />
@@ -1930,7 +2014,13 @@ function SalesDashboardPageInner() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => router.push('/sales-dashboard/contacts?create=true')}
+              onClick={() => {
+                if (!router) {
+                  console.error('[SalesDashboard] Router not available')
+                  return
+                }
+                router.push('/sales-dashboard/contacts?create=true')
+              }}
               className="flex items-center gap-2"
             >
               <Users className="h-4 w-4" />
@@ -1938,7 +2028,13 @@ function SalesDashboardPageInner() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => router.push('/sales-dashboard/accounts?create=true')}
+              onClick={() => {
+                if (!router) {
+                  console.error('[SalesDashboard] Router not available')
+                  return
+                }
+                router.push('/sales-dashboard/accounts?create=true')
+              }}
               className="flex items-center gap-2"
             >
               <Building2 className="h-4 w-4" />
@@ -2324,15 +2420,33 @@ function SalesDashboardPageInner() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Button variant="outline" className="w-full justify-start" onClick={() => router.push('/sales-dashboard/help')}>
+            <Button variant="outline" className="w-full justify-start" onClick={() => {
+              if (!router) {
+                console.error('[SalesDashboard] Router not available')
+                return
+              }
+              router.push('/sales-dashboard/help')
+            }}>
               <FileText className="h-4 w-4 mr-2" />
               Documentation
             </Button>
-            <Button variant="outline" className="w-full justify-start" onClick={() => router.push('/sales-dashboard/help')}>
+            <Button variant="outline" className="w-full justify-start" onClick={() => {
+              if (!router) {
+                console.error('[SalesDashboard] Router not available')
+                return
+              }
+              router.push('/sales-dashboard/help')
+            }}>
               <AlertCircle className="h-4 w-4 mr-2" />
               FAQ
             </Button>
-            <Button variant="outline" className="w-full justify-start" onClick={() => router.push('/sales-dashboard/help')}>
+            <Button variant="outline" className="w-full justify-start" onClick={() => {
+              if (!router) {
+                console.error('[SalesDashboard] Router not available')
+                return
+              }
+              router.push('/sales-dashboard/help')
+            }}>
               <Mail className="h-4 w-4 mr-2" />
               Contact Support
             </Button>
@@ -2351,6 +2465,18 @@ function SalesDashboardPageInner() {
   function renderMyTasksWidget(skipFullscreenStyles = false) {
     const isFullscreen = !skipFullscreenStyles && fullscreenWidget === 'myTasks'
     const filteredTasks = getFilteredTasks()
+    
+    // Defensive check: ensure router is available
+    if (!router) {
+      console.error('[SalesDashboard] Router is not available in renderMyTasksWidget')
+      return (
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          </CardContent>
+        </Card>
+      )
+    }
     return (
       <Card
         ref={(el) => { widgetRefs.current['myTasks'] = el }}
@@ -2511,6 +2637,13 @@ function SalesDashboardPageInner() {
                       <div
                         className="flex-1 space-y-1 cursor-pointer"
                         onClick={() => {
+                          // Defensive check
+                          if (!router) {
+                            console.error('[SalesDashboard] Router not available in task click handler')
+                            setSelectedTaskId(task.id)
+                            setTaskDetailDialogOpen(true)
+                            return
+                          }
                           // Handle different source types
                           if (task.source === 'activity') {
                             router.push(`/sales-dashboard/activities?view=${task.sourceId}`)
@@ -3944,23 +4077,53 @@ function SalesDashboardPageInner() {
         </CardHeader>
         <CardContent className="flex-1 pt-4">
           <div className="grid grid-cols-3 gap-2">
-            <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/sales-dashboard/leads?create=true')}>
+            <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => {
+              if (!router) {
+                console.error('[SalesDashboard] Router not available')
+                return
+              }
+              router.push('/sales-dashboard/leads?create=true')
+            }}>
               <UserPlus className="h-5 w-5 shrink-0" />
               <span className="text-xs font-medium text-center">New Lead</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/sales-dashboard/opportunities?create=true')}>
+            <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => {
+              if (!router) {
+                console.error('[SalesDashboard] Router not available')
+                return
+              }
+              router.push('/sales-dashboard/opportunities?create=true')
+            }}>
               <Target className="h-5 w-5 shrink-0" />
               <span className="text-xs font-medium text-center">New Deal</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/sales-dashboard/contacts?create=true')}>
+            <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => {
+              if (!router) {
+                console.error('[SalesDashboard] Router not available')
+                return
+              }
+              router.push('/sales-dashboard/contacts?create=true')
+            }}>
               <Users className="h-5 w-5 shrink-0" />
               <span className="text-xs font-medium text-center">New Contact</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/sales-dashboard/accounts?create=true')}>
+            <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => {
+              if (!router) {
+                console.error('[SalesDashboard] Router not available')
+                return
+              }
+              router.push('/sales-dashboard/accounts?create=true')
+            }}>
               <Building2 className="h-5 w-5 shrink-0" />
               <span className="text-xs font-medium text-center">New Account</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => router.push('/sales-dashboard/activities?create=true')}>
+            <Button variant="outline" className="h-auto flex-col gap-1.5 py-3 transition-all" onClick={() => {
+              if (!router) {
+                console.error('[SalesDashboard] Router not available')
+                return
+              }
+              router.push('/sales-dashboard/activities?create=true')
+            }}>
               <Calendar className="h-5 w-5 shrink-0" />
               <span className="text-xs font-medium text-center">Log Activity</span>
             </Button>
