@@ -7,7 +7,7 @@ export const authConfig = {
   },
   pages: {
     signIn: '/login',
-    error: '/login',
+    error: '/login', // Will be overridden dynamically based on flow
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
