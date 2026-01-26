@@ -138,7 +138,13 @@ export default function BacklogPage() {
                     </div>
 
                     <button 
-                        onClick={() => router.push('/backlog/new')}
+                        onClick={() => {
+                          if (!router) {
+                            console.error('[Backlog] Router not available')
+                            return
+                          }
+                          router.push('/backlog/new')
+                        }}
                         className="inline-flex items-center justify-center rounded-xl bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-600 shrink-0"
                     >
                         + New Item
@@ -260,7 +266,13 @@ export default function BacklogPage() {
                                                 <div
                                                     key={item.id}
                                                     className="p-4 hover:bg-muted/50 transition-colors cursor-pointer"
-                                                    onClick={() => router.push(`/tasks/${item.id}`)}
+                                                    onClick={() => {
+                                                      if (!router) {
+                                                        console.error('[Backlog] Router not available')
+                                                        return
+                                                      }
+                                                      router.push(`/tasks/${item.id}`)
+                                                    }}
                                                 >
                                                     <div className="flex items-start justify-between gap-4">
                                                         <div className="flex items-start gap-4 flex-1">
@@ -326,7 +338,13 @@ export default function BacklogPage() {
                             ) : (
                                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                     {filteredItems.map((item) => (
-                                        <Card key={item.id} className="hover-lift cursor-pointer" onClick={() => router.push(`/tasks/${item.id}`)}>
+                                        <Card key={item.id} className="hover-lift cursor-pointer" onClick={() => {
+                                          if (!router) {
+                                            console.error('[Backlog] Router not available')
+                                            return
+                                          }
+                                          router.push(`/tasks/${item.id}`)
+                                        }}>
                                             <CardHeader>
                                                 <div className="flex items-start justify-between">
                                                     <div className="flex-1">

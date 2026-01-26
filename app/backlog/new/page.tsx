@@ -84,7 +84,9 @@ export default function NewBacklogItemPage() {
             })
 
             if (response.ok) {
-                router.push('/backlog')
+                if (router) {
+                  router.push('/backlog')
+                }
             } else {
                 const error = await response.json()
                 alert(error.error || 'Failed to create backlog item. Please try again.')

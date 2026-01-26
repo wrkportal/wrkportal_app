@@ -96,7 +96,9 @@ export default function GridsPage() {
         setIsDialogOpen(false)
         setNewGridName('')
         setNewGridDescription('')
-        router.push(`/grids/${data.grid.id}`)
+        if (router) {
+          router.push(`/grids/${data.grid.id}`)
+        }
       } else {
         const error = await res.json()
         alert(error.error || 'Failed to create grid')
@@ -264,7 +266,13 @@ export default function GridsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => router.push(`/grids/${grid.id}`)}
+                          onClick={() => {
+                            if (!router) {
+                              console.error('[Grids] Router not available')
+                              return
+                            }
+                            router.push(`/grids/${grid.id}`)
+                          }}
                         >
                           <ExternalLink className="h-3 w-3 mr-1" />
                           Open

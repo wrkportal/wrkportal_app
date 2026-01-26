@@ -30,8 +30,8 @@ function OAuthErrorHandler({ onError }: { onError: (error: string) => void }) {
             // Redirect to verify-email page with email parameter
             const verifyUrl = `/verify-email?email=${encodeURIComponent(emailParam)}&provider=google&reason=${reasonParam || 'new'}`
             if (!router) {
-              console.error('[Signup] Router not available')
-              return
+                console.error('[Signup] Router not available')
+                return
             }
             router.push(verifyUrl)
             return
@@ -366,11 +366,11 @@ function SignupPageContent({ initialError = '', onErrorChange }: { initialError?
                                         <Button
                                             type="button"
                                             onClick={() => {
-                                              if (!router) {
-                                                console.error('[Signup] Router not available')
-                                                return
-                                              }
-                                              router.push('/login')
+                                                if (!router) {
+                                                    console.error('[Signup] Router not available')
+                                                    return
+                                                }
+                                                router.push('/login')
                                             }}
                                             variant="outline"
                                             className="w-full border-blue-300 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm h-8 sm:h-9"

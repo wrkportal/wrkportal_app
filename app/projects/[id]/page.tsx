@@ -96,7 +96,9 @@ export default function ProjectDetailPage() {
 
             if (response.ok) {
                 alert('✅ Project deleted successfully!')
-                router.push('/projects')
+                if (router) {
+                  router.push('/projects')
+                }
             } else {
                 alert('❌ Failed to delete project')
             }
@@ -127,7 +129,13 @@ export default function ProjectDetailPage() {
                     <p className="text-muted-foreground mb-4">
                         The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
                     </p>
-                    <Button onClick={() => router.push('/projects')}>
+                    <Button onClick={() => {
+                      if (!router) {
+                        console.error('[ProjectDetail] Router not available')
+                        return
+                      }
+                      router.push('/projects')
+                    }}>
                         Back to Projects
                     </Button>
                 </div>

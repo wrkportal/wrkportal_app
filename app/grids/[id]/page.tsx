@@ -66,7 +66,9 @@ function GridEditorPageContent({ params }: { params: { id: string } }) {
       } else {
         const error = await res.json()
         alert(error.error || 'Failed to load grid')
-        router.push('/grids')
+        if (router) {
+          router.push('/grids')
+        }
       }
     } catch (error) {
       console.error('Error fetching grid:', error)
@@ -161,7 +163,13 @@ function GridEditorPageContent({ params }: { params: { id: string } }) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push('/grids')}
+            onClick={() => {
+              if (!router) {
+                console.error('[GridDetail] Router not available')
+                return
+              }
+              router.push('/grids')
+            }}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back

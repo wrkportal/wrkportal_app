@@ -337,7 +337,9 @@ function CollaborateInner() {
   const selectCollaboration = async (collaboration: Collaboration) => {
     setSelectedCollaboration(collaboration)
     setMessages([])
-    router.push(`/collaborate?id=${collaboration.id}`, { scroll: false })
+    if (router) {
+      router.push(`/collaborate?id=${collaboration.id}`, { scroll: false })
+    }
     // Mark as read
     setUnreadCounts(prev => ({ ...prev, [collaboration.id]: 0 }))
   }
