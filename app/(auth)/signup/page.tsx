@@ -17,14 +17,14 @@ import { WorkspaceType } from '@/types'
 // Component to handle OAuth error from URL params - wrapped in Suspense
 function OAuthErrorHandler({ onError }: { onError: (error: string) => void }) {
     const searchParams = useSearchParams()
-    
+
     useEffect(() => {
         const errorParam = searchParams.get('error')
         if (errorParam === 'AccessDenied') {
             onError('Account creation failed. This may be due to a temporary database issue. Please try again in a moment.')
         }
     }, [searchParams, onError])
-    
+
     return null
 }
 
@@ -133,15 +133,15 @@ function SignupPageContent({ initialError = '', onErrorChange }: { initialError?
             if (typeof window !== 'undefined') {
                 sessionStorage.setItem('oauth_signup_flow', 'true')
             }
-            
+
             // Use current origin to ensure correct redirect
-            const callbackUrl = typeof window !== 'undefined' 
+            const callbackUrl = typeof window !== 'undefined'
                 ? `${window.location.origin}/wrkboard?signup=success`
                 : '/wrkboard'
-            
+
             console.log('🔍 Google Sign-Up - Callback URL:', callbackUrl)
             console.log('🔍 Google Sign-Up - Current Origin:', typeof window !== 'undefined' ? window.location.origin : 'N/A')
-            
+
             await signIn('google', {
                 callbackUrl: callbackUrl,
                 redirect: true,
@@ -657,7 +657,7 @@ function SignupPageContent({ initialError = '', onErrorChange }: { initialError?
 
 export default function SignupPage() {
     const [error, setError] = useState('')
-    
+
     return (
         <>
             <Suspense fallback={null}>

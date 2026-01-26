@@ -76,10 +76,11 @@ export const authConfig = {
       // Check email verification for protected pages (except verification page itself)
       const userEmailVerified = (auth.user as { emailVerified?: Date | null })?.emailVerified
       if (isLoggedIn && auth.user && !userEmailVerified && !nextUrl.pathname.startsWith('/verify-email')) {
-        // Allow access to settings and verification-related pages
+        // Allow access to settings, verification-related pages, and signout
         if (
           nextUrl.pathname.startsWith('/settings') ||
-          nextUrl.pathname.startsWith('/api/auth/resend-verification')
+          nextUrl.pathname.startsWith('/api/auth/resend-verification') ||
+          nextUrl.pathname.startsWith('/api/auth/signout')
         ) {
           return true
         }

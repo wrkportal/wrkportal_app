@@ -316,7 +316,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               userRole = 'ORG_ADMIN'
             }
 
-            // Create the user
+            // Create the user (emailVerified is null - will be set after email verification)
             updatedUser = await withRetry(
               () => prisma.user.create({
                 data: {
@@ -327,7 +327,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   image: (profile as any).picture || user.image,
                   tenantId: tenant.id,
                   role: userRole,
-                  emailVerified: new Date(), // Google OAuth emails are pre-verified
+                  emailVerified: null, // Require email verification even for OAuth signup
                 },
               }),
               'Create User',
@@ -335,6 +335,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               1000
             )
             console.log(`[OAuth] STEP 3: ✅ User created: ${updatedUser.id}`)
+            
+            // Generate and send email verification token for new OAuth users
+            try {
+              const { randomBytes } = await import('crypto')
+              const { sendEmailVerification } = await import('@/lib/email')
+              
+              const verificationToken = randomBytes(32).toString('hex')
+              const expires = new Date(Date.now() + 48 * 60 * 60 * 1000) // 48 hours
+              
+              // Store verification token
+              await prisma.verificationToken.create({
+                data: {
+                  identifier: emailLower,
+                  token: verificationToken,
+                  expires,
+                },
+              })
+              
+              // Send verification email
+              await sendEmailVerification(
+                emailLower,
+                verificationToken,
+                updatedUser.firstName || updatedUser.name || 'User'
+              )
+              
+              console.log(`[OAuth] STEP 3.5: ✅ Verification email sent to: ${emailLower}`)
+            } catch (emailError: any) {
+              console.error('[OAuth] STEP 3.5: ❌ Failed to send verification email:', emailError.message)
+              // Don't fail the signup if email fails - user can resend later
+            }
           } else {
             // STEP 3.1: Update existing user with latest profile info
             console.log('[OAuth] STEP 3.1: Updating existing user...')
