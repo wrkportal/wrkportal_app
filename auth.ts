@@ -170,13 +170,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // STEP 1: DB connection test
           await withRetry(() => prisma.$queryRaw`SELECT 1 as test`, 'Database Connection Test', 3, 1000)
 
-          // STEP 2: Get or create tenant
+          // STEP 2: Check for pending invitation first
+          // This allows Gmail users to join existing tenants via invitation
+          let pendingInvitation = null
+          try {
+            pendingInvitation = await prisma.tenantInvitation.findFirst({
+              where: {
+                email: emailLower,
+                status: 'PENDING',
+                expiresAt: { gt: new Date() },
+              },
+              include: {
+                tenant: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            })
+          } catch (error: any) {
+            console.warn('[OAuth] Could not check for invitations:', error.message)
+            // Continue without invitation check if table doesn't exist
+          }
+
+          // STEP 3: Get or create tenant
           // SECURITY: Public domains (Gmail, Yahoo, etc.) get separate tenants
           // Corporate domains share a tenant
+          // EXCEPTION: If user has a pending invitation, use that tenant
           let tenant = null
           let userRole: 'ORG_ADMIN' | 'TEAM_MEMBER' = 'TEAM_MEMBER'
 
-          if (isPublic) {
+          if (pendingInvitation) {
+            // User has a pending invitation - join the invited tenant
+            console.log('[OAuth] Pending invitation found, joining invited tenant:', pendingInvitation.tenant.name)
+            tenant = pendingInvitation.tenant
+            userRole = pendingInvitation.role as 'ORG_ADMIN' | 'TEAM_MEMBER'
+            
+            // Mark invitation as accepted (will be done after user creation)
+          } else if (isPublic) {
             // Public domain: Each user gets their own tenant (domain = null)
             // This prevents Gmail users from seeing each other's data
             console.log('[OAuth] Public domain detected, creating individual tenant for user')
@@ -248,7 +280,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             }
           }
 
-          // STEP 3: Check user
+          // STEP 4: Check user
           const existingUser = await withRetry(
             () =>
               prisma.user.findUnique({
@@ -311,13 +343,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   tenantId: tenant!.id,
                   role: userRole,
                   emailVerified: null, // require verification
-                  allowedSections: null, // null = full access for first-time signup
+                  allowedSections: pendingInvitation?.allowedSections || null, // Use invitation's allowed sections if available
                 } as any,
               }),
             'Create User',
             3,
             1000
           )
+
+          // Mark invitation as accepted if user was created via invitation
+          if (pendingInvitation) {
+            try {
+              await prisma.tenantInvitation.update({
+                where: { id: pendingInvitation.id },
+                data: {
+                  status: 'ACCEPTED',
+                  acceptedAt: new Date(),
+                },
+              })
+              console.log('[OAuth] ✅ Invitation marked as accepted')
+            } catch (error: any) {
+              console.warn('[OAuth] Could not mark invitation as accepted:', error.message)
+              // Don't fail user creation if invitation update fails
+            }
+          }
 
           // Generate + send verification token (your previous behavior)
           try {
