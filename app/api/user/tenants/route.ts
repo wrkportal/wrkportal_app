@@ -70,10 +70,18 @@ export async function GET(req: NextRequest) {
         joinedAt: access.joinedAt,
         isActive: access.isActive,
       }))
+      
+      console.log('[UserTenants] Found UserTenantAccess records:', {
+        userId: session.user.id,
+        count: userTenantAccesses.length,
+        tenants: additionalTenants.map(t => ({ id: t.id, name: t.name })),
+      })
     } catch (error: any) {
       // UserTenantAccess table might not exist yet
-      if (error.code !== 'P2021' && !error.message?.includes('does not exist')) {
-        console.warn('Could not fetch additional tenants:', error.message)
+      if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+        console.warn('[UserTenants] UserTenantAccess table does not exist yet')
+      } else {
+        console.error('[UserTenants] Error fetching additional tenants:', error.message)
       }
     }
 
@@ -87,9 +95,17 @@ export async function GET(req: NextRequest) {
         logo: user.tenant.logo,
         isPrimary: true,
         isActive: true,
+        role: user.role || undefined,
       },
       ...additionalTenants.filter((t) => t.id !== user.tenantId), // Remove duplicates
     ]
+
+    console.log('[UserTenants] Returning tenants:', {
+      totalCount: allTenants.length,
+      primaryTenant: { id: user.tenant.id, name: user.tenant.name },
+      additionalCount: additionalTenants.length,
+      activeTenantId: session.user.tenantId || user.tenantId,
+    })
 
     return NextResponse.json({
       tenants: allTenants,

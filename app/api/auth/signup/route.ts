@@ -154,6 +154,13 @@ export async function POST(request: Request) {
 
         // Create UserTenantAccess record (if table exists)
         try {
+          console.log('[Signup] Attempting to create UserTenantAccess for existing user:', {
+            userId: existingUser.id,
+            tenantId: invitation.tenant.id,
+            role: invitation.role,
+            invitationId: invitation.id,
+          })
+          
           await (prisma as any).userTenantAccess.create({
             data: {
               userId: existingUser.id,
@@ -167,10 +174,26 @@ export async function POST(request: Request) {
               isActive: false, // Not the primary tenant
             },
           })
+          console.log('[Signup] ✅ UserTenantAccess record created successfully')
         } catch (error: any) {
-          // UserTenantAccess table might not exist yet
-          if (error.code !== 'P2021' && !error.message?.includes('does not exist')) {
-            console.warn('Could not create UserTenantAccess record:', error.message)
+          console.error('[Signup] ❌ Failed to create UserTenantAccess record:', {
+            error: error.message,
+            code: error.code,
+            meta: error.meta,
+            userId: existingUser.id,
+            tenantId: invitation.tenant.id,
+            invitationId: invitation.id,
+          })
+          
+          // UserTenantAccess table might not exist yet, or there might be a constraint issue
+          if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+            console.warn('[Signup] UserTenantAccess table does not exist - this is expected if migration not run')
+          } else if (error.code === 'P2002') {
+            // Unique constraint violation - record might already exist
+            console.warn('[Signup] UserTenantAccess record might already exist:', error.meta)
+          } else {
+            // Other error - log it but don't fail
+            console.error('[Signup] Unexpected error creating UserTenantAccess:', error)
           }
         }
 
@@ -208,6 +231,7 @@ export async function POST(request: Request) {
       })
       
       // Note: allowedSections will be applied when creating the user below
+      // UserTenantAccess record will be created after user creation (see below)
     }
     // CASE 2: Public domain (Gmail, Yahoo, etc.) - Always create new tenant
     else if (!isOwner && isPublic) {
@@ -397,6 +421,48 @@ export async function POST(request: Request) {
         email: email,
       })
       // Don't fail signup if email fails, but log it and inform user
+    }
+
+    // Create UserTenantAccess record for new users who signed up with invitation
+    // This ensures consistency and supports workspace switching
+    if (invitationToken) {
+      try {
+        const invitation = await prisma.tenantInvitation.findUnique({
+          where: { token: invitationToken },
+          select: { id: true, tenantId: true, role: true, allowedSections: true, invitedById: true },
+        })
+        
+        if (invitation) {
+          console.log('[Signup] Creating UserTenantAccess for new user with invitation:', {
+            userId: user.id,
+            tenantId: invitation.tenantId,
+            role: invitation.role,
+            invitationId: invitation.id,
+          })
+          
+          await (prisma as any).userTenantAccess.create({
+            data: {
+              userId: user.id,
+              tenantId: invitation.tenantId,
+              role: invitation.role,
+              allowedSections: invitation.allowedSections,
+              invitedById: invitation.invitedById,
+              invitationId: invitation.id,
+              isActive: true, // This is their primary tenant
+            },
+          })
+          console.log('[Signup] ✅ UserTenantAccess record created for new user')
+        }
+      } catch (error: any) {
+        console.error('[Signup] ❌ Failed to create UserTenantAccess for new user:', {
+          error: error.message,
+          code: error.code,
+          meta: error.meta,
+          userId: user.id,
+        })
+        // Don't fail signup if UserTenantAccess creation fails
+        // The user's primary tenantId is already set correctly
+      }
     }
 
     // Prepare response message

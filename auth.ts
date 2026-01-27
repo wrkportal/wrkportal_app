@@ -365,6 +365,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
               // Create UserTenantAccess record for cross-tenant access (if table exists)
               try {
+                console.log('[OAuth] Attempting to create UserTenantAccess record:', {
+                  userId: createdUser.id,
+                  tenantId: pendingInvitation.tenant.id,
+                  role: pendingInvitation.role,
+                  invitationId: pendingInvitation.id,
+                })
+                
                 await (prisma as any).userTenantAccess.create({
                   data: {
                     userId: createdUser.id,
@@ -376,11 +383,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     isActive: true, // This is the tenant they're joining
                   },
                 })
-                console.log('[OAuth] ✅ UserTenantAccess record created')
+                console.log('[OAuth] ✅ UserTenantAccess record created successfully')
               } catch (error: any) {
-                // UserTenantAccess table might not exist yet
-                if (error.code !== 'P2021' && !error.message?.includes('does not exist')) {
-                  console.warn('[OAuth] Could not create UserTenantAccess record:', error.message)
+                // Log all errors to help debug
+                console.error('[OAuth] ❌ Failed to create UserTenantAccess record:', {
+                  error: error.message,
+                  code: error.code,
+                  meta: error.meta,
+                  userId: createdUser.id,
+                  tenantId: pendingInvitation.tenant.id,
+                  invitationId: pendingInvitation.id,
+                  stack: error.stack,
+                })
+                
+                // UserTenantAccess table might not exist yet, or there might be a constraint issue
+                if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+                  console.warn('[OAuth] UserTenantAccess table does not exist - this is expected if migration not run')
+                } else if (error.code === 'P2002') {
+                  // Unique constraint violation - record might already exist
+                  console.warn('[OAuth] UserTenantAccess record might already exist:', error.meta)
+                } else {
+                  // Other error - log it but don't fail user creation
+                  console.error('[OAuth] Unexpected error creating UserTenantAccess:', error)
                 }
               }
             } catch (error: any) {
