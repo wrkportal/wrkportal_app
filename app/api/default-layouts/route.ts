@@ -27,23 +27,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'pageKey is required' }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { tenantId: true, role: true },
-    })
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { tenantId: true, role: true },
+      })
+    } catch (error: any) {
+      // Handle case where User table or columns might not exist
+      if (error.code === 'P2021' || error.code === 'P2022' || 
+          error.message?.includes('does not exist') ||
+          error.message?.includes('column')) {
+        console.warn('User table or column not available')
+        return NextResponse.json({ defaultLayout: null }, { status: 200 })
+      }
+      throw error
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if DefaultLayout model exists
-    if (!prisma.defaultLayout) {
-      console.warn('DefaultLayout model not available')
-      return NextResponse.json({ defaultLayout: null }, { status: 200 })
-    }
-
     // Try to find default layout for specific role, then fall back to general default
-    const defaultLayout = await prisma.defaultLayout.findFirst({
+    let defaultLayout
+    try {
+      defaultLayout = await prisma.defaultLayout.findFirst({
       where: {
         tenantId: user.tenantId,
         pageKey,
@@ -52,11 +60,25 @@ export async function GET(request: NextRequest) {
           { targetRole: null },
         ],
       },
-      orderBy: [
-        { targetRole: 'desc' }, // Specific role layouts first
-        { updatedAt: 'desc' },
-      ],
-    })
+        orderBy: [
+          { targetRole: 'desc' }, // Specific role layouts first
+          { updatedAt: 'desc' },
+        ],
+      })
+    } catch (queryError: any) {
+      // Handle database model not found errors gracefully
+      if (queryError.code === 'P2001' || 
+          queryError.code === 'P2021' || 
+          queryError.code === 'P2022' || 
+          queryError.message?.includes('does not exist') || 
+          queryError.message?.includes('Unknown model') ||
+          queryError.message?.includes('DefaultLayout')) {
+        console.warn('DefaultLayout model not available')
+        defaultLayout = null
+      } else {
+        throw queryError
+      }
+    }
 
     if (!defaultLayout) {
       return NextResponse.json({ defaultLayout: null }, { status: 200 })
@@ -64,15 +86,25 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ defaultLayout }, { status: 200 })
   } catch (error: any) {
-    console.error('Error fetching default layout:', error)
+    // Only log errors that we don't handle gracefully
+    if (!(error.code === 'P2001' || 
+          error.code === 'P2021' || 
+          error.code === 'P2022' || 
+          error.message?.includes('does not exist') || 
+          error.message?.includes('Unknown model') ||
+          error.message?.includes('DefaultLayout') ||
+          error.message?.includes('column'))) {
+      console.error('Error fetching default layout:', error)
+    }
     
     // Handle database model not found errors gracefully
     if (error.code === 'P2001' || 
-        error.code === 'P2021' || // Table does not exist
-        error.code === 'P2022' || // Column does not exist
+        error.code === 'P2021' || 
+        error.code === 'P2022' || 
         error.message?.includes('does not exist') || 
         error.message?.includes('Unknown model') ||
-        error.message?.includes('DefaultLayout')) {
+        error.message?.includes('DefaultLayout') ||
+        error.message?.includes('column')) {
       console.warn('DefaultLayout model not available')
       return NextResponse.json({ defaultLayout: null }, { status: 200 })
     }

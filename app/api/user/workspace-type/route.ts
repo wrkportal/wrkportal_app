@@ -14,13 +14,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user with tenant information
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        tenantId: true,
-      },
-    })
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+          id: true,
+          tenantId: true,
+        },
+      })
+    } catch (error: any) {
+      // Handle case where User table or columns might not exist
+      if (error.code === 'P2021' || error.code === 'P2022' || 
+          error.message?.includes('does not exist') ||
+          error.message?.includes('column')) {
+        console.warn('User table or column not available, using default type')
+        return NextResponse.json({
+          success: true,
+          type: 'ORGANIZATION', // Default to organization
+          tenantName: 'Organization',
+        })
+      }
+      throw error
+    }
 
     if (!user || !user.tenantId) {
       return NextResponse.json(

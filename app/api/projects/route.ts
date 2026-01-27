@@ -200,10 +200,13 @@ export async function GET(req: NextRequest) {
         // Handle case where Project table might not exist yet or relation issues
         if (dbError.code === 'P2001' || 
             dbError.code === 'P2017' || 
+            dbError.code === 'P2021' || 
+            dbError.code === 'P2022' || 
             dbError.message?.includes('does not exist') || 
             dbError.message?.includes('Unknown model') ||
             dbError.message?.includes('relation') ||
-            dbError.message?.includes('teamMembers')) {
+            dbError.message?.includes('teamMembers') ||
+            dbError.message?.includes('column')) {
           console.warn('Project table or relations not found, returning empty array:', dbError.message)
           return NextResponse.json({ projects: [] })
         }

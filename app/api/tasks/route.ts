@@ -43,12 +43,15 @@ export async function GET(req: NextRequest) {
       try {
         return await queryFn()
       } catch (error: any) {
-        // Check if it's a Prisma error about missing model
+        // Check if it's a Prisma error about missing model or column
         if (
           error?.code === 'P2001' ||
+          error?.code === 'P2021' ||
+          error?.code === 'P2022' ||
           error?.message?.includes('does not exist') ||
           error?.message?.includes('Unknown model') ||
-          error?.message?.includes('model does not exist')
+          error?.message?.includes('model does not exist') ||
+          error?.message?.includes('column')
         ) {
           console.warn('Prisma model not found, using default value:', error.message)
           return defaultValue

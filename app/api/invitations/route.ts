@@ -55,21 +55,40 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user with tenant information to check permissions
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        role: true,
-        groupRole: true,
-        tenantId: true,
-        tenant: {
-          select: {
-            id: true,
-            type: true,
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+          id: true,
+          role: true,
+          groupRole: true,
+          tenantId: true,
+          tenant: {
+            select: {
+              id: true,
+              type: true,
+            },
           },
         },
-      },
-    })
+      })
+    } catch (error: any) {
+      // Handle case where User table or columns might not exist
+      if (error.code === 'P2021' || error.code === 'P2022' || 
+          error.message?.includes('does not exist') ||
+          error.message?.includes('column')) {
+        console.warn('User table or column not available, cannot check permissions for invitation')
+        return NextResponse.json(
+          { 
+            error: 'User data unavailable for permission check. Please contact support.',
+            code: 'SERVICE_UNAVAILABLE',
+            requiresSetup: true
+          },
+          { status: 503 }
+        )
+      }
+      throw error
+    }
 
     if (!user || !user.tenant) {
       return NextResponse.json({ error: 'User or tenant not found' }, { status: 404 })
