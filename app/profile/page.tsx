@@ -73,8 +73,6 @@ export default function ProfilePage() {
     const [loadingStats, setLoadingStats] = useState(true)
     const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
     const [loadingActivity, setLoadingActivity] = useState(true)
-    const [landingPage, setLandingPage] = useState(user?.landingPage || "/my-work")
-    const [isSaving, setIsSaving] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
 
     // Fetch real user data on component mount
@@ -84,7 +82,6 @@ export default function ProfilePage() {
             const authenticatedUser = await fetchAuthenticatedUser()
             if (authenticatedUser) {
                 setUser(authenticatedUser)
-                setLandingPage(authenticatedUser.landingPage || "/my-work")
             }
             setIsLoading(false)
         }
@@ -134,31 +131,6 @@ export default function ProfilePage() {
     // Filter pages based on user role permissions
     const accessiblePages = user ? availablePages.filter(page => canAccessScreen(user.role, page.id)) : []
 
-    const handleSaveLandingPage = async () => {
-        if (!user) return
-
-        setIsSaving(true)
-        try {
-            const response = await fetch('/api/user/profile', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ landingPage }),
-            })
-
-            if (response.ok) {
-                const data = await response.json()
-                setUser(data.user)
-            } else {
-                console.error('Failed to update landing page')
-            }
-        } catch (error) {
-            console.error('Error updating landing page:', error)
-        } finally {
-            setIsSaving(false)
-        }
-    }
 
     if (isLoading || !user) {
         return (
@@ -174,27 +146,27 @@ export default function ProfilePage() {
     return (
         <div className="space-y-6">
             {/* Header - Sticky */}
-            <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-4 mb-4">
+            <div className="sticky top-0 md:top-12 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 md:pt-2 mb-3">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                        <h1 className="text-lg lg:text-xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                             Profile
                         </h1>
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                        <p className="text-xs lg:text-sm text-muted-foreground mt-0.5">
                             View and manage your profile information
                         </p>
                     </div>
-                    <Button onClick={() => router.push('/settings')} className="gap-2">
-                        <Settings className="h-4 w-4" />
+                    <Button onClick={() => router.push('/settings')} className="gap-2 h-8 text-xs lg:text-sm" size="sm">
+                        <Settings className="h-3 w-3 lg:h-4 lg:w-4" />
                         Edit Settings
                     </Button>
                 </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-3">
                 {/* Profile Card */}
                 <Card className="md:col-span-1">
-                    <CardContent className="pt-6">
+                    <CardContent className="pt-4 pb-4">
                         <div className="flex flex-col items-center text-center space-y-4">
                             <Avatar className="h-32 w-32 border-4 border-purple-200 dark:border-purple-800">
                                 <AvatarImage src={user.avatar} alt={user.firstName} />
@@ -204,10 +176,10 @@ export default function ProfilePage() {
                             </Avatar>
 
                             <div className="space-y-2">
-                                <h2 className="text-2xl font-bold">
+                                <h2 className="text-xl lg:text-2xl font-bold">
                                     {user.firstName} {user.lastName}
                                 </h2>
-                                <Badge className="text-sm">{user.role}</Badge>
+                                <Badge className="text-xs lg:text-sm">{user.role}</Badge>
                             </div>
 
                             <Separator />
@@ -238,12 +210,12 @@ export default function ProfilePage() {
                 </Card>
 
                 {/* Activity & Stats */}
-                <div className="md:col-span-2 space-y-6">
+                <div className="md:col-span-2 space-y-4">
                     {/* Stats Cards */}
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-3 md:grid-cols-3">
                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-4">
+                                <CardTitle className="text-xs lg:text-sm font-medium">Active Projects</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
@@ -256,11 +228,11 @@ export default function ProfilePage() {
                         </Card>
 
                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Tasks Completed</CardTitle>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-4">
+                                <CardTitle className="text-xs lg:text-sm font-medium">Tasks Completed</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">
+                            <CardContent className="px-4 pb-3">
+                                <div className="text-xl lg:text-2xl font-bold">
                                     {loadingStats ? '...' : stats.tasksCompleted}
                                 </div>
                                 <p className="text-xs text-muted-foreground">This quarter</p>
@@ -268,11 +240,11 @@ export default function ProfilePage() {
                         </Card>
 
                         <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Time Logged</CardTitle>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-4">
+                                <CardTitle className="text-xs lg:text-sm font-medium">Time Logged</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">
+                            <CardContent className="px-4 pb-3">
+                                <div className="text-xl lg:text-2xl font-bold">
                                     {loadingStats ? '...' : `${stats.hoursLogged}h`}
                                 </div>
                                 <p className="text-xs text-muted-foreground">This month</p>
@@ -282,11 +254,11 @@ export default function ProfilePage() {
 
                     {/* Recent Activity */}
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Recent Activity</CardTitle>
-                            <CardDescription>Your recent actions and updates</CardDescription>
+                        <CardHeader className="pb-3 pt-4 px-4">
+                            <CardTitle className="text-base">Recent Activity</CardTitle>
+                            <CardDescription className="text-xs">Your recent actions and updates</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-4 pb-4">
                             <div className="space-y-4">
                                 {loadingActivity ? (
                                     <p className="text-center py-8 text-muted-foreground">Loading activity...</p>
@@ -311,83 +283,28 @@ export default function ProfilePage() {
 
                     {/* Skills & Expertise */}
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Skills & Expertise</CardTitle>
-                            <CardDescription>Your technical skills and areas of expertise</CardDescription>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base">Skills & Expertise</CardTitle>
+                            <CardDescription className="text-xs">Your technical skills and areas of expertise</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex flex-wrap gap-2">
-                                {['React', 'TypeScript', 'Node.js', 'Project Management', 'Agile', 'Leadership', 'UI/UX Design', 'System Architecture'].map((skill) => (
-                                    <Badge key={skill} variant="outline" className="px-3 py-1">
-                                        {skill}
-                                    </Badge>
-                                ))}
+                            <div className="flex flex-wrap gap-2 min-h-[2rem]">
+                                {/* Skills will be added here dynamically */}
                             </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-3 w-full"
+                                onClick={() => {
+                                    // TODO: Open add skill dialog
+                                    alert('Add skill functionality coming soon')
+                                }}
+                            >
+                                + Add Skill
+                            </Button>
                         </CardContent>
                     </Card>
 
-                    {/* Preferences */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Home className="h-5 w-5" />
-                                Preferences
-                            </CardTitle>
-                            <CardDescription>Customize your experience</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-3">
-                                <div className="space-y-2">
-                                    <Label htmlFor="landing-page" className="text-sm font-medium">
-                                        Landing Page
-                                    </Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Choose which page to see when you first log in
-                                    </p>
-                                </div>
-                                <div className="flex gap-3">
-                                    <Select value={landingPage} onValueChange={setLandingPage}>
-                                        <SelectTrigger id="landing-page" className="flex-1">
-                                            <SelectValue placeholder="Select a landing page" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {accessiblePages.map((page) => (
-                                                <SelectItem key={page.id} value={page.path}>
-                                                    {page.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <Button
-                                        onClick={handleSaveLandingPage}
-                                        disabled={isSaving || landingPage === user.landingPage}
-                                        className="gap-2"
-                                    >
-                                        {isSaving ? (
-                                            <>Saving...</>
-                                        ) : (
-                                            <>
-                                                <CheckCircle2 className="h-4 w-4" />
-                                                Save
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
-                                {landingPage !== user.landingPage && (
-                                    <p className="text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
-                                        <span>⚠️</span>
-                                        You have unsaved changes
-                                    </p>
-                                )}
-                                {landingPage === user.landingPage && user.landingPage && (
-                                    <p className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        Landing page is set to: {accessiblePages.find(p => p.path === user.landingPage)?.name}
-                                    </p>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
                 </div>
             </div>
         </div>

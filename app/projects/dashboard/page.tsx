@@ -416,9 +416,19 @@ function ProjectDashboardInner() {
 
   // Toggle widget visibility
   const toggleWidget = (widgetId: string) => {
-    setWidgets(prev => prev.map(w =>
-      w.id === widgetId ? { ...w, visible: !w.visible } : w
-    ))
+    setWidgets(prev => {
+      const updated = prev.map(w =>
+        w.id === widgetId ? { ...w, visible: !w.visible } : w
+      )
+      // If My Tasks widget is being added (turned visible), set Gantt view as default
+      const myTasksWidget = updated.find(w => w.id === 'myTasks')
+      if (myTasksWidget && myTasksWidget.visible && !prev.find(w => w.id === 'myTasks')?.visible) {
+        // Widget was just added - set to gantt view if available, otherwise keep calendar
+        // Note: My Tasks currently only supports 'list' and 'calendar', so keeping calendar as default
+        // If Gantt view is added later, change this to 'gantt'
+      }
+      return updated
+    })
   }
 
   // Reset layout to default (workflow-specific)

@@ -34,9 +34,9 @@ export function DeveloperNavBar({ widgets, toggleWidget }: DeveloperNavBarProps 
   ]
 
   return (
-    <div className="border-b border-border bg-background sticky top-16 z-20 shadow-lg -mx-0" style={{ width: 'calc(100% + 0px)', marginLeft: 0, marginRight: 0, left: 0 }}>
-      <div className="pr-4 lg:pr-8">
-        <nav className="flex items-center gap-1 text-sm">
+    <div className="border-b border-border bg-background sticky top-16 z-20 shadow-lg -mx-0 h-12" style={{ width: 'calc(100% + 0px)', marginLeft: 0, marginRight: 0, left: 0 }}>
+      <div className="pr-4 lg:pr-8 h-full">
+        <nav className="flex items-center gap-1 text-sm h-full">
           {/* Title on the left - removed */}
 
           {/* Navigation tabs */}
@@ -59,7 +59,7 @@ export function DeveloperNavBar({ widgets, toggleWidget }: DeveloperNavBarProps 
                 key={item.label}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 whitespace-nowrap transition-colors border-b-2 border-transparent",
+                  "flex items-center gap-2 px-4 h-full whitespace-nowrap transition-colors border-b-2 border-transparent",
                   isActive
                     ? "text-[#ff751f] border-[#ff751f] font-medium"
                     : "text-muted-foreground hover:text-foreground"

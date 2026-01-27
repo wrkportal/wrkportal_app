@@ -171,6 +171,32 @@ export function Header() {
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
+                    {/* Invite Button - + icon */}
+                    {user && canInviteUsers(
+                        WorkspaceType.ORGANIZATION,
+                        user?.role as UserRole,
+                        user?.groupRole as GroupRole | undefined
+                    ) && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        onClick={() => setInviteModalOpen(true)}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9"
+                                        aria-label="Invite user"
+                                    >
+                                        <span className="text-lg font-semibold">+</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Invite People</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    
                     <HelpDialog />
                     
                     {/* AI Assistant Button */}
@@ -198,32 +224,6 @@ export function Header() {
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                    
-                    {/* Invite Button */}
-                    {user && canInviteUsers(
-                        WorkspaceType.ORGANIZATION, // Default to organization, actual check happens in API
-                        user?.role as UserRole,
-                        user?.groupRole as GroupRole | undefined
-                    ) && (
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        onClick={() => setInviteModalOpen(true)}
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-9 w-9"
-                                        aria-label="Invite user"
-                                    >
-                                        <UserPlus className="h-4 w-4" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Invite</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    )}
                     
                     {showUserProfile && user ? (
                         <>
