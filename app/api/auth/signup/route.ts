@@ -136,7 +136,7 @@ export async function POST(request: Request) {
 
       if (existingUser) {
         // User already exists - this is a cross-tenant invitation
-        // Update user to add access to the new tenant with limited sections
+        // Create UserTenantAccess record to grant access to the new tenant
         const allowedSections = invitation.allowedSections
           ? (typeof invitation.allowedSections === 'string'
               ? JSON.parse(invitation.allowedSections)
@@ -152,9 +152,28 @@ export async function POST(request: Request) {
           },
         })
 
-        // Return success - user can now access the new tenant's data
-        // Note: In a multi-tenant system, you might want to create a UserTenantAccess record
-        // For now, we'll update the user's allowedSections to the new tenant's sections
+        // Create UserTenantAccess record (if table exists)
+        try {
+          await (prisma as any).userTenantAccess.create({
+            data: {
+              userId: existingUser.id,
+              tenantId: invitation.tenant.id,
+              role: invitation.role,
+              allowedSections: allowedSections
+                ? JSON.stringify(allowedSections)
+                : null,
+              invitedById: invitation.invitedById,
+              invitationId: invitation.id,
+              isActive: false, // Not the primary tenant
+            },
+          })
+        } catch (error: any) {
+          // UserTenantAccess table might not exist yet
+          if (error.code !== 'P2021' && !error.message?.includes('does not exist')) {
+            console.warn('Could not create UserTenantAccess record:', error.message)
+          }
+        }
+
         return NextResponse.json(
           {
             user: {
@@ -167,7 +186,7 @@ export async function POST(request: Request) {
               id: invitation.tenant.id,
               name: invitation.tenant.name,
             },
-            message: 'You now have access to this organization. Please log in with your existing account.',
+            message: 'You now have access to this workspace. Please log in with your existing account.',
             crossTenantAccess: true,
             allowedSections: allowedSections,
           },

@@ -362,6 +362,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 },
               })
               console.log('[OAuth] ✅ Invitation marked as accepted')
+
+              // Create UserTenantAccess record for cross-tenant access (if table exists)
+              try {
+                await (prisma as any).userTenantAccess.create({
+                  data: {
+                    userId: createdUser.id,
+                    tenantId: pendingInvitation.tenant.id,
+                    role: pendingInvitation.role,
+                    allowedSections: pendingInvitation.allowedSections,
+                    invitedById: pendingInvitation.invitedById,
+                    invitationId: pendingInvitation.id,
+                    isActive: true, // This is the tenant they're joining
+                  },
+                })
+                console.log('[OAuth] ✅ UserTenantAccess record created')
+              } catch (error: any) {
+                // UserTenantAccess table might not exist yet
+                if (error.code !== 'P2021' && !error.message?.includes('does not exist')) {
+                  console.warn('[OAuth] Could not create UserTenantAccess record:', error.message)
+                }
+              }
             } catch (error: any) {
               console.warn('[OAuth] Could not mark invitation as accepted:', error.message)
               // Don't fail user creation if invitation update fails

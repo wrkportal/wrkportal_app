@@ -20,8 +20,16 @@ export const authConfig = {
         token.emailVerified = (user as any).emailVerified
       }
 
-      // Update session
+      // Update session (including tenant switching)
       if (trigger === 'update' && session) {
+        // If tenantId is being updated, also update role if provided
+        if (session.tenantId) {
+          token.tenantId = session.tenantId
+        }
+        if (session.role) {
+          token.role = session.role
+        }
+        // Merge any other session updates
         token = { ...token, ...session }
       }
 

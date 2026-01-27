@@ -30,6 +30,7 @@ import {
 import { InviteUserModal } from "@/components/invite-user-modal"
 import { canInviteUsers } from "@/lib/permissions"
 import { WorkspaceType, UserRole, GroupRole } from "@/types"
+import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher"
 
 export function Header() {
     const { user, isHydrated } = useAuthStore((state) => ({ user: state.user, isHydrated: state.isHydrated }))
@@ -164,6 +165,13 @@ export function Header() {
                         unoptimized
                     />
                 </Link>
+
+                {/* Workspace Switcher - Show if user has multiple tenants */}
+                {showUserProfile && user && (
+                    <div className="hidden md:block">
+                        <WorkspaceSwitcher />
+                    </div>
+                )}
 
                 {/* Centered Search Bar */}
                 <div className="flex-1 flex justify-center px-4">

@@ -1,0 +1,16 @@
+# Common personal email domains that should NOT be grouped together
+# Each user with these domains should get their own tenant
+
+gmail.com
+yahoo.com
+outlook.com
+hotmail.com
+icloud.com
+protonmail.com
+aol.com
+mail.com
+yandex.com
+zoho.com
+gmx.com
+live.com
+msn.com
