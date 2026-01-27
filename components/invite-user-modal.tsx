@@ -319,6 +319,13 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
       const data = await response.json()
 
       if (!response.ok) {
+        // Handle 503 Service Unavailable (table doesn't exist)
+        if (response.status === 503) {
+          throw new Error(
+            data.error || 
+            'The invitation system is currently unavailable. This feature requires database setup. Please contact your administrator.'
+          )
+        }
         throw new Error(data.error || 'Failed to send invitation')
       }
 
@@ -341,7 +348,10 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
         setSuccess(false)
       }, 2000)
     } catch (err: any) {
-      setError(err.message || 'Failed to send invitation')
+      // Extract error message from response if available
+      const errorMessage = err.message || 'Failed to send invitation'
+      setError(errorMessage)
+      console.error('Error sending invitation:', err)
     } finally {
       setLoading(false)
     }

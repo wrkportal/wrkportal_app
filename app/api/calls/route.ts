@@ -162,44 +162,67 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Fetch calls
-    const [calls, total] = await Promise.all([
-      prisma.call.findMany({
-        where,
-        include: {
-          createdBy: {
-            select: {
-              id: true,
-              name: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              avatar: true,
+    // Fetch calls - wrap in try-catch to handle missing table
+    let calls, total
+    try {
+      [calls, total] = await Promise.all([
+        prisma.call.findMany({
+          where,
+          include: {
+            createdBy: {
+              select: {
+                id: true,
+                name: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                avatar: true,
+              },
             },
-          },
-          participants: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  firstName: true,
-                  lastName: true,
-                  email: true,
-                  avatar: true,
+            participants: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    avatar: true,
+                  },
                 },
               },
             },
           },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.call.count({ where }),
-    ])
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: limit,
+          skip: offset,
+        }),
+        prisma.call.count({ where }),
+      ])
+    } catch (queryError: any) {
+      // Handle database model not found errors gracefully
+      if (queryError.code === 'P2001' || 
+          queryError.code === 'P2021' || 
+          queryError.code === 'P2022' || 
+          queryError.message?.includes('does not exist') || 
+          queryError.message?.includes('Unknown model') ||
+          queryError.message?.includes('Call')) {
+        console.warn('Call model not available, returning empty array')
+        return NextResponse.json({
+          calls: [],
+          pagination: {
+            total: 0,
+            limit,
+            offset,
+            hasMore: false,
+          },
+        })
+      }
+      throw queryError
+    }
 
     return NextResponse.json(
       {

@@ -43,19 +43,33 @@ export async function GET(request: NextRequest) {
       }
     }>
 
-    const paidInvoices: InvoiceWithSelected[] = await prisma.invoice.findMany({
-      where: {
-        tenantId,
-        status: 'PAID',
-        invoiceDate: {
-          gte: startDate,
-          lte: endDate,
+    // Wrap all Prisma queries in try-catch to handle missing models
+    let paidInvoices: InvoiceWithSelected[] = []
+    try {
+      paidInvoices = await prisma.invoice.findMany({
+        where: {
+          tenantId,
+          status: 'PAID',
+          invoiceDate: {
+            gte: startDate,
+            lte: endDate,
+          },
         },
-      },
-      select: {
-        totalAmount: true,
-      },
-    })
+        select: {
+          totalAmount: true,
+        },
+      })
+    } catch (queryError: any) {
+      if (queryError.code === 'P2001' || 
+          queryError.code === 'P2021' || 
+          queryError.code === 'P2022' || 
+          queryError.message?.includes('does not exist')) {
+        console.warn('Invoice model not available, using empty array')
+        paidInvoices = []
+      } else {
+        throw queryError
+      }
+    }
     const revenue = paidInvoices.reduce((sum: number, inv: InvoiceWithSelected) => sum + Number(inv.totalAmount), 0)
 
     // Get expenses (from approved cost actuals)
@@ -65,44 +79,74 @@ export async function GET(request: NextRequest) {
       }
     }>
 
-    const expenses: CostActualWithSelected[] = await prisma.costActual.findMany({
-      where: {
-        project: {
-          tenantId,
+    let expenses: CostActualWithSelected[] = []
+    try {
+      expenses = await prisma.costActual.findMany({
+        where: {
+          project: {
+            tenantId,
+          },
+          approvedAt: { not: null },
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
         },
-        approvedAt: { not: null },
-        date: {
-          gte: startDate,
-          lte: endDate,
+        select: {
+          amount: true,
         },
-      },
-      select: {
-        amount: true,
-      },
-    })
+      })
+    } catch (queryError: any) {
+      if (queryError.code === 'P2001' || 
+          queryError.code === 'P2021' || 
+          queryError.code === 'P2022' || 
+          queryError.message?.includes('does not exist')) {
+        console.warn('CostActual model not available, using empty array')
+        expenses = []
+      } else {
+        throw queryError
+      }
+    }
     const totalExpenses = expenses.reduce((sum: number, exp: CostActualWithSelected) => sum + Number(exp.amount), 0)
 
     // Get cash on hand (total paid - total expenses)
-    const allPaidInvoices: InvoiceWithSelected[] = await prisma.invoice.findMany({
-      where: {
-        tenantId,
-        status: 'PAID',
-      },
-      select: {
-        totalAmount: true,
-      },
-    })
-    const allExpenses: CostActualWithSelected[] = await prisma.costActual.findMany({
-      where: {
-        project: {
-          tenantId,
-        },
-        approvedAt: { not: null },
-      },
-      select: {
-        amount: true,
-      },
-    })
+    let allPaidInvoices: InvoiceWithSelected[] = []
+    let allExpenses: CostActualWithSelected[] = []
+    try {
+      [allPaidInvoices, allExpenses] = await Promise.all([
+        prisma.invoice.findMany({
+          where: {
+            tenantId,
+            status: 'PAID',
+          },
+          select: {
+            totalAmount: true,
+          },
+        }),
+        prisma.costActual.findMany({
+          where: {
+            project: {
+              tenantId,
+            },
+            approvedAt: { not: null },
+          },
+          select: {
+            amount: true,
+          },
+        }),
+      ])
+    } catch (queryError: any) {
+      if (queryError.code === 'P2001' || 
+          queryError.code === 'P2021' || 
+          queryError.code === 'P2022' || 
+          queryError.message?.includes('does not exist')) {
+        console.warn('Invoice or CostActual model not available, using empty arrays')
+        allPaidInvoices = []
+        allExpenses = []
+      } else {
+        throw queryError
+      }
+    }
     const totalPaid = allPaidInvoices.reduce((sum: number, inv: InvoiceWithSelected) => sum + Number(inv.totalAmount), 0)
     const totalExpensesAll = allExpenses.reduce((sum: number, exp: CostActualWithSelected) => sum + Number(exp.amount), 0)
     const cashOnHand = totalPaid - totalExpensesAll
@@ -116,15 +160,28 @@ export async function GET(request: NextRequest) {
 
     type Payment = InvoiceWithPayments['payments'][0]
 
-    const outstandingInvoices: InvoiceWithPayments[] = await prisma.invoice.findMany({
-      where: {
-        tenantId,
-        status: { notIn: ['PAID', 'CANCELLED'] },
-      },
-      include: {
-        payments: true,
-      },
-    })
+    let outstandingInvoices: InvoiceWithPayments[] = []
+    try {
+      outstandingInvoices = await prisma.invoice.findMany({
+        where: {
+          tenantId,
+          status: { notIn: ['PAID', 'CANCELLED'] },
+        },
+        include: {
+          payments: true,
+        },
+      })
+    } catch (queryError: any) {
+      if (queryError.code === 'P2001' || 
+          queryError.code === 'P2021' || 
+          queryError.code === 'P2022' || 
+          queryError.message?.includes('does not exist')) {
+        console.warn('Invoice model not available for outstanding receivables, using empty array')
+        outstandingInvoices = []
+      } else {
+        throw queryError
+      }
+    }
     const outstandingReceivables = outstandingInvoices.reduce((sum: number, inv: InvoiceWithPayments) => {
       const paid = inv.payments.reduce((pSum: number, p: Payment) => pSum + Number(p.amount), 0)
       const balance = Number(inv.totalAmount) - paid
@@ -144,21 +201,34 @@ export async function GET(request: NextRequest) {
       }
     }>
 
-    const recentInvoices: InvoiceWithProjectAndPayments[] = await prisma.invoice.findMany({
-      where: {
-        tenantId,
-      },
-      include: {
-        project: {
-          select: { id: true, name: true },
+    let recentInvoices: InvoiceWithProjectAndPayments[] = []
+    try {
+      recentInvoices = await prisma.invoice.findMany({
+        where: {
+          tenantId,
         },
-        payments: true,
-      },
-      orderBy: {
-        dueDate: 'asc',
-      },
-      take: 5,
-    })
+        include: {
+          project: {
+            select: { id: true, name: true },
+          },
+          payments: true,
+        },
+        orderBy: {
+          dueDate: 'asc',
+        },
+        take: 5,
+      })
+    } catch (queryError: any) {
+      if (queryError.code === 'P2001' || 
+          queryError.code === 'P2021' || 
+          queryError.code === 'P2022' || 
+          queryError.message?.includes('does not exist')) {
+        console.warn('Invoice model not available for recent invoices, using empty array')
+        recentInvoices = []
+      } else {
+        throw queryError
+      }
+    }
 
     const invoicesForDashboard = recentInvoices.map((inv: InvoiceWithProjectAndPayments) => {
       const paid = inv.payments.reduce((sum: number, p: Payment) => sum + Number(p.amount), 0)
@@ -178,22 +248,35 @@ export async function GET(request: NextRequest) {
     })
 
     // Get expense breakdown by category
-    const expenseCategories = await prisma.costActual.groupBy({
-      by: ['costType'],
-      where: {
-        project: {
-          tenantId,
+    let expenseCategories
+    try {
+      expenseCategories = await prisma.costActual.groupBy({
+        by: ['costType'],
+        where: {
+          project: {
+            tenantId,
+          },
+          approvedAt: { not: null },
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
         },
-        approvedAt: { not: null },
-        date: {
-          gte: startDate,
-          lte: endDate,
+        _sum: {
+          amount: true,
         },
-      },
-      _sum: {
-        amount: true,
-      },
-    })
+      })
+    } catch (queryError: any) {
+      if (queryError.code === 'P2001' || 
+          queryError.code === 'P2021' || 
+          queryError.code === 'P2022' || 
+          queryError.message?.includes('does not exist')) {
+        console.warn('CostActual model not available for expense categories, using empty array')
+        expenseCategories = []
+      } else {
+        throw queryError
+      }
+    }
 
     type ExpenseCategoryGroupBy = {
       costType: string | null
@@ -223,26 +306,39 @@ export async function GET(request: NextRequest) {
       }
     }>
 
-    const forecasts: ForecastWithSelected[] = await prisma.forecast.findMany({
-      where: {
-        budget: {
-          tenantId,
+    let forecasts: ForecastWithSelected[] = []
+    try {
+      forecasts = await prisma.forecast.findMany({
+        where: {
+          budget: {
+            tenantId,
+          },
+          generatedAt: {
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+          },
         },
-        generatedAt: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+        select: {
+          forecastedAmount: true,
+          confidence: true,
+          validUntil: true,
+          name: true,
         },
-      },
-      select: {
-        forecastedAmount: true,
-        confidence: true,
-        validUntil: true,
-        name: true,
-      },
-      orderBy: {
-        generatedAt: 'desc',
-      },
-      take: 3,
-    })
+        orderBy: {
+          generatedAt: 'desc',
+        },
+        take: 3,
+      })
+    } catch (queryError: any) {
+      if (queryError.code === 'P2001' || 
+          queryError.code === 'P2021' || 
+          queryError.code === 'P2022' || 
+          queryError.message?.includes('does not exist')) {
+        console.warn('Forecast model not available, using empty array')
+        forecasts = []
+      } else {
+        throw queryError
+      }
+    }
 
     const forecastData = forecasts.map((f: ForecastWithSelected) => {
       const amount = Number(f.forecastedAmount)

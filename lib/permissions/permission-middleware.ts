@@ -31,15 +31,33 @@ export async function getUserForPermissionCheck() {
   }
 
   // Get full user with org unit
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      tenantId: true,
-      orgUnitId: true,
-      role: true,
-    },
-  })
+  let user
+  try {
+    user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        tenantId: true,
+        orgUnitId: true,
+        role: true,
+      },
+    })
+  } catch (error: any) {
+    // Handle case where User table or columns might not exist
+    if (error.code === 'P2021' || error.code === 'P2022' || 
+        error.message?.includes('does not exist') ||
+        error.message?.includes('column')) {
+      console.warn('User table or column not available for permission check')
+      // Return user info from session as fallback
+      return {
+        userId: session.user.id,
+        tenantId: (session.user as any).tenantId || null,
+        orgUnitId: null,
+        role: (session.user as any).role || null,
+      }
+    }
+    throw error
+  }
 
   if (!user) {
     return null

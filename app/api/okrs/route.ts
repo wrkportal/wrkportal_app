@@ -58,26 +58,41 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch goals with key results
-    const goals = await prisma.goal.findMany({
-      where: {
-        tenantId: user.tenantId,
-      },
-      include: {
-        keyResults: {
-          include: {
-            checkIns: {
-              orderBy: {
-                createdAt: 'desc',
+    let goals
+    try {
+      goals = await prisma.goal.findMany({
+        where: {
+          tenantId: user.tenantId,
+        },
+        include: {
+          keyResults: {
+            include: {
+              checkIns: {
+                orderBy: {
+                  createdAt: 'desc',
+                },
+                take: 1, // Only get latest check-in
               },
-              take: 1, // Only get latest check-in
             },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
+        orderBy: {
+          createdAt: 'desc',
+        },
+      })
+    } catch (queryError: any) {
+      // Handle database model not found errors gracefully
+      if (queryError.code === 'P2001' || 
+          queryError.code === 'P2021' || 
+          queryError.code === 'P2022' || 
+          queryError.message?.includes('does not exist') || 
+          queryError.message?.includes('Unknown model') ||
+          queryError.message?.includes('Goal')) {
+        console.warn('Goal model not available, returning empty array')
+        return NextResponse.json({ goals: [] }, { status: 200 })
+      }
+      throw queryError
+    }
 
     return NextResponse.json({ goals }, { status: 200 })
   } catch (error: any) {

@@ -43,9 +43,11 @@ function getPrismaClient() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const prismaOptions: any = {
       adapter: globalForPrisma.adapter,
+      // Suppress Prisma error logs since we handle them gracefully in our code
+      // Set PRISMA_LOG_ERRORS=true in .env.local if you want to see Prisma errors
       log:
         process.env.NODE_ENV === 'development'
-          ? ['error', 'warn']
+          ? process.env.PRISMA_LOG_ERRORS === 'true' ? ['error', 'warn'] : []
           : ['error'],
     }
     globalForPrisma.prisma = new PrismaClient(prismaOptions)

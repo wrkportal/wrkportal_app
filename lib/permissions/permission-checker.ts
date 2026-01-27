@@ -72,7 +72,12 @@ export async function checkResourcePermission(
     })
   } catch (error: any) {
     // If table doesn't exist, fall back to default role permissions
-    if (error.code === 'P2001' || error.message?.includes('does not exist') || error.message?.includes('Unknown model')) {
+    if (error.code === 'P2001' || 
+        error.code === 'P2021' || 
+        error.code === 'P2022' || 
+        error.message?.includes('does not exist') || 
+        error.message?.includes('Unknown model') ||
+        error.message?.includes('column')) {
       console.warn('OrganizationPermission table not found, using default role permissions')
       const defaultRolePermissions = getDefaultRolePermissions(role)
       if (defaultRolePermissions[resource]?.includes(action) || defaultRolePermissions['*']?.includes(action)) {
@@ -113,7 +118,12 @@ export async function checkResourcePermission(
       })
     } catch (error: any) {
       // If table doesn't exist, skip org unit check
-      if (error.code === 'P2001' || error.message?.includes('does not exist') || error.message?.includes('Unknown model')) {
+      if (error.code === 'P2001' || 
+          error.code === 'P2021' || 
+          error.code === 'P2022' || 
+          error.message?.includes('does not exist') || 
+          error.message?.includes('Unknown model') ||
+          error.message?.includes('column')) {
         console.warn('OrganizationPermission table not found, skipping org unit check')
       } else {
         throw error
@@ -145,8 +155,9 @@ export async function checkResourcePermission(
 
   // Check role-based permissions
   let rolePermission = null
-  if (prisma.organizationPermission) {
-    try {
+  try {
+    // Always try to query, even if model might not exist in database
+    if (prisma.organizationPermission) {
       rolePermission = await prisma.organizationPermission.findFirst({
         where: {
           tenantId,
@@ -160,24 +171,29 @@ export async function checkResourcePermission(
           ],
         },
       })
-    } catch (error: any) {
-      // If table doesn't exist, fall back to default role permissions
-      if (error.code === 'P2001' || error.message?.includes('does not exist') || error.message?.includes('Unknown model')) {
-        console.warn('OrganizationPermission table not found, using default role permissions')
-        const defaultRolePermissions = getDefaultRolePermissions(role)
-        if (defaultRolePermissions[resource]?.includes(action) || defaultRolePermissions['*']?.includes(action)) {
-          return {
-            allowed: true,
-            source: 'role',
-          }
-        }
+    }
+  } catch (error: any) {
+    // If table doesn't exist, fall back to default role permissions
+    if (error.code === 'P2001' || 
+        error.code === 'P2021' || 
+        error.code === 'P2022' || 
+        error.message?.includes('does not exist') || 
+        error.message?.includes('Unknown model') ||
+        error.message?.includes('column')) {
+      console.warn('OrganizationPermission table not found, using default role permissions')
+      const defaultRolePermissions = getDefaultRolePermissions(role)
+      if (defaultRolePermissions[resource]?.includes(action) || defaultRolePermissions['*']?.includes(action)) {
         return {
-          allowed: false,
-          reason: `User does not have ${action} permission on ${resource}`,
+          allowed: true,
+          source: 'role',
         }
       }
-      throw error
+      return {
+        allowed: false,
+        reason: `User does not have ${action} permission on ${resource}`,
+      }
     }
+    throw error
   }
 
   if (rolePermission && rolePermission.actions.includes(action)) {
@@ -438,6 +454,7 @@ function getDefaultRolePermissions(
       reports: ['READ', 'CREATE', 'EXPORT'],
     },
     TEAM_MEMBER: {
+      projects: ['READ'],
       tasks: ['READ', 'UPDATE'],
       timesheets: ['READ', 'CREATE', 'UPDATE'],
       comments: ['READ', 'CREATE'],

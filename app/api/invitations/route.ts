@@ -144,13 +144,26 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if invitation already exists
-    const existingInvitation = await prisma.tenantInvitation.findFirst({
-      where: {
-        tenantId: user.tenantId,
-        email: email.toLowerCase(),
-        status: 'PENDING',
-      },
-    })
+    let existingInvitation
+    try {
+      existingInvitation = await prisma.tenantInvitation.findFirst({
+        where: {
+          tenantId: user.tenantId,
+          email: email.toLowerCase(),
+          status: 'PENDING',
+        },
+      })
+    } catch (error: any) {
+      // Handle case where TenantInvitation table might not exist
+      if (error.code === 'P2021' || error.code === 'P2022' || 
+          error.message?.includes('does not exist') ||
+          error.message?.includes('column')) {
+        console.warn('TenantInvitation table or column not available, proceeding with invitation')
+        existingInvitation = null
+      } else {
+        throw error
+      }
+    }
 
     if (existingInvitation) {
       return NextResponse.json(
@@ -196,25 +209,44 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const invitation = await prisma.tenantInvitation.create({
-      data: invitationData,
-      include: {
-        invitedBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+    let invitation
+    try {
+      invitation = await prisma.tenantInvitation.create({
+        data: invitationData,
+        include: {
+          invitedBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          tenant: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-        tenant: {
-          select: {
-            id: true,
-            name: true,
+      })
+    } catch (error: any) {
+      // Handle case where TenantInvitation table might not exist
+      if (error.code === 'P2021' || error.code === 'P2022' || 
+          error.message?.includes('does not exist') ||
+          error.message?.includes('column')) {
+        console.warn('TenantInvitation table or column not available, cannot create invitation')
+        return NextResponse.json(
+          { 
+            error: 'The invitation system is currently unavailable. This feature requires the TenantInvitation database table to be set up. Please contact your administrator or run the necessary database migrations.',
+            code: 'SERVICE_UNAVAILABLE',
+            requiresSetup: true
           },
-        },
-      },
-    })
+          { status: 503 }
+        )
+      }
+      throw error
+    }
 
     // Generate invitation URL
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
@@ -225,8 +257,26 @@ export async function POST(req: NextRequest) {
       invitationUrl,
       message: 'Invitation created successfully',
     }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating invitation:', error)
+    
+    // Handle Prisma errors gracefully
+    if (error.code === 'P2001' || 
+        error.code === 'P2021' || 
+        error.code === 'P2022' || 
+        error.message?.includes('does not exist') ||
+        error.message?.includes('column')) {
+      console.warn('Database table or column not available')
+      return NextResponse.json(
+        { 
+          error: 'The invitation system is currently unavailable. This feature requires the TenantInvitation database table to be set up. Please contact your administrator or run the necessary database migrations.',
+          code: 'SERVICE_UNAVAILABLE',
+          requiresSetup: true
+        },
+        { status: 503 }
+      )
+    }
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
