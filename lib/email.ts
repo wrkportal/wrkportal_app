@@ -326,6 +326,111 @@ If you didn't create an account with wrkportal.com, you can safely ignore this e
 If you have any questions, contact us at support@wrkportal.com
     `.trim(),
   }),
+
+  invitationEmail: (invitationUrl: string, tenantName: string, invitedBy?: string, role?: string) => ({
+    subject: `You've been invited to join ${tenantName} on wrkportal.com`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>You've Been Invited</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); padding: 40px 30px; text-align: center;">
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">You've Been Invited! 🎉</h1>
+                      <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">wrkportal.com</p>
+                    </td>
+                  </tr>
+                  
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding: 40px 30px;">
+                      <p style="color: #374151; font-size: 16px; margin: 0 0 20px 0;">Hi there,</p>
+                      
+                      <p style="color: #374151; font-size: 16px; line-height: 24px; margin: 0 0 20px 0;">
+                        ${invitedBy ? `<strong>${invitedBy}</strong> has` : 'You have been'} invited you to join <strong>${tenantName}</strong> on wrkportal.com.
+                      </p>
+                      
+                      ${role ? `<p style="color: #6b7280; font-size: 14px; line-height: 20px; margin: 0 0 20px 0;">Your role: <strong>${role}</strong></p>` : ''}
+                      
+                      <p style="color: #374151; font-size: 16px; line-height: 24px; margin: 0 0 30px 0;">
+                        Click the button below to accept the invitation and get started:
+                      </p>
+                      
+                      <!-- Accept Button -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                        <tr>
+                          <td align="center">
+                            <a href="${invitationUrl}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); color: #ffffff; text-decoration: none; padding: 14px 40px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+                              Accept Invitation
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                      
+                      <p style="color: #6b7280; font-size: 14px; line-height: 20px; margin: 20px 0 0 0;">
+                        Or copy and paste this link into your browser:
+                      </p>
+                      <p style="color: #7c3aed; font-size: 13px; word-break: break-all; margin: 8px 0 0 0;">
+                        ${invitationUrl}
+                      </p>
+                      
+                      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                        <p style="color: #6b7280; font-size: 14px; line-height: 20px; margin: 0;">
+                          <strong>⏱️ This invitation expires in 7 days</strong> for security reasons.
+                        </p>
+                        <p style="color: #6b7280; font-size: 14px; line-height: 20px; margin: 15px 0 0 0;">
+                          If you didn't expect this invitation, you can safely ignore this email.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                      <p style="color: #6b7280; font-size: 13px; margin: 0 0 10px 0;">
+                        © ${new Date().getFullYear()} wrkportal.com. All rights reserved.
+                      </p>
+                      <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                        If you have any questions, contact us at <a href="mailto:support@wrkportal.com" style="color: #7c3aed; text-decoration: none;">support@wrkportal.com</a>
+                      </p>
+                    </td>
+                  </tr>
+                  
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `,
+    text: `
+Hi there,
+
+${invitedBy ? `${invitedBy} has` : 'You have been'} invited you to join ${tenantName} on wrkportal.com.
+
+${role ? `Your role: ${role}\n` : ''}Click the following link to accept the invitation and get started:
+${invitationUrl}
+
+This invitation expires in 7 days for security reasons.
+
+If you didn't expect this invitation, you can safely ignore this email.
+
+---
+© ${new Date().getFullYear()} wrkportal.com
+If you have any questions, contact us at support@wrkportal.com
+    `.trim(),
+  }),
 }
 
 // Send email function
@@ -500,3 +605,46 @@ export async function sendEmailVerification(
   }
 }
 
+export async function sendInvitationEmail(
+  email: string,
+  invitationUrl: string,
+  tenantName: string,
+  invitedBy?: string,
+  role?: string
+) {
+  console.log('📧 Preparing invitation email:', {
+    to: email,
+    tenantName,
+    invitedBy,
+    role,
+    urlPreview: invitationUrl.substring(0, 100) + '...',
+  })
+  
+  const { subject, html, text } = emailTemplates.invitationEmail(
+    invitationUrl,
+    tenantName,
+    invitedBy,
+    role
+  )
+  
+  const startTime = Date.now()
+  try {
+    const result = await sendEmail({
+      to: email,
+      subject,
+      html,
+      text,
+    })
+    const duration = Date.now() - startTime
+    console.log(`✅ Invitation email sent in ${duration}ms to:`, email)
+    return result
+  } catch (error: any) {
+    const duration = Date.now() - startTime
+    console.error(`❌ Failed to send invitation email after ${duration}ms:`, {
+      error: error.message,
+      email,
+      tenantName,
+    })
+    throw error
+  }
+}

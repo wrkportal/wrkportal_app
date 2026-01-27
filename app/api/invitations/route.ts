@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { UserRole, WorkspaceType, GroupRole } from '@/types'
 import { generateVerificationCode } from '@/lib/domain-utils'
 import { canInviteUsers } from '@/lib/permissions'
+import { sendInvitationEmail } from '@/lib/email'
 
 // GET /api/invitations - List all invitations for the current tenant
 export async function GET(req: NextRequest) {
@@ -332,6 +333,54 @@ export async function POST(req: NextRequest) {
     // Generate invitation URL
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
     const invitationUrl = `${baseUrl}/signup?token=${token}`
+
+    console.log('[Invitation] Starting email send process:', {
+      email: invitation.email,
+      tenantName: invitation.tenant.name,
+      invitationId: invitation.id,
+      baseUrl,
+    })
+
+    // Send invitation email
+    try {
+      const invitedByName = invitation.invitedBy
+        ? `${invitation.invitedBy.firstName || ''} ${invitation.invitedBy.lastName || ''}`.trim() || invitation.invitedBy.email
+        : undefined
+      
+      const roleDisplayName = invitation.role === UserRole.ORG_ADMIN 
+        ? 'Organization Admin'
+        : invitation.role === UserRole.TENANT_SUPER_ADMIN
+        ? 'Super Admin'
+        : 'Team Member'
+
+      console.log('[Invitation] Calling sendInvitationEmail with:', {
+        email: invitation.email,
+        tenantName: invitation.tenant.name,
+        invitedByName,
+        roleDisplayName,
+      })
+
+      await sendInvitationEmail(
+        invitation.email,
+        invitationUrl,
+        invitation.tenant.name,
+        invitedByName,
+        roleDisplayName
+      )
+      console.log(`[Invitation] ✅ Email sent successfully to ${invitation.email}`)
+    } catch (emailError: any) {
+      // Log email error but don't fail the invitation creation
+      // The invitation is still valid and can be accessed via the URL
+      console.error('[Invitation] ❌ Failed to send invitation email:', {
+        error: emailError.message,
+        errorStack: emailError.stack,
+        errorCode: emailError.code,
+        email: invitation.email,
+        invitationId: invitation.id,
+        tenantName: invitation.tenant.name,
+      })
+      // Continue - invitation is still created and valid
+    }
 
     return NextResponse.json({
       invitation,
