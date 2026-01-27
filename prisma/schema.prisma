@@ -169,6 +169,8 @@ model User {
   createdCalls                   Call[]                             @relation("CallCreatedBy")
   teamMemberRoles                TeamMember[]
   sentInvitations                TenantInvitation[]                 @relation("InvitedBy")
+  tenantAccesses                 UserTenantAccess[]                 @relation("UserTenantAccesses")
+  tenantAccessInvitedBy           UserTenantAccess[]                 @relation("TenantAccessInvitedBy")
   timeTrackings                  TimeTracking[]
   timesheets                     Timesheet[]
   createdTutorials               Tutorial[]                         @relation("TutorialCreator")
@@ -329,6 +331,7 @@ model Tenant {
   tasks                       Task[]
   teams                       Team[]
   invitations                 TenantInvitation[]
+  tenantAccesses              UserTenantAccess[]                 @relation("TenantAccesses")
   tutorials                   Tutorial[]
   users                       User[]
 
@@ -379,12 +382,37 @@ model TenantInvitation {
   updatedAt   DateTime         @updatedAt
   invitedBy   User             @relation("InvitedBy", fields: [invitedById], references: [id])
   tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userTenantAccesses UserTenantAccess[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
   @@index([email])
   @@index([token])
   @@index([status])
+}
+
+model UserTenantAccess {
+  id            String           @id @default(cuid())
+  userId        String
+  tenantId      String
+  role          UserRole         @default(TEAM_MEMBER)
+  groupRole     GroupRole?
+  allowedSections String?                            // JSON array of allowed section names, null = full access
+  isActive      Boolean          @default(false)      // Primary tenant for the user
+  joinedAt      DateTime         @default(now())
+  invitedById   String?
+  invitationId  String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  user          User             @relation("UserTenantAccesses", fields: [userId], references: [id], onDelete: Cascade)
+  tenant        Tenant           @relation("TenantAccesses", fields: [tenantId], references: [id], onDelete: Cascade)
+  invitedBy     User?            @relation("TenantAccessInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitation    TenantInvitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([isActive])
 }
 
 model Program {
