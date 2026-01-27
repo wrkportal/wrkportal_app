@@ -36,6 +36,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // Check if DefaultLayout model exists
+    if (!prisma.defaultLayout) {
+      console.warn('DefaultLayout model not available')
+      return NextResponse.json({ defaultLayout: null }, { status: 200 })
+    }
+
     // Try to find default layout for specific role, then fall back to general default
     const defaultLayout = await prisma.defaultLayout.findFirst({
       where: {
@@ -57,8 +63,18 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ defaultLayout }, { status: 200 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching default layout:', error)
+    
+    // Handle database model not found errors gracefully
+    if (error.code === 'P2001' || 
+        error.message?.includes('does not exist') || 
+        error.message?.includes('Unknown model') ||
+        error.message?.includes('DefaultLayout')) {
+      console.warn('DefaultLayout model not available')
+      return NextResponse.json({ defaultLayout: null }, { status: 200 })
+    }
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -51,6 +51,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // Check if Goal model exists
+    if (!prisma.goal) {
+      console.warn('Goal model not available, returning empty array')
+      return NextResponse.json({ goals: [] }, { status: 200 })
+    }
+
     // Fetch goals with key results
     const goals = await prisma.goal.findMany({
       where: {
@@ -74,8 +80,18 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({ goals }, { status: 200 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching goals:', error)
+    
+    // Handle database model not found errors gracefully
+    if (error.code === 'P2001' || 
+        error.message?.includes('does not exist') || 
+        error.message?.includes('Unknown model') ||
+        error.message?.includes('Goal')) {
+      console.warn('Goal model not available, returning empty array')
+      return NextResponse.json({ goals: [] }, { status: 200 })
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

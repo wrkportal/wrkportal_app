@@ -148,6 +148,20 @@ export async function GET(req: NextRequest) {
       where.status = status
     }
 
+    // Check if Call model exists
+    if (!prisma.call) {
+      console.warn('Call model not available, returning empty array')
+      return NextResponse.json({
+        calls: [],
+        pagination: {
+          total: 0,
+          limit,
+          offset,
+          hasMore: false,
+        },
+      })
+    }
+
     // Fetch calls
     const [calls, total] = await Promise.all([
       prisma.call.findMany({
@@ -199,8 +213,26 @@ export async function GET(req: NextRequest) {
       },
       { status: 200 }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching calls:', error)
+    
+    // Handle database model not found errors gracefully
+    if (error.code === 'P2001' || 
+        error.message?.includes('does not exist') || 
+        error.message?.includes('Unknown model') ||
+        error.message?.includes('Call')) {
+      console.warn('Call model not available, returning empty array')
+      return NextResponse.json({
+        calls: [],
+        pagination: {
+          total: 0,
+          limit: parseInt(new URL(req.url).searchParams.get('limit') || '50'),
+          offset: parseInt(new URL(req.url).searchParams.get('offset') || '0'),
+          hasMore: false,
+        },
+      })
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

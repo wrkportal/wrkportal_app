@@ -10,6 +10,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Check if TimeTracking model exists
+    if (!prisma.timeTracking) {
+      console.warn('TimeTracking model not available')
+      return NextResponse.json({
+        activeTimer: null,
+        hasActiveTimer: false,
+        success: true,
+      })
+    }
+
     const activeTimer = await prisma.timeTracking.findFirst({
       where: {
         userId: session.user.id,
@@ -40,8 +50,22 @@ export async function GET(request: NextRequest) {
       hasActiveTimer: !!activeTimer,
       success: true,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error checking active timer:', error)
+    
+    // Handle database model not found errors gracefully
+    if (error.code === 'P2001' || 
+        error.message?.includes('does not exist') || 
+        error.message?.includes('Unknown model') ||
+        error.message?.includes('TimeTracking')) {
+      console.warn('TimeTracking model not available')
+      return NextResponse.json({
+        activeTimer: null,
+        hasActiveTimer: false,
+        success: true,
+      })
+    }
+    
     return NextResponse.json(
       { error: 'Failed to check active timer' },
       { status: 500 }

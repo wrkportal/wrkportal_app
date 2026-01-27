@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { UserRole } from '@/types'
+import { UserRole, WorkspaceType, GroupRole } from '@/types'
 import { generateVerificationCode } from '@/lib/domain-utils'
+import { canInviteUsers } from '@/lib/permissions'
 
 // GET /api/invitations - List all invitations for the current tenant
 export async function GET(req: NextRequest) {
@@ -53,8 +54,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Only admins can send invitations
-    if (session.user.role !== UserRole.TENANT_SUPER_ADMIN && session.user.role !== UserRole.ORG_ADMIN) {
+    // Get user with tenant information to check permissions
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        role: true,
+        groupRole: true,
+        tenantId: true,
+        tenant: {
+          select: {
+            id: true,
+            type: true,
+          },
+        },
+      },
+    })
+
+    if (!user || !user.tenant) {
+      return NextResponse.json({ error: 'User or tenant not found' }, { status: 404 })
+    }
+
+    // Check if user has permission to invite using the permission function
+    // This allows first-time users who created their own tenant to invite
+    const hasInvitePermission = canInviteUsers(
+      user.tenant.type as WorkspaceType,
+      user.role as UserRole,
+      user.groupRole as GroupRole | undefined
+    )
+
+    if (!hasInvitePermission) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -88,7 +117,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (existingUser) {
-      if (existingUser.tenantId === session.user.tenantId) {
+      if (existingUser.tenantId === user.tenantId) {
         return NextResponse.json(
           { error: 'User is already a member of this organization' },
           { status: 400 }
@@ -97,14 +126,14 @@ export async function POST(req: NextRequest) {
         // User exists in another tenant - allow cross-tenant invitation
         // This allows User A from Tenant A to invite User B from Tenant B
         // User B will have access to Tenant A's data based on allowedSections
-        console.log(`[Invitation] Cross-tenant invitation: ${email} from tenant ${existingUser.tenantId} invited to tenant ${session.user.tenantId}`)
+        console.log(`[Invitation] Cross-tenant invitation: ${email} from tenant ${existingUser.tenantId} invited to tenant ${user.tenantId}`)
       }
     }
 
     // Check if invitation already exists
     const existingInvitation = await prisma.tenantInvitation.findFirst({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: user.tenantId,
         email: email.toLowerCase(),
         status: 'PENDING',
       },
@@ -123,11 +152,11 @@ export async function POST(req: NextRequest) {
     // Create invitation (expires in 7 days)
     // Store allowedSections and additional security settings as JSON
     const invitationData: any = {
-      tenantId: session.user.tenantId,
+      tenantId: user.tenantId,
       email: email.toLowerCase(),
       token,
       role: role as UserRole,
-      invitedById: session.user.id,
+      invitedById: user.id,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       allowedSections: allowedSections && Array.isArray(allowedSections) 
         ? JSON.stringify(allowedSections) 
