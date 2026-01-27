@@ -104,12 +104,13 @@ export function SalesNavBar({ widgets, toggleWidget }: SalesNavBarProps = {}) {
             // Dashboard tab should be active when on dashboard OR when on any functional tab (first time user)
             // Other tabs should be active when pathname starts with their href (to handle detail pages)
             let isActive = false
-            if (item.href === '/sales-dashboard') {
+            if (item.href === '/sales-dashboard/dashboard') {
               // Dashboard is active when on dashboard OR when on any other functional tab
               const isOnFunctionalTab = pathname.startsWith('/sales-dashboard/') && 
                                        pathname !== '/sales-dashboard'
               isActive = pathname === '/sales-dashboard' ||
                         pathname === '/sales-dashboard/' ||
+                        pathname === '/sales-dashboard/dashboard' ||
                         isOnFunctionalTab
             } else {
               isActive = pathname === item.href || pathname.startsWith(item.href + '/')

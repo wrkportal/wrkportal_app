@@ -87,10 +87,10 @@ interface Widget {
 }
 
 const defaultWidgets: Widget[] = [
-  { id: 'myTasks', type: 'myTasks', visible: true },
-  { id: 'quickActions', type: 'quickActions', visible: true },
-  { id: 'usefulLinks', type: 'usefulLinks', visible: true },
-  { id: 'metrics', type: 'metrics', visible: true },
+  { id: 'myTasks', type: 'myTasks', visible: false },
+  { id: 'quickActions', type: 'quickActions', visible: false },
+  { id: 'usefulLinks', type: 'usefulLinks', visible: false },
+  { id: 'metrics', type: 'metrics', visible: false },
   { id: 'mindMap', type: 'mindMap', visible: false },
   { id: 'canvas', type: 'canvas', visible: false },
 ]
@@ -428,8 +428,13 @@ export default function OperationsDashboardPage() {
   useEffect(() => {
     if (widgetsLoaded && widgets.length > 0 && typeof window !== 'undefined') {
       localStorage.setItem('operations-widgets', JSON.stringify(widgets))
+      // Clear error if user has no visible widgets (first-time user)
+      const hasVisibleWidgets = widgets.some(w => w.visible)
+      if (!hasVisibleWidgets && error) {
+        setError(null)
+      }
     }
-  }, [widgets, widgetsLoaded])
+  }, [widgets, widgetsLoaded, error])
 
   const toggleWidget = useCallback((widgetId: string) => {
     setWidgets(prevWidgets => {
@@ -484,10 +489,19 @@ export default function OperationsDashboardPage() {
           errorData,
         })
         
-        // Set user-friendly error message
+        // Set user-friendly error message only if user has visible widgets
+        // For first-time users (no widgets), don't show permission errors
+        // We'll check this in the render function instead, after widgets are loaded
         if (response.status === 403) {
-          const reason = errorData.reason || 'You do not have permission to view operations dashboard statistics.'
-          setError(reason)
+          // Only set error if widgets are loaded and user has visible widgets
+          // Otherwise, it's a first-time user and they should see the empty state
+          if (widgetsLoaded) {
+            const hasVisibleWidgets = widgets.some(w => w.visible)
+            if (hasVisibleWidgets) {
+              const reason = errorData.reason || 'You do not have permission to view operations dashboard statistics.'
+              setError(reason)
+            }
+          }
         } else if (response.status === 401) {
           setError('Please log in to view dashboard statistics.')
         } else if (response.status === 500) {
@@ -616,7 +630,27 @@ export default function OperationsDashboardPage() {
 
   const onLayoutChange = (layout: Layout[], layouts: Layouts) => {
     setLayouts(layouts)
+    // Save to localStorage immediately to persist across navigation
+    // Only save if not during initial mount to avoid overwriting during load
+    if (typeof window !== 'undefined' && !isInitialMount) {
+      try {
+        localStorage.setItem('operations-dashboard-layouts', JSON.stringify(layouts))
+      } catch (error) {
+        console.error('Error saving layouts to localStorage:', error)
+      }
+    }
   }
+  
+  // Also save layouts via useEffect as backup (but onLayoutChange is primary)
+  useEffect(() => {
+    if (!isInitialMount && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('operations-dashboard-layouts', JSON.stringify(layouts))
+      } catch (error) {
+        console.error('Error saving layouts to localStorage:', error)
+      }
+    }
+  }, [layouts, isInitialMount])
 
   const [recentActivities, setRecentActivities] = useState<any[]>([])
 
@@ -3269,8 +3303,8 @@ export default function OperationsDashboardPage() {
               </p>
             </div>
             
-            {/* Error Message */}
-            {error && (
+            {/* Error Message - Only show if user has visible widgets (not a first-time user) */}
+            {error && hasVisibleWidgets && (
               <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-destructive" />

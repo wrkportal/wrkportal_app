@@ -44,14 +44,15 @@ export function RecruitmentNavBar({ widgets, toggleWidget }: RecruitmentNavBarPr
           {/* Navigation tabs */}
           {navItems.map((item) => {
             // Each tab is only active when on its specific page
-            // Dashboard tab should be active when on any functional tab (first time user)
+            // Dashboard tab should be active when on dashboard OR when on any other functional tab (first time user)
             let isActive = false
-            if (item.href === '/recruitment-dashboard') {
+            if (item.href === '/recruitment-dashboard/dashboard') {
               // Dashboard is active when on dashboard OR when on any other functional tab
               const isOnFunctionalTab = pathname.startsWith('/recruitment-dashboard/') && 
                                        pathname !== '/recruitment-dashboard'
               isActive = pathname === '/recruitment-dashboard' ||
                         pathname === '/recruitment-dashboard/' ||
+                        pathname === '/recruitment-dashboard/dashboard' ||
                         isOnFunctionalTab
             } else {
               isActive = pathname === item.href || pathname.startsWith(item.href + '/')
@@ -82,9 +83,7 @@ export function RecruitmentNavBar({ widgets, toggleWidget }: RecruitmentNavBarPr
               size="sm"
               className="h-8 px-3 relative z-10"
               onClick={() => {
-                if (widgets && toggleWidget) {
-                  setWidgetGalleryOpen(true)
-                }
+                setWidgetGalleryOpen(true)
               }}
             >
               <LayoutGrid className="h-4 w-4 mr-2" />
@@ -93,14 +92,12 @@ export function RecruitmentNavBar({ widgets, toggleWidget }: RecruitmentNavBarPr
           </div>
 
           {/* Widget Gallery Dialog */}
-          {widgets && toggleWidget && (
-            <WidgetGalleryDialog
-              open={widgetGalleryOpen}
-              onOpenChange={setWidgetGalleryOpen}
-              widgets={widgets}
-              toggleWidget={toggleWidget}
-            />
-          )}
+          <WidgetGalleryDialog
+            open={widgetGalleryOpen}
+            onOpenChange={setWidgetGalleryOpen}
+            widgets={widgets || []}
+            toggleWidget={toggleWidget || (() => {})}
+          />
         </nav>
       </div>
     </div>

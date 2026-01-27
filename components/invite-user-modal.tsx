@@ -415,9 +415,9 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
             {/* Function Selection */}
             <div className="space-y-2">
-              <Label>Functions & Sections *</Label>
+              <Label>Functions & Sections (Optional - leave empty for full access)</Label>
               <div className="text-xs text-muted-foreground mb-2">
-                Select functions and specific sections within each function. Expand to see sub-sections.
+                Select functions and specific sections within each function. Expand to see sub-sections. If no sections are selected, the user will have full access.
               </div>
               <div className="border rounded-md max-h-64 overflow-y-auto p-2 space-y-1">
                 {AVAILABLE_FUNCTIONS.map((func) => {
@@ -631,7 +631,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                 The invitation will expire in 7 days.
                 <br />
                 <span className="block mt-1 text-amber-600">
-                  ⚠️ Access is granted based on selected functions and sections. User will only see and access the selected areas.
+                  ⚠️ If you select functions and sections, access is limited to those areas. If no sections are selected, the user will have full access to all functions.
                 </span>
               </p>
             </div>
@@ -646,7 +646,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || success || !formData.email || selectedSectionsCount === 0}>
+            <Button type="submit" disabled={loading || success || !formData.email || !formData.role}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

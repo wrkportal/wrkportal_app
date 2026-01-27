@@ -24,8 +24,52 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const department = searchParams.get('department')
 
-    // Use User model for employees
-    const where: any = { tenantId, status: 'ACTIVE' }
+    // Get all accepted invitations for this tenant to find users who joined via invitation
+    const acceptedInvitations = await prisma.tenantInvitation.findMany({
+      where: {
+        tenantId,
+        status: 'ACCEPTED',
+      },
+      select: {
+        email: true,
+      },
+    })
+    const invitedEmails = Array.from(new Set(acceptedInvitations.map(inv => inv.email.toLowerCase())))
+
+    // Find users who:
+    // 1. Belong to this tenant
+    // 2. Have an accepted invitation for this tenant (joined via invitation), OR
+    // 3. Were manually added via recruitment system (have department set)
+    const where: any = {
+      tenantId,
+      status: 'ACTIVE',
+      OR: [
+        // Users who accepted an invitation to this tenant
+        ...(invitedEmails.length > 0 ? [{
+          email: {
+            in: invitedEmails,
+          },
+        }] : []),
+        // Users manually added via recruitment (have department set)
+        {
+          department: {
+            not: null,
+          },
+        },
+      ],
+    }
+    
+    // If no invited emails, only show manually added users
+    if (invitedEmails.length === 0) {
+      where.OR = [
+        {
+          department: {
+            not: null,
+          },
+        },
+      ]
+    }
+
     if (department && department !== 'all') {
       where.department = department
     }

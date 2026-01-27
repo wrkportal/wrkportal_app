@@ -554,6 +554,14 @@ export default function ITDashboardPage() {
 
   const onLayoutChange = (layout: Layout[], layouts: Layouts) => {
     setLayouts(layouts)
+    // Save to localStorage immediately to persist across navigation
+    if (typeof window !== 'undefined' && !isInitialMount) {
+      try {
+        localStorage.setItem('it-dashboard-layouts', JSON.stringify(layouts))
+      } catch (error) {
+        console.error('Error saving layouts to localStorage:', error)
+      }
+    }
   }
 
   const [recentTickets, setRecentTickets] = useState<any[]>([])
