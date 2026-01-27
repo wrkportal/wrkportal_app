@@ -42,15 +42,29 @@ export function FinanceNavBar({ widgets, toggleWidget, widgetGalleryOpen: extern
   ]
 
   return (
-    <div className="border-b border-border bg-background sticky top-16 z-20 shadow-lg -mx-0" style={{ width: 'calc(100% + 0px)', marginLeft: 0, marginRight: 0, left: 0 }}>
-      <div className={`pr-4 lg:pr-8 ${isWrkboard ? 'py-1' : ''}`}>
-        <nav className="flex items-center gap-1 text-sm">
+    <div className="border-b border-border bg-background sticky top-16 z-20 shadow-lg -mx-0 h-12" style={{ width: 'calc(100% + 0px)', marginLeft: 0, marginRight: 0, left: 0 }}>
+      <div className={`pr-4 lg:pr-8 h-full ${isWrkboard ? 'py-1' : ''}`}>
+        <nav className="flex items-center gap-1 text-sm h-full">
           {/* Title on the left - removed */}
 
           {/* Navigation tabs - hidden on wrkboard */}
           {!isWrkboard && navItems.map((item) => {
             // Each tab is only active when on its specific page
-            const isActive = item.href === pathname
+            // Dashboard tab should be active when on any functional tab (first time user)
+            let isActive = false
+            if (item.href === '/finance-dashboard/dashboard') {
+              // Dashboard is active when on dashboard OR when on any other functional tab
+              const isOnFunctionalTab = pathname.startsWith('/workflows/finance/') || 
+                                       (pathname.startsWith('/finance-dashboard/') && 
+                                        pathname !== '/finance-dashboard' && 
+                                        pathname !== '/finance-dashboard/dashboard')
+              isActive = pathname === '/finance-dashboard' ||
+                        pathname === '/finance-dashboard/' ||
+                        pathname === '/finance-dashboard/dashboard' ||
+                        isOnFunctionalTab
+            } else {
+              isActive = item.href === pathname || pathname.startsWith(item.href + '/')
+            }
             const Icon = item.icon
 
             return (
@@ -58,7 +72,7 @@ export function FinanceNavBar({ widgets, toggleWidget, widgetGalleryOpen: extern
                 key={item.label}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 whitespace-nowrap transition-colors border-b-2 border-transparent",
+                  "flex items-center gap-2 px-4 h-full whitespace-nowrap transition-colors border-b-2 border-transparent",
                   isActive
                     ? "text-[#ff751f] border-[#ff751f] font-medium"
                     : "text-muted-foreground hover:text-foreground"

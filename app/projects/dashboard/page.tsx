@@ -93,7 +93,7 @@ function ProjectDashboardInner() {
   const [taskPriorityFilter, setTaskPriorityFilter] = useState<string>('ALL')
   const [taskDueDateFilter, setTaskDueDateFilter] = useState<string>('ALL')
   const [showTaskFilters, setShowTaskFilters] = useState(false)
-  const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar'>('calendar')
+  const [taskViewMode, setTaskViewMode] = useState<'list' | 'calendar' | 'gantt'>('gantt')
   const [calendarDate, setCalendarDate] = useState(new Date())
 
   // Widget configuration - workflow-aware
@@ -423,9 +423,8 @@ function ProjectDashboardInner() {
       // If My Tasks widget is being added (turned visible), set Gantt view as default
       const myTasksWidget = updated.find(w => w.id === 'myTasks')
       if (myTasksWidget && myTasksWidget.visible && !prev.find(w => w.id === 'myTasks')?.visible) {
-        // Widget was just added - set to gantt view if available, otherwise keep calendar
-        // Note: My Tasks currently only supports 'list' and 'calendar', so keeping calendar as default
-        // If Gantt view is added later, change this to 'gantt'
+        // Widget was just added - set to gantt view as default
+        setTaskViewMode('gantt')
       }
       return updated
     })
@@ -936,19 +935,37 @@ function ProjectDashboardInner() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setTaskViewMode(taskViewMode === 'list' ? 'calendar' : 'list')}
+                    onClick={() => {
+                      // Cycle through: gantt -> list -> calendar -> gantt
+                      if (taskViewMode === 'gantt') {
+                        setTaskViewMode('list')
+                      } else if (taskViewMode === 'list') {
+                        setTaskViewMode('calendar')
+                      } else {
+                        setTaskViewMode('gantt')
+                      }
+                    }}
                     className="text-xs"
-                    title={taskViewMode === 'list' ? 'Switch to Calendar View' : 'Switch to List View'}
+                    title={
+                      taskViewMode === 'gantt' ? 'Switch to List View' :
+                      taskViewMode === 'list' ? 'Switch to Calendar View' :
+                      'Switch to Gantt View'
+                    }
                   >
-                    {taskViewMode === 'list' ? (
+                    {taskViewMode === 'gantt' ? (
                       <>
-                        <Calendar className="h-3 w-3 md:h-4 md:w-4" />
-                        <span className="hidden lg:inline ml-1">Calendar</span>
+                        <BarChart3 className="h-3 w-3 md:h-4 md:w-4" />
+                        <span className="hidden lg:inline ml-1">Gantt</span>
                       </>
-                    ) : (
+                    ) : taskViewMode === 'list' ? (
                       <>
                         <List className="h-3 w-3 md:h-4 md:w-4" />
                         <span className="hidden lg:inline ml-1">List</span>
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                        <span className="hidden lg:inline ml-1">Calendar</span>
                       </>
                     )}
                   </Button>
@@ -1055,7 +1072,89 @@ function ProjectDashboardInner() {
               )}
             </CardHeader>
             <CardContent className="flex-1 overflow-auto pt-4">
-              {taskViewMode === 'list' ? (
+              {taskViewMode === 'gantt' ? (
+                /* Gantt View */
+                <div className="h-full">
+                  {filteredTasks.length > 0 ? (
+                    <div className="space-y-2">
+                      {filteredTasks.map((task) => {
+                        const startDate = task.startDate ? new Date(task.startDate) : new Date()
+                        const dueDate = task.dueDate ? new Date(task.dueDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                        const duration = Math.max(1, Math.ceil((dueDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+                        
+                        return (
+                          <div
+                            key={task.id}
+                            className="flex items-center gap-3 p-2 border rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                            onClick={() => {
+                              if (!router) {
+                                console.error('[ProjectDashboard] Router not available')
+                                return
+                              }
+                              router.push(`/tasks/${task.id}`)
+                            }}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{task.title}</p>
+                              {task.project && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {task.project.name}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                {task.status}
+                              </Badge>
+                              <Badge variant={task.priority === 'HIGH' || task.priority === 'CRITICAL' ? 'destructive' : task.priority === 'MEDIUM' ? 'secondary' : 'default'} className="text-[10px] px-1.5 py-0">
+                                {task.priority}
+                              </Badge>
+                              <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                {startDate.toLocaleDateString()} - {dueDate.toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : userTasks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                      <CheckCircle2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                      <p className="text-sm text-muted-foreground mb-2">No tasks yet</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (!router) {
+                            console.error('[ProjectDashboard] Router not available')
+                            return
+                          }
+                          router.push('/tasks/new')
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Create Your First Task
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                      <Filter className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                      <p className="text-sm text-muted-foreground mb-2">No tasks match your filters</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setTaskStatusFilter('ALL')
+                          setTaskPriorityFilter('ALL')
+                          setTaskDueDateFilter('ALL')
+                        }}
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : taskViewMode === 'list' ? (
                 <div className="space-y-3">
                   {filteredTasks.length > 0 ? (
                     filteredTasks.map((task) => (

@@ -46,12 +46,15 @@ export function ProductManagementNavBar({ widgets, toggleWidget }: ProductManage
             // Dashboard tab should be active when on any functional tab (like developer section)
             let isActive = false
             if (item.href === '/product-management/dashboard') {
-              // Dashboard is active when on dashboard OR when on any other functional tab
+              // Dashboard is active when on dashboard OR when on any other functional tab (first time user)
+              // Check if we're on a functional tab (not dashboard itself)
+              const isOnFunctionalTab = pathname.startsWith('/product-management/') && 
+                                       pathname !== '/product-management/dashboard' &&
+                                       pathname !== '/product-management'
               isActive = pathname === '/product-management/dashboard' || 
                         pathname === '/product-management' ||
                         pathname === '/product-management/' ||
-                        (pathname.startsWith('/product-management/') && 
-                         !pathname.startsWith('/product-management/dashboard'))
+                        isOnFunctionalTab
             } else if (item.href === '/product-management') {
               isActive = pathname === '/product-management'
             } else {

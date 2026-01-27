@@ -171,12 +171,8 @@ export function Header() {
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
-                    {/* Invite Button - + icon */}
-                    {user && canInviteUsers(
-                        WorkspaceType.ORGANIZATION,
-                        user?.role as UserRole,
-                        user?.groupRole as GroupRole | undefined
-                    ) && (
+                    {/* Invite Button - + icon - Show for all logged-in users, API will handle permissions */}
+                    {user && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
