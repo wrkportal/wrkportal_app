@@ -218,6 +218,8 @@ export async function GET(req: NextRequest) {
     
     // Handle database model not found errors gracefully
     if (error.code === 'P2001' || 
+        error.code === 'P2021' || // Table does not exist
+        error.code === 'P2022' || // Column does not exist
         error.message?.includes('does not exist') || 
         error.message?.includes('Unknown model') ||
         error.message?.includes('Call')) {

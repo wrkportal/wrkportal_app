@@ -112,9 +112,22 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    })
+    let existingUser
+    try {
+      existingUser = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+      })
+    } catch (error: any) {
+      // Handle case where User table or columns might not exist
+      if (error.code === 'P2021' || error.code === 'P2022' || 
+          error.message?.includes('does not exist') ||
+          error.message?.includes('column')) {
+        console.warn('User table or column not available, proceeding with invitation')
+        existingUser = null
+      } else {
+        throw error
+      }
+    }
 
     if (existingUser) {
       if (existingUser.tenantId === user.tenantId) {
