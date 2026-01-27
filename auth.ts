@@ -113,6 +113,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const emailLower = email.toLowerCase()
         const domain = emailLower.split('@')[1]
+        
+        // Import domain utilities to check if it's a public domain
+        const { isPublicDomain, extractDomain } = await import('@/lib/domain-utils')
+        const isPublic = isPublicDomain(emailLower)
 
         const toVerifyRedirect = (reason: 'new' | 'unverified') => {
           const qs = new URLSearchParams({
@@ -166,47 +170,82 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // STEP 1: DB connection test
           await withRetry(() => prisma.$queryRaw`SELECT 1 as test`, 'Database Connection Test', 3, 1000)
 
-          // STEP 2: Get or create tenant (your logic preserved)
-          let tenant = await withRetry(
-            () =>
-              prisma.tenant.findFirst({
-                where: { domain },
-                select: { id: true, name: true },
-              }),
-            'Find Tenant',
-            3,
-            1000
-          )
-
+          // STEP 2: Get or create tenant
+          // SECURITY: Public domains (Gmail, Yahoo, etc.) get separate tenants
+          // Corporate domains share a tenant
+          let tenant = null
           let userRole: 'ORG_ADMIN' | 'TEAM_MEMBER' = 'TEAM_MEMBER'
 
-          if (!tenant) {
-            console.log('[OAuth] Tenant not found, creating...')
+          if (isPublic) {
+            // Public domain: Each user gets their own tenant (domain = null)
+            // This prevents Gmail users from seeing each other's data
+            console.log('[OAuth] Public domain detected, creating individual tenant for user')
             tenant = await withRetry(
               async () => {
                 const tenantName = `${(profile as any).name || email}'s Organization`
                 const tenantId = `cl${Date.now()}${Math.random().toString(36).substring(2, 11)}`
 
+                // Create tenant with domain = null for public emails
                 await prisma.$executeRaw`
-                  INSERT INTO "Tenant" (id, name, domain, "createdAt", "updatedAt")
-                  VALUES (${tenantId}, ${tenantName}, ${domain}, NOW(), NOW())
-                  ON CONFLICT (domain) DO NOTHING
+                  INSERT INTO "Tenant" (id, name, domain, "type", "createdAt", "updatedAt")
+                  VALUES (${tenantId}, ${tenantName}, NULL, 'ORGANIZATION', NOW(), NOW())
                 `
 
-                const created = await prisma.tenant.findFirst({
-                  where: { domain },
+                const created = await prisma.tenant.findUnique({
+                  where: { id: tenantId },
                   select: { id: true, name: true },
                 })
 
-                if (!created) throw new Error('Failed to create or find tenant after insert')
+                if (!created) throw new Error('Failed to create tenant after insert')
                 return created
               },
-              'Create Tenant',
+              'Create Individual Tenant',
               3,
               1000
             )
 
             userRole = 'ORG_ADMIN'
+          } else {
+            // Corporate/private domain: Group users by domain
+            tenant = await withRetry(
+              () =>
+                prisma.tenant.findFirst({
+                  where: { domain },
+                  select: { id: true, name: true },
+                }),
+              'Find Tenant',
+              3,
+              1000
+            )
+
+            if (!tenant) {
+              console.log('[OAuth] Corporate domain tenant not found, creating...')
+              tenant = await withRetry(
+                async () => {
+                  const tenantName = `${domain} Organization`
+                  const tenantId = `cl${Date.now()}${Math.random().toString(36).substring(2, 11)}`
+
+                  await prisma.$executeRaw`
+                    INSERT INTO "Tenant" (id, name, domain, "type", "createdAt", "updatedAt")
+                    VALUES (${tenantId}, ${tenantName}, ${domain}, 'ORGANIZATION', NOW(), NOW())
+                    ON CONFLICT (domain) DO NOTHING
+                  `
+
+                  const created = await prisma.tenant.findFirst({
+                    where: { domain },
+                    select: { id: true, name: true },
+                  })
+
+                  if (!created) throw new Error('Failed to create or find tenant after insert')
+                  return created
+                },
+                'Create Corporate Tenant',
+                3,
+                1000
+              )
+
+              userRole = 'ORG_ADMIN'
+            }
           }
 
           // STEP 3: Check user
