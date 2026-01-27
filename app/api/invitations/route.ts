@@ -55,8 +55,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user with tenant information to check permissions
-    let user
+    // Try minimal query first, then fall back to session data if columns don't exist
+    let user: any = null
+    let tenantType: WorkspaceType = 'ORGANIZATION' // Default fallback
+    let userRole: UserRole = session.user.role as UserRole
+    let groupRole: GroupRole | undefined = undefined
+    
     try {
+      // First try with all fields
       user = await prisma.user.findUnique({
         where: { id: session.user.id },
         select: {
@@ -72,12 +78,55 @@ export async function POST(req: NextRequest) {
           },
         },
       })
+      
+      if (user) {
+        tenantType = (user.tenant?.type as WorkspaceType) || 'ORGANIZATION'
+        userRole = user.role as UserRole
+        groupRole = user.groupRole as GroupRole | undefined
+      }
     } catch (error: any) {
-      // Handle case where User table or columns might not exist
-      if (error.code === 'P2021' || error.code === 'P2022' || 
-          error.message?.includes('does not exist') ||
-          error.message?.includes('column')) {
-        console.warn('User table or column not available, cannot check permissions for invitation')
+      // If query fails due to missing columns, try minimal query
+      if (error.code === 'P2022' || error.message?.includes('column')) {
+        console.warn('Some columns missing, trying minimal query:', error.message)
+        try {
+          // Try with just essential fields
+          user = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: {
+              id: true,
+              role: true,
+              tenantId: true,
+            },
+          })
+          
+          if (user) {
+            userRole = user.role as UserRole
+            // Try to get tenant type separately
+            try {
+              const tenant = await prisma.tenant.findUnique({
+                where: { id: user.tenantId },
+                select: { type: true },
+              })
+              tenantType = (tenant?.type as WorkspaceType) || 'ORGANIZATION'
+            } catch (tenantError: any) {
+              console.warn('Could not fetch tenant type, using default')
+              tenantType = 'ORGANIZATION'
+            }
+          }
+        } catch (minimalError: any) {
+          // If even minimal query fails, use session data
+          console.warn('Minimal query also failed, using session data:', minimalError.message)
+          user = {
+            id: session.user.id,
+            tenantId: session.user.tenantId,
+            role: session.user.role,
+          }
+          userRole = session.user.role as UserRole
+          tenantType = 'ORGANIZATION' // Default fallback
+        }
+      } else if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+        // Table doesn't exist at all
+        console.warn('User table not available, cannot check permissions for invitation')
         return NextResponse.json(
           { 
             error: 'User data unavailable for permission check. Please contact support.',
@@ -86,20 +135,21 @@ export async function POST(req: NextRequest) {
           },
           { status: 503 }
         )
+      } else {
+        throw error
       }
-      throw error
     }
 
-    if (!user || !user.tenant) {
+    if (!user || !user.tenantId) {
       return NextResponse.json({ error: 'User or tenant not found' }, { status: 404 })
     }
 
     // Check if user has permission to invite using the permission function
     // This allows first-time users who created their own tenant to invite
     const hasInvitePermission = canInviteUsers(
-      user.tenant.type as WorkspaceType,
-      user.role as UserRole,
-      user.groupRole as GroupRole | undefined
+      tenantType,
+      userRole,
+      groupRole
     )
 
     if (!hasInvitePermission) {
@@ -149,7 +199,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (existingUser) {
-      if (existingUser.tenantId === user.tenantId) {
+      if (existingUser.tenantId === user.tenantId || existingUser.tenantId === session.user.tenantId) {
         return NextResponse.json(
           { error: 'User is already a member of this organization' },
           { status: 400 }
@@ -167,7 +217,7 @@ export async function POST(req: NextRequest) {
     try {
       existingInvitation = await prisma.tenantInvitation.findFirst({
         where: {
-          tenantId: user.tenantId,
+          tenantId: user.tenantId || session.user.tenantId,
           email: email.toLowerCase(),
           status: 'PENDING',
         },
@@ -197,11 +247,11 @@ export async function POST(req: NextRequest) {
     // Create invitation (expires in 7 days)
     // Store allowedSections and additional security settings as JSON
     const invitationData: any = {
-      tenantId: user.tenantId,
+      tenantId: user.tenantId || session.user.tenantId,
       email: email.toLowerCase(),
       token,
       role: role as UserRole,
-      invitedById: user.id,
+      invitedById: user.id || session.user.id,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       allowedSections: allowedSections && Array.isArray(allowedSections) 
         ? JSON.stringify(allowedSections) 
