@@ -153,7 +153,19 @@ export async function POST(req: NextRequest) {
     )
 
     if (!hasInvitePermission) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      console.warn('[Invitations] Permission denied:', {
+        tenantType,
+        userRole,
+        groupRole,
+        userId: user.id,
+      })
+      return NextResponse.json(
+        { 
+          error: 'You do not have permission to invite users. Only organization admins and workspace owners can send invitations.',
+          code: 'FORBIDDEN'
+        },
+        { status: 403 }
+      )
     }
 
     const body = await req.json()

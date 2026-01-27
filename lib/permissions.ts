@@ -253,17 +253,28 @@ export function canInviteUsers(
   role?: UserRole,
   groupRole?: GroupRole
 ): boolean {
+  // If no role provided, default to false for security
+  if (!role && !groupRole) {
+    return false
+  }
+
   if (workspaceType === WorkspaceType.ORGANIZATION) {
-    return [
+    // For organizations, allow admins and super admins
+    const allowedRoles = [
       UserRole.PLATFORM_OWNER,
       UserRole.TENANT_SUPER_ADMIN,
       UserRole.ORG_ADMIN,
-    ].includes(role || UserRole.TEAM_MEMBER)
+    ]
+    // Also allow users who created their own tenant (they should be able to invite)
+    // If role is ORG_ADMIN (set when user creates tenant), allow it
+    return role ? allowedRoles.includes(role) : false
   } else {
-    return [
+    // For groups, check groupRole
+    const allowedGroupRoles = [
       GroupRole.OWNER,
       GroupRole.ADMIN,
-    ].includes(groupRole || GroupRole.MEMBER)
+    ]
+    return groupRole ? allowedGroupRoles.includes(groupRole) : false
   }
 }
 
