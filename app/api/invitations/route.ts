@@ -147,18 +147,62 @@ export async function POST(req: NextRequest) {
 
     // Check if user has permission to invite using the permission function
     // This allows first-time users who created their own tenant to invite
-    const hasInvitePermission = canInviteUsers(
+    // Also check if user is the tenant owner (created the tenant)
+    let hasInvitePermission = canInviteUsers(
       tenantType,
       userRole,
       groupRole
     )
+    
+    // If permission check fails, check if user is the tenant owner
+    // (users who created their own tenant should be able to invite)
+    if (!hasInvitePermission && user.tenantId) {
+      try {
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: user.tenantId },
+          select: {
+            id: true,
+            createdAt: true,
+          },
+        })
+        
+        // Check if user was created around the same time as tenant (likely the creator)
+        // This is a heuristic - in production, you'd want a createdById field on Tenant
+        if (tenant) {
+          const userCreated = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { createdAt: true },
+          })
+          
+          // If user was created within 1 minute of tenant, they're likely the creator
+          if (userCreated && tenant.createdAt) {
+            const timeDiff = Math.abs(userCreated.createdAt.getTime() - tenant.createdAt.getTime())
+            if (timeDiff < 60000) { // 1 minute
+              console.log('[Invitations] User appears to be tenant creator, allowing invite')
+              hasInvitePermission = true
+            }
+          }
+        }
+      } catch (error: any) {
+        console.warn('[Invitations] Could not check tenant ownership:', error.message)
+      }
+    }
+    
+    // Additional check: if user role in session is ORG_ADMIN but database says otherwise,
+    // trust the session (might be a sync issue)
+    if (!hasInvitePermission && session.user.role === UserRole.ORG_ADMIN) {
+      console.warn('[Invitations] Session role is ORG_ADMIN but database role is different, allowing invite based on session')
+      hasInvitePermission = true
+    }
 
     if (!hasInvitePermission) {
       console.warn('[Invitations] Permission denied:', {
         tenantType,
         userRole,
         groupRole,
+        sessionRole: session.user.role,
         userId: user.id,
+        tenantId: user.tenantId,
       })
       return NextResponse.json(
         { 

@@ -172,6 +172,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           // STEP 2: Check for pending invitation first
           // This allows Gmail users to join existing tenants via invitation
+          // CRITICAL: This check must happen BEFORE tenant creation to prevent duplicate tenants
           let pendingInvitation = null
           try {
             pendingInvitation = await prisma.tenantInvitation.findFirst({
@@ -189,21 +190,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 },
               },
             })
+            
+            if (pendingInvitation) {
+              console.log('[OAuth] ✅ Pending invitation found for:', emailLower, 'Tenant:', pendingInvitation.tenant.name)
+            } else {
+              console.log('[OAuth] No pending invitation found for:', emailLower)
+            }
           } catch (error: any) {
-            console.warn('[OAuth] Could not check for invitations:', error.message)
-            // Continue without invitation check if table doesn't exist
+            // If TenantInvitation table doesn't exist, log but continue
+            // This should not prevent user signup
+            if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+              console.warn('[OAuth] TenantInvitation table does not exist, skipping invitation check')
+            } else {
+              console.error('[OAuth] Error checking for invitations:', error.message)
+              // Don't throw - continue without invitation check
+            }
           }
 
           // STEP 3: Get or create tenant
           // SECURITY: Public domains (Gmail, Yahoo, etc.) get separate tenants
           // Corporate domains share a tenant
-          // EXCEPTION: If user has a pending invitation, use that tenant
+          // CRITICAL: If user has a pending invitation, ALWAYS use that tenant (don't create new one)
           let tenant = null
           let userRole: 'ORG_ADMIN' | 'TEAM_MEMBER' = 'TEAM_MEMBER'
 
           if (pendingInvitation) {
             // User has a pending invitation - join the invited tenant
-            console.log('[OAuth] Pending invitation found, joining invited tenant:', pendingInvitation.tenant.name)
+            // This takes precedence over public domain check to prevent duplicate tenants
+            console.log('[OAuth] ✅ Using invited tenant (invitation takes precedence):', pendingInvitation.tenant.name)
             tenant = pendingInvitation.tenant
             userRole = pendingInvitation.role as 'ORG_ADMIN' | 'TEAM_MEMBER'
             
@@ -343,7 +357,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   tenantId: tenant!.id,
                   role: userRole,
                   emailVerified: null, // require verification
-                  allowedSections: pendingInvitation?.allowedSections || null, // Use invitation's allowed sections if available
+                  // Store allowedSections from invitation if available
+                  // Parse JSON string if needed, or use as-is if already parsed
+                  allowedSections: pendingInvitation?.allowedSections 
+                    ? (typeof pendingInvitation.allowedSections === 'string' 
+                        ? pendingInvitation.allowedSections 
+                        : JSON.stringify(pendingInvitation.allowedSections))
+                    : null,
                 } as any,
               }),
             'Create User',
@@ -372,12 +392,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                   invitationId: pendingInvitation.id,
                 })
                 
+                // Parse allowedSections from invitation if it's a JSON string
+                let allowedSectionsValue = pendingInvitation.allowedSections
+                if (allowedSectionsValue && typeof allowedSectionsValue === 'string') {
+                  try {
+                    // Try to parse - if it's already valid JSON, keep it as string
+                    // If it's an object with sections, extract the sections array
+                    const parsed = JSON.parse(allowedSectionsValue)
+                    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.sections)) {
+                      // Store as JSON string with sections array
+                      allowedSectionsValue = JSON.stringify(parsed.sections)
+                    } else if (Array.isArray(parsed)) {
+                      // Already an array, keep as JSON string
+                      allowedSectionsValue = allowedSectionsValue
+                    } else {
+                      // Invalid format, store as empty array
+                      allowedSectionsValue = JSON.stringify([])
+                    }
+                  } catch (e) {
+                    // Not valid JSON, treat as empty
+                    console.warn('[OAuth] Invalid allowedSections format in invitation, using empty array')
+                    allowedSectionsValue = JSON.stringify([])
+                  }
+                } else if (!allowedSectionsValue) {
+                  // No allowedSections specified - store as empty array (no access)
+                  allowedSectionsValue = JSON.stringify([])
+                }
+                
                 await (prisma as any).userTenantAccess.create({
                   data: {
                     userId: createdUser.id,
                     tenantId: pendingInvitation.tenant.id,
                     role: pendingInvitation.role,
-                    allowedSections: pendingInvitation.allowedSections,
+                    allowedSections: allowedSectionsValue,
                     invitedById: pendingInvitation.invitedById,
                     invitationId: pendingInvitation.id,
                     isActive: true, // This is the tenant they're joining

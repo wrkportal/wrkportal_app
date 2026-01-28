@@ -85,6 +85,57 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Get active tenant access info (for current tenant)
+    const activeTenantId = session.user.tenantId || user.tenantId
+    let activeTenantAccess: any = null
+    
+    try {
+      // Check if current tenant has UserTenantAccess record (for invited users)
+      if (activeTenantId !== user.tenantId) {
+        // User is accessing a different tenant via UserTenantAccess
+        const access = await (prisma as any).userTenantAccess.findUnique({
+          where: {
+            userId_tenantId: {
+              userId: session.user.id,
+              tenantId: activeTenantId,
+            },
+          },
+          select: {
+            id: true,
+            role: true,
+            groupRole: true,
+            allowedSections: true,
+            invitationId: true,
+            isActive: true,
+          },
+        })
+        activeTenantAccess = access
+      } else {
+        // Check if primary tenant has UserTenantAccess record (user might have been invited to their own tenant)
+        const access = await (prisma as any).userTenantAccess.findFirst({
+          where: {
+            userId: session.user.id,
+            tenantId: user.tenantId,
+            invitationId: { not: null }, // Only if they were invited
+          },
+          select: {
+            id: true,
+            role: true,
+            groupRole: true,
+            allowedSections: true,
+            invitationId: true,
+            isActive: true,
+          },
+        })
+        activeTenantAccess = access
+      }
+    } catch (error: any) {
+      // UserTenantAccess table might not exist
+      if (error.code !== 'P2021' && !error.message?.includes('does not exist')) {
+        console.error('[UserTenants] Error fetching active tenant access:', error.message)
+      }
+    }
+
     // Combine primary tenant with additional tenants
     const allTenants = [
       {
@@ -105,11 +156,13 @@ export async function GET(req: NextRequest) {
       primaryTenant: { id: user.tenant.id, name: user.tenant.name },
       additionalCount: additionalTenants.length,
       activeTenantId: session.user.tenantId || user.tenantId,
+      hasActiveTenantAccess: !!activeTenantAccess,
     })
 
     return NextResponse.json({
       tenants: allTenants,
       activeTenantId: session.user.tenantId || user.tenantId,
+      activeTenantAccess: activeTenantAccess, // Include active tenant access info
     })
   } catch (error: any) {
     console.error('Error fetching user tenants:', error)

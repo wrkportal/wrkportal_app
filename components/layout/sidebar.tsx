@@ -1150,17 +1150,76 @@ export function Sidebar() {
     const isSuperUser = user?.email === 'sandeep200680@gmail.com' || user?.email?.includes('sandeep200680@gmail')
 
     // Parse allowed sections from user (stored as JSON string or null)
-    let allowedSections: string[] | null = null
-    if (user && (user as any).allowedSections) {
-        try {
-            const parsed = typeof (user as any).allowedSections === 'string' 
-                ? JSON.parse((user as any).allowedSections) 
-                : (user as any).allowedSections
-            allowedSections = Array.isArray(parsed) ? parsed : null
-        } catch (e) {
-            allowedSections = null
+    // For invited users, check UserTenantAccess record instead of User.allowedSections
+    const [allowedSections, setAllowedSections] = useState<string[] | null>(null)
+    const [isInvitedUser, setIsInvitedUser] = useState(false)
+    
+    useEffect(() => {
+        if (!user) return
+        
+        // Fetch allowedSections from UserTenantAccess (for invited users)
+        const fetchAllowedSections = async () => {
+            try {
+                const response = await fetch('/api/user/tenants')
+                if (response.ok) {
+                    const data = await response.json()
+                    // Check if current tenant has UserTenantAccess record with invitationId
+                    if (data.activeTenantAccess && data.activeTenantAccess.invitationId) {
+                        setIsInvitedUser(true)
+                        if (data.activeTenantAccess.allowedSections) {
+                            try {
+                                const parsed = typeof data.activeTenantAccess.allowedSections === 'string'
+                                    ? JSON.parse(data.activeTenantAccess.allowedSections)
+                                    : data.activeTenantAccess.allowedSections
+                                
+                                // Handle both formats: array of strings or object with sections array
+                                if (Array.isArray(parsed)) {
+                                    setAllowedSections(parsed)
+                                } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.sections)) {
+                                    setAllowedSections(parsed.sections)
+                                } else {
+                                    setAllowedSections([]) // Invited user with invalid format = no access
+                                }
+                            } catch (e) {
+                                console.warn('Failed to parse allowedSections from UserTenantAccess:', e)
+                                setAllowedSections([]) // Invited user with invalid allowedSections = no access
+                            }
+                        } else {
+                            // Invited user but no allowedSections specified = no access
+                            setAllowedSections([])
+                        }
+                        return // Don't fall through to User.allowedSections
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to fetch UserTenantAccess:', e)
+            }
+            
+            // Fallback to User.allowedSections if not found in UserTenantAccess
+            if ((user as any).allowedSections) {
+                try {
+                    const parsed = typeof (user as any).allowedSections === 'string' 
+                        ? JSON.parse((user as any).allowedSections) 
+                        : (user as any).allowedSections
+                    
+                    // Handle both formats: array of strings or object with sections array
+                    if (Array.isArray(parsed)) {
+                        setAllowedSections(parsed)
+                    } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.sections)) {
+                        setAllowedSections(parsed.sections)
+                    } else {
+                        setAllowedSections(null) // Not an invited user, full access
+                    }
+                } catch (e) {
+                    setAllowedSections(null) // Not an invited user, full access
+                }
+            } else {
+                setAllowedSections(null) // Not an invited user, full access
+            }
         }
-    }
+        
+        fetchAllowedSections()
+    }, [user])
 
     // Map section titles to hrefs for permission checking
     const sectionMap: Record<string, string> = {
@@ -1177,6 +1236,12 @@ export function Sidebar() {
     const filteredItems = navigationItems.filter((item) => {
         // Super user sees everything
         if (isSuperUser) return true
+        
+        // If user was invited (has invitationId), they must have allowedSections set
+        // If allowedSections is null for invited user, treat as empty (no access)
+        if (isInvitedUser && allowedSections === null) {
+            allowedSections = [] // Treat as no access
+        }
         
         // If allowedSections is null, user has full access (first-time signup or self-joined user)
         // Show all sections regardless of role

@@ -440,12 +440,37 @@ export async function POST(request: Request) {
             invitationId: invitation.id,
           })
           
+          // Parse allowedSections from invitation if it's a JSON string
+          let allowedSectionsValue = invitation.allowedSections
+          if (allowedSectionsValue && typeof allowedSectionsValue === 'string') {
+            try {
+              const parsed = JSON.parse(allowedSectionsValue)
+              if (parsed && typeof parsed === 'object' && Array.isArray(parsed.sections)) {
+                // Store as JSON string with sections array
+                allowedSectionsValue = JSON.stringify(parsed.sections)
+              } else if (Array.isArray(parsed)) {
+                // Already an array, keep as JSON string
+                allowedSectionsValue = allowedSectionsValue
+              } else {
+                // Invalid format, store as empty array
+                allowedSectionsValue = JSON.stringify([])
+              }
+            } catch (e) {
+              // Not valid JSON, treat as empty
+              console.warn('[Signup] Invalid allowedSections format in invitation, using empty array')
+              allowedSectionsValue = JSON.stringify([])
+            }
+          } else if (!allowedSectionsValue) {
+            // No allowedSections specified - store as empty array (no access)
+            allowedSectionsValue = JSON.stringify([])
+          }
+          
           await (prisma as any).userTenantAccess.create({
             data: {
               userId: user.id,
               tenantId: invitation.tenantId,
               role: invitation.role,
-              allowedSections: invitation.allowedSections,
+              allowedSections: allowedSectionsValue,
               invitedById: invitation.invitedById,
               invitationId: invitation.id,
               isActive: true, // This is their primary tenant
