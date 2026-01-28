@@ -1233,32 +1233,31 @@ export function Sidebar() {
         'Recruitment': '/recruitment-dashboard',
     }
 
+    // Determine effective allowedSections (handle invited users with null)
+    const effectiveAllowedSections = isInvitedUser && allowedSections === null 
+        ? [] // Invited user with null = no access
+        : allowedSections // Otherwise use the actual value
+
     const filteredItems = navigationItems.filter((item) => {
         // Super user sees everything
         if (isSuperUser) return true
         
-        // If user was invited (has invitationId), they must have allowedSections set
-        // If allowedSections is null for invited user, treat as empty (no access)
-        if (isInvitedUser && allowedSections === null) {
-            allowedSections = [] // Treat as no access
-        }
-        
         // If allowedSections is null, user has full access (first-time signup or self-joined user)
         // Show all sections regardless of role
-        if (allowedSections === null) {
+        if (effectiveAllowedSections === null) {
             return true
         }
         
         // If user has allowedSections set (not null), check if this section is allowed
         // If allowedSections is empty array, user has no access
-        if (allowedSections.length === 0) {
+        if (effectiveAllowedSections.length === 0) {
             // Only show wrkboard and collaborate
             return item.title === 'wrkboard' || item.title === 'Collaborate'
         }
         
         // Check if this section is in the allowed list
         // Handle both formats: "Finance" and "Finance:Dashboard"
-        const isAllowed = allowedSections.some((section: string) => {
+        const isAllowed = effectiveAllowedSections.some((section: string) => {
           // Direct match (e.g., "Finance" === "Finance")
           if (section === item.title) return true
           // Format match (e.g., "Finance:Dashboard" starts with "Finance:")
