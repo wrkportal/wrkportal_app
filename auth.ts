@@ -255,7 +255,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             console.log('[OAuth] Public domain detected, creating individual tenant for new user')
             tenant = await withRetry(
               async () => {
-                const tenantName = `${(profile as any).name || email}'s Organization`
+                const tenantName = (profile as any).name || email
                 const tenantId = `cl${Date.now()}${Math.random().toString(36).substring(2, 11)}`
 
                 // Create tenant with domain = null for public emails
@@ -295,7 +295,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               console.log('[OAuth] Corporate domain tenant not found, creating...')
               tenant = await withRetry(
                 async () => {
-                  const tenantName = `${domain} Organization`
+                  const tenantName = domain
                   const tenantId = `cl${Date.now()}${Math.random().toString(36).substring(2, 11)}`
 
                   await prisma.$executeRaw`
