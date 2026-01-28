@@ -101,20 +101,34 @@ export async function POST(
         const buffer = Buffer.from(await file.arrayBuffer())
         const fileExtension = path.extname(file.name)
         const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}${fileExtension}`
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'collaborations')
+        
+        // Use /tmp directory for serverless environments (Vercel, AWS Lambda, etc.)
+        // In serverless, only /tmp is writable
+        const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+        const uploadDir = isServerless 
+            ? path.join('/tmp', 'collaborations')
+            : path.join(process.cwd(), 'public', 'uploads', 'collaborations')
         const filePath = path.join(uploadDir, uniqueFileName)
 
         // Ensure the upload directory exists
-        await require('fs/promises').mkdir(uploadDir, { recursive: true })
+        const fs = await import('fs/promises')
+        await fs.mkdir(uploadDir, { recursive: true })
 
         await writeFile(filePath, buffer)
+
+        // For serverless: store file as base64 in database or use cloud storage
+        // For now, we'll store the file path and serve it via API
+        // In production, you should use S3, Cloudinary, or similar
+        const fileUrl = isServerless 
+            ? `/api/collaborations/${id}/files/${uniqueFileName}` // Serve via API
+            : `/uploads/collaborations/${uniqueFileName}` // Serve as static file
 
         const collaborationFile = await prisma.collaborationFile.create({
             data: {
                 collaborationId: id,
                 userId: session.user.id,
                 fileName: file.name,
-                fileUrl: `/uploads/collaborations/${uniqueFileName}`,
+                fileUrl: fileUrl,
                 fileSize: file.size,
                 fileType: file.type,
                 description: description || null
