@@ -207,14 +207,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             }
           }
 
-          // STEP 3: Get or create tenant
+          // STEP 3: Check if user already exists FIRST (before creating tenant)
+          // This prevents creating duplicate tenants for existing users
+          const existingUser = await withRetry(
+            () =>
+              prisma.user.findUnique({
+                where: { email: emailLower },
+                include: {
+                  tenant: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              }),
+            'Find User',
+            3,
+            1000
+          )
+
+          // STEP 4: Get or create tenant
           // SECURITY: Public domains (Gmail, Yahoo, etc.) get separate tenants
           // Corporate domains share a tenant
+          // CRITICAL: If user already exists, use their existing tenant (don't create new one)
           // CRITICAL: If user has a pending invitation, ALWAYS use that tenant (don't create new one)
           let tenant = null
           let userRole: 'ORG_ADMIN' | 'TEAM_MEMBER' = 'TEAM_MEMBER'
 
-          if (pendingInvitation) {
+          // If user already exists, use their existing tenant
+          if (existingUser && existingUser.tenant) {
+            console.log('[OAuth] ✅ Existing user found, using their existing tenant:', existingUser.tenant.name)
+            tenant = existingUser.tenant
+            userRole = existingUser.role as 'ORG_ADMIN' | 'TEAM_MEMBER'
+          } else if (pendingInvitation) {
             // User has a pending invitation - join the invited tenant
             // This takes precedence over public domain check to prevent duplicate tenants
             console.log('[OAuth] ✅ Using invited tenant (invitation takes precedence):', pendingInvitation.tenant.name)
@@ -225,7 +251,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           } else if (isPublic) {
             // Public domain: Each user gets their own tenant (domain = null)
             // This prevents Gmail users from seeing each other's data
-            console.log('[OAuth] Public domain detected, creating individual tenant for user')
+            // Only create if user doesn't exist (checked above)
+            console.log('[OAuth] Public domain detected, creating individual tenant for new user')
             tenant = await withRetry(
               async () => {
                 const tenantName = `${(profile as any).name || email}'s Organization`
@@ -293,17 +320,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               userRole = 'ORG_ADMIN'
             }
           }
-
-          // STEP 4: Check user
-          const existingUser = await withRetry(
-            () =>
-              prisma.user.findUnique({
-                where: { email: emailLower },
-              }),
-            'Find User',
-            3,
-            1000
-          )
 
           // ✅ CASE A: Existing user but NOT verified → DO NOT create session
           if (existingUser && !existingUser.emailVerified) {
