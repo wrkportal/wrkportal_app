@@ -5,6 +5,7 @@ import { readFile } from 'fs/promises'
 import path from 'path'
 
 // GET /api/collaborations/[id]/files/[fileName] - Serve a file
+// DELETE /api/collaborations/[id]/files/[fileId] - Delete a file (by database ID)
 export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string; fileName: string }> }
@@ -69,6 +70,67 @@ export async function GET(
         }
     } catch (error) {
         console.error('Error serving file:', error)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+}
+
+// DELETE /api/collaborations/[id]/files/[fileId] - Delete a file by database ID
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string; fileName: string }> }
+) {
+    try {
+        const session = await auth()
+        if (!session || !session.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const { id, fileName } = await params
+
+        // Check if file exists and user has permission
+        // fileName could be either a fileId (database ID) or fileName (actual file name)
+        // Try to find by ID first (cuid format), then by fileName
+        const file = await prisma.collaborationFile.findFirst({
+            where: {
+                OR: [
+                    { id: fileName, collaborationId: id }, // Try as fileId
+                    { fileName: fileName, collaborationId: id } // Try as fileName
+                ]
+            }
+        })
+
+        if (!file) {
+            return NextResponse.json({ error: 'File not found' }, { status: 404 })
+        }
+
+        // Only the uploader or collaboration owner can delete
+        if (file.userId !== session.user.id) {
+            // Check if user is owner/admin of the collaboration
+            const member = await prisma.collaborationMember.findFirst({
+                where: {
+                    collaborationId: id,
+                    userId: session.user.id,
+                    OR: [
+                        { role: 'OWNER' },
+                        { role: 'ADMIN' },
+                        { canDelete: true }
+                    ]
+                }
+            })
+
+            if (!member) {
+                return NextResponse.json({ error: 'No permission to delete this file' }, { status: 403 })
+            }
+        }
+
+        // Delete the file record
+        await prisma.collaborationFile.delete({
+            where: { id: file.id }
+        })
+
+        return NextResponse.json({ message: 'File deleted successfully' })
+    } catch (error) {
+        console.error('Error deleting file:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }
