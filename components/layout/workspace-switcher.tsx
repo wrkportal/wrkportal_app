@@ -44,11 +44,18 @@ export function WorkspaceSwitcher() {
       const response = await fetch('/api/user/tenants')
       if (response.ok) {
         const data = await response.json()
+        console.log('[WorkspaceSwitcher] Fetched tenants:', {
+          count: data.tenants?.length || 0,
+          tenants: data.tenants?.map((t: any) => ({ id: t.id, name: t.name })),
+          activeTenantId: data.activeTenantId,
+        })
         setTenants(data.tenants || [])
         setActiveTenantId(data.activeTenantId || session?.user?.tenantId || null)
+      } else {
+        console.error('[WorkspaceSwitcher] Failed to fetch tenants:', response.status, response.statusText)
       }
     } catch (error) {
-      console.error('Error fetching tenants:', error)
+      console.error('[WorkspaceSwitcher] Error fetching tenants:', error)
     } finally {
       setLoading(false)
     }
@@ -105,7 +112,8 @@ export function WorkspaceSwitcher() {
     return null
   }
 
-  // Don't show switcher if user only has one tenant
+  // Always show workspace name, but only show dropdown if multiple tenants
+  // This helps users understand which workspace they're in
   if (tenants.length === 1) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 text-sm">
@@ -113,6 +121,12 @@ export function WorkspaceSwitcher() {
         <span className="text-muted-foreground">{activeTenant?.name || 'Workspace'}</span>
       </div>
     )
+  }
+  
+  // If no tenants, don't show anything
+  if (tenants.length === 0) {
+    console.warn('[WorkspaceSwitcher] No tenants found for user')
+    return null
   }
 
   return (

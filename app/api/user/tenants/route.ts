@@ -137,19 +137,34 @@ export async function GET(req: NextRequest) {
     }
 
     // Combine primary tenant with additional tenants
-    const allTenants = [
-      {
-        id: user.tenant.id,
-        name: user.tenant.name,
-        domain: user.tenant.domain,
-        type: user.tenant.type,
-        logo: user.tenant.logo,
-        isPrimary: true,
-        isActive: true,
-        role: user.role || undefined,
-      },
-      ...additionalTenants.filter((t) => t.id !== user.tenantId), // Remove duplicates
-    ]
+    // Include all tenants from UserTenantAccess, even if they match the primary tenant
+    // This allows users to see all workspaces they have access to
+    const allTenantsMap = new Map<string, any>()
+    
+    // Add primary tenant first
+    allTenantsMap.set(user.tenant.id, {
+      id: user.tenant.id,
+      name: user.tenant.name,
+      domain: user.tenant.domain,
+      type: user.tenant.type,
+      logo: user.tenant.logo,
+      isPrimary: true,
+      isActive: true,
+      role: user.role || undefined,
+    })
+    
+    // Add all additional tenants from UserTenantAccess
+    // Don't filter by primary tenant - include all to show all workspaces
+    additionalTenants.forEach((tenant) => {
+      if (!allTenantsMap.has(tenant.id)) {
+        allTenantsMap.set(tenant.id, {
+          ...tenant,
+          isPrimary: tenant.id === user.tenantId,
+        })
+      }
+    })
+    
+    const allTenants = Array.from(allTenantsMap.values())
 
     console.log('[UserTenants] Returning tenants:', {
       totalCount: allTenants.length,
@@ -157,6 +172,7 @@ export async function GET(req: NextRequest) {
       additionalCount: additionalTenants.length,
       activeTenantId: session.user.tenantId || user.tenantId,
       hasActiveTenantAccess: !!activeTenantAccess,
+      tenantIds: allTenants.map(t => ({ id: t.id, name: t.name, isPrimary: t.isPrimary })),
     })
 
     return NextResponse.json({
