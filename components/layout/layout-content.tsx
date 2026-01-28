@@ -6,7 +6,6 @@ import { useUIStore } from '@/stores/uiStore'
 import { useAuthStore, fetchAuthenticatedUser } from '@/stores/authStore'
 import { Header } from './header'
 import { Sidebar } from './sidebar'
-import { AIDataQueryWidget } from '@/components/ai/ai-data-query-widget'
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -123,7 +122,6 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
                 >
                     {children}
                 </main>
-                {user && <AIDataQueryWidget />}
             </div>
         )
     }
@@ -151,7 +149,6 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
                     </main>
                 </div>
             </div>
-            {user && <AIDataQueryWidget />}
         </div>
     )
 }

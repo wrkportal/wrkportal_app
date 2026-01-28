@@ -43,115 +43,29 @@ interface HelpDialogProps {
 const helpArticles: HelpArticle[] = [
   {
     id: 'getting-started',
-    title: 'Getting Started with Reporting Studio',
+    title: 'Getting Started',
     content: `
-# Getting Started with Reporting Studio
+# Getting Started
 
-Reporting Studio is a powerful platform for creating, managing, and sharing reports and dashboards.
+Welcome to wrkportal! This guide will help you get started with the platform.
 
 ## Key Features
 
-1. **Data Sources**: Connect to various data sources including databases, APIs, and files
-2. **Datasets**: Create and manage datasets from your data sources
-3. **Visualizations**: Build charts and graphs to visualize your data
-4. **Dashboards**: Combine multiple visualizations into interactive dashboards
-5. **Schedules**: Automate report delivery via email, Slack, and more
-6. **Transformations**: Transform and clean your data before visualization
+1. **Projects**: Create and manage your projects
+2. **Tasks**: Organize and track your work
+3. **Teams**: Collaborate with your team members
+4. **Dashboards**: View insights and analytics
+5. **AI Assistant**: Get help with AI-powered features
 
 ## Quick Start
 
-1. Start by connecting a data source
-2. Create a dataset from your data source
-3. Build visualizations from your dataset
-4. Combine visualizations into a dashboard
-5. Schedule automated delivery if needed
+1. Explore the sidebar to navigate different sections
+2. Create your first project
+3. Add tasks and assign them to team members
+4. Use the AI Assistant for help and insights
     `,
     category: 'Getting Started',
     tags: ['basics', 'tutorial'],
-  },
-  {
-    id: 'data-sources',
-    title: 'Working with Data Sources',
-    content: `
-# Working with Data Sources
-
-Data sources are the foundation of your reports. You can connect to:
-
-- **Databases**: PostgreSQL, MySQL, SQL Server, MongoDB
-- **APIs**: REST APIs, GraphQL endpoints
-- **Files**: CSV, Excel, JSON files
-- **Cloud Storage**: Google Drive, Dropbox, S3
-
-## Connecting a Data Source
-
-1. Navigate to Data Sources
-2. Click "Add Data Source"
-3. Select your data source type
-4. Enter connection details
-5. Test the connection
-6. Save and use in your datasets
-    `,
-    category: 'Data Sources',
-    tags: ['data', 'connection'],
-  },
-  {
-    id: 'schedules',
-    title: 'Scheduling Reports',
-    content: `
-# Scheduling Reports
-
-Automate the delivery of your reports and dashboards.
-
-## Creating a Schedule
-
-1. Navigate to Schedules
-2. Click "New Schedule"
-3. Select the report or dashboard to schedule
-4. Choose frequency (Daily, Weekly, Monthly, etc.)
-5. Configure export format (PDF, Excel, etc.)
-6. Add delivery channels (Email, Slack, Teams, etc.)
-7. Add recipients
-8. Save the schedule
-
-## Delivery Channels
-
-- **Email**: Send reports via email
-- **Slack**: Post to Slack channels
-- **Teams**: Send to Microsoft Teams
-- **Webhook**: Trigger webhooks with report data
-- **Cloud Storage**: Upload to Google Drive, Dropbox, S3, OneDrive
-    `,
-    category: 'Schedules',
-    tags: ['automation', 'delivery'],
-  },
-  {
-    id: 'transformations',
-    title: 'Data Transformations',
-    content: `
-# Data Transformations
-
-Transform and clean your data before visualization.
-
-## Transformation Steps
-
-1. **Filter**: Filter rows based on conditions
-2. **Map**: Transform column values
-3. **Aggregate**: Group and aggregate data
-4. **Join**: Merge multiple datasets
-5. **Sort**: Sort data by columns
-6. **Pivot**: Pivot data for analysis
-
-## Creating a Transformation
-
-1. Navigate to Transformations
-2. Click "New Transformation"
-3. Select input dataset
-4. Add transformation steps
-5. Preview the results
-6. Save the transformation
-    `,
-    category: 'Transformations',
-    tags: ['data', 'processing'],
   },
 ]
 
@@ -192,7 +106,7 @@ export function HelpDialog({ page, section }: HelpDialogProps) {
         <DialogHeader>
           <DialogTitle>Help & Documentation</DialogTitle>
           <DialogDescription>
-            Find answers to common questions and learn how to use Reporting Studio
+            Find answers to common questions and learn how to use wrkportal
           </DialogDescription>
         </DialogHeader>
 

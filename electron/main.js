@@ -689,42 +689,13 @@ ipcMain.handle('app:is-online', async () => {
   }
 })
 
-// Sync to cloud (when online)
+// Sync to cloud (when online) - DISABLED: Reporting Studio removed
 ipcMain.handle('sync:to-cloud', async (event, data) => {
-  try {
-    // This will call your Next.js API
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-    const response = await fetch(`${apiUrl}/api/reporting-studio/sync`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    })
-    
-    if (!response.ok) {
-      throw new Error(`Sync failed: ${response.statusText}`)
-    }
-    
-    return await response.json()
-  } catch (error) {
-    console.error('Sync error:', error)
-    throw error
-  }
+  throw new Error('Sync functionality requires Reporting Studio, which has been removed.')
 })
 
-// Sync from cloud
+// Sync from cloud - DISABLED: Reporting Studio removed
 ipcMain.handle('sync:from-cloud', async () => {
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-    const response = await fetch(`${apiUrl}/api/reporting-studio/sync`)
-    
-    if (!response.ok) {
-      throw new Error(`Sync failed: ${response.statusText}`)
-    }
-    
-    return await response.json()
-  } catch (error) {
-    console.error('Sync error:', error)
-    throw error
-  }
+  throw new Error('Sync functionality requires Reporting Studio, which has been removed.')
 })
 
