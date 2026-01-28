@@ -75,6 +75,14 @@ export async function GET(req: NextRequest) {
         userId: session.user.id,
         count: userTenantAccesses.length,
         tenants: additionalTenants.map(t => ({ id: t.id, name: t.name })),
+        rawRecords: userTenantAccesses.map((uta: any) => ({
+          userId: uta.userId,
+          tenantId: uta.tenantId,
+          tenantName: uta.tenant?.name,
+          role: uta.role,
+          invitationId: uta.invitationId,
+          isActive: uta.isActive,
+        })),
       })
     } catch (error: any) {
       // UserTenantAccess table might not exist yet
@@ -90,44 +98,58 @@ export async function GET(req: NextRequest) {
     let activeTenantAccess: any = null
     
     try {
-      // Check if current tenant has UserTenantAccess record (for invited users)
-      if (activeTenantId !== user.tenantId) {
-        // User is accessing a different tenant via UserTenantAccess
-        const access = await (prisma as any).userTenantAccess.findUnique({
-          where: {
-            userId_tenantId: {
-              userId: session.user.id,
-              tenantId: activeTenantId,
-            },
-          },
-          select: {
-            id: true,
-            role: true,
-            groupRole: true,
-            allowedSections: true,
-            invitationId: true,
-            isActive: true,
-          },
-        })
-        activeTenantAccess = access
-      } else {
-        // Check if primary tenant has UserTenantAccess record (user might have been invited to their own tenant)
-        const access = await (prisma as any).userTenantAccess.findFirst({
-          where: {
+      // Always check for UserTenantAccess record for the active tenant
+      // This handles both cases:
+      // 1. User accessing a different tenant via UserTenantAccess
+      // 2. User accessing their primary tenant but was invited (has UserTenantAccess record)
+      const access = await (prisma as any).userTenantAccess.findUnique({
+        where: {
+          userId_tenantId: {
             userId: session.user.id,
-            tenantId: user.tenantId,
-            invitationId: { not: null }, // Only if they were invited
+            tenantId: activeTenantId,
           },
-          select: {
-            id: true,
-            role: true,
-            groupRole: true,
-            allowedSections: true,
-            invitationId: true,
-            isActive: true,
-          },
-        })
+        },
+        select: {
+          id: true,
+          role: true,
+          groupRole: true,
+          allowedSections: true,
+          invitationId: true,
+          isActive: true,
+        },
+      })
+      
+      if (access) {
         activeTenantAccess = access
+        console.log('[UserTenants] Found activeTenantAccess for active tenant:', {
+          tenantId: activeTenantId,
+          invitationId: access.invitationId,
+          hasAllowedSections: !!access.allowedSections,
+        })
+      } else {
+        // If no UserTenantAccess found for active tenant, check if it's in additionalTenants
+        // This handles the case where user's primary tenant is different from invited tenant
+        const matchingAccess = additionalTenants.find((t: any) => t.id === activeTenantId)
+        if (matchingAccess) {
+          // Find the UserTenantAccess record for this tenant
+          const accessRecord = await (prisma as any).userTenantAccess.findUnique({
+            where: {
+              userId_tenantId: {
+                userId: session.user.id,
+                tenantId: activeTenantId,
+              },
+            },
+            select: {
+              id: true,
+              role: true,
+              groupRole: true,
+              allowedSections: true,
+              invitationId: true,
+              isActive: true,
+            },
+          })
+          activeTenantAccess = accessRecord
+        }
       }
     } catch (error: any) {
       // UserTenantAccess table might not exist
@@ -169,10 +191,16 @@ export async function GET(req: NextRequest) {
     console.log('[UserTenants] Returning tenants:', {
       totalCount: allTenants.length,
       primaryTenant: { id: user.tenant.id, name: user.tenant.name },
+      primaryTenantId: user.tenantId,
       additionalCount: additionalTenants.length,
       activeTenantId: session.user.tenantId || user.tenantId,
       hasActiveTenantAccess: !!activeTenantAccess,
       tenantIds: allTenants.map(t => ({ id: t.id, name: t.name, isPrimary: t.isPrimary })),
+      allTenantsMapSize: allTenantsMap.size,
+      debug: {
+        primaryTenantInMap: allTenantsMap.has(user.tenant.id),
+        additionalTenantsIds: additionalTenants.map(t => t.id),
+      },
     })
 
     return NextResponse.json({
@@ -189,94 +217,3 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/**
- * POST /api/user/tenants/switch
- * Switch active tenant for the current user
- */
-export async function POST(req: NextRequest) {
-  try {
-    const session = await auth()
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body = await req.json()
-    const { tenantId } = body
-
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: 'Tenant ID is required' },
-        { status: 400 }
-      )
-    }
-
-    // Verify user has access to this tenant
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        tenantId: true,
-      },
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    // Check if tenantId is user's primary tenant
-    if (user.tenantId === tenantId) {
-      // User is switching to their primary tenant - update session
-      return NextResponse.json({
-        success: true,
-        tenantId,
-        message: 'Switched to primary workspace',
-      })
-    }
-
-    // Check if user has access via UserTenantAccess
-    let hasAccess = false
-    try {
-      const access = await (prisma as any).userTenantAccess.findUnique({
-        where: {
-          userId_tenantId: {
-            userId: session.user.id,
-            tenantId,
-          },
-        },
-      })
-
-      hasAccess = !!access
-    } catch (error: any) {
-      // UserTenantAccess table might not exist
-      if (error.code === 'P2021' || error.message?.includes('does not exist')) {
-        return NextResponse.json(
-          { error: 'Multi-tenant access not available. Please contact support.' },
-          { status: 503 }
-        )
-      }
-      throw error
-    }
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'You do not have access to this workspace' },
-        { status: 403 }
-      )
-    }
-
-    // Update session via NextAuth update
-    // Note: This requires calling update() from client side
-    return NextResponse.json({
-      success: true,
-      tenantId,
-      message: 'Workspace switched successfully',
-      // Client should call session.update({ tenantId }) after this
-    })
-  } catch (error: any) {
-    console.error('Error switching tenant:', error)
-    return NextResponse.json(
-      { error: 'Failed to switch workspace' },
-      { status: 500 }
-    )
-  }
-}

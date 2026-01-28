@@ -339,6 +339,101 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               1000
             )
 
+            // Check if existing user has a pending invitation (cross-tenant invitation)
+            if (pendingInvitation) {
+              console.log('[OAuth] Existing user has pending invitation, creating UserTenantAccess record')
+              
+              try {
+                // Mark invitation as accepted
+                await prisma.tenantInvitation.update({
+                  where: { id: pendingInvitation.id },
+                  data: {
+                    status: 'ACCEPTED',
+                    acceptedAt: new Date(),
+                  },
+                })
+                console.log('[OAuth] ✅ Invitation marked as accepted for existing user')
+
+                // Check if UserTenantAccess record already exists
+                let existingAccess = null
+                try {
+                  existingAccess = await (prisma as any).userTenantAccess.findUnique({
+                    where: {
+                      userId_tenantId: {
+                        userId: existingUser.id,
+                        tenantId: pendingInvitation.tenant.id,
+                      },
+                    },
+                  })
+                } catch (error: any) {
+                  // Table might not exist, continue to create
+                  if (error.code !== 'P2021' && !error.message?.includes('does not exist')) {
+                    throw error
+                  }
+                }
+
+                if (!existingAccess) {
+                  // Parse allowedSections from invitation if it's a JSON string
+                  let allowedSectionsValue = pendingInvitation.allowedSections
+                  if (allowedSectionsValue && typeof allowedSectionsValue === 'string') {
+                    try {
+                      const parsed = JSON.parse(allowedSectionsValue)
+                      if (parsed && typeof parsed === 'object' && Array.isArray(parsed.sections)) {
+                        allowedSectionsValue = JSON.stringify(parsed.sections)
+                      } else if (Array.isArray(parsed)) {
+                        allowedSectionsValue = allowedSectionsValue
+                      } else {
+                        allowedSectionsValue = JSON.stringify([])
+                      }
+                    } catch (e) {
+                      console.warn('[OAuth] Invalid allowedSections format in invitation, using empty array')
+                      allowedSectionsValue = JSON.stringify([])
+                    }
+                  } else if (!allowedSectionsValue) {
+                    allowedSectionsValue = JSON.stringify([])
+                  }
+
+                  // Create UserTenantAccess record for cross-tenant access
+                  await (prisma as any).userTenantAccess.create({
+                    data: {
+                      userId: existingUser.id,
+                      tenantId: pendingInvitation.tenant.id,
+                      role: pendingInvitation.role,
+                      allowedSections: allowedSectionsValue,
+                      invitedById: pendingInvitation.invitedById,
+                      invitationId: pendingInvitation.id,
+                      isActive: false, // Not the primary tenant
+                    },
+                  })
+                  console.log('[OAuth] ✅ UserTenantAccess record created for existing user:', {
+                    userId: existingUser.id,
+                    tenantId: pendingInvitation.tenant.id,
+                    tenantName: pendingInvitation.tenant.name,
+                  })
+                } else {
+                  console.log('[OAuth] UserTenantAccess record already exists for this user and tenant')
+                }
+              } catch (error: any) {
+                console.error('[OAuth] ❌ Failed to create UserTenantAccess for existing user:', {
+                  error: error.message,
+                  code: error.code,
+                  meta: error.meta,
+                  userId: existingUser.id,
+                  tenantId: pendingInvitation.tenant.id,
+                  invitationId: pendingInvitation.id,
+                })
+                
+                if (error.code === 'P2021' || error.message?.includes('does not exist')) {
+                  console.warn('[OAuth] UserTenantAccess table does not exist - this is expected if migration not run')
+                } else if (error.code === 'P2002') {
+                  console.warn('[OAuth] UserTenantAccess record might already exist:', error.meta)
+                } else {
+                  console.error('[OAuth] Unexpected error creating UserTenantAccess:', error)
+                }
+                // Don't fail login if UserTenantAccess creation fails
+              }
+            }
+
             return true
           }
 

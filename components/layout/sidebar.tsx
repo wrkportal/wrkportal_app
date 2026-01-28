@@ -1163,9 +1163,19 @@ export function Sidebar() {
                 const response = await fetch('/api/user/tenants')
                 if (response.ok) {
                     const data = await response.json()
+                    console.log('[Sidebar] Fetched tenant data:', {
+                        hasActiveTenantAccess: !!data.activeTenantAccess,
+                        invitationId: data.activeTenantAccess?.invitationId,
+                        allowedSections: data.activeTenantAccess?.allowedSections,
+                        tenantsCount: data.tenants?.length || 0,
+                    })
+                    
                     // Check if current tenant has UserTenantAccess record with invitationId
+                    // This means the user was invited to this tenant (even if it's their primary tenant)
                     if (data.activeTenantAccess && data.activeTenantAccess.invitationId) {
                         setIsInvitedUser(true)
+                        console.log('[Sidebar] User is invited user, invitationId:', data.activeTenantAccess.invitationId)
+                        
                         if (data.activeTenantAccess.allowedSections) {
                             try {
                                 const parsed = typeof data.activeTenantAccess.allowedSections === 'string'
@@ -1174,25 +1184,49 @@ export function Sidebar() {
                                 
                                 // Handle both formats: array of strings or object with sections array
                                 if (Array.isArray(parsed)) {
-                                    setAllowedSections(parsed)
+                                    if (parsed.length === 0) {
+                                        // Empty array = no sections specified, treat as full access
+                                        console.log('[Sidebar] allowedSections is empty array, treating as full access')
+                                        setAllowedSections(null) // null = full access
+                                        setIsInvitedUser(false) // Don't treat as restricted
+                                    } else {
+                                        console.log('[Sidebar] Setting allowedSections (array):', parsed)
+                                        setAllowedSections(parsed)
+                                    }
                                 } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.sections)) {
-                                    setAllowedSections(parsed.sections)
+                                    if (parsed.sections.length === 0) {
+                                        // Empty sections array = no sections specified, treat as full access
+                                        console.log('[Sidebar] allowedSections.sections is empty array, treating as full access')
+                                        setAllowedSections(null) // null = full access
+                                        setIsInvitedUser(false) // Don't treat as restricted
+                                    } else {
+                                        console.log('[Sidebar] Setting allowedSections (object.sections):', parsed.sections)
+                                        setAllowedSections(parsed.sections)
+                                    }
                                 } else {
-                                    setAllowedSections([]) // Invited user with invalid format = no access
+                                    console.warn('[Sidebar] Invalid allowedSections format, treating as full access')
+                                    setAllowedSections(null) // Invalid format = treat as full access
+                                    setIsInvitedUser(false) // Don't treat as restricted
                                 }
                             } catch (e) {
-                                console.warn('Failed to parse allowedSections from UserTenantAccess:', e)
+                                console.warn('[Sidebar] Failed to parse allowedSections from UserTenantAccess:', e)
                                 setAllowedSections([]) // Invited user with invalid allowedSections = no access
                             }
                         } else {
-                            // Invited user but no allowedSections specified = no access
-                            setAllowedSections([])
+                            // Invited user but no allowedSections specified
+                            // If allowedSections is null or empty, treat as full access (same as non-invited user)
+                            // This handles cases where invitation was created without specifying sections
+                            console.log('[Sidebar] Invited user but no allowedSections specified, treating as full access')
+                            setAllowedSections(null) // null = full access
+                            setIsInvitedUser(false) // Don't treat as restricted invited user
                         }
                         return // Don't fall through to User.allowedSections
+                    } else {
+                        console.log('[Sidebar] Not an invited user (no activeTenantAccess or no invitationId)')
                     }
                 }
             } catch (e) {
-                console.warn('Failed to fetch UserTenantAccess:', e)
+                console.warn('[Sidebar] Failed to fetch UserTenantAccess:', e)
             }
             
             // Fallback to User.allowedSections if not found in UserTenantAccess
@@ -1238,6 +1272,13 @@ export function Sidebar() {
         ? [] // Invited user with null = no access
         : allowedSections // Otherwise use the actual value
 
+    console.log('[Sidebar] Filtering navigation items:', {
+        isInvitedUser,
+        allowedSections,
+        effectiveAllowedSections,
+        isSuperUser,
+    })
+
     const filteredItems = navigationItems.filter((item) => {
         // Super user sees everything
         if (isSuperUser) return true
@@ -1252,7 +1293,11 @@ export function Sidebar() {
         // If allowedSections is empty array, user has no access
         if (effectiveAllowedSections.length === 0) {
             // Only show wrkboard and collaborate
-            return item.title === 'wrkboard' || item.title === 'Collaborate'
+            const allowed = item.title === 'wrkboard' || item.title === 'Collaborate'
+            if (!allowed) {
+                console.log('[Sidebar] Filtering out:', item.title, '(empty allowedSections)')
+            }
+            return allowed
         }
         
         // Check if this section is in the allowed list
@@ -1264,8 +1309,15 @@ export function Sidebar() {
           if (section.includes(':') && section.split(':')[0] === item.title) return true
           return false
         })
-        return isAllowed || item.title === 'wrkboard' || item.title === 'Collaborate'
+        
+        const result = isAllowed || item.title === 'wrkboard' || item.title === 'Collaborate'
+        if (!result) {
+            console.log('[Sidebar] Filtering out:', item.title, '(not in allowedSections:', effectiveAllowedSections, ')')
+        }
+        return result
     })
+    
+    console.log('[Sidebar] Filtered items:', filteredItems.map(item => item.title))
 
     // Toggle program expansion
     const toggleProgram = (programId: string) => {

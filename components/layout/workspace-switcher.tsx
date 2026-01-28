@@ -46,13 +46,21 @@ export function WorkspaceSwitcher() {
         const data = await response.json()
         console.log('[WorkspaceSwitcher] Fetched tenants:', {
           count: data.tenants?.length || 0,
-          tenants: data.tenants?.map((t: any) => ({ id: t.id, name: t.name })),
+          tenants: data.tenants?.map((t: any) => ({ id: t.id, name: t.name, isPrimary: t.isPrimary })),
           activeTenantId: data.activeTenantId,
+          hasActiveTenantAccess: !!data.activeTenantAccess,
         })
-        setTenants(data.tenants || [])
-        setActiveTenantId(data.activeTenantId || session?.user?.tenantId || null)
+        
+        if (data.tenants && data.tenants.length > 0) {
+          setTenants(data.tenants)
+          setActiveTenantId(data.activeTenantId || session?.user?.tenantId || null)
+        } else {
+          console.warn('[WorkspaceSwitcher] No tenants returned from API')
+          setTenants([])
+        }
       } else {
-        console.error('[WorkspaceSwitcher] Failed to fetch tenants:', response.status, response.statusText)
+        const errorData = await response.json().catch(() => ({}))
+        console.error('[WorkspaceSwitcher] Failed to fetch tenants:', response.status, response.statusText, errorData)
       }
     } catch (error) {
       console.error('[WorkspaceSwitcher] Error fetching tenants:', error)
