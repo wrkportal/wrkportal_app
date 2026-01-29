@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Map as MapIcon, Users, ClipboardList, Briefcase, Package, Calendar, GitBranch, LayoutGrid, HelpCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { WidgetGalleryDialog } from '@/components/common/widget-gallery-dialog'
 import { FunctionalHelpDialog } from '@/components/help/functional-help-dialog'
 
