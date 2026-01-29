@@ -3576,11 +3576,30 @@ function RecruitmentDashboardPageInner() {
             setAddingTaskToGroup(null)
           }}
           onSubmit={async (data: any) => {
-            // If adding to a group, include groupId in the task data
-            if (addingTaskToGroup) {
-              data.groupId = addingTaskToGroup
+            try {
+              const taskData = addingTaskToGroup
+                ? { ...data, parentId: addingTaskToGroup }
+                : data
+
+              const response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData),
+              })
+
+              if (response.ok) {
+                await fetchUserTasks()
+                setTaskDialogOpen(false)
+                setSelectedTaskId(null)
+                setAddingTaskToGroup(null)
+              } else {
+                const error = await response.json()
+                alert(error.error || 'Failed to create task')
+              }
+            } catch (error) {
+              console.error('Error creating task:', error)
+              alert('Failed to create task. Please try again.')
             }
-            await fetchUserTasks()
           }}
         />
       </Suspense>

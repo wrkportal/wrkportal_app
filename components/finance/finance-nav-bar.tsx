@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, DollarSign, TrendingUp, FileText, TrendingDown, Target, CreditCard, Building2, ChevronDown, LayoutGrid, BarChart3, AlertTriangle, Users, Briefcase, CheckCircle2, UserCheck, Link as LinkIcon, ClipboardList, Network, Palette, Map } from 'lucide-react'
+import { LayoutDashboard, DollarSign, TrendingUp, FileText, TrendingDown, Target, CreditCard, Building2, ChevronDown, LayoutGrid, BarChart3, AlertTriangle, Users, Briefcase, CheckCircle2, UserCheck, Link as LinkIcon, ClipboardList, Network, Palette, Map, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { WidgetGalleryDialog } from '@/components/common/widget-gallery-dialog'
+import { FunctionalHelpDialog } from '@/components/help/functional-help-dialog'
 
 interface Widget {
   id: string
@@ -28,6 +29,7 @@ export function FinanceNavBar({ widgets, toggleWidget, widgetGalleryOpen: extern
   const [internalWidgetGalleryOpen, setInternalWidgetGalleryOpen] = useState(false)
   const widgetGalleryOpen = externalWidgetGalleryOpen !== undefined ? externalWidgetGalleryOpen : internalWidgetGalleryOpen
   const setWidgetGalleryOpen = onWidgetGalleryOpenChange || setInternalWidgetGalleryOpen
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false)
   const isWrkboard = pathname === '/wrkboard'
 
   const navItems = [
@@ -87,8 +89,17 @@ export function FinanceNavBar({ widgets, toggleWidget, widgetGalleryOpen: extern
             )
           })}
 
-          {/* Widget Gallery Button */}
-          <div className="ml-auto">
+          {/* Widget Gallery Button & Help Button */}
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-3"
+              onClick={() => setHelpDialogOpen(true)}
+            >
+              <HelpCircle className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Help</span>
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -110,6 +121,13 @@ export function FinanceNavBar({ widgets, toggleWidget, widgetGalleryOpen: extern
               toggleWidget={toggleWidget}
             />
           )}
+
+          {/* Help Dialog */}
+          <FunctionalHelpDialog
+            open={helpDialogOpen}
+            onOpenChange={setHelpDialogOpen}
+            area="finance"
+          />
         </nav>
       </div>
     </div>

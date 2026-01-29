@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -54,6 +54,7 @@ import {
     FileUp,
     Download,
     Phone,
+    Plus,
 } from "lucide-react"
 import { useUIStore } from "@/stores/uiStore"
 import { Button } from "@/components/ui/button"
@@ -61,6 +62,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { StartCallButton } from "@/components/calls"
 
@@ -199,6 +201,7 @@ function CalendarScheduleWidget() {
     const [agendaDialogOpen, setAgendaDialogOpen] = useState(false)
     const [chatDialogOpen, setChatDialogOpen] = useState(false)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [scheduleMeetingDialogOpen, setScheduleMeetingDialogOpen] = useState(false)
     const [taskComments, setTaskComments] = useState<any[]>([])
     const [newComment, setNewComment] = useState('')
     const [isAddingComment, setIsAddingComment] = useState(false)
@@ -209,8 +212,7 @@ function CalendarScheduleWidget() {
     const { toast } = useToast()
 
     // Fetch tasks and calls for the selected date
-    useEffect(() => {
-        const fetchTasksForDate = async () => {
+    const fetchTasksForDate = useCallback(async () => {
             if (!user?.id) {
                 setTasks([])
                 return
@@ -297,10 +299,11 @@ function CalendarScheduleWidget() {
             } finally {
                 setLoadingTasks(false)
             }
-        }
-
-        fetchTasksForDate()
     }, [selectedDate, user?.id])
+
+    useEffect(() => {
+        fetchTasksForDate()
+    }, [fetchTasksForDate])
 
     // Update calendar height when it changes
     useEffect(() => {
@@ -747,14 +750,25 @@ function CalendarScheduleWidget() {
                                 {tasks.length} {tasks.length === 1 ? 'meeting' : 'meetings'}
                             </p>
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setTasksSidebarOpen(false)}
-                            className="h-7 w-7 flex-shrink-0"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setScheduleMeetingDialogOpen(true)}
+                                className="h-7 w-7 flex-shrink-0"
+                                title="Schedule Meeting"
+                            >
+                                <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setTasksSidebarOpen(false)}
+                                className="h-7 w-7 flex-shrink-0"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Tasks List */}
@@ -1047,7 +1061,157 @@ function CalendarScheduleWidget() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Schedule Meeting Dialog */}
+            <Dialog open={scheduleMeetingDialogOpen} onOpenChange={setScheduleMeetingDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Schedule Meeting</DialogTitle>
+                        <DialogDescription>
+                            Schedule a meeting for {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScheduleMeetingForm
+                        selectedDate={selectedDate}
+                        onSuccess={async () => {
+                            setScheduleMeetingDialogOpen(false)
+                            await fetchTasksForDate()
+                            toast({
+                                title: "Meeting Scheduled",
+                                description: "The meeting has been scheduled successfully.",
+                            })
+                        }}
+                        onCancel={() => setScheduleMeetingDialogOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
+    )
+}
+
+// Schedule Meeting Form Component
+function ScheduleMeetingForm({ 
+    selectedDate, 
+    onSuccess, 
+    onCancel 
+}: { 
+    selectedDate: Date
+    onSuccess: () => void
+    onCancel: () => void
+}) {
+    const user = useAuthStore((state) => state.user)
+    const { toast } = useToast()
+    const [loading, setLoading] = useState(false)
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        dueDate: selectedDate.toISOString().split('T')[0],
+        dueTime: '09:00',
+        estimatedHours: '1',
+    })
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!formData.title.trim()) {
+            return
+        }
+
+        setLoading(true)
+        try {
+            // Combine date and time
+            const dateTime = new Date(`${formData.dueDate}T${formData.dueTime}`)
+            
+            const response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: formData.title,
+                    description: formData.description,
+                    dueDate: dateTime.toISOString(),
+                    estimatedHours: parseFloat(formData.estimatedHours) || 1,
+                    priority: 'MEDIUM',
+                    status: 'TODO',
+                    assigneeId: user?.id,
+                }),
+            })
+
+            if (response.ok) {
+                onSuccess()
+            } else {
+                const error = await response.json()
+                throw new Error(error.error || 'Failed to schedule meeting')
+            }
+        } catch (error: any) {
+            console.error('Error scheduling meeting:', error)
+            toast({
+                title: "Error",
+                description: error.message || 'Failed to schedule meeting. Please try again.',
+                variant: "destructive",
+            })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+                <Label htmlFor="meeting-title">Meeting Title *</Label>
+                <Input
+                    id="meeting-title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Enter meeting title"
+                    required
+                />
+            </div>
+
+            <div>
+                <Label htmlFor="meeting-description">Description</Label>
+                <Textarea
+                    id="meeting-description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter meeting description or agenda"
+                    rows={3}
+                />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="meeting-time">Time *</Label>
+                    <Input
+                        id="meeting-time"
+                        type="time"
+                        value={formData.dueTime}
+                        onChange={(e) => setFormData({ ...formData, dueTime: e.target.value })}
+                        required
+                    />
+                </div>
+
+                <div>
+                    <Label htmlFor="meeting-duration">Duration (hours)</Label>
+                    <Input
+                        id="meeting-duration"
+                        type="number"
+                        step="0.5"
+                        min="0.5"
+                        value={formData.estimatedHours}
+                        onChange={(e) => setFormData({ ...formData, estimatedHours: e.target.value })}
+                        placeholder="1"
+                    />
+                </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={loading || !formData.title.trim()}>
+                    {loading ? 'Scheduling...' : 'Schedule Meeting'}
+                </Button>
+            </div>
+        </form>
     )
 }
 
@@ -1139,7 +1303,10 @@ export function Sidebar() {
     }
     
     // Use opacity transition for smooth appearance - ensure full opacity when mounted
-    const sidebarStyle = !isMounted ? { opacity: 0 } : { opacity: 1, transition: 'opacity 0.2s ease-in' }
+    // Prevent flickering with will-change and transform
+    const sidebarStyle = !isMounted 
+        ? { opacity: 0, willChange: 'opacity' } 
+        : { opacity: 1, transition: 'opacity 0.1s ease-in', willChange: 'auto' }
 
     // Be robust if user.role isn't hydrated yet or not properly set
     const effectiveRole = (user.role && Object.values(UserRole).includes(user.role as UserRole))
@@ -1365,8 +1532,9 @@ export function Sidebar() {
                     isMounted ? "opacity-100" : "opacity-0"
                 )}
                 style={sidebarStyle}
+                suppressHydrationWarning
             >
-                <div className="flex h-full flex-col px-2 py-4">
+                <div className="flex h-full flex-col px-2 py-4" style={{ willChange: 'contents' }}>
                     {/* Collapse Toggle */}
                     <Button
                         variant="ghost"
@@ -1383,7 +1551,7 @@ export function Sidebar() {
                     </Button>
 
                     {/* Main navigation - scrollable */}
-                    <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
+                    <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden" suppressHydrationWarning>
                         {filteredItems.map((item, index) => {
                             const Icon = item.icon
                             // Determine if nav item is active

@@ -297,7 +297,7 @@ export function SearchBar() {
                                 }
                             }}
                             className={cn(
-                                "pl-9 pr-20 h-9 text-sm border-0 rounded-l-none rounded-r-md focus-visible:ring-0 focus-visible:ring-offset-0",
+                                "pl-9 pr-10 h-9 text-sm border-0 rounded-l-none rounded-r-md focus-visible:ring-0 focus-visible:ring-offset-0",
                                 showResults && results.length > 0 && "rounded-b-none"
                             )}
                         />
@@ -310,24 +310,6 @@ export function SearchBar() {
                                     className="h-6 w-6 p-0 hover:bg-muted"
                                 >
                                     <X className="h-3 w-3" />
-                                </Button>
-                            )}
-                            {hasSpeechRecognition && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={isListening ? stopVoiceRecognition : startVoiceRecognition}
-                                    className={cn(
-                                        "h-6 w-6 p-0 hover:bg-muted",
-                                        isListening && "text-red-500 animate-pulse"
-                                    )}
-                                    title={isListening ? "Stop listening" : "Voice search"}
-                                >
-                                    {isListening ? (
-                                        <MicOff className="h-3 w-3" />
-                                    ) : (
-                                        <Mic className="h-3 w-3" />
-                                    )}
                                 </Button>
                             )}
                         </div>

@@ -193,7 +193,29 @@ export default function OperationsDashboardPage() {
   const [performanceData, setPerformanceData] = useState<any[]>([])
   const [complianceData, setComplianceData] = useState<any[]>([])
   const [inventoryData, setInventoryData] = useState<any[]>([])
-  const [layouts, setLayouts] = useState<Layouts>(defaultLayouts)
+  // Initialize layouts from localStorage if available (client-side only)
+  const getInitialLayouts = (): Layouts => {
+    if (typeof window === 'undefined') return defaultLayouts
+    try {
+      const saved = localStorage.getItem('operations-dashboard-layouts')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && (parsed.lg || parsed.md || parsed.sm)) {
+          return {
+            lg: parsed.lg || defaultLayouts.lg || [],
+            md: parsed.md || parsed.lg || defaultLayouts.md || [],
+            sm: parsed.sm || parsed.md || parsed.lg || defaultLayouts.sm || [],
+            xs: parsed.xs || parsed.sm || parsed.md || parsed.lg || defaultLayouts.xs || [],
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading initial layouts:', error)
+    }
+    return defaultLayouts
+  }
+
+  const [layouts, setLayouts] = useState<Layouts>(getInitialLayouts())
   const [isMobile, setIsMobile] = useState(false)
   const [isInitialMount, setIsInitialMount] = useState(true)
   const [widgetsLoaded, setWidgetsLoaded] = useState(false)
@@ -394,22 +416,30 @@ export default function OperationsDashboardPage() {
         localStorage.setItem('operations-widgets', JSON.stringify(firstLoginWidgets))
       }
 
+      // Only update layouts if they differ from initial (to avoid unnecessary re-renders)
+      // The initial layouts are already loaded from localStorage in getInitialLayouts()
+      // This useEffect is mainly for syncing with any external changes
       const savedLayouts = localStorage.getItem('operations-dashboard-layouts')
       if (savedLayouts) {
         try {
           const parsed = JSON.parse(savedLayouts)
-          // Validate that parsed layouts have the expected structure
           if (parsed && (parsed.lg || parsed.md || parsed.sm)) {
-            setLayouts(parsed)
-          } else {
-            setLayouts(defaultLayouts)
+            const completeLayouts: Layouts = {
+              lg: parsed.lg || defaultLayouts.lg || [],
+              md: parsed.md || parsed.lg || defaultLayouts.md || [],
+              sm: parsed.sm || parsed.md || parsed.lg || defaultLayouts.sm || [],
+              xs: parsed.xs || parsed.sm || parsed.md || parsed.lg || defaultLayouts.xs || [],
+            }
+            // Only update if different to prevent unnecessary re-renders
+            const currentLayoutsStr = JSON.stringify(layouts)
+            const newLayoutsStr = JSON.stringify(completeLayouts)
+            if (currentLayoutsStr !== newLayoutsStr) {
+              setLayouts(completeLayouts)
+            }
           }
         } catch (error) {
           console.error('Error loading layouts:', error)
-          setLayouts(defaultLayouts)
         }
-      } else {
-        setLayouts(defaultLayouts)
       }
 
       // Load useful links
@@ -3400,10 +3430,32 @@ export default function OperationsDashboardPage() {
           setSelectedTaskId(null)
           setAddingTaskToGroup(null)
         }}
-        taskId={selectedTaskId}
-        onUpdate={fetchUserTasks}
-        parentTaskId={addingTaskToGroup ? undefined : null}
-        groupId={addingTaskToGroup || undefined}
+        onSubmit={async (data) => {
+          try {
+            const taskData = addingTaskToGroup
+              ? { ...data, parentId: addingTaskToGroup }
+              : data
+
+            const response = await fetch('/api/tasks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(taskData),
+            })
+
+            if (response.ok) {
+              await fetchUserTasks()
+              setTaskDialogOpen(false)
+              setSelectedTaskId(null)
+              setAddingTaskToGroup(null)
+            } else {
+              const error = await response.json()
+              alert(error.error || 'Failed to create task')
+            }
+          } catch (error) {
+            console.error('Error creating task:', error)
+            alert('Failed to create task. Please try again.')
+          }
+        }}
       />
 
       {/* Task Detail Dialog */}

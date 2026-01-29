@@ -124,7 +124,13 @@ export function TaskDialog({ open, onClose, onSubmit, projectId }: TaskDialogPro
 
     // Handle @ mention typing
     const handleAssigneeInputChange = (value: string) => {
-        setAssigneeInput(value)
+        // If user starts typing @ and there's saved info, clear it first
+        if (value === '@' && assigneeInput && !assigneeInput.includes('@')) {
+            setAssigneeInput('@')
+            setFormData(prev => ({ ...prev, assigneeId: '', assigneeName: '' }))
+        } else {
+            setAssigneeInput(value)
+        }
 
         if (value.includes('@')) {
             const searchTerm = value.split('@').pop()?.toLowerCase() || ''
@@ -138,6 +144,15 @@ export function TaskDialog({ open, onClose, onSubmit, projectId }: TaskDialogPro
             setShowUserSuggestions(true)
         } else {
             setShowUserSuggestions(false)
+        }
+    }
+
+    // Clear saved assignee when user focuses on the field
+    const handleAssigneeFocus = () => {
+        // Clear saved info when focusing to allow fresh @ mention
+        if (assigneeInput && !assigneeInput.includes('@')) {
+            setAssigneeInput('')
+            setFormData(prev => ({ ...prev, assigneeId: '', assigneeName: '' }))
         }
     }
 
@@ -270,11 +285,7 @@ export function TaskDialog({ open, onClose, onSubmit, projectId }: TaskDialogPro
                                     placeholder="Type @ to mention users"
                                     value={assigneeInput}
                                     onChange={(e) => handleAssigneeInputChange(e.target.value)}
-                                    onFocus={() => {
-                                        if (assigneeInput.includes('@')) {
-                                            setShowUserSuggestions(true)
-                                        }
-                                    }}
+                                    onFocus={handleAssigneeFocus}
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">
                                     {currentUser?.role === 'TEAM_MEMBER'
@@ -288,18 +299,18 @@ export function TaskDialog({ open, onClose, onSubmit, projectId }: TaskDialogPro
                                         {filteredUsers.map((user) => (
                                             <div
                                                 key={user.id}
-                                                className="px-3 py-2 hover:bg-accent cursor-pointer flex items-center justify-between"
+                                                className="px-3 py-1.5 hover:bg-accent cursor-pointer flex items-center justify-between"
                                                 onClick={() => selectUser(user)}
                                             >
                                                 <div>
-                                                    <p className="text-sm font-medium">
+                                                    <p className="text-xs font-medium">
                                                         {user.firstName && user.lastName
                                                             ? `${user.firstName} ${user.lastName}`
                                                             : user.name || user.email}
                                                     </p>
-                                                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                                                    <p className="text-[10px] text-muted-foreground">{user.email}</p>
                                                 </div>
-                                                <Badge variant="outline" className="text-xs">
+                                                <Badge variant="outline" className="text-[10px]">
                                                     {user.role}
                                                 </Badge>
                                             </div>
@@ -309,7 +320,7 @@ export function TaskDialog({ open, onClose, onSubmit, projectId }: TaskDialogPro
 
                                 {showUserSuggestions && filteredUsers.length === 0 && (
                                     <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border rounded-md shadow-lg p-3">
-                                        <p className="text-sm text-muted-foreground">No users found</p>
+                                        <p className="text-xs text-muted-foreground">No users found</p>
                                     </div>
                                 )}
                             </div>

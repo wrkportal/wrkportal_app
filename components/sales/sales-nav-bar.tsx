@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, UserPlus, Target, FileText, ShoppingCart, TrendingUp, LayoutGrid, BarChart3, Zap, GitBranch } from 'lucide-react'
+import { LayoutDashboard, UserPlus, Target, FileText, ShoppingCart, TrendingUp, LayoutGrid, BarChart3, Zap, GitBranch, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { WidgetGalleryDialog } from '@/components/common/widget-gallery-dialog'
+import { FunctionalHelpDialog } from '@/components/help/functional-help-dialog'
 
 interface Widget {
   id: string
@@ -73,6 +74,7 @@ export function SalesNavBar({ widgets, toggleWidget }: SalesNavBarProps = {}) {
   const searchParams = useSearchParams()
   const currentTab = searchParams?.get('tab')
   const [widgetGalleryOpen, setWidgetGalleryOpen] = useState(false)
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false)
   
   // Use provided widgets or default sales widgets
   const displayWidgets = widgets && widgets.length > 0 ? widgets : defaultSalesWidgets
@@ -134,8 +136,17 @@ export function SalesNavBar({ widgets, toggleWidget }: SalesNavBarProps = {}) {
             )
           })}
 
-          {/* Widget Gallery Button */}
-          <div className="ml-auto">
+          {/* Widget Gallery Button & Help Button */}
+          <div className="ml-auto flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-8 px-3 relative z-10"
+              onClick={() => setHelpDialogOpen(true)}
+            >
+              <HelpCircle className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Help</span>
+            </Button>
             <Button 
               variant="ghost" 
               size="sm"
@@ -155,6 +166,13 @@ export function SalesNavBar({ widgets, toggleWidget }: SalesNavBarProps = {}) {
             onOpenChange={setWidgetGalleryOpen}
             widgets={displayWidgets}
             toggleWidget={displayToggleWidget}
+          />
+
+          {/* Help Dialog */}
+          <FunctionalHelpDialog
+            open={helpDialogOpen}
+            onOpenChange={setHelpDialogOpen}
+            area="sales"
           />
         </nav>
       </div>

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { MoreVertical, BarChart3, Map as MapIcon, TrendingUp, AlertTriangle, Users, ClipboardList, Network, Palette, Link as LinkIcon, Briefcase, CheckCircle2, Target, Plus, MessageSquare, FileText, X, UserCheck, Calendar, Clock, GripVertical, List, Filter, ChevronLeft, ChevronRight, Activity, LayoutGrid, Maximize, Minimize, Play, Pause, History, Trash2, ChevronDown } from 'lucide-react'
+import { MoreVertical, BarChart3, Map as MapIcon, TrendingUp, AlertTriangle, Users, ClipboardList, Network, Palette, Link as LinkIcon, Briefcase, CheckCircle2, Target, Plus, MessageSquare, FileText, X, UserCheck, Calendar, Clock, GripVertical, List, Filter, ChevronLeft, ChevronRight, Activity, LayoutGrid, Maximize, Minimize, Play, Pause, History, Trash2, ChevronDown, Loader2, Send } from 'lucide-react'
 import {
   ResponsiveContainer,
   LineChart,
@@ -27,6 +27,9 @@ import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useAuthStore, fetchAuthenticatedUser } from '@/stores/authStore'
 import { getInitials, cn } from '@/lib/utils'
 import { format, addDays, isToday } from 'date-fns'
@@ -158,6 +161,14 @@ export default function PMDashboardLandingPage() {
   const [stakeholderUpdates, setStakeholderUpdates] = useState<any>(null)
   const [collaborationActivity, setCollaborationActivity] = useState<any>(null)
   const [feedback, setFeedback] = useState<any>(null)
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false)
+  const [feedbackFormData, setFeedbackFormData] = useState({
+    type: 'IMPROVEMENT' as 'FEATURE_REQUEST' | 'BUG_REPORT' | 'IMPROVEMENT' | 'GENERAL',
+    title: '',
+    description: '',
+    priority: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+  })
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
 
   // My Tasks widget state
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
@@ -3620,100 +3631,240 @@ export default function PMDashboardLandingPage() {
         )
 
       case 'feedbackIntegration':
+        const handleSubmitFeedback = async () => {
+          if (!feedbackFormData.title.trim() || !feedbackFormData.description.trim()) {
+            return
+          }
+
+          setIsSubmittingFeedback(true)
+          try {
+            const response = await fetch('/api/product-management/feedback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(feedbackFormData),
+            })
+
+            if (response.ok) {
+              // Refresh feedback data
+              const feedbackRes = await fetch('/api/product-management/feedback')
+              if (feedbackRes.ok) {
+                const feedbackData = await feedbackRes.json()
+                setFeedback(feedbackData)
+              }
+              setFeedbackDialogOpen(false)
+              setFeedbackFormData({
+                type: 'IMPROVEMENT',
+                title: '',
+                description: '',
+                priority: 'MEDIUM',
+              })
+            } else {
+              alert('Failed to submit feedback. Please try again.')
+            }
+          } catch (error) {
+            console.error('Error submitting feedback:', error)
+            alert('Failed to submit feedback. Please try again.')
+          } finally {
+            setIsSubmittingFeedback(false)
+          }
+        }
+
         return (
-          <Card className="h-full">
-            <CardHeader className="px-6 pt-6 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Feedback & Requests</CardTitle>
-                  <CardDescription className="text-xs">User feedback and feature requests</CardDescription>
+          <>
+            <Card className="h-full flex flex-col">
+              <CardHeader className="px-6 pt-6 pb-4 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Feedback & Requests</CardTitle>
+                    <CardDescription className="text-xs">User feedback and feature requests</CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFeedbackDialogOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Submit
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    // TODO: Open feedback form
-                    alert('Feedback form coming soon')
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Submit
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="px-6 pt-0 pb-6">
-              {feedback && feedback.stats ? (
-                <div className="space-y-4">
-                  {/* Summary */}
-                  <div className="grid grid-cols-2 gap-2 pb-3 border-b">
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{feedback.stats.total}</div>
-                      <div className="text-[10px] text-muted-foreground">Total Feedback</div>
+              </CardHeader>
+              <CardContent className="px-6 pt-0 pb-6 flex-1 overflow-y-auto min-h-[200px]">
+                {feedback && feedback.stats ? (
+                  <div className="space-y-4">
+                    {/* Summary */}
+                    <div className="grid grid-cols-2 gap-2 pb-3 border-b">
+                      <div className="text-center">
+                        <div className="text-lg font-bold">{feedback.stats.total || 0}</div>
+                        <div className="text-[10px] text-muted-foreground">Total Feedback</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold">{feedback.stats.avgSatisfaction || 0}/10</div>
+                        <div className="text-[10px] text-muted-foreground">Avg Satisfaction</div>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{feedback.stats.avgSatisfaction}/10</div>
-                      <div className="text-[10px] text-muted-foreground">Avg Satisfaction</div>
-                    </div>
-                  </div>
 
-                  {/* Breakdown */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Feature Requests</span>
-                      <span className="font-medium">{feedback.stats.featureRequests}</span>
+                    {/* Breakdown */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Feature Requests</span>
+                        <span className="font-medium">{feedback.stats.featureRequests || 0}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Bug Reports</span>
+                        <span className="font-medium">{feedback.stats.bugReports || 0}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Improvements</span>
+                        <span className="font-medium">{feedback.stats.improvements || 0}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">High Priority</span>
+                        <span className="font-medium text-rose-600">{feedback.stats.highPriority || 0}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Bug Reports</span>
-                      <span className="font-medium">{feedback.stats.bugReports}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Improvements</span>
-                      <span className="font-medium">{feedback.stats.improvements}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">High Priority</span>
-                      <span className="font-medium text-rose-600">{feedback.stats.highPriority}</span>
-                    </div>
-                  </div>
 
-                  {/* Feedback List */}
-                  {feedback.feedback && feedback.feedback.length > 0 ? (
-                    <div className="space-y-2 max-h-64 overflow-y-auto mt-4">
-                      {feedback.feedback.slice(0, 5).map((item: any) => (
-                        <div
-                          key={item.id}
-                          className="rounded-lg border border-border bg-background px-2.5 py-2 text-xs"
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-foreground font-medium line-clamp-1">{item.title}</div>
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] ${item.priority === 'CRITICAL' || item.priority === 'HIGH'
-                                  ? 'border-rose-500/60 text-rose-600'
-                                  : ''
-                                }`}
-                            >
-                              {item.type}
-                            </Badge>
+                    {/* Feedback List */}
+                    {feedback.feedback && feedback.feedback.length > 0 ? (
+                      <div className="space-y-2 max-h-64 overflow-y-auto mt-4">
+                        {feedback.feedback.slice(0, 5).map((item: any) => (
+                          <div
+                            key={item.id}
+                            className="rounded-lg border border-border bg-background px-2.5 py-2 text-xs"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="text-foreground font-medium line-clamp-1">{item.title}</div>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] ${item.priority === 'CRITICAL' || item.priority === 'HIGH'
+                                    ? 'border-rose-500/60 text-rose-600'
+                                    : ''
+                                  }`}
+                              >
+                                {item.type}
+                              </Badge>
+                            </div>
+                            <div className="text-[10px] text-muted-foreground line-clamp-2">{item.description}</div>
                           </div>
-                          <div className="text-[10px] text-muted-foreground line-clamp-2">{item.description}</div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-xs text-muted-foreground">
-                      No feedback submitted yet
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-xs text-muted-foreground">
+                        No feedback submitted yet
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center py-8">
+                    <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                    <p className="text-sm text-muted-foreground mb-2">No feedback data available</p>
+                    <p className="text-xs text-muted-foreground">Click "Submit" to add feedback</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Feedback Dialog */}
+            <Dialog open={feedbackDialogOpen} onOpenChange={setFeedbackDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Submit Feedback</DialogTitle>
+                  <DialogDescription>
+                    Share your feedback, feature requests, or report bugs
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="feedback-type">Type</Label>
+                    <Select
+                      value={feedbackFormData.type}
+                      onValueChange={(value: 'FEATURE_REQUEST' | 'BUG_REPORT' | 'IMPROVEMENT' | 'GENERAL') =>
+                        setFeedbackFormData({ ...feedbackFormData, type: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="FEATURE_REQUEST">Feature Request</SelectItem>
+                        <SelectItem value="BUG_REPORT">Bug Report</SelectItem>
+                        <SelectItem value="IMPROVEMENT">Improvement</SelectItem>
+                        <SelectItem value="GENERAL">General</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="feedback-priority">Priority</Label>
+                    <Select
+                      value={feedbackFormData.priority}
+                      onValueChange={(value: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL') =>
+                        setFeedbackFormData({ ...feedbackFormData, priority: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="LOW">Low</SelectItem>
+                        <SelectItem value="MEDIUM">Medium</SelectItem>
+                        <SelectItem value="HIGH">High</SelectItem>
+                        <SelectItem value="CRITICAL">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="feedback-title">Title *</Label>
+                    <Input
+                      id="feedback-title"
+                      value={feedbackFormData.title}
+                      onChange={(e) => setFeedbackFormData({ ...feedbackFormData, title: e.target.value })}
+                      placeholder="Brief title for your feedback"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="feedback-description">Description *</Label>
+                    <Textarea
+                      id="feedback-description"
+                      value={feedbackFormData.description}
+                      onChange={(e) => setFeedbackFormData({ ...feedbackFormData, description: e.target.value })}
+                      placeholder="Describe your feedback in detail..."
+                      rows={4}
+                      required
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setFeedbackDialogOpen(false)}
+                      disabled={isSubmittingFeedback}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSubmitFeedback}
+                      disabled={isSubmittingFeedback || !feedbackFormData.title.trim() || !feedbackFormData.description.trim()}
+                    >
+                      {isSubmittingFeedback ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" />
+                          Submit
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-32 text-center py-8">
-                  <MessageSquare className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                  <p className="text-sm text-muted-foreground">No feedback data available</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </DialogContent>
+            </Dialog>
+          </>
         )
 
       case 'recentProjects':

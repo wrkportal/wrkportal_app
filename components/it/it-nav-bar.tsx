@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { Ticket, Package, FileText, Activity, LayoutGrid, Shield } from 'lucide-react'
+import { Ticket, Package, FileText, Activity, LayoutGrid, Shield, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { WidgetGalleryDialog } from '@/components/common/widget-gallery-dialog'
+import { FunctionalHelpDialog } from '@/components/help/functional-help-dialog'
 
 interface Widget {
   id: string
@@ -22,6 +23,7 @@ interface ITNavBarProps {
 export function ITNavBar({ widgets, toggleWidget }: ITNavBarProps = {}) {
   const pathname = usePathname()
   const [widgetGalleryOpen, setWidgetGalleryOpen] = useState(false)
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false)
 
   const navItems = [
     { label: "Dashboard", href: "/it-dashboard/dashboard", icon: LayoutGrid },
@@ -72,8 +74,17 @@ export function ITNavBar({ widgets, toggleWidget }: ITNavBarProps = {}) {
             )
           })}
 
-          {/* Widget Gallery Button */}
-          <div className="ml-auto">
+          {/* Widget Gallery Button & Help Button */}
+          <div className="ml-auto flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-8 px-3 relative z-10"
+              onClick={() => setHelpDialogOpen(true)}
+            >
+              <HelpCircle className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Help</span>
+            </Button>
             <Button 
               variant="ghost" 
               size="sm"
@@ -93,6 +104,13 @@ export function ITNavBar({ widgets, toggleWidget }: ITNavBarProps = {}) {
             onOpenChange={setWidgetGalleryOpen}
             widgets={widgets || []}
             toggleWidget={toggleWidget || (() => {})}
+          />
+
+          {/* Help Dialog */}
+          <FunctionalHelpDialog
+            open={helpDialogOpen}
+            onOpenChange={setHelpDialogOpen}
+            area="it"
           />
         </nav>
       </div>
