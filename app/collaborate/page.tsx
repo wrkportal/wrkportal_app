@@ -54,6 +54,7 @@ import {
   Laugh,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
+import { useUIStore } from '@/stores/uiStore'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -152,6 +153,7 @@ function CollaborateInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const user = useAuthStore((state) => state.user)
+  const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [collaborations, setCollaborations] = useState<Collaboration[]>([])
@@ -646,7 +648,10 @@ function CollaborateInner() {
   return (
     <div className="grid h-full min-h-0 w-full bg-background overflow-x-hidden grid-cols-[auto_minmax(0,1fr)_auto] gap-0 px-0 -mt-16 pt-16">
       {/* Left Sidebar - Chat List */}
-      <div className="w-64 md:w-64 lg:w-64 min-w-[240px] max-w-[400px] border-r bg-card/50 backdrop-blur-sm flex flex-col fixed top-16 left-0 z-30 h-[calc(100vh-4rem)] overflow-hidden">
+      <div className={cn(
+        "w-64 md:w-64 lg:w-64 min-w-[240px] max-w-[400px] border-r bg-card/50 backdrop-blur-sm flex flex-col fixed top-16 z-30 h-[calc(100vh-4rem)] overflow-hidden",
+        sidebarCollapsed ? "left-14" : "left-56"
+      )}>
         {/* Header */}
         <div className="p-4 border-b bg-card/80 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
@@ -841,7 +846,9 @@ function CollaborateInner() {
         <div
           className={cn(
             "flex flex-col overflow-hidden bg-background fixed top-16 z-30 h-[calc(100vh-4rem)]",
-            showGroupInfo ? "left-64 right-80" : "left-64 right-0"
+            sidebarCollapsed
+              ? (showGroupInfo ? "left-[312px] right-80" : "left-[312px] right-0")
+              : (showGroupInfo ? "left-[480px] right-80" : "left-[480px] right-0")
           )}
         >
           {/* Top Bar */}
@@ -1726,8 +1733,9 @@ function CollaborateInner() {
           messageId={selectedMessageForTask.id}
           collaborationId={selectedCollaboration.id}
           onSuccess={() => {
-            // Optionally refresh messages or show success notification
+            // Refresh tasks in all dashboards by triggering a page reload or showing notification
             console.log('Task created successfully from message')
+            // Note: Tasks will appear in task views after refresh or when tasks are fetched with includeCreated=true
           }}
         />
       )}

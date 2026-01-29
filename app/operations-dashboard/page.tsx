@@ -451,7 +451,11 @@ export default function OperationsDashboardPage() {
 
   useEffect(() => {
     if (!isInitialMount && typeof window !== 'undefined') {
-      localStorage.setItem('operations-dashboard-layouts', JSON.stringify(layouts))
+      try {
+        localStorage.setItem('operations-dashboard-layouts', JSON.stringify(layouts))
+      } catch (error) {
+        console.error('Error saving layouts to localStorage:', error)
+      }
     }
   }, [layouts, isInitialMount])
 
@@ -631,12 +635,19 @@ export default function OperationsDashboardPage() {
   }
 
   const onLayoutChange = (layout: Layout[], layouts: Layouts) => {
-    setLayouts(layouts)
+    // Ensure all breakpoints are included in the saved layouts
+    const completeLayouts: Layouts = {
+      lg: layouts.lg || [],
+      md: layouts.md || layouts.lg || [],
+      sm: layouts.sm || layouts.md || layouts.lg || [],
+      xs: layouts.xs || layouts.sm || layouts.md || layouts.lg || [],
+    }
+    setLayouts(completeLayouts)
     // Save to localStorage immediately to persist across navigation
     // Only save if not during initial mount to avoid overwriting during load
     if (typeof window !== 'undefined' && !isInitialMount) {
       try {
-        localStorage.setItem('operations-dashboard-layouts', JSON.stringify(layouts))
+        localStorage.setItem('operations-dashboard-layouts', JSON.stringify(completeLayouts))
       } catch (error) {
         console.error('Error saving layouts to localStorage:', error)
       }
@@ -683,7 +694,7 @@ export default function OperationsDashboardPage() {
 
   const fetchUserTasks = async () => {
     try {
-      const response = await fetch('/api/tasks')
+      const response = await fetch('/api/tasks?includeCreated=true')
       if (response.ok) {
         const data = await response.json()
         setUserTasks(data.tasks || [])
