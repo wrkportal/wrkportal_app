@@ -30,13 +30,26 @@ export async function GET(
             return NextResponse.json({ error: 'Not a member of this collaboration' }, { status: 403 })
         }
 
-        // Find the file record
-        const file = await prisma.collaborationFile.findFirst({
+        // Find the file record - try by fileUrl first, then by fileName
+        let file = await prisma.collaborationFile.findFirst({
             where: {
                 collaborationId: id,
                 fileUrl: `/api/collaborations/${id}/files/${fileName}`
             }
         })
+
+        // If not found by fileUrl, try by fileName (in case fileName is the actual stored filename)
+        if (!file) {
+            file = await prisma.collaborationFile.findFirst({
+                where: {
+                    collaborationId: id,
+                    OR: [
+                        { fileName: fileName },
+                        { fileUrl: { contains: fileName } }
+                    ]
+                }
+            })
+        }
 
         if (!file) {
             return NextResponse.json({ error: 'File not found' }, { status: 404 })

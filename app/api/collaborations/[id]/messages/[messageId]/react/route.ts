@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; messageId: string } }
+  { params }: { params: Promise<{ id: string; messageId: string }> }
 ) {
   try {
     const session = await auth()
@@ -17,8 +17,7 @@ export async function POST(
     }
 
     const { emoji } = await request.json()
-    const messageId = params.messageId
-    const collaborationId = params.id
+    const { messageId, id: collaborationId } = await params
 
     if (!emoji) {
       return NextResponse.json(
