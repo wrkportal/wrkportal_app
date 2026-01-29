@@ -644,7 +644,7 @@ function CollaborateInner() {
   }
 
   return (
-    <div className="grid h-full min-h-0 w-full bg-background overflow-x-hidden grid-cols-[auto_minmax(0,1fr)_auto] gap-2 px-2 -mt-16 pt-16">
+    <div className="grid h-full min-h-0 w-full bg-background overflow-x-hidden grid-cols-[auto_minmax(0,1fr)_auto] gap-0 px-0 -mt-16 pt-16">
       {/* Left Sidebar - Chat List */}
       <div className="w-64 md:w-64 lg:w-64 min-w-[240px] max-w-[400px] border-r bg-card/50 backdrop-blur-sm flex flex-col h-full min-h-0 overflow-hidden">
         {/* Header */}
@@ -735,55 +735,55 @@ function CollaborateInner() {
                       onClick={() => selectCollaboration(collaboration)}
                       className="w-full p-3 text-left"
                     >
-                    <div className="flex items-start gap-3">
-                      <Avatar className={cn(
-                        "h-8 w-8 md:h-9 md:w-9 flex-shrink-0 ring-2 ring-offset-2 ring-offset-background",
-                        isSelected ? "ring-primary/30" : "ring-transparent"
-                      )}>
-                        <AvatarFallback className={cn(
-                          'text-xs font-semibold',
-                          isSelected ? 'bg-primary/20 text-primary' : 'bg-primary/10 text-primary'
+                      <div className="flex items-start gap-3">
+                        <Avatar className={cn(
+                          "h-8 w-8 md:h-9 md:w-9 flex-shrink-0 ring-2 ring-offset-2 ring-offset-background",
+                          isSelected ? "ring-primary/30" : "ring-transparent"
                         )}>
-                          {getInitials(collaboration.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={cn(
-                            'font-semibold text-sm truncate text-black dark:text-white',
-                            isSelected ? 'font-medium' : ''
+                          <AvatarFallback className={cn(
+                            'text-xs font-semibold',
+                            isSelected ? 'bg-primary/20 text-primary' : 'bg-primary/10 text-primary'
                           )}>
-                            {collaboration.name}
-                          </span>
-                          {lastTime && (
+                            {getInitials(collaboration.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
                             <span className={cn(
-                              'text-xs ml-2 flex-shrink-0',
-                              isSelected ? 'text-primary/70' : 'text-muted-foreground'
+                              'font-semibold text-sm truncate text-black dark:text-white',
+                              isSelected ? 'font-medium' : ''
                             )}>
-                              {lastTime}
+                              {collaboration.name}
                             </span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <p className={cn(
-                            'text-xs truncate flex-1',
-                            isSelected ? 'text-foreground/80' : 'text-muted-foreground'
-                          )}>
-                            {lastMessage}
-                          </p>
-                          {unread > 0 && (
-                            <Badge className={cn(
-                              'h-5 min-w-5 px-1.5 text-xs flex-shrink-0',
-                              isSelected
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-primary text-primary-foreground'
+                            {lastTime && (
+                              <span className={cn(
+                                'text-xs ml-2 flex-shrink-0',
+                                isSelected ? 'text-primary/70' : 'text-muted-foreground'
+                              )}>
+                                {lastTime}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className={cn(
+                              'text-xs truncate flex-1',
+                              isSelected ? 'text-foreground/80' : 'text-muted-foreground'
                             )}>
-                              {unread}
-                            </Badge>
-                          )}
+                              {lastMessage}
+                            </p>
+                            {unread > 0 && (
+                              <Badge className={cn(
+                                'h-5 min-w-5 px-1.5 text-xs flex-shrink-0',
+                                isSelected
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-primary text-primary-foreground'
+                              )}>
+                                {unread}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
                     </button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -874,9 +874,9 @@ function CollaborateInner() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-9 w-9 hover:bg-accent hover:text-primary transition-colors"
                       onClick={() => setShowSearchBar(!showSearchBar)}
                     >
@@ -961,6 +961,10 @@ function CollaborateInner() {
                     </Badge>
                   </div>
                   {dateMessages.map((message, idx) => {
+                    if (!message.user) {
+                      console.warn('Message missing user:', message)
+                      return null
+                    }
                     const isOwn = message.userId === user?.id
                     const prevMessage = idx > 0 ? dateMessages[idx - 1] : null
                     const isSameUser = prevMessage && prevMessage.userId === message.userId &&
@@ -979,7 +983,7 @@ function CollaborateInner() {
                       >
                         {showAvatar ? (
                           <Avatar className="h-9 w-9 flex-shrink-0">
-                            <AvatarImage src={message.user.avatar || undefined} />
+                            <AvatarImage src={message.user?.avatar || undefined} />
                             <AvatarFallback className="text-xs font-medium">
                               {getInitials(getUserName(message.user))}
                             </AvatarFallback>
@@ -998,7 +1002,7 @@ function CollaborateInner() {
                               </span>
                             </div>
                           )}
-                          {message.parent && (
+                          {message.parent && message.parent.user && (
                             <div className="mb-2 p-2 bg-muted/50 rounded-lg border-l-2 border-primary/30 text-xs text-muted-foreground">
                               <div className="font-medium text-foreground/70 mb-0.5">
                                 Replying to {getUserName(message.parent.user)}
@@ -1294,98 +1298,98 @@ function CollaborateInner() {
               </button>
               {showFilesSection && (
                 <div className="p-4 flex flex-col" style={{ height: '300px' }}>
-              {files.length === 0 ? (
-                <div className="text-center py-8 flex-1 flex items-center justify-center">
-                  <div>
-                    <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-                    <p className="text-xs text-muted-foreground">No files shared yet</p>
-                  </div>
-                </div>
-              ) : (
-                <ScrollArea className="flex-1">
-                  <div className="space-y-2 pr-2">
-                    {files.map((file) => {
-                      const fileDate = new Date(file.uploadedAt)
-                      const formatFileSize = (bytes: number) => {
-                        if (bytes < 1024) return `${bytes} B`
-                        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-                        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-                      }
-                      const getFileIcon = () => {
-                        if (file.fileType.startsWith('image/')) return ImageIcon
-                        if (file.fileType.startsWith('video/')) return Video
-                        return FileText
-                      }
-                      const FileIcon = getFileIcon()
+                  {files.length === 0 ? (
+                    <div className="text-center py-8 flex-1 flex items-center justify-center">
+                      <div>
+                        <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                        <p className="text-xs text-muted-foreground">No files shared yet</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <ScrollArea className="flex-1">
+                      <div className="space-y-2 pr-2">
+                        {files.map((file) => {
+                          const fileDate = new Date(file.uploadedAt)
+                          const formatFileSize = (bytes: number) => {
+                            if (bytes < 1024) return `${bytes} B`
+                            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+                            return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+                          }
+                          const getFileIcon = () => {
+                            if (file.fileType.startsWith('image/')) return ImageIcon
+                            if (file.fileType.startsWith('video/')) return Video
+                            return FileText
+                          }
+                          const FileIcon = getFileIcon()
 
-                      return (
-                        <div
-                          key={file.id}
-                          className="p-3 border rounded-lg hover:bg-accent/50 transition-colors group"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
-                                <FileIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-xs font-medium text-foreground truncate">
-                                  {file.fileName}
+                          return (
+                            <div
+                              key={file.id}
+                              className="p-3 border rounded-lg hover:bg-accent/50 transition-colors group"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                  <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
+                                    <FileIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-medium text-foreground truncate">
+                                      {file.fileName}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                      <span>{formatFileSize(file.fileSize)}</span>
+                                      <span>•</span>
+                                      <span>{fileDate.toLocaleDateString()}</span>
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                  <span>{formatFileSize(file.fileSize)}</span>
-                                  <span>•</span>
-                                  <span>{fileDate.toLocaleDateString()}</span>
-                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 flex-shrink-0"
+                                  onClick={async () => {
+                                    try {
+                                      // Extract stored fileName from fileUrl (the unique generated name)
+                                      let storedFileName = file.fileName
+                                      if (file.fileUrl && file.fileUrl.startsWith('/api/collaborations/')) {
+                                        // Extract the stored fileName from the URL path
+                                        const urlParts = file.fileUrl.split('/')
+                                        storedFileName = urlParts[urlParts.length - 1]
+                                      }
+
+                                      // Download file using the API endpoint
+                                      const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/files/${storedFileName}`)
+                                      if (response.ok) {
+                                        const blob = await response.blob()
+                                        const url = window.URL.createObjectURL(blob)
+                                        const a = document.createElement('a')
+                                        a.href = url
+                                        a.download = file.fileName // Use original fileName for download
+                                        document.body.appendChild(a)
+                                        a.click()
+                                        window.URL.revokeObjectURL(url)
+                                        document.body.removeChild(a)
+                                      } else {
+                                        const errorText = await response.text()
+                                        console.error('Failed to download file:', response.status, response.statusText, errorText)
+                                        alert('Failed to download file')
+                                      }
+                                    } catch (error) {
+                                      console.error('Error downloading file:', error)
+                                      alert('Error downloading file')
+                                    }
+                                  }}
+                                  title="Download file"
+                                >
+                                  <ArrowUp className="h-4 w-4" />
+                                </Button>
                               </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 flex-shrink-0"
-                              onClick={async () => {
-                                try {
-                                  // Extract stored fileName from fileUrl (the unique generated name)
-                                  let storedFileName = file.fileName
-                                  if (file.fileUrl.startsWith('/api/collaborations/')) {
-                                    // Extract the stored fileName from the URL path
-                                    const urlParts = file.fileUrl.split('/')
-                                    storedFileName = urlParts[urlParts.length - 1]
-                                  }
-                                  
-                                  // Download file using the API endpoint
-                                  const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/files/${storedFileName}`)
-                                  if (response.ok) {
-                                    const blob = await response.blob()
-                                    const url = window.URL.createObjectURL(blob)
-                                    const a = document.createElement('a')
-                                    a.href = url
-                                    a.download = file.fileName // Use original fileName for download
-                                    document.body.appendChild(a)
-                                    a.click()
-                                    window.URL.revokeObjectURL(url)
-                                    document.body.removeChild(a)
-                                  } else {
-                                    const errorText = await response.text()
-                                    console.error('Failed to download file:', response.status, response.statusText, errorText)
-                                    alert('Failed to download file')
-                                  }
-                                } catch (error) {
-                                  console.error('Error downloading file:', error)
-                                  alert('Error downloading file')
-                                }
-                              }}
-                              title="Download file"
-                            >
-                              <ArrowUp className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </ScrollArea>
-              )}
+                          )
+                        })}
+                      </div>
+                    </ScrollArea>
+                  )}
                 </div>
               )}
             </div>
@@ -1403,62 +1407,62 @@ function CollaborateInner() {
               </button>
               {showMeetingsSection && (
                 <div className="p-4 flex flex-col" style={{ height: '300px' }}>
-              {scheduledCalls.length === 0 ? (
-                <div className="text-center py-8 flex-1 flex items-center justify-center">
-                  <div>
-                    <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-                    <p className="text-xs text-muted-foreground">No scheduled meetings</p>
-                  </div>
-                </div>
-              ) : (
-                <ScrollArea className="flex-1">
-                  <div className="space-y-2 pr-2">
-                    {scheduledCalls.map((call) => {
-                      const scheduledDate = call.scheduledAt ? new Date(call.scheduledAt) : null
-                      const isUpcoming = scheduledDate && scheduledDate > new Date()
+                  {scheduledCalls.length === 0 ? (
+                    <div className="text-center py-8 flex-1 flex items-center justify-center">
+                      <div>
+                        <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                        <p className="text-xs text-muted-foreground">No scheduled meetings</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <ScrollArea className="flex-1">
+                      <div className="space-y-2 pr-2">
+                        {scheduledCalls.map((call) => {
+                          const scheduledDate = call.scheduledAt ? new Date(call.scheduledAt) : null
+                          const isUpcoming = scheduledDate && scheduledDate > new Date()
 
-                      return (
-                        <div
-                          key={call.id}
-                          className="p-3 border rounded-lg hover:bg-accent/50 transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <div className="flex-1 min-w-0">
-                              <h5 className="font-medium text-sm text-foreground truncate">
-                                {call.title || 'Untitled Call'}
-                              </h5>
-                              {call.description && (
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                  {call.description}
-                                </p>
+                          return (
+                            <div
+                              key={call.id}
+                              className="p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                            >
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-medium text-sm text-foreground truncate">
+                                    {call.title || 'Untitled Call'}
+                                  </h5>
+                                  {call.description && (
+                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                      {call.description}
+                                    </p>
+                                  )}
+                                </div>
+                                {isUpcoming && (
+                                  <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                    Upcoming
+                                  </Badge>
+                                )}
+                              </div>
+                              {scheduledDate && (
+                                <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                                  <Clock className="h-3 w-3" />
+                                  <span>
+                                    {scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                              )}
+                              {call.participants && call.participants.length > 0 && (
+                                <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                                  <Users className="h-3 w-3" />
+                                  <span>{call.participants.length} participants</span>
+                                </div>
                               )}
                             </div>
-                            {isUpcoming && (
-                              <Badge variant="secondary" className="text-xs flex-shrink-0">
-                                Upcoming
-                              </Badge>
-                            )}
-                          </div>
-                          {scheduledDate && (
-                            <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              <span>
-                                {scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </div>
-                          )}
-                          {call.participants && call.participants.length > 0 && (
-                            <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-                              <Users className="h-3 w-3" />
-                              <span>{call.participants.length} participants</span>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </ScrollArea>
-              )}
+                          )
+                        })}
+                      </div>
+                    </ScrollArea>
+                  )}
                 </div>
               )}
             </div>
@@ -2014,7 +2018,11 @@ function ScheduleCallDialog({ open, onOpenChange, collaboration, onCallScheduled
                   className="absolute right-0 top-0 h-full w-10 hover:bg-transparent"
                   onClick={() => {
                     const dateInput = document.getElementById('call-date') as HTMLInputElement
-                    dateInput?.showPicker?.() || dateInput?.click()
+                    if (dateInput?.showPicker) {
+                      dateInput.showPicker()
+                    } else {
+                      dateInput?.click()
+                    }
                   }}
                   title="Open calendar"
                 >
@@ -2040,7 +2048,11 @@ function ScheduleCallDialog({ open, onOpenChange, collaboration, onCallScheduled
                   className="absolute right-0 top-0 h-full w-10 hover:bg-transparent"
                   onClick={() => {
                     const timeInput = document.getElementById('call-time') as HTMLInputElement
-                    timeInput?.showPicker?.() || timeInput?.click()
+                    if (timeInput?.showPicker) {
+                      timeInput.showPicker()
+                    } else {
+                      timeInput?.click()
+                    }
                   }}
                   title="Open time picker"
                 >

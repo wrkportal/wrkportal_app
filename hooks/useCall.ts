@@ -4,6 +4,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useAuthStore } from '@/stores/authStore'
+import { SignalingClient, SignalingMessage } from '@/lib/webrtc/signaling'
 
 export interface CallParticipant {
   id: string
@@ -71,12 +72,19 @@ export function useCall(): UseCallReturn {
   const recordedChunksRef = useRef<Blob[]>([])
   const recordingStartTimeRef = useRef<number>(0)
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const signalingClientRef = useRef<SignalingClient | null>(null)
 
   const isActive = call?.status === 'ACTIVE'
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      // Stop signaling
+      if (signalingClientRef.current) {
+        signalingClientRef.current.stopPolling()
+        signalingClientRef.current = null
+      }
+
       // Cleanup streams
       localStreamRef.current?.getTracks().forEach((track) => track.stop())
       screenStreamRef.current?.getTracks().forEach((track) => track.stop())
@@ -167,6 +175,90 @@ export function useCall(): UseCallReturn {
     }
   }, [])
 
+  // Create peer connection for a participant
+  const createPeerConnection = useCallback((userId: string, isInitiator: boolean = false) => {
+    const configuration: RTCConfiguration = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+      ],
+    }
+
+    const pc = new RTCPeerConnection(configuration)
+    peerConnectionsRef.current.set(userId, pc)
+
+    // Add local stream tracks to peer connection
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        pc.addTrack(track, localStreamRef.current!)
+      })
+    }
+
+    // Handle remote stream
+    pc.ontrack = (event) => {
+      const [remoteStream] = event.streams
+      setRemoteStreams((prev) => {
+        const newMap = new Map(prev)
+        newMap.set(userId, remoteStream)
+        return newMap
+      })
+    }
+
+    // Handle ICE candidates
+    pc.onicecandidate = async (event) => {
+      if (event.candidate && signalingClientRef.current) {
+        await signalingClientRef.current.sendIceCandidate(
+          event.candidate.toJSON(),
+          userId
+        )
+      }
+    }
+
+    // Handle connection state changes
+    pc.onconnectionstatechange = () => {
+      console.log(`Peer connection state for ${userId}:`, pc.connectionState)
+      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        setError(`Connection lost with ${userId}`)
+      }
+    }
+
+    return pc
+  }, [])
+
+  // Handle incoming signaling message
+  const handleSignalingMessage = useCallback(async (message: SignalingMessage) => {
+    if (!call || !user?.id) return
+
+    const pc = peerConnectionsRef.current.get(message.fromUserId) || 
+               createPeerConnection(message.fromUserId, false)
+
+    try {
+      if (message.type === 'offer') {
+        await pc.setRemoteDescription(new RTCSessionDescription(message.sdp!))
+        const answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        
+        if (signalingClientRef.current) {
+          await signalingClientRef.current.sendAnswer(answer, message.fromUserId)
+        }
+      } else if (message.type === 'answer') {
+        await pc.setRemoteDescription(new RTCSessionDescription(message.sdp!))
+      } else if (message.type === 'ice-candidate' && message.candidate) {
+        await pc.addIceCandidate(new RTCIceCandidate(message.candidate))
+      } else if (message.type === 'hangup') {
+        pc.close()
+        peerConnectionsRef.current.delete(message.fromUserId)
+        setRemoteStreams((prev) => {
+          const newMap = new Map(prev)
+          newMap.delete(message.fromUserId)
+          return newMap
+        })
+      }
+    } catch (error) {
+      console.error('Error handling signaling message:', error)
+    }
+  }, [call, user, createPeerConnection])
+
   // Start a new call
   const startCall = useCallback(async (participantIds?: string[], title?: string) => {
     try {
@@ -194,6 +286,32 @@ export function useCall(): UseCallReturn {
       const data = await response.json()
       setCall(data.call)
 
+      // Initialize signaling client
+      if (user?.id) {
+        const signalingClient = new SignalingClient(
+          data.call.id,
+          user.id,
+          handleSignalingMessage
+        )
+        signalingClientRef.current = signalingClient
+        signalingClient.startPolling(1000) // Poll every second
+      }
+
+      // Create peer connections for other participants
+      if (data.call.participants && participantIds) {
+        for (const participantId of participantIds) {
+          if (participantId !== user?.id) {
+            const pc = createPeerConnection(participantId, true)
+            const offer = await pc.createOffer()
+            await pc.setLocalDescription(offer)
+            
+            if (signalingClientRef.current) {
+              await signalingClientRef.current.sendOffer(offer, participantId)
+            }
+          }
+        }
+      }
+
       // Update call status to ACTIVE
       await fetch(`/api/calls/${data.call.id}`, {
         method: 'PATCH',
@@ -209,7 +327,7 @@ export function useCall(): UseCallReturn {
     } finally {
       setIsConnecting(false)
     }
-  }, [getUserMedia])
+  }, [getUserMedia, user, createPeerConnection, handleSignalingMessage])
 
   // Join an existing call
   const joinCall = useCallback(async (callId: string) => {
@@ -238,6 +356,27 @@ export function useCall(): UseCallReturn {
         })
       }
 
+      // Initialize signaling client
+      if (user?.id) {
+        const signalingClient = new SignalingClient(
+          callId,
+          user.id,
+          handleSignalingMessage
+        )
+        signalingClientRef.current = signalingClient
+        signalingClient.startPolling(1000)
+      }
+
+      // Create peer connections for existing participants
+      if (data.call.participants) {
+        for (const participant of data.call.participants) {
+          if (participant.userId !== user?.id) {
+            const pc = createPeerConnection(participant.userId, false)
+            // Wait for offer from existing participants
+          }
+        }
+      }
+
       // Update call status to ACTIVE if not already
       if (data.call.status !== 'ACTIVE') {
         await fetch(`/api/calls/${callId}`, {
@@ -253,12 +392,19 @@ export function useCall(): UseCallReturn {
     } finally {
       setIsConnecting(false)
     }
-  }, [getUserMedia])
+  }, [getUserMedia, user, createPeerConnection, handleSignalingMessage])
 
   // Leave call
   const leaveCall = useCallback(async () => {
     try {
       if (!call) return
+
+      // Send hangup signal
+      if (signalingClientRef.current) {
+        await signalingClientRef.current.sendHangup()
+        signalingClientRef.current.stopPolling()
+        signalingClientRef.current = null
+      }
 
       // Stop local stream
       localStreamRef.current?.getTracks().forEach((track) => track.stop())
