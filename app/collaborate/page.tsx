@@ -1400,60 +1400,61 @@ function CollaborateInner() {
               {showMembersSection && (
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setScheduleCallDialogOpen(true)}
-                    className="h-8 text-xs"
-                  >
-                    <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                    Schedule Call
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAddPeopleDialogOpen(true)}
-                    className="h-8 text-xs"
-                  >
-                    <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-                    Add People
-                  </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setScheduleCallDialogOpen(true)}
+                        className="h-8 text-xs"
+                      >
+                        <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                        Schedule Call
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAddPeopleDialogOpen(true)}
+                        className="h-8 text-xs"
+                      >
+                        <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                        Add People
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     {selectedCollaboration.members.map((member) => {
-                  const memberUser = member.user
-                  const isAdmin = member.role === 'OWNER' || member.role === 'ADMIN'
+                      const memberUser = member.user
+                      const isAdmin = member.role === 'OWNER' || member.role === 'ADMIN'
 
-                  return (
-                    <div
-                      key={member.id}
-                      className="flex items-center gap-3 p-2.5 hover:bg-accent rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Avatar className="h-9 w-9 flex-shrink-0">
-                        <AvatarImage src={memberUser.avatar || undefined} />
-                        <AvatarFallback className="text-xs font-medium">
-                          {getInitials(getUserName(memberUser))}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium truncate text-foreground">
-                            {getUserName(memberUser)}
-                          </span>
-                          {isAdmin && (
-                            <Badge variant="secondary" className="text-xs px-1.5 py-0 font-medium">
-                              admin
-                            </Badge>
-                          )}
+                      return (
+                        <div
+                          key={member.id}
+                          className="flex items-center gap-3 p-2.5 hover:bg-accent rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Avatar className="h-9 w-9 flex-shrink-0">
+                            <AvatarImage src={memberUser.avatar || undefined} />
+                            <AvatarFallback className="text-xs font-medium">
+                              {getInitials(getUserName(memberUser))}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium truncate text-foreground">
+                                {getUserName(memberUser)}
+                              </span>
+                              {isAdmin && (
+                                <Badge variant="secondary" className="text-xs px-1.5 py-0 font-medium">
+                                  admin
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {memberUser.email}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {memberUser.email}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
+                      )
+                    })}
                   </div>
                 </div>
               )}
