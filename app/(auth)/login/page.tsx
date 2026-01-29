@@ -204,9 +204,9 @@ function LoginPageContent({ initialError = '', onErrorChange }: { initialError?:
                             <Image
                                 src="/logo.png"
                                 alt="wrkportal.com Logo"
-                                width={110}
-                                height={33}
-                                className="h-7 sm:h-7 md:h-8 w-auto object-contain"
+                                width={150}
+                                height={45}
+                                className="h-10 sm:h-12 md:h-14 w-auto object-contain"
                             />
                         </div>
                         <p className="text-slate-600 text-xs sm:text-sm">Welcome Back</p>
@@ -221,11 +221,11 @@ function LoginPageContent({ initialError = '', onErrorChange }: { initialError?:
                             {/* SSO Login Button */}
                             <Button
                                 variant="outline"
-                                className="w-full border border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-slate-700 text-xs sm:text-sm h-8 sm:h-9"
+                                className="w-full border border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-slate-700 text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10 font-medium"
                                 onClick={() => setShowSSO(!showSSO)}
                                 disabled={loading}
                             >
-                                <Building2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                <Building2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                                 Log in with SSO
                             </Button>
 
@@ -268,11 +268,11 @@ function LoginPageContent({ initialError = '', onErrorChange }: { initialError?:
                             {/* Google Sign In */}
                             <Button
                                 variant="outline"
-                                className="w-full border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm h-8 sm:h-9"
+                                className="w-full border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10 font-medium"
                                 onClick={handleGoogleSignIn}
                                 disabled={loading}
                             >
-                                <Chrome className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                <Chrome className="mr-2 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                                 Continue with Google
                             </Button>
 

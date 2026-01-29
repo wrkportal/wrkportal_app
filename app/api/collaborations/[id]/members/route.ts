@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 // POST /api/collaborations/[id]/members - Add a member
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
@@ -13,16 +13,21 @@ export async function POST(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        const { id } = await params
         const { userId, role = 'MEMBER' } = await req.json()
 
         if (!userId) {
             return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
         }
 
+        if (!id) {
+            return NextResponse.json({ error: 'Collaboration ID is required' }, { status: 400 })
+        }
+
         // Verify current user is a member with permission to add others
         const currentMember = await prisma.collaborationMember.findFirst({
             where: {
-                collaborationId: params.id,
+                collaborationId: id,
                 userId: session.user.id,
             }
         })
@@ -34,7 +39,7 @@ export async function POST(
         // Check if user is already a member
         const existingMember = await prisma.collaborationMember.findFirst({
             where: {
-                collaborationId: params.id,
+                collaborationId: id,
                 userId: userId
             }
         })
@@ -46,7 +51,7 @@ export async function POST(
         // Add the new member
         const member = await prisma.collaborationMember.create({
             data: {
-                collaborationId: params.id,
+                collaborationId: id,
                 userId: userId,
                 role: role,
                 joinedAt: new Date()

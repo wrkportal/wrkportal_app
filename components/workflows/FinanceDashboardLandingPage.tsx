@@ -331,9 +331,13 @@ export default function FinanceDashboardLandingPage() {
 
   useEffect(() => {
     const loadLayouts = async () => {
+      // Use different localStorage keys for wrkboard vs finance-dashboard
+      const widgetsKey = isWrkboard ? 'wrkboard-widgets' : 'finance-widgets'
+      const layoutsKey = isWrkboard ? 'wrkboard-layouts' : 'finance-layouts'
+      
       // Check for user's saved preferences first
-      const saved = localStorage.getItem('finance-widgets')
-      const savedLayouts = localStorage.getItem('finance-layouts')
+      const saved = localStorage.getItem(widgetsKey)
+      const savedLayouts = localStorage.getItem(layoutsKey)
 
       // Load widgets visibility
       if (saved) {
@@ -349,7 +353,7 @@ export default function FinanceDashboardLandingPage() {
               const firstLoginWidgets = defaultWidgets.map(w => ({ ...w, visible: false }))
               setWidgets(firstLoginWidgets)
               setWidgetsLoaded(true)
-              localStorage.setItem('finance-widgets', JSON.stringify(firstLoginWidgets))
+              localStorage.setItem(widgetsKey, JSON.stringify(firstLoginWidgets))
               return
             }
 
@@ -361,33 +365,33 @@ export default function FinanceDashboardLandingPage() {
             if (savedWidgetIds.size === defaultWidgetIds.size &&
               Array.from(savedWidgetIds).every(id => defaultWidgetIds.has(id))) {
               // All saved widget IDs match defaults, use saved preferences directly
-              setWidgets(savedWidgets)
-              setWidgetsLoaded(true)
-              return
-            }
-
-            // Otherwise, filter out removed widgets and merge with defaults
-            const validSavedWidgetIds = new Set(defaultWidgets.map(w => w.id))
-            const filteredSavedWidgets = savedWidgets.filter(w => validSavedWidgetIds.has(w.id))
-
-            const mergedWidgets = defaultWidgets.map(defaultWidget => {
-              const savedWidget = filteredSavedWidgets.find(w => w.id === defaultWidget.id)
-              // If we have a saved widget, use its visibility preference, otherwise default to invisible
-              if (savedWidget) {
-                return { ...defaultWidget, visible: savedWidget.visible }
-              }
-              // If no saved widget found, default to invisible (not visible)
-              return { ...defaultWidget, visible: false }
-            })
-            setWidgets(mergedWidgets)
+            setWidgets(savedWidgets)
             setWidgetsLoaded(true)
-            localStorage.setItem('finance-widgets', JSON.stringify(mergedWidgets))
+            return
+          }
+
+          // Otherwise, filter out removed widgets and merge with defaults
+          const validSavedWidgetIds = new Set(defaultWidgets.map(w => w.id))
+          const filteredSavedWidgets = savedWidgets.filter(w => validSavedWidgetIds.has(w.id))
+
+          const mergedWidgets = defaultWidgets.map(defaultWidget => {
+            const savedWidget = filteredSavedWidgets.find(w => w.id === defaultWidget.id)
+            // If we have a saved widget, use its visibility preference, otherwise default to invisible
+            if (savedWidget) {
+              return { ...defaultWidget, visible: savedWidget.visible }
+            }
+            // If no saved widget found, default to invisible (not visible)
+            return { ...defaultWidget, visible: false }
+          })
+          setWidgets(mergedWidgets)
+          setWidgetsLoaded(true)
+          localStorage.setItem(widgetsKey, JSON.stringify(mergedWidgets))
           } else {
             // Invalid saved data, reset to invisible
             const firstLoginWidgets = defaultWidgets.map(w => ({ ...w, visible: false }))
             setWidgets(firstLoginWidgets)
             setWidgetsLoaded(true)
-            localStorage.setItem('finance-widgets', JSON.stringify(firstLoginWidgets))
+            localStorage.setItem(widgetsKey, JSON.stringify(firstLoginWidgets))
           }
         } catch (e) {
           console.error('Failed to load widget preferences', e)
@@ -399,7 +403,7 @@ export default function FinanceDashboardLandingPage() {
       } else {
         // Try to load from database defaults
         try {
-          const dbDefault = await loadDefaultLayout('finance-dashboard')
+          const dbDefault = await loadDefaultLayout(isWrkboard ? 'wrkboard' : 'finance-dashboard')
           if (dbDefault?.widgets) {
             const validWidgetIds = new Set(defaultWidgets.map(w => w.id))
             const mergedWidgets = defaultWidgets.map(defaultWidget => {
@@ -413,13 +417,13 @@ export default function FinanceDashboardLandingPage() {
             })
             setWidgets(mergedWidgets)
             setWidgetsLoaded(true)
-            localStorage.setItem('finance-widgets', JSON.stringify(mergedWidgets))
+            localStorage.setItem(widgetsKey, JSON.stringify(mergedWidgets))
           } else {
             // No database defaults, set all to invisible
             const firstLoginWidgets = defaultWidgets.map(w => ({ ...w, visible: false }))
             setWidgets(firstLoginWidgets)
             setWidgetsLoaded(true)
-            localStorage.setItem('finance-widgets', JSON.stringify(firstLoginWidgets))
+            localStorage.setItem(widgetsKey, JSON.stringify(firstLoginWidgets))
           }
         } catch (e) {
           console.error('Failed to load default widgets from DB', e)
@@ -427,7 +431,7 @@ export default function FinanceDashboardLandingPage() {
           const firstLoginWidgets = defaultWidgets.map(w => ({ ...w, visible: false }))
           setWidgets(firstLoginWidgets)
           setWidgetsLoaded(true)
-          localStorage.setItem('finance-widgets', JSON.stringify(firstLoginWidgets))
+          localStorage.setItem(widgetsKey, JSON.stringify(firstLoginWidgets))
         }
       }
 
@@ -450,11 +454,11 @@ export default function FinanceDashboardLandingPage() {
           if (hasValidLayouts) {
             setLayouts(filteredLayouts)
             // Clean up localStorage to remove invalid widgets
-            localStorage.setItem('finance-layouts', JSON.stringify(filteredLayouts))
+            localStorage.setItem(layoutsKey, JSON.stringify(filteredLayouts))
           } else {
             // Try to load from database defaults
             try {
-              const dbDefault = await loadDefaultLayout('finance-dashboard')
+              const dbDefault = await loadDefaultLayout(isWrkboard ? 'wrkboard' : 'finance-dashboard')
               if (dbDefault?.layouts) {
                 setLayouts(dbDefault.layouts)
               } else {
@@ -472,7 +476,7 @@ export default function FinanceDashboardLandingPage() {
       } else {
         // No saved layouts - try to load from database defaults
         try {
-          const dbDefault = await loadDefaultLayout('finance-dashboard')
+          const dbDefault = await loadDefaultLayout(isWrkboard ? 'wrkboard' : 'finance-dashboard')
           if (dbDefault?.layouts) {
             setLayouts(dbDefault.layouts)
           } else {
@@ -489,7 +493,8 @@ export default function FinanceDashboardLandingPage() {
         setIsInitialMount(false)
       }, 100)
 
-      const savedLinks = localStorage.getItem('finance-useful-links')
+      const linksKey = isWrkboard ? 'wrkboard-useful-links' : 'finance-useful-links'
+      const savedLinks = localStorage.getItem(linksKey)
       if (savedLinks) {
         try {
           setUsefulLinks(JSON.parse(savedLinks))
@@ -509,7 +514,8 @@ export default function FinanceDashboardLandingPage() {
       return
     }
     setLayouts(allLayouts)
-    localStorage.setItem('finance-layouts', JSON.stringify(allLayouts))
+    const layoutsKey = isWrkboard ? 'wrkboard-layouts' : 'finance-layouts'
+    localStorage.setItem(layoutsKey, JSON.stringify(allLayouts))
   }
 
   // Task-related functions
@@ -2407,10 +2413,11 @@ export default function FinanceDashboardLandingPage() {
       }
 
       // Save to localStorage immediately
-      localStorage.setItem('finance-widgets', JSON.stringify(updatedWidgets))
+      const widgetsKey = isWrkboard ? 'wrkboard-widgets' : 'finance-widgets'
+      localStorage.setItem(widgetsKey, JSON.stringify(updatedWidgets))
       return updatedWidgets
     })
-  }, [])
+  }, [isWrkboard])
 
   const renderWidget = (widget: Widget) => {
     switch (widget.type) {
@@ -3048,7 +3055,8 @@ export default function FinanceDashboardLandingPage() {
                         }
                         const updated = [...usefulLinks, newLink]
                         setUsefulLinks(updated)
-                        localStorage.setItem('finance-useful-links', JSON.stringify(updated))
+                        const linksKey = isWrkboard ? 'wrkboard-useful-links' : 'finance-useful-links'
+                        localStorage.setItem(linksKey, JSON.stringify(updated))
                         setNewLinkTitle('')
                         setNewLinkUrl('')
                       }
@@ -3077,7 +3085,8 @@ export default function FinanceDashboardLandingPage() {
                           onClick={() => {
                             const updated = usefulLinks.filter(l => l.id !== link.id)
                             setUsefulLinks(updated)
-                            localStorage.setItem('finance-useful-links', JSON.stringify(updated))
+                            const linksKey = isWrkboard ? 'wrkboard-useful-links' : 'finance-useful-links'
+                            localStorage.setItem(linksKey, JSON.stringify(updated))
                           }}
                         >
                           <X className="h-3 w-3" />

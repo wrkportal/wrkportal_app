@@ -77,6 +77,7 @@ import { TimeTrackingDialog } from '@/components/dialogs/time-tracking-dialog'
 import { TimerNotesDialog } from '@/components/dialogs/timer-notes-dialog'
 import { AdvancedMindMapWidget } from '@/components/widgets/AdvancedMindMapWidget'
 import { AdvancedCanvasWidget } from '@/components/widgets/AdvancedCanvasWidget'
+import { WidgetGalleryDialog } from '@/components/common/widget-gallery-dialog'
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -197,6 +198,7 @@ export default function OperationsDashboardPage() {
   const [isInitialMount, setIsInitialMount] = useState(true)
   const [widgetsLoaded, setWidgetsLoaded] = useState(false)
   const [widgets, setWidgets] = useState<Widget[]>([])
+  const [widgetGalleryOpen, setWidgetGalleryOpen] = useState(false)
 
   // My Tasks widget state
   const [userTasks, setUserTasks] = useState<any[]>([])
@@ -3265,7 +3267,10 @@ export default function OperationsDashboardPage() {
           <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
             <Button
               variant="outline"
-              onClick={() => router.push('/operations-dashboard')}
+              onClick={() => {
+                // Open widget gallery dialog
+                setWidgetGalleryOpen(true)
+              }}
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
@@ -3273,7 +3278,15 @@ export default function OperationsDashboardPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => router.push('/wrkboard')}
+              onClick={() => {
+                // Navigate to tasks page or toggle myTasks widget
+                const myTasksWidget = widgets.find(w => w.id === 'myTasks')
+                if (myTasksWidget) {
+                  toggleWidget('myTasks')
+                } else {
+                  router.push('/operations-dashboard/tasks')
+                }
+              }}
               className="flex items-center gap-2"
             >
               <Target className="h-4 w-4" />
@@ -3416,6 +3429,14 @@ export default function OperationsDashboardPage() {
         }}
         onSubmit={startTimer}
         taskTitle={pendingTimerTask?.title}
+      />
+
+      {/* Widget Gallery Dialog */}
+      <WidgetGalleryDialog
+        open={widgetGalleryOpen}
+        onOpenChange={setWidgetGalleryOpen}
+        widgets={widgets}
+        toggleWidget={toggleWidget}
       />
     </OperationsPageLayout>
   )

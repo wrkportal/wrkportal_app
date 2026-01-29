@@ -116,11 +116,13 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
                 <Sidebar />
 
                 <main
-                    className={`transition-all duration-300 pt-16 h-screen ${
+                    className={`transition-all duration-300 pt-16 h-screen overflow-hidden ${
                         sidebarCollapsed ? 'md:pl-14' : 'md:pl-56'
                     }`}
                 >
-                    {children}
+                    <div className="h-full w-full">
+                        {children}
+                    </div>
                 </main>
             </div>
         )

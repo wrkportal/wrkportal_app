@@ -486,7 +486,7 @@ function CollaborateInner() {
   }
 
   return (
-    <div className="grid h-full min-h-0 w-full bg-background overflow-x-hidden grid-cols-[auto_minmax(0,1fr)_auto] gap-2 px-2">
+    <div className="grid h-full min-h-0 w-full bg-background overflow-x-hidden grid-cols-[auto_minmax(0,1fr)_auto] gap-2 px-2 -mt-16 pt-16">
       {/* Left Sidebar - Chat List */}
       <div className="w-80 min-w-[280px] max-w-[400px] border-r bg-card/50 backdrop-blur-sm flex flex-col h-full min-h-0 overflow-hidden">
         {/* Header */}

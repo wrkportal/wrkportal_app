@@ -24,17 +24,89 @@ BEGIN
     END IF;
 END $$;
 
--- Step 2: Update existing tasks with a default tenantId
+-- Step 2: First, let's see what columns exist in the Task table
+-- This will help us understand the structure
+SELECT 
+    column_name, 
+    data_type, 
+    is_nullable
+FROM information_schema.columns 
+WHERE table_name = 'Task'
+ORDER BY ordinal_position;
+
+-- Step 2b: Update existing tasks with a default tenantId
 -- This uses the tenantId from the user who created the task
+-- We'll try different possible column names
 DO $$ 
+DECLARE
+    has_created_by_id BOOLEAN;
+    has_user_id BOOLEAN;
+    has_assignee_id BOOLEAN;
+    default_tenant_id TEXT;
 BEGIN
-    UPDATE "Task" t
-    SET "tenantId" = u."tenantId"
-    FROM "User" u
-    WHERE t."createdById" = u.id
-    AND t."tenantId" IS NULL;
+    -- Check for createdById
+    SELECT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'Task' 
+        AND column_name = 'createdById'
+    ) INTO has_created_by_id;
     
-    RAISE NOTICE 'Updated existing tasks with tenantId from creator';
+    -- Check for userId
+    SELECT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'Task' 
+        AND column_name = 'userId'
+    ) INTO has_user_id;
+    
+    -- Check for assigneeId
+    SELECT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'Task' 
+        AND column_name = 'assigneeId'
+    ) INTO has_assignee_id;
+    
+    -- Get a default tenant ID (first tenant in the system)
+    SELECT id INTO default_tenant_id FROM "Tenant" LIMIT 1;
+    
+    -- Update existing tasks with tenantId based on available columns
+    IF has_created_by_id THEN
+        UPDATE "Task" t
+        SET "tenantId" = COALESCE(u."tenantId", default_tenant_id)
+        FROM "User" u
+        WHERE t."createdById" = u.id
+        AND t."tenantId" IS NULL;
+        RAISE NOTICE 'Updated tasks using createdById column';
+    ELSIF has_user_id THEN
+        UPDATE "Task" t
+        SET "tenantId" = COALESCE(u."tenantId", default_tenant_id)
+        FROM "User" u
+        WHERE t."userId" = u.id
+        AND t."tenantId" IS NULL;
+        RAISE NOTICE 'Updated tasks using userId column';
+    ELSIF has_assignee_id THEN
+        UPDATE "Task" t
+        SET "tenantId" = COALESCE(u."tenantId", default_tenant_id)
+        FROM "User" u
+        WHERE t."assigneeId" = u.id
+        AND t."tenantId" IS NULL;
+        RAISE NOTICE 'Updated tasks using assigneeId column';
+    ELSE
+        -- If no user reference column exists, set all to default tenant
+        UPDATE "Task"
+        SET "tenantId" = default_tenant_id
+        WHERE "tenantId" IS NULL;
+        RAISE WARNING 'No user reference column found. Set all tasks to default tenant.';
+    END IF;
+    
+    -- For any remaining NULL values, set to default tenant
+    UPDATE "Task"
+    SET "tenantId" = default_tenant_id
+    WHERE "tenantId" IS NULL;
+    
+    RAISE NOTICE 'Completed updating tasks with tenantId';
 END $$;
 
 -- Step 3: Make tenantId NOT NULL (after setting values)
@@ -90,9 +162,7 @@ SELECT
     t.id,
     t.title,
     t."tenantId",
-    tn.name as tenant_name,
-    u.email as created_by
+    tn.name as tenant_name
 FROM "Task" t
 LEFT JOIN "Tenant" tn ON t."tenantId" = tn.id
-LEFT JOIN "User" u ON t."createdById" = u.id
 LIMIT 10;
