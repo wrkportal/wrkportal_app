@@ -42,6 +42,11 @@ import {
   Clock,
   Users,
   CheckSquare,
+  Reply,
+  Heart,
+  ThumbsUp,
+  ThumbsDown,
+  Laugh,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
@@ -107,6 +112,16 @@ interface Message {
     email: string
     avatar: string | null
   }
+  parent?: {
+    id: string
+    content: string
+    user: {
+      id: string
+      name: string | null
+      firstName: string | null
+      lastName: string | null
+    }
+  } | null
   reactions?: Array<{
     emoji: string
     users: Array<{
@@ -151,6 +166,8 @@ function CollaborateInner() {
   const [scheduleCallDialogOpen, setScheduleCallDialogOpen] = useState(false)
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
   const [selectedMessageForTask, setSelectedMessageForTask] = useState<Message | null>(null)
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null)
+  const [messageOptionsOpen, setMessageOptionsOpen] = useState<string | null>(null)
 
   // Fetch collaborations
   useEffect(() => {
@@ -355,11 +372,13 @@ function CollaborateInner() {
         body: JSON.stringify({
           content: messageInput.trim(),
           mentions: [],
+          replyToId: replyingTo?.id || null,
         }),
       })
 
       if (response.ok) {
         setMessageInput('')
+        setReplyingTo(null)
         await fetchMessages()
         await fetchCollaborations() // Refresh to update last message
       }
@@ -488,34 +507,35 @@ function CollaborateInner() {
   return (
     <div className="grid h-full min-h-0 w-full bg-background overflow-x-hidden grid-cols-[auto_minmax(0,1fr)_auto] gap-2 px-2 -mt-16 pt-16">
       {/* Left Sidebar - Chat List */}
-      <div className="w-80 min-w-[280px] max-w-[400px] border-r bg-card/50 backdrop-blur-sm flex flex-col h-full min-h-0 overflow-hidden">
+      <div className="w-64 md:w-72 lg:w-80 min-w-[240px] max-w-[400px] border-r bg-card/50 backdrop-blur-sm flex flex-col h-full min-h-0 overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b bg-card/80 backdrop-blur-sm flex-shrink-0">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-lg md:text-xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               Discussions
             </h1>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search conversations"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 text-sm bg-background/50"
-            />
+          {/* Search Bar and New Discussion Button in one row */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search conversations"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9 text-sm bg-background/50"
+              />
+            </div>
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              size="icon"
+              className="h-9 w-9 flex-shrink-0"
+              title="New Discussion"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
-
-          <Button
-            onClick={() => setCreateDialogOpen(true)}
-            className="w-full h-9 text-sm font-medium"
-            size="sm"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Discussion
-          </Button>
         </div>
 
         {/* Chat List */}
@@ -745,9 +765,17 @@ function CollaborateInner() {
                               </span>
                             </div>
                           )}
+                          {message.parent && (
+                            <div className="mb-2 p-2 bg-muted/50 rounded-lg border-l-2 border-primary/30 text-xs text-muted-foreground">
+                              <div className="font-medium text-foreground/70 mb-0.5">
+                                Replying to {getUserName(message.parent.user)}
+                              </div>
+                              <div className="line-clamp-2">{message.parent.content}</div>
+                            </div>
+                          )}
                           <div
                             className={cn(
-                              'rounded-2xl px-4 py-2.5 text-sm shadow-sm',
+                              'rounded-2xl px-4 py-2.5 text-sm shadow-sm relative',
                               isOwn
                                 ? 'bg-primary text-primary-foreground rounded-br-md'
                                 : 'bg-card border border-border rounded-bl-md'
@@ -762,12 +790,99 @@ function CollaborateInner() {
                                     variant="secondary"
                                     size="sm"
                                     className="h-6 px-2 text-xs hover:bg-accent"
+                                    onClick={async () => {
+                                      try {
+                                        const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/messages/${message.id}/react`, {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ emoji: reaction.emoji }),
+                                        })
+                                        if (response.ok) {
+                                          await fetchMessages()
+                                        }
+                                      } catch (error) {
+                                        console.error('Error toggling reaction:', error)
+                                      }
+                                    }}
                                   >
                                     {reaction.emoji} {reaction.users.length}
                                   </Button>
                                 ))}
                               </div>
                             )}
+                            {/* Message Options - appears on hover */}
+                            <div className={cn(
+                              'absolute opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1',
+                              isOwn ? '-left-2 top-2' : '-right-2 top-2'
+                            )}>
+                              <DropdownMenu open={messageOptionsOpen === message.id} onOpenChange={(open) => setMessageOptionsOpen(open ? message.id : null)}>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 bg-background/90 hover:bg-background shadow-sm border"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setMessageOptionsOpen(message.id)
+                                    }}
+                                  >
+                                    <MoreVertical className="h-3.5 w-3.5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align={isOwn ? 'end' : 'start'} className="w-48">
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setReplyingTo(message)
+                                      setMessageOptionsOpen(null)
+                                    }}
+                                  >
+                                    <Reply className="h-4 w-4 mr-2" />
+                                    Reply
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedMessageForTask(message)
+                                      setTaskDialogOpen(true)
+                                      setMessageOptionsOpen(null)
+                                    }}
+                                  >
+                                    <CheckSquare className="h-4 w-4 mr-2" />
+                                    Create Task
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <div className="px-2 py-1.5">
+                                    <div className="text-xs font-medium mb-1.5 text-muted-foreground">Quick Reactions</div>
+                                    <div className="flex gap-1">
+                                      {['👍', '❤️', '😂', '👎'].map((emoji) => (
+                                        <Button
+                                          key={emoji}
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 w-8 p-0 hover:bg-accent"
+                                          onClick={async () => {
+                                            try {
+                                              const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/messages/${message.id}/react`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ emoji }),
+                                              })
+                                              if (response.ok) {
+                                                await fetchMessages()
+                                                setMessageOptionsOpen(null)
+                                              }
+                                            } catch (error) {
+                                              console.error('Error adding reaction:', error)
+                                            }
+                                          }}
+                                        >
+                                          {emoji}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                           {isOwn && (
                             <div className="mt-1.5 flex items-center gap-1">
@@ -796,6 +911,26 @@ function CollaborateInner() {
 
           {/* Message Input */}
           <div className="border-t bg-card/80 backdrop-blur-sm p-4 flex-shrink-0 sticky bottom-0 z-10">
+            {replyingTo && (
+              <div className="mb-2 p-2 bg-muted/50 rounded-lg border-l-2 border-primary flex items-center justify-between max-w-5xl mx-auto">
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium text-foreground mb-0.5">
+                    Replying to {getUserName(replyingTo.user)}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {replyingTo.content}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 ml-2 flex-shrink-0"
+                  onClick={() => setReplyingTo(null)}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
             <div className="flex items-end gap-2 max-w-5xl mx-auto">
               <Button
                 variant="ghost"
@@ -813,7 +948,7 @@ function CollaborateInner() {
               />
               <div className="flex-1 relative">
                 <Input
-                  placeholder="Type a message..."
+                  placeholder={replyingTo ? `Reply to ${getUserName(replyingTo.user)}...` : "Type a message..."}
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -881,49 +1016,74 @@ function CollaborateInner() {
 
           <ScrollArea className="flex-1 overflow-y-auto">
             {/* Files Section */}
-            <div className="p-4 border-b">
-              <h4 className="font-semibold mb-3 text-sm text-foreground">Files</h4>
-              <div className="space-y-1.5">
-                <button className="flex items-center justify-between p-2.5 hover:bg-accent rounded-lg transition-colors w-full text-left group">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                      <ImageIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-foreground">
-                        {files.filter(f => f.fileType.startsWith('image/')).length} photos
-                      </div>
-                    </div>
+            <div className="p-4 border-b flex flex-col" style={{ height: '300px' }}>
+              <h4 className="font-semibold mb-3 text-sm text-foreground flex-shrink-0">
+                Files ({files.length})
+              </h4>
+              {files.length === 0 ? (
+                <div className="text-center py-8 flex-1 flex items-center justify-center">
+                  <div>
+                    <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                    <p className="text-xs text-muted-foreground">No files shared yet</p>
                   </div>
-                  <ArrowUp className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-                <button className="flex items-center justify-between p-2.5 hover:bg-accent rounded-lg transition-colors w-full text-left group">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                      <Video className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-foreground">
-                        {files.filter(f => f.fileType.startsWith('video/')).length} videos
-                      </div>
-                    </div>
+                </div>
+              ) : (
+                <ScrollArea className="flex-1">
+                  <div className="space-y-2 pr-2">
+                    {files.map((file) => {
+                      const fileDate = new Date(file.uploadedAt)
+                      const formatFileSize = (bytes: number) => {
+                        if (bytes < 1024) return `${bytes} B`
+                        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+                        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+                      }
+                      const getFileIcon = () => {
+                        if (file.fileType.startsWith('image/')) return ImageIcon
+                        if (file.fileType.startsWith('video/')) return Video
+                        return FileText
+                      }
+                      const FileIcon = getFileIcon()
+
+                      return (
+                        <div
+                          key={file.id}
+                          className="p-3 border rounded-lg hover:bg-accent/50 transition-colors group"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
+                                <FileIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-foreground truncate">
+                                  {file.fileName}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                  <span>{formatFileSize(file.fileSize)}</span>
+                                  <span>•</span>
+                                  <span>{fileDate.toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 flex-shrink-0"
+                              onClick={() => {
+                                // Download file
+                                window.open(file.fileUrl, '_blank')
+                              }}
+                              title="Download file"
+                            >
+                              <ArrowUp className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                  <ArrowUp className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-                <button className="flex items-center justify-between p-2.5 hover:bg-accent rounded-lg transition-colors w-full text-left group">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                      <FileText className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-foreground">
-                        {files.length} files
-                      </div>
-                    </div>
-                  </div>
-                  <ArrowUp className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-              </div>
+                </ScrollArea>
+              )}
             </div>
 
             {/* Scheduled Meetings Section */}
@@ -1447,10 +1607,10 @@ function ScheduleCallDialog({ open, onOpenChange, collaboration, onCallScheduled
       // Create scheduled date/time
       const dateTime = new Date(`${date}T${time}`)
 
-      // Get participant IDs from collaboration members (excluding current user)
-      const participantIds = collaboration.members
-        .map(m => m.user.id)
-        .filter(id => id !== user?.id) // Exclude current user as they're automatically added as host
+      // Get participant IDs from ALL collaboration members
+      // The API will automatically add the creator as HOST and filter them out from participantIds
+      // So we include all members here to ensure everyone sees the scheduled call
+      const participantIds = collaboration.members.map(m => m.user.id)
 
       // Create the call via API
       const response = await fetch('/api/calls', {
@@ -1525,24 +1685,56 @@ function ScheduleCallDialog({ open, onOpenChange, collaboration, onCallScheduled
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="call-date">Date *</Label>
-              <Input
-                id="call-date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                min={today}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="call-date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  min={today}
+                  required
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full w-10 hover:bg-transparent"
+                  onClick={() => {
+                    const dateInput = document.getElementById('call-date') as HTMLInputElement
+                    dateInput?.showPicker?.() || dateInput?.click()
+                  }}
+                  title="Open calendar"
+                >
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="call-time">Time *</Label>
-              <Input
-                id="call-time"
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="call-time"
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full w-10 hover:bg-transparent"
+                  onClick={() => {
+                    const timeInput = document.getElementById('call-time') as HTMLInputElement
+                    timeInput?.showPicker?.() || timeInput?.click()
+                  }}
+                  title="Open time picker"
+                >
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
             </div>
           </div>
           <div className="space-y-2">

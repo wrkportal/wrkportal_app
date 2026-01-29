@@ -59,9 +59,19 @@ export async function GET(req: NextRequest) {
         },
       })
 
+      // Helper function to remove "Organization" suffix from tenant names
+      const cleanTenantName = (name: string): string => {
+        return name.replace(/\s*'s\s+Organization\s*$/i, '').trim()
+      }
+      
+      // Helper function to remove "Organization" suffix from tenant names
+      const cleanTenantName = (name: string): string => {
+        return name.replace(/\s*'s\s+Organization\s*$/i, '').trim()
+      }
+      
       additionalTenants = userTenantAccesses.map((access: any) => ({
         id: access.tenant.id,
-        name: access.tenant.name,
+        name: cleanTenantName(access.tenant.name),
         domain: access.tenant.domain,
         type: access.tenant.type,
         logo: access.tenant.logo,
@@ -163,10 +173,15 @@ export async function GET(req: NextRequest) {
     // This allows users to see all workspaces they have access to
     const allTenantsMap = new Map<string, any>()
     
+    // Helper function to remove "Organization" suffix from tenant names
+    const cleanTenantName = (name: string): string => {
+      return name.replace(/\s*'s\s+Organization\s*$/i, '').trim()
+    }
+    
     // Add primary tenant first
     allTenantsMap.set(user.tenant.id, {
       id: user.tenant.id,
-      name: user.tenant.name,
+      name: cleanTenantName(user.tenant.name),
       domain: user.tenant.domain,
       type: user.tenant.type,
       logo: user.tenant.logo,
@@ -181,6 +196,7 @@ export async function GET(req: NextRequest) {
       if (!allTenantsMap.has(tenant.id)) {
         allTenantsMap.set(tenant.id, {
           ...tenant,
+          name: cleanTenantName(tenant.name),
           isPrimary: tenant.id === user.tenantId,
         })
       }
