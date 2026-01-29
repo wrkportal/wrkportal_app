@@ -193,29 +193,8 @@ export default function OperationsDashboardPage() {
   const [performanceData, setPerformanceData] = useState<any[]>([])
   const [complianceData, setComplianceData] = useState<any[]>([])
   const [inventoryData, setInventoryData] = useState<any[]>([])
-  // Initialize layouts from localStorage if available (client-side only)
-  const getInitialLayouts = (): Layouts => {
-    if (typeof window === 'undefined') return defaultLayouts
-    try {
-      const saved = localStorage.getItem('operations-dashboard-layouts')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (parsed && (parsed.lg || parsed.md || parsed.sm)) {
-          return {
-            lg: parsed.lg || defaultLayouts.lg || [],
-            md: parsed.md || parsed.lg || defaultLayouts.md || [],
-            sm: parsed.sm || parsed.md || parsed.lg || defaultLayouts.sm || [],
-            xs: parsed.xs || parsed.sm || parsed.md || parsed.lg || defaultLayouts.xs || [],
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error loading initial layouts:', error)
-    }
-    return defaultLayouts
-  }
-
-  const [layouts, setLayouts] = useState<Layouts>(getInitialLayouts())
+  // Start with defaults for SSR - will be updated from localStorage after mount
+  const [layouts, setLayouts] = useState<Layouts>(defaultLayouts)
   const [isMobile, setIsMobile] = useState(false)
   const [isInitialMount, setIsInitialMount] = useState(true)
   const [widgetsLoaded, setWidgetsLoaded] = useState(false)
@@ -416,9 +395,8 @@ export default function OperationsDashboardPage() {
         localStorage.setItem('operations-widgets', JSON.stringify(firstLoginWidgets))
       }
 
-      // Only update layouts if they differ from initial (to avoid unnecessary re-renders)
-      // The initial layouts are already loaded from localStorage in getInitialLayouts()
-      // This useEffect is mainly for syncing with any external changes
+      // Load layouts from localStorage after mount (client-side only)
+      // This ensures we restore saved layouts immediately after hydration
       const savedLayouts = localStorage.getItem('operations-dashboard-layouts')
       if (savedLayouts) {
         try {
@@ -430,18 +408,14 @@ export default function OperationsDashboardPage() {
               sm: parsed.sm || parsed.md || parsed.lg || defaultLayouts.sm || [],
               xs: parsed.xs || parsed.sm || parsed.md || parsed.lg || defaultLayouts.xs || [],
             }
-            // Only update if different to prevent unnecessary re-renders
-            const currentLayoutsStr = JSON.stringify(layouts)
-            const newLayoutsStr = JSON.stringify(completeLayouts)
-            if (currentLayoutsStr !== newLayoutsStr) {
-              setLayouts(completeLayouts)
-            }
+            // Always update on mount to restore saved layouts
+            setLayouts(completeLayouts)
           }
         } catch (error) {
-          console.error('Error loading layouts:', error)
+          console.error('Error loading layouts from localStorage:', error)
         }
       }
-
+      
       // Load useful links
       try {
         const savedLinks = localStorage.getItem('operations-useful-links')
@@ -452,6 +426,7 @@ export default function OperationsDashboardPage() {
         console.error('Error loading useful links:', error)
       }
 
+      // Mark initial mount as complete after loading all data
       setIsInitialMount(false)
     }
   }, [])
@@ -1015,33 +990,68 @@ export default function OperationsDashboardPage() {
 
     setGanttGroups(prevGroups => {
       const taskIdsInGroup = new Set<string>()
+      const taskToGroupMap = new Map<string, string>() // Map taskId to groupId
+      
+      // Build maps of existing tasks
       prevGroups.forEach(group => {
         group.tasks.forEach((task: any) => {
           taskIdsInGroup.add(task.id)
+          taskToGroupMap.set(task.id, group.id)
         })
       })
 
+      // Find which group a task belongs to based on its parent
+      const findGroupForTask = (task: any): string | null => {
+        // If task has a parent, find the group containing that parent
+        const parentId = task.parentId || task.parentTaskId
+        if (parentId) {
+          const parentGroupId = taskToGroupMap.get(parentId)
+          if (parentGroupId) return parentGroupId
+          
+          // Parent might be in a group - search for it
+          for (const group of prevGroups) {
+            if (group.tasks.some((t: any) => t.id === parentId)) {
+              return group.id
+            }
+          }
+        }
+        // If no parent and task is new, add to first group (or create default group logic)
+        // For now, add to first group if it exists
+        return prevGroups.length > 0 ? prevGroups[0].id : null
+      }
+
       const updatedGroups = prevGroups.map(group => {
+        // Update existing tasks in this group
         const updatedTasks = group.tasks.map((groupTask: any) => {
           const latestTask = userTasks.find((t: any) => t.id === groupTask.id)
           if (latestTask) {
             return {
               ...groupTask,
               ...latestTask,
-              parentTaskId: groupTask.parentTaskId || groupTask.parentId
+              parentTaskId: groupTask.parentTaskId || groupTask.parentId || latestTask.parentId
             }
           }
           return groupTask
         })
 
-        const newTasks = userTasks.filter((t: any) => {
+        // Find new tasks that belong to this group
+        const newTasksForThisGroup = userTasks.filter((t: any) => {
+          // Skip if task already in any group
           if (taskIdsInGroup.has(t.id)) return false
-          return true
+          
+          // Check if this task belongs to this group
+          const targetGroupId = findGroupForTask(t)
+          return targetGroupId === group.id
+        })
+
+        // Update taskToGroupMap for new tasks
+        newTasksForThisGroup.forEach(task => {
+          taskToGroupMap.set(task.id, group.id)
         })
 
         return {
           ...group,
-          tasks: [...updatedTasks, ...newTasks]
+          tasks: [...updatedTasks, ...newTasksForThisGroup]
         }
       })
 
@@ -3432,9 +3442,9 @@ export default function OperationsDashboardPage() {
         }}
         onSubmit={async (data) => {
           try {
-            const taskData = addingTaskToGroup
-              ? { ...data, parentId: addingTaskToGroup }
-              : data
+            // Don't set parentId to groupId - groups are just containers
+            // If addingTaskToGroup is set, we'll manually add the task to that group after creation
+            const taskData = data
 
             const response = await fetch('/api/tasks', {
               method: 'POST',
@@ -3443,6 +3453,21 @@ export default function OperationsDashboardPage() {
             })
 
             if (response.ok) {
+              const result = await response.json()
+              const newTask = result.task || result
+              
+              // If adding to a specific group, manually add it to that group
+              if (addingTaskToGroup && newTask?.id) {
+                setGanttGroups(prevGroups => 
+                  prevGroups.map(group => 
+                    group.id === addingTaskToGroup
+                      ? { ...group, tasks: [...group.tasks, { ...newTask, parentTaskId: null, parentId: null }] }
+                      : group
+                  )
+                )
+              }
+              
+              // Refresh tasks to ensure everything is in sync
               await fetchUserTasks()
               setTaskDialogOpen(false)
               setSelectedTaskId(null)

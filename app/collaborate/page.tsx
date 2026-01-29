@@ -1267,15 +1267,24 @@ function CollaborateInner() {
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-center min-w-0 h-full bg-muted/20">
-          <div className="text-center">
-            <MessageSquare className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No conversation selected</h3>
-            <p className="text-sm text-muted-foreground mb-4">Select a conversation or create a new one to start messaging</p>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Discussion
-            </Button>
+        <div
+          className={cn(
+            "flex flex-col overflow-hidden bg-background fixed top-16 z-30 h-[calc(100vh-4rem)]",
+            sidebarCollapsed
+              ? "left-[312px] right-0"
+              : "left-[480px] right-0"
+          )}
+        >
+          <div className="flex items-center justify-center flex-1 min-h-0 bg-muted/20">
+            <div className="text-center px-6">
+              <MessageSquare className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">No conversation selected</h3>
+              <p className="text-sm text-muted-foreground mb-4">Select a conversation or create a new one to start messaging</p>
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Discussion
+              </Button>
+            </div>
           </div>
         </div>
       )}
