@@ -167,18 +167,26 @@ Group Members: ${collaboration.members.map(m => {
   return name
 }).join(', ')}
 
-${messages.length > 0 ? `\nDiscussion Messages (${messages.length} messages):\n${messagesContext}` : '\nNo discussion messages yet.'}
+${messages.length > 0 ? `\n\n=== FULL DISCUSSION HISTORY ===\nPlease carefully read and analyze ALL the messages below. Extract key information, topics discussed, decisions made, action items, and important details:\n\n${messagesContext}\n\n=== END OF DISCUSSION HISTORY ===` : '\n\nNo discussion messages yet.'}
 
-${calls.length > 0 ? `\n\nCalls/Meetings (${calls.length} calls):\n${callsContext}` : '\nNo calls scheduled yet.'}
+${calls.length > 0 ? `\n\n=== SCHEDULED CALLS/MEETINGS ===\n${callsContext}\n=== END OF CALLS ===` : '\n\nNo calls scheduled yet.'}
 
-Please create a comprehensive summary of this collaboration group that includes:
-1. Key topics and discussions
-2. Important decisions or action items
-3. Main participants and their contributions
-4. Upcoming calls or meetings
-5. Overall status and next steps
+IMPORTANT: Read through the ENTIRE discussion history above. Do NOT just count messages. Analyze the ACTUAL CONTENT of each message to understand:
+- What topics are being discussed
+- What decisions have been made
+- What action items or tasks were mentioned
+- What problems or issues were raised
+- What solutions or ideas were proposed
+- Who contributed what to the discussion
+- What the current status is
 
-Make it concise but informative, focusing on the most important information. Format it as a clear, well-structured summary.`
+Create a comprehensive, detailed summary that shows you've actually read and understood the conversation content. Include specific examples from the messages, not just generic statements. Format it as a clear, well-structured summary with sections for:
+1. Key Topics Discussed (with specific details from messages)
+2. Important Decisions Made (quote or reference specific messages)
+3. Action Items and Next Steps (extract from the discussion)
+4. Main Contributors and Their Input (what each person said)
+5. Upcoming Calls/Meetings (if any)
+6. Overall Status and Summary`
 
     // Generate summary using AI
     let summary = ''

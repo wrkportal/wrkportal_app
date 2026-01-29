@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getFileUrl } from '@/lib/storage/s3-storage'
 import { readFile, mkdir } from 'fs/promises'
 import path from 'path'
 import { existsSync } from 'fs'
@@ -56,59 +57,90 @@ export async function GET(
             return NextResponse.json({ error: 'File not found' }, { status: 404 })
         }
 
-        // Extract the actual stored filename from fileUrl
-        // fileUrl format: /api/collaborations/{id}/files/{uniqueFileName}
+        // Check if file is stored in S3 or locally
+        // S3 files have format: /api/collaborations/{id}/files/{s3Key}
+        // Old local files have format: /api/collaborations/{id}/files/{uniqueFileName} or /uploads/collaborations/{uniqueFileName}
         const urlParts = file.fileUrl.split('/')
-        const storedFileName = urlParts[urlParts.length - 1] || fileName
+        const storedKey = urlParts[urlParts.length - 1] || fileName
 
-        // Read file from /tmp directory
-        const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
-        const uploadDir = isServerless
-            ? path.join('/tmp', 'collaborations')
-            : path.join(process.cwd(), 'public', 'uploads', 'collaborations')
-        const filePath = path.join(uploadDir, storedFileName)
+        // Check if this is an S3 key (contains 'collaborations/' prefix pattern)
+        const isS3File = storedKey.includes('collaborations/') || !file.fileUrl.startsWith('/uploads/')
 
-        // Ensure directory exists
-        if (!existsSync(uploadDir)) {
-            await mkdir(uploadDir, { recursive: true })
-        }
-
-        try {
-            const fileBuffer = await readFile(filePath)
-            
-            // Determine content type
-            const contentType = file.fileType || 'application/octet-stream'
-            
-            return new NextResponse(fileBuffer, {
-                headers: {
-                    'Content-Type': contentType,
-                    'Content-Disposition': `inline; filename="${file.fileName}"`,
-                    'Content-Length': file.fileSize.toString(),
-                },
-            })
-        } catch (fileError: any) {
-            console.error('Error reading file:', fileError)
-            // Provide more detailed error information
-            if (fileError.code === 'ENOENT') {
+        if (isS3File) {
+            try {
+                // Get presigned URL from S3 (valid for 1 hour)
+                const presignedUrl = await getFileUrl(storedKey, 3600)
+                
+                // Redirect to S3 presigned URL
+                return NextResponse.redirect(presignedUrl)
+            } catch (fileError: any) {
+                console.error('Error getting file from S3:', fileError)
+                // Fallback to local file if S3 fails
+                if (fileError.message?.includes('S3_BUCKET_NAME') || fileError.message?.includes('not set')) {
+                    // S3 not configured, try local file
+                    return await tryLocalFile(storedKey, file)
+                }
                 return NextResponse.json(
                     { 
-                        error: 'File not found on server',
-                        details: 'The file may have been deleted or is not available in this serverless environment. Files in /tmp are ephemeral and may not persist between requests.'
+                        error: 'Error retrieving file from S3',
+                        details: fileError.message 
                     },
-                    { status: 404 }
+                    { status: 500 }
                 )
             }
-            return NextResponse.json(
-                { 
-                    error: 'Error reading file',
-                    details: fileError.message 
-                },
-                { status: 500 }
-            )
+        } else {
+            // Legacy local file - try to read from local storage
+            return await tryLocalFile(storedKey, file)
         }
     } catch (error) {
         console.error('Error serving file:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+}
+
+async function tryLocalFile(storedFileName: string, file: any) {
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+    const uploadDir = isServerless
+        ? path.join('/tmp', 'collaborations')
+        : path.join(process.cwd(), 'public', 'uploads', 'collaborations')
+    const filePath = path.join(uploadDir, storedFileName)
+
+    // Ensure directory exists
+    if (!existsSync(uploadDir)) {
+        await mkdir(uploadDir, { recursive: true })
+    }
+
+    try {
+        const fileBuffer = await readFile(filePath)
+        
+        // Determine content type
+        const contentType = file.fileType || 'application/octet-stream'
+        
+        return new NextResponse(fileBuffer, {
+            headers: {
+                'Content-Type': contentType,
+                'Content-Disposition': `inline; filename="${file.fileName}"`,
+                'Content-Length': file.fileSize.toString(),
+            },
+        })
+    } catch (fileError: any) {
+        console.error('Error reading local file:', fileError)
+        if (fileError.code === 'ENOENT') {
+            return NextResponse.json(
+                { 
+                    error: 'File not found on server',
+                    details: 'The file may have been deleted or migrated to S3 storage.'
+                },
+                { status: 404 }
+            )
+        }
+        return NextResponse.json(
+            { 
+                error: 'Error reading file',
+                details: fileError.message 
+            },
+            { status: 500 }
+        )
     }
 }
 

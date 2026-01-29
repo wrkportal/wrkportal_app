@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { writeFile } from 'fs/promises'
-import path from 'path'
+import { uploadFile, generateS3Key } from '@/lib/storage/s3-storage'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
@@ -99,29 +98,17 @@ export async function POST(
         }
 
         const buffer = Buffer.from(await file.arrayBuffer())
-        const fileExtension = path.extname(file.name)
-        const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}${fileExtension}`
         
-        // Use /tmp directory for serverless environments (Vercel, AWS Lambda, etc.)
-        // In serverless, only /tmp is writable
-        const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
-        const uploadDir = isServerless 
-            ? path.join('/tmp', 'collaborations')
-            : path.join(process.cwd(), 'public', 'uploads', 'collaborations')
-        const filePath = path.join(uploadDir, uniqueFileName)
+        // Upload to S3
+        const s3Key = generateS3Key('collaborations', file.name)
+        await uploadFile(s3Key, buffer, file.type, {
+            collaborationId: id,
+            uploadedBy: session.user.id,
+            originalFileName: file.name
+        })
 
-        // Ensure the upload directory exists
-        const fs = await import('fs/promises')
-        await fs.mkdir(uploadDir, { recursive: true })
-
-        await writeFile(filePath, buffer)
-
-        // For serverless: store file as base64 in database or use cloud storage
-        // For now, we'll store the file path and serve it via API
-        // In production, you should use S3, Cloudinary, or similar
-        const fileUrl = isServerless 
-            ? `/api/collaborations/${id}/files/${uniqueFileName}` // Serve via API
-            : `/uploads/collaborations/${uniqueFileName}` // Serve as static file
+        // Store S3 key in fileUrl for retrieval
+        const fileUrl = `/api/collaborations/${id}/files/${s3Key}`
 
         const collaborationFile = await prisma.collaborationFile.create({
             data: {
