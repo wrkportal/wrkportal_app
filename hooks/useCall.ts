@@ -101,6 +101,27 @@ export function useCall(): UseCallReturn {
         throw new Error('Media devices API not supported in this browser')
       }
 
+      // Check permissions first if available
+      try {
+        if (navigator.permissions && navigator.permissions.query) {
+          if (constraints.video) {
+            const videoPermission = await navigator.permissions.query({ name: 'camera' as PermissionName })
+            if (videoPermission.state === 'denied') {
+              throw new Error('Camera permission was denied. Please allow access in your browser settings and try again.')
+            }
+          }
+          if (constraints.audio) {
+            const audioPermission = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+            if (audioPermission.state === 'denied') {
+              throw new Error('Microphone permission was denied. Please allow access in your browser settings and try again.')
+            }
+          }
+        }
+      } catch (permError) {
+        // Permission API might not be supported, continue with getUserMedia
+        console.warn('Permission API check failed, proceeding with getUserMedia:', permError)
+      }
+
       // Try to get both audio and video
       try {
         const stream = await navigator.mediaDevices.getUserMedia(constraints)

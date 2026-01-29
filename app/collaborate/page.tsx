@@ -83,6 +83,7 @@ interface Collaboration {
   type: string
   status: string
   isArchived: boolean
+  isImportant?: boolean
   createdAt: string
   updatedAt: string
   members: Array<{
@@ -175,11 +176,16 @@ function CollaborateInner() {
   const [messageOptionsOpen, setMessageOptionsOpen] = useState<string | null>(null)
   const [showSearchBar, setShowSearchBar] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [chatCategory, setChatCategory] = useState<'current' | 'important' | 'archived'>('current')
+  const [importantChats, setImportantChats] = useState<Set<string>>(new Set())
+  const [showFilesSection, setShowFilesSection] = useState(true)
+  const [showMeetingsSection, setShowMeetingsSection] = useState(true)
+  const [showMembersSection, setShowMembersSection] = useState(true)
 
   // Fetch collaborations
   useEffect(() => {
     fetchCollaborations()
-  }, [])
+  }, [chatCategory])
 
   // Auto-select collaboration from URL or first one
   useEffect(() => {
@@ -218,7 +224,27 @@ function CollaborateInner() {
       const response = await fetch('/api/collaborations')
       if (response.ok) {
         const data = await response.json()
-        const collabs = (data.collaborations || []).filter((c: Collaboration) => !c.isArchived)
+        const allCollabs = data.collaborations || []
+        // Load important chats from localStorage
+        const storedImportant = localStorage.getItem('important-chats')
+        if (storedImportant) {
+          try {
+            const importantIds = JSON.parse(storedImportant)
+            setImportantChats(new Set(importantIds))
+          } catch (e) {
+            console.error('Error parsing important chats:', e)
+          }
+        }
+        // Filter based on category
+        let collabs: Collaboration[]
+        if (chatCategory === 'archived') {
+          collabs = allCollabs.filter((c: Collaboration) => c.isArchived)
+        } else if (chatCategory === 'important') {
+          const importantIds = storedImportant ? JSON.parse(storedImportant) : []
+          collabs = allCollabs.filter((c: Collaboration) => !c.isArchived && importantIds.includes(c.id))
+        } else {
+          collabs = allCollabs.filter((c: Collaboration) => !c.isArchived)
+        }
         setCollaborations(collabs)
         // Calculate unread counts (simplified - you can enhance this)
         const counts: Record<string, number> = {}
@@ -231,6 +257,33 @@ function CollaborateInner() {
       console.error('Error fetching collaborations:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const updateChatCategory = async (collaborationId: string, category: 'current' | 'important' | 'archived') => {
+    try {
+      if (category === 'important') {
+        const newImportant = new Set(importantChats)
+        newImportant.add(collaborationId)
+        setImportantChats(newImportant)
+        localStorage.setItem('important-chats', JSON.stringify(Array.from(newImportant)))
+      } else if (category === 'current') {
+        const newImportant = new Set(importantChats)
+        newImportant.delete(collaborationId)
+        setImportantChats(newImportant)
+        localStorage.setItem('important-chats', JSON.stringify(Array.from(newImportant)))
+      } else if (category === 'archived') {
+        const response = await fetch(`/api/collaborations/${collaborationId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isArchived: true }),
+        })
+        if (response.ok) {
+          await fetchCollaborations()
+        }
+      }
+    } catch (error) {
+      console.error('Error updating chat category:', error)
     }
   }
 
@@ -526,12 +579,12 @@ function CollaborateInner() {
           {/* Search Bar and New Discussion Button in one row */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Search conversations"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-sm bg-background/50"
+                className="pl-8 h-7 text-xs bg-background/50"
               />
             </div>
             <Button
@@ -543,6 +596,34 @@ function CollaborateInner() {
               <Plus className="h-3.5 w-3.5" />
             </Button>
           </div>
+        </div>
+
+        {/* Category Dropdowns */}
+        <div className="px-2 pt-2 pb-1 border-b flex gap-1">
+          <Button
+            variant={chatCategory === 'current' ? 'default' : 'ghost'}
+            size="sm"
+            className="h-7 text-xs flex-1"
+            onClick={() => setChatCategory('current')}
+          >
+            Current
+          </Button>
+          <Button
+            variant={chatCategory === 'important' ? 'default' : 'ghost'}
+            size="sm"
+            className="h-7 text-xs flex-1"
+            onClick={() => setChatCategory('important')}
+          >
+            Important
+          </Button>
+          <Button
+            variant={chatCategory === 'archived' ? 'default' : 'ghost'}
+            size="sm"
+            className="h-7 text-xs flex-1"
+            onClick={() => setChatCategory('archived')}
+          >
+            Archived
+          </Button>
         </div>
 
         {/* Chat List */}
@@ -562,23 +643,26 @@ function CollaborateInner() {
                 const lastTime = getLastMessageTime(collaboration)
 
                 return (
-                  <button
+                  <div
                     key={collaboration.id}
-                    onClick={() => selectCollaboration(collaboration)}
                     className={cn(
-                      'w-full p-3 rounded-lg text-left transition-all duration-200 group',
+                      'w-full rounded-lg transition-all duration-200 group relative',
                       isSelected
                         ? 'bg-accent border-l-4 border-primary shadow-sm'
                         : 'hover:bg-accent/50 border-l-4 border-transparent'
                     )}
                   >
+                    <button
+                      onClick={() => selectCollaboration(collaboration)}
+                      className="w-full p-3 text-left"
+                    >
                     <div className="flex items-start gap-3">
                       <Avatar className={cn(
-                        "h-11 w-11 flex-shrink-0 ring-2 ring-offset-2 ring-offset-background",
+                        "h-8 w-8 md:h-9 md:w-9 flex-shrink-0 ring-2 ring-offset-2 ring-offset-background",
                         isSelected ? "ring-primary/30" : "ring-transparent"
                       )}>
                         <AvatarFallback className={cn(
-                          'text-sm font-semibold',
+                          'text-xs font-semibold',
                           isSelected ? 'bg-primary/20 text-primary' : 'bg-primary/10 text-primary'
                         )}>
                           {getInitials(collaboration.name)}
@@ -587,8 +671,8 @@ function CollaborateInner() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <span className={cn(
-                            'font-semibold text-sm truncate',
-                            isSelected ? 'text-primary font-medium' : 'text-foreground'
+                            'font-semibold text-sm truncate text-black dark:text-white',
+                            isSelected ? 'font-medium' : ''
                           )}>
                             {collaboration.name}
                           </span>
@@ -621,7 +705,51 @@ function CollaborateInner() {
                         </div>
                       </div>
                     </div>
-                  </button>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-2 top-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {chatCategory !== 'important' && (
+                          <DropdownMenuItem onClick={() => updateChatCategory(collaboration.id, 'important')}>
+                            Mark as Important
+                          </DropdownMenuItem>
+                        )}
+                        {chatCategory === 'important' && (
+                          <DropdownMenuItem onClick={() => updateChatCategory(collaboration.id, 'current')}>
+                            Remove from Important
+                          </DropdownMenuItem>
+                        )}
+                        {chatCategory !== 'archived' && (
+                          <DropdownMenuItem onClick={() => updateChatCategory(collaboration.id, 'archived')}>
+                            Archive
+                          </DropdownMenuItem>
+                        )}
+                        {chatCategory === 'archived' && (
+                          <DropdownMenuItem onClick={async () => {
+                            const response = await fetch(`/api/collaborations/${collaboration.id}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ isArchived: false }),
+                            })
+                            if (response.ok) {
+                              await fetchCollaborations()
+                            }
+                          }}>
+                            Unarchive
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 )
               })
             )}
@@ -756,16 +884,18 @@ function CollaborateInner() {
                   {dateMessages.map((message, idx) => {
                     const isOwn = message.userId === user?.id
                     const prevMessage = idx > 0 ? dateMessages[idx - 1] : null
-                    const showAvatar = !prevMessage || prevMessage.userId !== message.userId ||
-                      (new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime()) > 300000 // 5 minutes
-                    const showName = !prevMessage || prevMessage.userId !== message.userId
+                    const isSameUser = prevMessage && prevMessage.userId === message.userId &&
+                      (new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime()) <= 300000 // 5 minutes
+                    const showAvatar = !isSameUser
+                    const showName = !isSameUser
 
                     return (
                       <div
                         key={message.id}
                         className={cn(
-                          'flex gap-3 mb-4 group',
-                          isOwn && 'flex-row-reverse'
+                          'flex gap-3 group',
+                          isOwn && 'flex-row-reverse',
+                          isSameUser ? 'mb-1' : 'mb-4'
                         )}
                       >
                         {showAvatar ? (
@@ -836,8 +966,8 @@ function CollaborateInner() {
                             )}
                             {/* Message Options - appears on hover as a bar */}
                             <div className={cn(
-                              'absolute opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-background/95 backdrop-blur-sm rounded-lg px-2 py-1 shadow-md border',
-                              isOwn ? '-left-2 top-2' : '-right-2 top-2'
+                              'absolute opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-background/95 backdrop-blur-sm rounded-lg px-2 py-1 shadow-md border z-10',
+                              isOwn ? '-left-2 -top-10' : '-right-2 -top-10'
                             )}>
                               <Button
                                 variant="ghost"
@@ -1071,10 +1201,20 @@ function CollaborateInner() {
 
           <ScrollArea className="flex-1 overflow-y-auto">
             {/* Files Section */}
-            <div className="p-4 border-b flex flex-col" style={{ height: '300px' }}>
-              <h4 className="font-semibold mb-3 text-sm text-foreground flex-shrink-0">
-                Files ({files.length})
-              </h4>
+            <div className="border-b">
+              <button
+                onClick={() => setShowFilesSection(!showFilesSection)}
+                className="w-full p-4 flex items-center justify-between hover:bg-accent/50 transition-colors"
+              >
+                <h4 className="font-semibold text-sm text-foreground">
+                  Files ({files.length})
+                </h4>
+                <span className="text-muted-foreground">
+                  {showFilesSection ? '−' : '+'}
+                </span>
+              </button>
+              {showFilesSection && (
+                <div className="p-4 flex flex-col" style={{ height: '300px' }}>
               {files.length === 0 ? (
                 <div className="text-center py-8 flex-1 flex items-center justify-center">
                   <div>
@@ -1167,11 +1307,23 @@ function CollaborateInner() {
                   </div>
                 </ScrollArea>
               )}
+                </div>
+              )}
             </div>
 
             {/* Scheduled Meetings Section */}
-            <div className="p-4 border-b flex flex-col" style={{ height: '300px' }}>
-              <h4 className="font-semibold mb-3 text-sm text-foreground flex-shrink-0">Scheduled Meetings</h4>
+            <div className="border-b">
+              <button
+                onClick={() => setShowMeetingsSection(!showMeetingsSection)}
+                className="w-full p-4 flex items-center justify-between hover:bg-accent/50 transition-colors"
+              >
+                <h4 className="font-semibold text-sm text-foreground">Scheduled Meetings</h4>
+                <span className="text-muted-foreground">
+                  {showMeetingsSection ? '−' : '+'}
+                </span>
+              </button>
+              {showMeetingsSection && (
+                <div className="p-4 flex flex-col" style={{ height: '300px' }}>
               {scheduledCalls.length === 0 ? (
                 <div className="text-center py-8 flex-1 flex items-center justify-center">
                   <div>
@@ -1228,14 +1380,26 @@ function CollaborateInner() {
                   </div>
                 </ScrollArea>
               )}
+                </div>
+              )}
             </div>
 
             {/* Members Section */}
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="border-b">
+              <button
+                onClick={() => setShowMembersSection(!showMembersSection)}
+                className="w-full p-4 flex items-center justify-between hover:bg-accent/50 transition-colors"
+              >
                 <h4 className="font-semibold text-sm text-foreground">
                   {selectedCollaboration.members.length} members
                 </h4>
+                <span className="text-muted-foreground">
+                  {showMembersSection ? '−' : '+'}
+                </span>
+              </button>
+              {showMembersSection && (
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -1255,10 +1419,9 @@ function CollaborateInner() {
                     <UserPlus className="h-3.5 w-3.5 mr-1.5" />
                     Add People
                   </Button>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                {selectedCollaboration.members.map((member) => {
+                  </div>
+                  <div className="space-y-1.5">
+                    {selectedCollaboration.members.map((member) => {
                   const memberUser = member.user
                   const isAdmin = member.role === 'OWNER' || member.role === 'ADMIN'
 
@@ -1291,7 +1454,9 @@ function CollaborateInner() {
                     </div>
                   )
                 })}
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
           </ScrollArea>
         </div>
