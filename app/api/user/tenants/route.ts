@@ -36,6 +36,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // Helper function to remove "Organization" suffix from tenant names
+    const cleanTenantName = (name: string): string => {
+      return name.replace(/\s*'s\s+Organization\s*$/i, '').trim()
+    }
+
     // Get additional tenants from UserTenantAccess (if table exists)
     let additionalTenants: any[] = []
     try {
@@ -58,16 +63,6 @@ export async function GET(req: NextRequest) {
           joinedAt: 'desc',
         },
       })
-
-      // Helper function to remove "Organization" suffix from tenant names
-      const cleanTenantName = (name: string): string => {
-        return name.replace(/\s*'s\s+Organization\s*$/i, '').trim()
-      }
-      
-      // Helper function to remove "Organization" suffix from tenant names
-      const cleanTenantName = (name: string): string => {
-        return name.replace(/\s*'s\s+Organization\s*$/i, '').trim()
-      }
       
       additionalTenants = userTenantAccesses.map((access: any) => ({
         id: access.tenant.id,
@@ -172,11 +167,6 @@ export async function GET(req: NextRequest) {
     // Include all tenants from UserTenantAccess, even if they match the primary tenant
     // This allows users to see all workspaces they have access to
     const allTenantsMap = new Map<string, any>()
-    
-    // Helper function to remove "Organization" suffix from tenant names
-    const cleanTenantName = (name: string): string => {
-      return name.replace(/\s*'s\s+Organization\s*$/i, '').trim()
-    }
     
     // Add primary tenant first
     allTenantsMap.set(user.tenant.id, {
