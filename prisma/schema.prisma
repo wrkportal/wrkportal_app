@@ -953,6 +953,9 @@ model Collaboration {
   createdById String
   status      CollaborationStatus       @default(ACTIVE)
   isArchived  Boolean                   @default(false)
+  notes       String?                   // Manual notes
+  summary     String?                   // AI-generated summary
+  summaryGeneratedAt DateTime?          // When summary was last generated
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
   createdBy   User                      @relation("CollaborationCreator", fields: [createdById], references: [id])

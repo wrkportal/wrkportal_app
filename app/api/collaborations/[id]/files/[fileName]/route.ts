@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { readFile } from 'fs/promises'
+import { readFile, mkdir } from 'fs/promises'
 import path from 'path'
+import { existsSync } from 'fs'
 
 // GET /api/collaborations/[id]/files/[fileName] - Serve a file
 // DELETE /api/collaborations/[id]/files/[fileId] - Delete a file (by database ID)
@@ -55,11 +56,22 @@ export async function GET(
             return NextResponse.json({ error: 'File not found' }, { status: 404 })
         }
 
+        // Extract the actual stored filename from fileUrl
+        // fileUrl format: /api/collaborations/{id}/files/{uniqueFileName}
+        const urlParts = file.fileUrl.split('/')
+        const storedFileName = urlParts[urlParts.length - 1] || fileName
+
         // Read file from /tmp directory
         const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
-        const filePath = isServerless
-            ? path.join('/tmp', 'collaborations', fileName)
-            : path.join(process.cwd(), 'public', 'uploads', 'collaborations', fileName)
+        const uploadDir = isServerless
+            ? path.join('/tmp', 'collaborations')
+            : path.join(process.cwd(), 'public', 'uploads', 'collaborations')
+        const filePath = path.join(uploadDir, storedFileName)
+
+        // Ensure directory exists
+        if (!existsSync(uploadDir)) {
+            await mkdir(uploadDir, { recursive: true })
+        }
 
         try {
             const fileBuffer = await readFile(filePath)
@@ -76,9 +88,22 @@ export async function GET(
             })
         } catch (fileError: any) {
             console.error('Error reading file:', fileError)
+            // Provide more detailed error information
+            if (fileError.code === 'ENOENT') {
+                return NextResponse.json(
+                    { 
+                        error: 'File not found on server',
+                        details: 'The file may have been deleted or is not available in this serverless environment. Files in /tmp are ephemeral and may not persist between requests.'
+                    },
+                    { status: 404 }
+                )
+            }
             return NextResponse.json(
-                { error: 'File not found on server' },
-                { status: 404 }
+                { 
+                    error: 'Error reading file',
+                    details: fileError.message 
+                },
+                { status: 500 }
             )
         }
     } catch (error) {

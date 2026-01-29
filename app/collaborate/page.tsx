@@ -181,11 +181,25 @@ function CollaborateInner() {
   const [showFilesSection, setShowFilesSection] = useState(true)
   const [showMeetingsSection, setShowMeetingsSection] = useState(true)
   const [showMembersSection, setShowMembersSection] = useState(true)
+  const [showSummarySection, setShowSummarySection] = useState(true)
+  const [notes, setNotes] = useState('')
+  const [aiSummary, setAiSummary] = useState<string | null>(null)
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
 
   // Fetch collaborations
   useEffect(() => {
     fetchCollaborations()
   }, [chatCategory])
+
+  // Fetch notes and summary when collaboration is selected
+  useEffect(() => {
+    if (selectedCollaboration) {
+      fetchNotes() // fetchNotes already fetches both notes and summary
+    } else {
+      setNotes('')
+      setAiSummary(null)
+    }
+  }, [selectedCollaboration?.id])
 
   // Auto-select collaboration from URL or first one
   useEffect(() => {
@@ -408,6 +422,71 @@ function CollaborateInner() {
       }
     } catch (error) {
       console.error('[fetchScheduledCalls] Error fetching scheduled calls:', error)
+    }
+  }
+
+  const fetchNotes = async () => {
+    if (!selectedCollaboration) return
+    try {
+      const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/summary`)
+      if (response.ok) {
+        const data = await response.json()
+        setNotes(data.notes || '')
+        setAiSummary(data.summary || null)
+      }
+    } catch (error) {
+      console.error('Error fetching notes:', error)
+    }
+  }
+
+  const fetchSummary = async () => {
+    if (!selectedCollaboration) return
+    try {
+      const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/summary`)
+      if (response.ok) {
+        const data = await response.json()
+        setAiSummary(data.summary || null)
+      }
+    } catch (error) {
+      console.error('Error fetching summary:', error)
+    }
+  }
+
+  const handleSaveNotes = async () => {
+    if (!selectedCollaboration) return
+    try {
+      const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes }),
+      })
+      if (!response.ok) {
+        console.error('Error saving notes')
+      }
+    } catch (error) {
+      console.error('Error saving notes:', error)
+    }
+  }
+
+  const handleGenerateSummary = async () => {
+    if (!selectedCollaboration || isGeneratingSummary) return
+    setIsGeneratingSummary(true)
+    try {
+      const response = await fetch(`/api/collaborations/${selectedCollaboration.id}/summary/generate`, {
+        method: 'POST',
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setAiSummary(data.summary)
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to generate summary')
+      }
+    } catch (error) {
+      console.error('Error generating summary:', error)
+      alert('Failed to generate summary')
+    } finally {
+      setIsGeneratingSummary(false)
     }
   }
 
@@ -1455,6 +1534,72 @@ function CollaborateInner() {
                         </div>
                       )
                     })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Summary Section */}
+            <div className="border-b">
+              <button
+                onClick={() => setShowSummarySection(!showSummarySection)}
+                className="w-full p-4 flex items-center justify-between hover:bg-accent/50 transition-colors"
+              >
+                <h4 className="font-semibold text-sm text-foreground">Summary</h4>
+                <span className="text-muted-foreground">
+                  {showSummarySection ? '−' : '+'}
+                </span>
+              </button>
+              {showSummarySection && (
+                <div className="p-4 space-y-4">
+                  {/* AI Summary Section */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-medium">AI Summary</Label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateSummary}
+                        disabled={isGeneratingSummary}
+                        className="h-7 text-xs"
+                      >
+                        {isGeneratingSummary ? (
+                          <>
+                            <Clock className="h-3 w-3 mr-1.5 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <MessageSquare className="h-3 w-3 mr-1.5" />
+                            Generate Summary
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    {aiSummary ? (
+                      <div className="p-3 bg-muted rounded-lg text-sm text-foreground whitespace-pre-wrap">
+                        {aiSummary}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground text-center">
+                        Click "Generate Summary" to create an AI summary from discussions and calls
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Notes Section */}
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Notes</Label>
+                    <Textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      onBlur={handleSaveNotes}
+                      placeholder="Add your notes here..."
+                      className="min-h-[120px] text-sm resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Notes are saved automatically
+                    </p>
                   </div>
                 </div>
               )}
