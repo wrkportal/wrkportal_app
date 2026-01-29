@@ -646,7 +646,7 @@ function CollaborateInner() {
   return (
     <div className="grid h-full min-h-0 w-full bg-background overflow-x-hidden grid-cols-[auto_minmax(0,1fr)_auto] gap-0 px-0 -mt-16 pt-16">
       {/* Left Sidebar - Chat List */}
-      <div className="w-64 md:w-64 lg:w-64 min-w-[240px] max-w-[400px] border-r bg-card/50 backdrop-blur-sm flex flex-col h-full min-h-0 overflow-hidden">
+      <div className="w-64 md:w-64 lg:w-64 min-w-[240px] max-w-[400px] border-r bg-card/50 backdrop-blur-sm flex flex-col fixed top-16 left-0 z-30 h-[calc(100vh-4rem)] overflow-hidden">
         {/* Header */}
         <div className="p-4 border-b bg-card/80 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
@@ -838,7 +838,12 @@ function CollaborateInner() {
 
       {/* Center Panel - Messages */}
       {selectedCollaboration ? (
-        <div className="flex flex-col min-w-0 min-h-0 overflow-hidden h-full bg-background">
+        <div
+          className={cn(
+            "flex flex-col overflow-hidden bg-background fixed top-16 z-30 h-[calc(100vh-4rem)]",
+            showGroupInfo ? "left-64 right-80" : "left-64 right-0"
+          )}
+        >
           {/* Top Bar */}
           <div className="h-16 border-b bg-card/80 backdrop-blur-sm flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-20 shadow-sm">
             <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -1269,7 +1274,7 @@ function CollaborateInner() {
 
       {/* Right Sidebar - Group Info */}
       {selectedCollaboration && showGroupInfo && (
-        <div className="w-80 min-w-[280px] max-w-[400px] border-l bg-card/50 backdrop-blur-sm flex flex-col h-full min-h-0 overflow-hidden">
+        <div className="w-80 min-w-[280px] max-w-[400px] border-l bg-card/50 backdrop-blur-sm flex flex-col fixed top-16 right-0 z-30 h-[calc(100vh-4rem)] overflow-hidden">
           <div className="p-4 border-b bg-card/80 backdrop-blur-sm flex items-center justify-between flex-shrink-0">
             <h3 className="font-semibold text-base text-foreground">Group Info</h3>
             <Button
