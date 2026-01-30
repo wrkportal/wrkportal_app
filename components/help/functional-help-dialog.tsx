@@ -966,28 +966,28 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
 
           <TabsContent value="workflow" className="space-y-4 mt-4">
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold">{content.workflow.title}</h3>
-              <p className="text-sm text-muted-foreground">{content.workflow.description}</p>
+              <h3 className="text-lg md:text-base lg:text-base font-semibold">{content.workflow.title}</h3>
+              <p className="text-sm md:text-xs lg:text-xs text-muted-foreground">{content.workflow.description}</p>
             </div>
 
-            <ScrollArea className="h-[500px] pr-4">
-              <div className="space-y-4">
+            <ScrollArea className="h-[500px] pr-4 overflow-x-hidden">
+              <div className="space-y-4 max-w-full">
                 {content.workflow.steps.map((step) => (
-                  <Card key={step.step} className="overflow-hidden">
+                  <Card key={step.step} className="overflow-hidden max-w-full">
                     <CardHeader
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() =>
                         setExpandedStep(expandedStep === step.step ? null : step.step)
                       }
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3 flex-1">
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
                           <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-sm">
                             {step.step}
                           </div>
-                          <div className="flex-1">
-                            <CardTitle className="text-base">{step.title}</CardTitle>
-                            <CardDescription className="mt-1">{step.description}</CardDescription>
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-base md:text-sm lg:text-sm">{step.title}</CardTitle>
+                            <CardDescription className="mt-1 text-sm md:text-xs lg:text-xs">{step.description}</CardDescription>
                           </div>
                         </div>
                         {expandedStep === step.step ? (
@@ -1001,9 +1001,9 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
                       <CardContent className="pt-0">
                         <ul className="space-y-2 list-none pl-11">
                           {step.details.map((detail, index) => (
-                            <li key={index} className="flex items-start gap-2 text-sm">
-                              <span className="text-primary mt-1.5">•</span>
-                              <span>{detail}</span>
+                            <li key={index} className="flex items-start gap-2 text-sm md:text-xs lg:text-xs min-w-0">
+                              <span className="text-primary mt-1.5 flex-shrink-0">•</span>
+                              <span className="break-words">{detail}</span>
                             </li>
                           ))}
                         </ul>
@@ -1028,25 +1028,25 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
               </Button>
             </div>
 
-            <ScrollArea className="h-[500px]">
-              <div className="space-y-4">
+            <ScrollArea className="h-[500px] overflow-x-hidden">
+              <div className="space-y-4 max-w-full">
                 {filteredFAQs.length === 0 ? (
-                  <Card>
+                  <Card className="max-w-full">
                     <CardContent className="py-8 text-center">
-                      <p className="text-muted-foreground">No FAQs found</p>
+                      <p className="text-muted-foreground text-sm md:text-xs lg:text-xs">No FAQs found</p>
                     </CardContent>
                   </Card>
                 ) : (
                   filteredFAQs.map((faq, index) => (
-                    <Card key={index} className="overflow-hidden">
+                    <Card key={index} className="overflow-hidden max-w-full">
                       <CardHeader>
-                        <CardTitle className="text-base flex items-start gap-2">
+                        <CardTitle className="text-base md:text-sm lg:text-sm flex items-start gap-2 min-w-0">
                           <HelpCircle className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
-                          {faq.question}
+                          <span className="break-words">{faq.question}</span>
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        <p className="text-sm md:text-xs lg:text-xs text-muted-foreground whitespace-pre-wrap break-words">
                           {faq.answer}
                         </p>
                       </CardContent>

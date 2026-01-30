@@ -74,7 +74,33 @@ export default function FinanceDashboardLandingPage() {
   const isWrkboard = pathname === '/wrkboard'
   const [widgetsLoaded, setWidgetsLoaded] = useState(false)
   const [widgets, setWidgets] = useState<Widget[]>([])
-  const [layouts, setLayouts] = useState<Layouts>(defaultLayouts)
+  // Initialize layouts from localStorage immediately to prevent default overwrite
+  const [layouts, setLayouts] = useState<Layouts>(() => {
+    if (typeof window !== 'undefined') {
+      // Determine which key to use based on current pathname
+      const currentPath = window.location.pathname
+      const layoutsKey = currentPath === '/wrkboard' ? 'wrkboard-layouts' : 'finance-layouts'
+      const savedLayouts = localStorage.getItem(layoutsKey)
+      if (savedLayouts) {
+        try {
+          const parsed = JSON.parse(savedLayouts)
+          const validWidgetIds = new Set(defaultWidgets.map(w => w.id))
+          const filteredLayouts: Layouts = {}
+          Object.keys(parsed).forEach(breakpoint => {
+            const breakpointLayouts = parsed[breakpoint as keyof Layouts] || []
+            filteredLayouts[breakpoint as keyof Layouts] = breakpointLayouts.filter((l: Layout) => validWidgetIds.has(l.i)) as Layout[]
+          })
+          const hasValidLayouts = Object.values(filteredLayouts).some(layouts => layouts.length > 0)
+          if (hasValidLayouts) {
+            return filteredLayouts
+          }
+        } catch (e) {
+          console.error('Failed to load layouts from localStorage in useState:', e)
+        }
+      }
+    }
+    return defaultLayouts
+  })
   const [widgetGalleryOpen, setWidgetGalleryOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isInitialMount, setIsInitialMount] = useState(true)
@@ -435,7 +461,7 @@ export default function FinanceDashboardLandingPage() {
         }
       }
 
-      // Load layouts
+      // Load layouts - only update if different from what's already loaded in useState
       if (savedLayouts) {
         try {
           const parsedLayouts: Layouts = JSON.parse(savedLayouts)
@@ -452,7 +478,15 @@ export default function FinanceDashboardLandingPage() {
           // Only use filtered layouts if they have valid entries, otherwise use defaults
           const hasValidLayouts = Object.values(filteredLayouts).some(layouts => layouts.length > 0)
           if (hasValidLayouts) {
-            setLayouts(filteredLayouts)
+            // Only update if different from current state to avoid unnecessary re-renders
+            setLayouts(prev => {
+              const prevStr = JSON.stringify(prev)
+              const newStr = JSON.stringify(filteredLayouts)
+              if (prevStr !== newStr) {
+                return filteredLayouts
+              }
+              return prev
+            })
             // Clean up localStorage to remove invalid widgets
             localStorage.setItem(layoutsKey, JSON.stringify(filteredLayouts))
           } else {
@@ -462,16 +496,40 @@ export default function FinanceDashboardLandingPage() {
               if (dbDefault?.layouts) {
                 setLayouts(dbDefault.layouts)
               } else {
-                setLayouts(defaultLayouts)
+                // Only set defaults if not already set
+                setLayouts(prev => {
+                  const prevStr = JSON.stringify(prev)
+                  const defaultStr = JSON.stringify(defaultLayouts)
+                  if (prevStr !== defaultStr) {
+                    return defaultLayouts
+                  }
+                  return prev
+                })
               }
             } catch (e) {
               console.error('Failed to load default layouts from DB', e)
-              setLayouts(defaultLayouts)
+              // Only set defaults if not already set
+              setLayouts(prev => {
+                const prevStr = JSON.stringify(prev)
+                const defaultStr = JSON.stringify(defaultLayouts)
+                if (prevStr !== defaultStr) {
+                  return defaultLayouts
+                }
+                return prev
+              })
             }
           }
         } catch (e) {
           console.error('Failed to load layouts', e)
-          setLayouts(defaultLayouts)
+          // Only set defaults if not already set
+          setLayouts(prev => {
+            const prevStr = JSON.stringify(prev)
+            const defaultStr = JSON.stringify(defaultLayouts)
+            if (prevStr !== defaultStr) {
+              return defaultLayouts
+            }
+            return prev
+          })
         }
       } else {
         // No saved layouts - try to load from database defaults
@@ -480,11 +538,27 @@ export default function FinanceDashboardLandingPage() {
           if (dbDefault?.layouts) {
             setLayouts(dbDefault.layouts)
           } else {
-            setLayouts(defaultLayouts)
+            // Only set defaults if not already set
+            setLayouts(prev => {
+              const prevStr = JSON.stringify(prev)
+              const defaultStr = JSON.stringify(defaultLayouts)
+              if (prevStr !== defaultStr) {
+                return defaultLayouts
+              }
+              return prev
+            })
           }
         } catch (e) {
           console.error('Failed to load default layouts from DB', e)
-          setLayouts(defaultLayouts)
+          // Only set defaults if not already set
+          setLayouts(prev => {
+            const prevStr = JSON.stringify(prev)
+            const defaultStr = JSON.stringify(defaultLayouts)
+            if (prevStr !== defaultStr) {
+              return defaultLayouts
+            }
+            return prev
+          })
         }
       }
 
@@ -2400,6 +2474,7 @@ export default function FinanceDashboardLandingPage() {
   const toggleWidget = useCallback((widgetId: string) => {
     setWidgets(prevWidgets => {
       const existingWidget = prevWidgets.find(w => w.id === widgetId)
+      const isBeingEnabled = existingWidget ? !existingWidget.visible : true
       let updatedWidgets: Widget[]
 
       if (existingWidget) {
@@ -2415,6 +2490,40 @@ export default function FinanceDashboardLandingPage() {
       // Save to localStorage immediately
       const widgetsKey = isWrkboard ? 'wrkboard-widgets' : 'finance-widgets'
       localStorage.setItem(widgetsKey, JSON.stringify(updatedWidgets))
+
+      // If widget is being enabled and doesn't have a layout entry, add it
+      if (isBeingEnabled) {
+        setLayouts(prevLayouts => {
+          const layoutsKey = isWrkboard ? 'wrkboard-layouts' : 'finance-layouts'
+          const hasLayout = Object.values(prevLayouts).some(breakpointLayouts =>
+            breakpointLayouts.some(l => l.i === widgetId)
+          )
+
+          if (!hasLayout) {
+            const defaultLayoutItem: Layout = {
+              i: widgetId,
+              x: 0,
+              y: 100, // Place at the end
+              w: widgetId === 'mindMap' ? 12 : 6,
+              h: widgetId === 'mindMap' ? 10 : 4,
+              minW: widgetId === 'mindMap' ? 16 : 3,
+              minH: widgetId === 'mindMap' ? 12 : 2,
+            }
+
+            const updatedLayouts: Layouts = {
+              lg: [...(prevLayouts.lg || []), defaultLayoutItem],
+              md: [...(prevLayouts.md || []), defaultLayoutItem],
+              sm: [...(prevLayouts.sm || []), defaultLayoutItem],
+              xs: [...(prevLayouts.xs || []), defaultLayoutItem],
+            }
+
+            localStorage.setItem(layoutsKey, JSON.stringify(updatedLayouts))
+            return updatedLayouts
+          }
+          return prevLayouts
+        })
+      }
+
       return updatedWidgets
     })
   }, [isWrkboard])
@@ -3196,7 +3305,7 @@ export default function FinanceDashboardLandingPage() {
                   {!hasVisibleWidgets ? (
                     <EmptyState />
                   ) : (
-                    <div>
+                    <div className="md:ml-2">
                       <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                         {greeting}, {user?.firstName || 'there'}!
                       </h1>

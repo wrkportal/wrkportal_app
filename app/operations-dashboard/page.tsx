@@ -140,7 +140,7 @@ const defaultLayouts: Layouts = {
     // My Tasks
     { i: 'myTasks', x: 0, y: 12, w: 12, h: 10, minW: 6, minH: 8 },
     // Mind Map & Canvas
-    { i: 'mindMap', x: 0, y: 22, w: 6, h: 8, minW: 3, minH: 6 },
+    { i: 'mindMap', x: 0, y: 22, w: 6, h: 8, minW: 16, minH: 12 },
     { i: 'canvas', x: 6, y: 22, w: 6, h: 8, minW: 3, minH: 8 },
   ],
   md: [
@@ -148,7 +148,7 @@ const defaultLayouts: Layouts = {
     { i: 'quick-actions', x: 0, y: 6, w: 5, h: 6, minW: 3, minH: 4 },
     { i: 'usefulLinks', x: 5, y: 6, w: 5, h: 6, minW: 3, minH: 4 },
     { i: 'myTasks', x: 0, y: 12, w: 10, h: 10, minW: 5, minH: 8 },
-    { i: 'mindMap', x: 0, y: 22, w: 5, h: 8, minW: 3, minH: 6 },
+    { i: 'mindMap', x: 0, y: 22, w: 5, h: 8, minW: 16, minH: 12 },
     { i: 'canvas', x: 5, y: 22, w: 5, h: 8, minW: 3, minH: 8 },
   ],
   sm: [
@@ -156,7 +156,7 @@ const defaultLayouts: Layouts = {
     { i: 'quick-actions', x: 0, y: 6, w: 6, h: 6, minW: 3, minH: 4 },
     { i: 'usefulLinks', x: 0, y: 12, w: 6, h: 6, minW: 3, minH: 4 },
     { i: 'myTasks', x: 0, y: 18, w: 6, h: 10, minW: 3, minH: 8 },
-    { i: 'mindMap', x: 0, y: 28, w: 6, h: 8, minW: 3, minH: 6 },
+    { i: 'mindMap', x: 0, y: 28, w: 6, h: 8, minW: 16, minH: 12 },
     { i: 'canvas', x: 0, y: 36, w: 6, h: 8, minW: 3, minH: 8 },
   ],
 }
@@ -193,8 +193,29 @@ export default function OperationsDashboardPage() {
   const [performanceData, setPerformanceData] = useState<any[]>([])
   const [complianceData, setComplianceData] = useState<any[]>([])
   const [inventoryData, setInventoryData] = useState<any[]>([])
-  // Start with defaults for SSR - will be updated from localStorage after mount
-  const [layouts, setLayouts] = useState<Layouts>(defaultLayouts)
+  // Initialize layouts from localStorage immediately to prevent default overwrite
+  const [layouts, setLayouts] = useState<Layouts>(() => {
+    if (typeof window !== 'undefined') {
+      const savedLayouts = localStorage.getItem('operations-dashboard-layouts')
+      if (savedLayouts) {
+        try {
+          const parsed = JSON.parse(savedLayouts)
+          if (parsed && (parsed.lg || parsed.md || parsed.sm)) {
+            const completeLayouts: Layouts = {
+              lg: parsed.lg || defaultLayouts.lg || [],
+              md: parsed.md || parsed.lg || defaultLayouts.md || [],
+              sm: parsed.sm || parsed.md || parsed.lg || defaultLayouts.sm || [],
+              xs: parsed.xs || parsed.sm || parsed.md || parsed.lg || defaultLayouts.xs || [],
+            }
+            return completeLayouts
+          }
+        } catch (error) {
+          console.error('Error loading layouts from localStorage in useState:', error)
+        }
+      }
+    }
+    return defaultLayouts
+  })
   const [isMobile, setIsMobile] = useState(false)
   const [isInitialMount, setIsInitialMount] = useState(true)
   const [widgetsLoaded, setWidgetsLoaded] = useState(false)

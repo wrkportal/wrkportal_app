@@ -204,7 +204,7 @@ const defaultLayouts: Layouts = {
     // My Tasks
     { i: 'myTasks', x: 0, y: 12, w: 12, h: 10, minW: 6, minH: 8 },
     // Mind Map & Canvas
-    { i: 'mindMap', x: 0, y: 22, w: 6, h: 8, minW: 3, minH: 6 },
+    { i: 'mindMap', x: 0, y: 22, w: 6, h: 8, minW: 16, minH: 12 },
     { i: 'canvas', x: 6, y: 22, w: 6, h: 8, minW: 3, minH: 8 },
   ],
   md: [
@@ -212,7 +212,7 @@ const defaultLayouts: Layouts = {
     { i: 'quickActions', x: 0, y: 6, w: 5, h: 6, minW: 3, minH: 4 },
     { i: 'usefulLinks', x: 5, y: 6, w: 5, h: 6, minW: 3, minH: 4 },
     { i: 'myTasks', x: 0, y: 12, w: 10, h: 10, minW: 5, minH: 8 },
-    { i: 'mindMap', x: 0, y: 22, w: 5, h: 8, minW: 3, minH: 6 },
+    { i: 'mindMap', x: 0, y: 22, w: 5, h: 8, minW: 16, minH: 12 },
     { i: 'canvas', x: 5, y: 22, w: 5, h: 8, minW: 3, minH: 8 },
   ],
   sm: [
@@ -220,7 +220,7 @@ const defaultLayouts: Layouts = {
     { i: 'quickActions', x: 0, y: 6, w: 6, h: 6, minW: 3, minH: 4 },
     { i: 'usefulLinks', x: 0, y: 12, w: 6, h: 6, minW: 3, minH: 4 },
     { i: 'myTasks', x: 0, y: 18, w: 6, h: 10, minW: 3, minH: 8 },
-    { i: 'mindMap', x: 0, y: 28, w: 6, h: 8, minW: 3, minH: 6 },
+    { i: 'mindMap', x: 0, y: 28, w: 6, h: 8, minW: 16, minH: 12 },
     { i: 'canvas', x: 0, y: 36, w: 6, h: 8, minW: 3, minH: 8 },
   ],
 }
@@ -246,7 +246,20 @@ function RecruitmentDashboardPageInner() {
   const [pipelineData, setPipelineData] = useState<any>(null)
   const [timeToHireData, setTimeToHireData] = useState<any>(null)
   const [sourcePerformanceData, setSourcePerformanceData] = useState<any>(null)
-  const [layouts, setLayouts] = useState<Layouts>(defaultLayouts)
+  // Initialize layouts from localStorage immediately to prevent default overwrite
+  const [layouts, setLayouts] = useState<Layouts>(() => {
+    if (typeof window !== 'undefined') {
+      const savedLayouts = localStorage.getItem('recruitment-dashboard-layouts')
+      if (savedLayouts) {
+        try {
+          return JSON.parse(savedLayouts)
+        } catch (error) {
+          console.error('Error loading layouts from localStorage in useState:', error)
+        }
+      }
+    }
+    return defaultLayouts
+  })
   const [isMobile, setIsMobile] = useState(false)
   const [isInitialMount, setIsInitialMount] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
@@ -398,7 +411,16 @@ function RecruitmentDashboardPageInner() {
     const savedLayouts = localStorage.getItem('recruitment-dashboard-layouts')
     if (savedLayouts) {
       try {
-        setLayouts(JSON.parse(savedLayouts))
+        const parsed = JSON.parse(savedLayouts)
+        // Only update if different from current state
+        setLayouts(prev => {
+          const prevStr = JSON.stringify(prev)
+          const newStr = JSON.stringify(parsed)
+          if (prevStr !== newStr) {
+            return parsed
+          }
+          return prev
+        })
       } catch (error) {
         console.error('Error loading saved layouts:', error)
       }

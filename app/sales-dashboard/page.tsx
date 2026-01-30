@@ -15,7 +15,7 @@ const ResponsiveGridLayout = dynamic(
     const { WidthProvider, Responsive } = mod
     return WidthProvider(Responsive)
   }),
-  { 
+  {
     ssr: false,
     loading: () => <div className="h-screen w-full" />
   }
@@ -109,11 +109,11 @@ const TimeTrackingDialog = dynamic(() => import('@/components/dialogs/time-track
 const TimerNotesDialog = dynamic(() => import('@/components/dialogs/timer-notes-dialog').then(mod => ({ default: mod.TimerNotesDialog })), { ssr: false })
 
 // Dynamic imports for heavy widgets - only load when widget is visible
-const AdvancedMindMapWidget = dynamic(() => import('@/components/widgets/AdvancedMindMapWidget').then(mod => ({ default: mod.AdvancedMindMapWidget })), { 
+const AdvancedMindMapWidget = dynamic(() => import('@/components/widgets/AdvancedMindMapWidget').then(mod => ({ default: mod.AdvancedMindMapWidget })), {
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
 })
-const AdvancedCanvasWidget = dynamic(() => import('@/components/widgets/AdvancedCanvasWidget').then(mod => ({ default: mod.AdvancedCanvasWidget })), { 
+const AdvancedCanvasWidget = dynamic(() => import('@/components/widgets/AdvancedCanvasWidget').then(mod => ({ default: mod.AdvancedCanvasWidget })), {
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
 })
@@ -199,11 +199,43 @@ function SalesDashboardPageInner() {
   const [hasAnyData, setHasAnyData] = useState(false)
   const [overviewData, setOverviewData] = useState<any>(null)
   const [loadingOverview, setLoadingOverview] = useState(false)
-  const [layouts, setLayouts] = useState<Layouts>({
-    lg: [],
-    md: [],
-    sm: [],
-    xs: [],
+  // Initialize layouts from localStorage immediately to prevent default overwrite
+  const [layouts, setLayouts] = useState<Layouts>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sales-dashboard-layout')
+      if (saved) {
+        try {
+          const parsedLayouts = JSON.parse(saved)
+          // Validate and sanitize layouts to ensure all items have valid properties
+          const sanitizedLayouts: Layouts = {
+            lg: (parsedLayouts.lg || []).filter((item: any): item is Layout =>
+              item && typeof item === 'object' && typeof item.y === 'number' && typeof item.x === 'number'
+            ),
+            md: (parsedLayouts.md || []).filter((item: any): item is Layout =>
+              item && typeof item === 'object' && typeof item.y === 'number' && typeof item.x === 'number'
+            ),
+            sm: (parsedLayouts.sm || []).filter((item: any): item is Layout =>
+              item && typeof item === 'object' && typeof item.y === 'number' && typeof item.x === 'number'
+            ),
+            xs: (parsedLayouts.xs || []).filter((item: any): item is Layout =>
+              item && typeof item === 'object' && typeof item.y === 'number' && typeof item.x === 'number'
+            ),
+          }
+          // Only return if we have valid layouts
+          if (sanitizedLayouts.lg.length > 0 || sanitizedLayouts.md.length > 0 || sanitizedLayouts.sm.length > 0 || sanitizedLayouts.xs.length > 0) {
+            return sanitizedLayouts
+          }
+        } catch (error) {
+          console.error('Error loading layout from localStorage in useState:', error)
+        }
+      }
+    }
+    return {
+      lg: [],
+      md: [],
+      sm: [],
+      xs: [],
+    }
   })
   const [widgets, setWidgets] = useState<Widget[]>(defaultSalesWidgets)
   const [userTasks, setUserTasks] = useState<any[]>([])
@@ -296,11 +328,11 @@ function SalesDashboardPageInner() {
     } catch (error) {
       console.error('Error loading useful links:', error)
     }
-    
+
     // Load layout and widgets (synchronous)
     loadSavedLayout()
     loadSavedWidgets()
-    
+
     // Batch all API calls to run in parallel (major performance improvement)
     if (user?.id) {
       Promise.all([
@@ -353,7 +385,7 @@ function SalesDashboardPageInner() {
   // Optimized: Batch all localStorage reads in a single useEffect
   useEffect(() => {
     if (typeof window === 'undefined') return
-    
+
     try {
       // Initialize dates (only once)
       if (!datesInitializedRef.current) {
@@ -361,11 +393,11 @@ function SalesDashboardPageInner() {
         setGanttTimelineStart(new Date())
         datesInitializedRef.current = true
       }
-      
+
       // Batch all localStorage reads
       const taskViewModeSaved = localStorage.getItem('task-view-mode')
       const taskColorsSaved = localStorage.getItem('sales-task-colors')
-      
+
       // Set task view mode
       if (taskViewModeSaved && ['list', 'calendar', 'kanban', 'gantt'].includes(taskViewModeSaved)) {
         setTaskViewMode(taskViewModeSaved as 'list' | 'calendar' | 'kanban' | 'gantt')
@@ -373,7 +405,7 @@ function SalesDashboardPageInner() {
         setTaskViewMode('gantt')
         localStorage.setItem('task-view-mode', 'gantt')
       }
-      
+
       // Set task colors
       if (taskColorsSaved) {
         setTaskColors(JSON.parse(taskColorsSaved))
@@ -1378,8 +1410,8 @@ function SalesDashboardPageInner() {
             y: 100, // Place at the end
             w: 6,
             h: 4,
-            minW: 3,
-            minH: 2,
+            minW: widgetId === 'mindMap' ? 16 : 3,
+            minH: widgetId === 'mindMap' ? 12 : 2,
           }
 
           const updatedLayouts: Layouts = {
@@ -1398,7 +1430,7 @@ function SalesDashboardPageInner() {
     })
   }, [])
 
-  // Load saved layout from localStorage
+  // Load saved layout from localStorage (only if not already loaded in useState)
   const loadSavedLayout = () => {
     try {
       const saved = localStorage.getItem('sales-dashboard-layout')
@@ -1419,13 +1451,45 @@ function SalesDashboardPageInner() {
             item && typeof item === 'object' && typeof item.y === 'number' && typeof item.x === 'number'
           ),
         }
-        setLayouts(sanitizedLayouts)
+        // Only update if different from current state
+        setLayouts(prev => {
+          const prevStr = JSON.stringify(prev)
+          const newStr = JSON.stringify(sanitizedLayouts)
+          if (prevStr !== newStr) {
+            return sanitizedLayouts
+          }
+          return prev
+        })
       } else {
-        initializeDefaultLayout()
+        // Only initialize defaults if layouts are empty
+        setLayouts(prev => {
+          const isEmpty = prev.lg.length === 0 && prev.md.length === 0 && prev.sm.length === 0 && prev.xs.length === 0
+          if (isEmpty) {
+            const defaultLayout: Layout[] = [
+              { i: 'quickActions', x: 0, y: 0, w: 6, h: 4, minW: 3, minH: 4 },
+              { i: 'metrics', x: 6, y: 0, w: 6, h: 4, minW: 3, minH: 2 },
+              { i: 'myTasks', x: 0, y: 4, w: 6, h: 6, minW: 3, minH: 6 },
+            ]
+            return { lg: defaultLayout, md: defaultLayout, sm: defaultLayout, xs: defaultLayout }
+          }
+          return prev
+        })
       }
     } catch (error) {
       console.error('Error loading layout:', error)
-      initializeDefaultLayout()
+      // Only initialize defaults if layouts are empty
+      setLayouts(prev => {
+        const isEmpty = prev.lg.length === 0 && prev.md.length === 0 && prev.sm.length === 0 && prev.xs.length === 0
+        if (isEmpty) {
+          const defaultLayout: Layout[] = [
+            { i: 'quickActions', x: 0, y: 0, w: 6, h: 4, minW: 3, minH: 4 },
+            { i: 'metrics', x: 6, y: 0, w: 6, h: 4, minW: 3, minH: 2 },
+            { i: 'myTasks', x: 0, y: 4, w: 6, h: 6, minW: 3, minH: 6 },
+          ]
+          return { lg: defaultLayout, md: defaultLayout, sm: defaultLayout, xs: defaultLayout }
+        }
+        return prev
+      })
     }
   }
 
@@ -2465,7 +2529,7 @@ function SalesDashboardPageInner() {
   function renderMyTasksWidget(skipFullscreenStyles = false) {
     const isFullscreen = !skipFullscreenStyles && fullscreenWidget === 'myTasks'
     const filteredTasks = getFilteredTasks()
-    
+
     // Defensive check: ensure router is available
     if (!router) {
       console.error('[SalesDashboard] Router is not available in renderMyTasksWidget')
@@ -3447,7 +3511,7 @@ function SalesDashboardPageInner() {
 
                                                       return (
                                                         <div key={subtask.id}>
-                                                          <div 
+                                                          <div
                                                             onClick={(e) => {
                                                               // Don't open dialog if clicking buttons
                                                               if ((e.target as HTMLElement).closest('button')) {
@@ -3881,7 +3945,7 @@ function SalesDashboardPageInner() {
                                           const statusColorResult = getStatusColor(taskStatus, task)
                                           const customColor = typeof statusColorResult === 'object' ? statusColorResult.backgroundColor : null
                                           const bgClass = typeof statusColorResult === 'string' ? statusColorResult : ''
-                                          
+
                                           return (
                                             <div
                                               className={cn(
@@ -4246,7 +4310,7 @@ function SalesDashboardPageInner() {
 
   const currentHour = new Date().getHours()
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening'
-  
+
   // Check if there are any visible widgets
   const hasVisibleWidgets = widgets.some(w => w.visible)
 

@@ -109,7 +109,7 @@ const defaultLayouts: Layouts = {
     { i: 'quickActions', x: 0, y: 82, w: 6, h: 6, minW: 3, minH: 4 },
     { i: 'usefulLinks', x: 6, y: 82, w: 6, h: 6, minW: 3, minH: 4 },
     { i: 'forms', x: 0, y: 88, w: 12, h: 8, minW: 6, minH: 6 },
-    { i: 'mindMap', x: 0, y: 96, w: 12, h: 10, minW: 6, minH: 8 },
+    { i: 'mindMap', x: 0, y: 96, w: 12, h: 10, minW: 16, minH: 12 },
     { i: 'canvas', x: 0, y: 106, w: 12, h: 10, minW: 6, minH: 8 },
     { i: 'ganttChart', x: 0, y: 116, w: 12, h: 10, minW: 6, minH: 8 },
   ],
@@ -135,7 +135,38 @@ export default function PMDashboardLandingPage() {
   const user = useAuthStore((state) => state.user)
   const setUser = useAuthStore((state) => state.setUser)
   const [widgets, setWidgets] = useState<Widget[]>(defaultWidgets)
-  const [layouts, setLayouts] = useState<Layouts>(defaultLayouts)
+  // Initialize layouts from localStorage immediately to prevent default overwrite
+  const [layouts, setLayouts] = useState<Layouts>(() => {
+    if (typeof window !== 'undefined') {
+      const savedLayouts = localStorage.getItem('pm-layouts')
+      if (savedLayouts) {
+        try {
+          const parsedLayouts: Layouts = JSON.parse(savedLayouts)
+          // Merge saved layouts with defaults to ensure all widgets have positions
+          const mergedLayouts: Layouts = { lg: [], md: [], sm: [] }
+          // For each breakpoint, merge saved layouts with defaults
+          ; (['lg', 'md', 'sm'] as const).forEach(breakpoint => {
+            const savedBreakpointLayouts = parsedLayouts[breakpoint] || []
+            const defaultBreakpointLayouts = defaultLayouts[breakpoint] || []
+            // Create a map of saved layouts by widget id
+            const savedLayoutMap = new Map(savedBreakpointLayouts.map(l => [l.i, l]))
+            // Start with saved layouts, then add any missing defaults
+            const merged: Layout[] = [...savedBreakpointLayouts]
+            defaultBreakpointLayouts.forEach(defaultLayout => {
+              if (!savedLayoutMap.has(defaultLayout.i)) {
+                merged.push(defaultLayout)
+              }
+            })
+            mergedLayouts[breakpoint] = merged
+          })
+          return mergedLayouts
+        } catch (e) {
+          console.error('Failed to load layouts from localStorage in useState:', e)
+        }
+      }
+    }
+    return defaultLayouts
+  })
   const [isMobile, setIsMobile] = useState(false)
   const [usefulLinks, setUsefulLinks] = useState<Array<{ id: string; title: string; url: string }>>([])
   const [newLinkTitle, setNewLinkTitle] = useState('')
@@ -494,15 +525,39 @@ export default function PMDashboardLandingPage() {
             mergedLayouts[breakpoint] = merged
           })
 
-        setLayouts(mergedLayouts)
+        // Only update if different from current state
+        setLayouts(prev => {
+          const prevStr = JSON.stringify(prev)
+          const newStr = JSON.stringify(mergedLayouts)
+          if (prevStr !== newStr) {
+            return mergedLayouts
+          }
+          return prev
+        })
         localStorage.setItem('pm-layouts', JSON.stringify(mergedLayouts))
       } catch (e) {
         console.error('Failed to load layouts', e)
-        setLayouts(defaultLayouts)
+        // Only set defaults if not already set
+        setLayouts(prev => {
+          const prevStr = JSON.stringify(prev)
+          const defaultStr = JSON.stringify(defaultLayouts)
+          if (prevStr !== defaultStr) {
+            return defaultLayouts
+          }
+          return prev
+        })
         localStorage.setItem('pm-layouts', JSON.stringify(defaultLayouts))
       }
     } else {
-      setLayouts(defaultLayouts)
+      // Only set defaults if not already set
+      setLayouts(prev => {
+        const prevStr = JSON.stringify(prev)
+        const defaultStr = JSON.stringify(defaultLayouts)
+        if (prevStr !== defaultStr) {
+          return defaultLayouts
+        }
+        return prev
+      })
       localStorage.setItem('pm-layouts', JSON.stringify(defaultLayouts))
     }
 
