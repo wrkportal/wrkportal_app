@@ -191,7 +191,23 @@ export default function ITDashboardPage() {
   const [assetsData, setAssetsData] = useState<any[]>([])
   const [securityData, setSecurityData] = useState<any[]>([])
   const [networkData, setNetworkData] = useState<any[]>([])
-  const [layouts, setLayouts] = useState<Layouts>(defaultLayouts)
+  // Initialize layouts from localStorage immediately to prevent default overwrite
+  const [layouts, setLayouts] = useState<Layouts>(() => {
+    if (typeof window !== 'undefined') {
+      const savedLayouts = localStorage.getItem('it-dashboard-layouts')
+      if (savedLayouts) {
+        try {
+          const parsed = JSON.parse(savedLayouts)
+          if (parsed && (parsed.lg || parsed.md || parsed.sm)) {
+            return parsed
+          }
+        } catch (error) {
+          console.error('Error loading layouts from localStorage in useState:', error)
+        }
+      }
+    }
+    return defaultLayouts
+  })
   const [isMobile, setIsMobile] = useState(false)
   const [isInitialMount, setIsInitialMount] = useState(true)
   const [widgetsLoaded, setWidgetsLoaded] = useState(false)
@@ -391,16 +407,48 @@ export default function ITDashboardPage() {
         try {
           const parsed = JSON.parse(savedLayouts)
           if (parsed && (parsed.lg || parsed.md || parsed.sm)) {
-            setLayouts(parsed)
+            // Only update if different from current state to avoid unnecessary re-renders
+            setLayouts(prev => {
+              const prevStr = JSON.stringify(prev)
+              const newStr = JSON.stringify(parsed)
+              if (prevStr !== newStr) {
+                return parsed
+              }
+              return prev
+            })
           } else {
-            setLayouts(defaultLayouts)
+            // Only set defaults if not already set
+            setLayouts(prev => {
+              const prevStr = JSON.stringify(prev)
+              const defaultStr = JSON.stringify(defaultLayouts)
+              if (prevStr !== defaultStr) {
+                return defaultLayouts
+              }
+              return prev
+            })
           }
         } catch (error) {
           console.error('Error loading layouts:', error)
-          setLayouts(defaultLayouts)
+          // Only set defaults if not already set
+          setLayouts(prev => {
+            const prevStr = JSON.stringify(prev)
+            const defaultStr = JSON.stringify(defaultLayouts)
+            if (prevStr !== defaultStr) {
+              return defaultLayouts
+            }
+            return prev
+          })
         }
       } else {
-        setLayouts(defaultLayouts)
+        // Only set defaults if not already set
+        setLayouts(prev => {
+          const prevStr = JSON.stringify(prev)
+          const defaultStr = JSON.stringify(defaultLayouts)
+          if (prevStr !== defaultStr) {
+            return defaultLayouts
+          }
+          return prev
+        })
       }
       setIsInitialMount(false)
     }

@@ -255,7 +255,7 @@ export function SearchBar() {
     }
 
     return (
-        <div className="relative w-full max-w-2xl mx-auto">
+        <div className="relative w-full max-w-2xl md:max-w-xl lg:max-w-lg mx-auto">
             {/* Search Input with Integrated Filter */}
             <div className="relative flex-1">
                 <div className="relative flex items-center border border-input rounded-md bg-background">
