@@ -18,14 +18,20 @@ const DialogOverlay = React.forwardRef<
     <DialogPrimitive.Overlay
         ref={ref}
         className={cn(
-            "fixed inset-0 z-[200] bg-background/95 backdrop-blur-none blur-none filter-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            "fixed inset-0 z-[9998] bg-background/95 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
             className
         )}
         style={{
             backdropFilter: 'none',
             WebkitBackdropFilter: 'none',
             filter: 'none',
-            backgroundColor: 'hsl(var(--background) / 0.95)'
+            backgroundColor: 'hsl(var(--background))',
+            opacity: 0.95,
+            zIndex: 99998,
+            isolation: 'isolate',
+            position: 'fixed',
+            pointerEvents: 'auto',
+            contain: 'layout style paint'
         }}
         {...props}
     />
@@ -37,34 +43,61 @@ const DialogContent = React.forwardRef<
     React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
         container?: HTMLElement | null
     }
->(({ className, children, container, ...props }, ref) => (
-    <DialogPortal container={container}>
-        <DialogOverlay />
-        <DialogPrimitive.Content
-            ref={ref}
-            className={cn(
-                "fixed left-[50%] top-[50%] z-[200] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-lg",
-                className
-            )}
-            style={{ 
-                isolation: 'isolate',
-                willChange: 'transform',
-                backdropFilter: 'none',
-                WebkitBackdropFilter: 'none',
-                filter: 'none',
-                backgroundColor: 'hsl(var(--card))',
-                zIndex: 200
-            }}
-            {...props}
-        >
-            {children}
-            <DialogPrimitive.Close className="absolute right-4 top-4 z-[200] rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground bg-card shadow-sm">
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-            </DialogPrimitive.Close>
-        </DialogPrimitive.Content>
-    </DialogPortal>
-))
+>(({ className, children, container, ...props }, ref) => {
+    // Always render to document.body to avoid being clipped by parent containers
+    // Use useEffect to ensure we always have the body reference
+    const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null)
+
+    React.useEffect(() => {
+        if (typeof document !== 'undefined') {
+            setPortalContainer(document.body)
+        }
+    }, [])
+
+    return (
+        <DialogPortal container={container || portalContainer}>
+            <div style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 99999,
+                pointerEvents: 'auto',
+                isolation: 'isolate'
+            }}>
+                <DialogOverlay />
+                <DialogPrimitive.Content
+                    ref={ref}
+                    className={cn(
+                        "fixed left-[50%] top-[50%] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-lg",
+                        className
+                    )}
+                    style={{
+                        isolation: 'isolate',
+                        willChange: 'transform',
+                        backdropFilter: 'none',
+                        WebkitBackdropFilter: 'none',
+                        filter: 'none',
+                        backgroundColor: 'hsl(var(--card))',
+                        opacity: 1,
+                        zIndex: 99999,
+                        position: 'fixed',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        pointerEvents: 'auto',
+                        contain: 'layout style paint'
+                    }}
+                    {...props}
+                >
+                    {children}
+                    <DialogPrimitive.Close className="absolute right-4 top-4 z-[10000] rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground bg-card shadow-sm">
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close</span>
+                    </DialogPrimitive.Close>
+                </DialogPrimitive.Content>
+            </div>
+        </DialogPortal>
+    )
+})
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({

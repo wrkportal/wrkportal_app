@@ -946,14 +946,14 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl md:max-w-3xl lg:max-w-2xl max-h-[85vh] md:max-h-[80vh] lg:max-h-[75vh] w-[95vw] md:w-[90vw] lg:w-auto overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{content.title}</DialogTitle>
           <DialogDescription>{content.description}</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="workflow" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="workflow" className="w-full max-w-full overflow-hidden flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-2 max-w-full flex-shrink-0">
             <TabsTrigger value="workflow">
               <Workflow className="h-4 w-4 mr-2" />
               How Should I Start?
@@ -964,16 +964,16 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="workflow" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <h3 className="text-lg md:text-base lg:text-base font-semibold">{content.workflow.title}</h3>
-              <p className="text-sm md:text-xs lg:text-xs text-muted-foreground">{content.workflow.description}</p>
+          <TabsContent value="workflow" className="space-y-4 mt-4 max-w-full overflow-hidden flex-1 flex flex-col min-h-0">
+            <div className="space-y-2 max-w-full min-w-0 flex-shrink-0">
+              <h3 className="text-lg md:text-base lg:text-base font-semibold break-words">{content.workflow.title}</h3>
+              <p className="text-sm md:text-xs lg:text-xs text-muted-foreground break-words">{content.workflow.description}</p>
             </div>
 
-            <ScrollArea className="h-[500px] pr-4 overflow-x-hidden">
-              <div className="space-y-4 max-w-full">
+            <ScrollArea className="flex-1 pr-4 overflow-x-hidden max-w-full min-h-0">
+              <div className="space-y-4 max-w-full min-w-0">
                 {content.workflow.steps.map((step) => (
-                  <Card key={step.step} className="overflow-hidden max-w-full">
+                  <Card key={step.step} className="overflow-hidden max-w-full min-w-0">
                     <CardHeader
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() =>
@@ -1015,8 +1015,8 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="faqs" className="space-y-4 mt-4">
-            <div className="flex gap-2">
+          <TabsContent value="faqs" className="space-y-4 mt-4 max-w-full overflow-hidden flex-1 flex flex-col min-h-0">
+            <div className="flex gap-2 max-w-full min-w-0 flex-shrink-0">
               <Input
                 placeholder="Search FAQs..."
                 value={searchQuery}
@@ -1028,17 +1028,17 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
               </Button>
             </div>
 
-            <ScrollArea className="h-[500px] overflow-x-hidden">
-              <div className="space-y-4 max-w-full">
+            <ScrollArea className="flex-1 overflow-x-hidden max-w-full min-h-0">
+              <div className="space-y-4 max-w-full min-w-0">
                 {filteredFAQs.length === 0 ? (
-                  <Card className="max-w-full">
+                  <Card className="max-w-full min-w-0">
                     <CardContent className="py-8 text-center">
                       <p className="text-muted-foreground text-sm md:text-xs lg:text-xs">No FAQs found</p>
                     </CardContent>
                   </Card>
                 ) : (
                   filteredFAQs.map((faq, index) => (
-                    <Card key={index} className="overflow-hidden max-w-full">
+                    <Card key={index} className="overflow-hidden max-w-full min-w-0">
                       <CardHeader>
                         <CardTitle className="text-base md:text-sm lg:text-sm flex items-start gap-2 min-w-0">
                           <HelpCircle className="h-4 w-4 text-primary mt-1 flex-shrink-0" />

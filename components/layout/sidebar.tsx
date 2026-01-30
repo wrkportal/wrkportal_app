@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -197,6 +198,7 @@ function CalendarScheduleWidget() {
     const [tasksSidebarOpen, setTasksSidebarOpen] = useState(false)
     const calendarRef = useRef<HTMLDivElement>(null)
     const [calendarHeight, setCalendarHeight] = useState<number>(0)
+    const [sidebarPosition, setSidebarPosition] = useState({ top: 0, right: 0 })
     const [selectedTask, setSelectedTask] = useState<any>(null)
     const [agendaDialogOpen, setAgendaDialogOpen] = useState(false)
     const [chatDialogOpen, setChatDialogOpen] = useState(false)
@@ -213,92 +215,92 @@ function CalendarScheduleWidget() {
 
     // Fetch tasks and calls for the selected date
     const fetchTasksForDate = useCallback(async () => {
-            if (!user?.id) {
-                setTasks([])
-                return
+        if (!user?.id) {
+            setTasks([])
+            return
+        }
+
+        try {
+            setLoadingTasks(true)
+
+            // Fetch tasks and calls in parallel
+            const [tasksResponse, callsResponse] = await Promise.all([
+                fetch('/api/tasks?includeCreated=true'),
+                fetch('/api/calls')
+            ])
+
+            const allItems: any[] = []
+
+            // Process tasks
+            if (tasksResponse.ok) {
+                const data = await tasksResponse.json()
+                const allTasks = data.tasks || []
+
+                // Filter tasks by selected date and convert to unified format
+                const selectedDateStart = new Date(selectedDate)
+                selectedDateStart.setHours(0, 0, 0, 0)
+                const selectedDateEnd = new Date(selectedDate)
+                selectedDateEnd.setHours(23, 59, 59, 999)
+
+                allTasks.forEach((task: any) => {
+                    if (task.dueDate) {
+                        const taskDate = new Date(task.dueDate)
+                        if (taskDate >= selectedDateStart && taskDate <= selectedDateEnd) {
+                            allItems.push({
+                                ...task,
+                                type: 'task',
+                                displayDate: task.dueDate,
+                            })
+                        }
+                    }
+                })
             }
 
-            try {
-                setLoadingTasks(true)
-                
-                // Fetch tasks and calls in parallel
-                const [tasksResponse, callsResponse] = await Promise.all([
-                    fetch('/api/tasks?includeCreated=true'),
-                    fetch('/api/calls')
-                ])
-                
-                const allItems: any[] = []
-                
-                // Process tasks
-                if (tasksResponse.ok) {
-                    const data = await tasksResponse.json()
-                    const allTasks = data.tasks || []
-                    
-                    // Filter tasks by selected date and convert to unified format
-                    const selectedDateStart = new Date(selectedDate)
-                    selectedDateStart.setHours(0, 0, 0, 0)
-                    const selectedDateEnd = new Date(selectedDate)
-                    selectedDateEnd.setHours(23, 59, 59, 999)
-                    
-                    allTasks.forEach((task: any) => {
-                        if (task.dueDate) {
-                            const taskDate = new Date(task.dueDate)
-                            if (taskDate >= selectedDateStart && taskDate <= selectedDateEnd) {
-                                allItems.push({
-                                    ...task,
-                                    type: 'task',
-                                    displayDate: task.dueDate,
-                                })
-                            }
+            // Process calls (scheduled meetings)
+            if (callsResponse.ok) {
+                const data = await callsResponse.json()
+                const allCalls = data.calls || []
+
+                // Filter calls by selected date and convert to unified format
+                const selectedDateStart = new Date(selectedDate)
+                selectedDateStart.setHours(0, 0, 0, 0)
+                const selectedDateEnd = new Date(selectedDate)
+                selectedDateEnd.setHours(23, 59, 59, 999)
+
+                allCalls.forEach((call: any) => {
+                    if (call.scheduledAt) {
+                        const callDate = new Date(call.scheduledAt)
+                        if (callDate >= selectedDateStart && callDate <= selectedDateEnd) {
+                            allItems.push({
+                                id: call.id,
+                                title: call.title || 'Untitled Meeting',
+                                description: call.description,
+                                dueDate: call.scheduledAt, // Use scheduledAt as dueDate for display
+                                displayDate: call.scheduledAt,
+                                createdBy: call.createdBy,
+                                type: 'call',
+                                call: call, // Keep original call data
+                                estimatedHours: null, // Calls don't have estimated hours
+                            })
                         }
-                    })
-                }
-                
-                // Process calls (scheduled meetings)
-                if (callsResponse.ok) {
-                    const data = await callsResponse.json()
-                    const allCalls = data.calls || []
-                    
-                    // Filter calls by selected date and convert to unified format
-                    const selectedDateStart = new Date(selectedDate)
-                    selectedDateStart.setHours(0, 0, 0, 0)
-                    const selectedDateEnd = new Date(selectedDate)
-                    selectedDateEnd.setHours(23, 59, 59, 999)
-                    
-                    allCalls.forEach((call: any) => {
-                        if (call.scheduledAt) {
-                            const callDate = new Date(call.scheduledAt)
-                            if (callDate >= selectedDateStart && callDate <= selectedDateEnd) {
-                                allItems.push({
-                                    id: call.id,
-                                    title: call.title || 'Untitled Meeting',
-                                    description: call.description,
-                                    dueDate: call.scheduledAt, // Use scheduledAt as dueDate for display
-                                    displayDate: call.scheduledAt,
-                                    createdBy: call.createdBy,
-                                    type: 'call',
-                                    call: call, // Keep original call data
-                                    estimatedHours: null, // Calls don't have estimated hours
-                                })
-                            }
-                        }
-                    })
-                }
-                
-                // Sort by displayDate/time
-                allItems.sort((a: any, b: any) => {
-                    const dateA = new Date(a.displayDate).getTime()
-                    const dateB = new Date(b.displayDate).getTime()
-                    return dateA - dateB
+                    }
                 })
-                
-                setTasks(allItems)
-            } catch (error) {
-                console.error('Error fetching tasks and calls:', error)
-                setTasks([])
-            } finally {
-                setLoadingTasks(false)
             }
+
+            // Sort by displayDate/time
+            allItems.sort((a: any, b: any) => {
+                const dateA = new Date(a.displayDate).getTime()
+                const dateB = new Date(b.displayDate).getTime()
+                return dateA - dateB
+            })
+
+            setTasks(allItems)
+        } catch (error) {
+            console.error('Error fetching tasks and calls:', error)
+            setTasks([])
+        } finally {
+            setLoadingTasks(false)
+        }
     }, [selectedDate, user?.id])
 
     useEffect(() => {
@@ -316,6 +318,43 @@ function CalendarScheduleWidget() {
         window.addEventListener('resize', updateHeight)
         return () => window.removeEventListener('resize', updateHeight)
     }, [currentMonth, selectedDate])
+
+    // Update sidebar position continuously to keep it aligned with calendar
+    useEffect(() => {
+        const updatePosition = () => {
+            if (calendarRef.current) {
+                const rect = calendarRef.current.getBoundingClientRect()
+                setSidebarPosition({
+                    top: rect.top,
+                    right: window.innerWidth - rect.right
+                })
+            }
+        }
+
+        // Initial position update with a small delay to ensure calendar is rendered
+        const timeoutId = setTimeout(updatePosition, 10)
+
+        // Update on resize and scroll
+        window.addEventListener('resize', updatePosition)
+        window.addEventListener('scroll', updatePosition, true)
+
+        // Also update when sidebar opens to ensure correct position
+        if (tasksSidebarOpen) {
+            const openTimeoutId = setTimeout(updatePosition, 0)
+            return () => {
+                clearTimeout(timeoutId)
+                clearTimeout(openTimeoutId)
+                window.removeEventListener('resize', updatePosition)
+                window.removeEventListener('scroll', updatePosition, true)
+            }
+        }
+
+        return () => {
+            clearTimeout(timeoutId)
+            window.removeEventListener('resize', updatePosition)
+            window.removeEventListener('scroll', updatePosition, true)
+        }
+    }, [tasksSidebarOpen, currentMonth, selectedDate])
 
     // Open tasks sidebar when date is selected
     const handleDateSelect = (date: Date) => {
@@ -461,25 +500,25 @@ function CalendarScheduleWidget() {
 
         try {
             setLoadingTasks(true)
-            
+
             // Fetch tasks and calls in parallel
             const [tasksResponse, callsResponse] = await Promise.all([
                 fetch('/api/tasks?includeCreated=true'),
                 fetch('/api/calls')
             ])
-            
+
             const allItems: any[] = []
-            
+
             // Process tasks
             if (tasksResponse.ok) {
                 const data = await tasksResponse.json()
                 const allTasks = data.tasks || []
-                
+
                 const selectedDateStart = new Date(selectedDate)
                 selectedDateStart.setHours(0, 0, 0, 0)
                 const selectedDateEnd = new Date(selectedDate)
                 selectedDateEnd.setHours(23, 59, 59, 999)
-                
+
                 allTasks.forEach((task: any) => {
                     if (task.dueDate) {
                         const taskDate = new Date(task.dueDate)
@@ -493,17 +532,17 @@ function CalendarScheduleWidget() {
                     }
                 })
             }
-            
+
             // Process calls
             if (callsResponse.ok) {
                 const data = await callsResponse.json()
                 const allCalls = data.calls || []
-                
+
                 const selectedDateStart = new Date(selectedDate)
                 selectedDateStart.setHours(0, 0, 0, 0)
                 const selectedDateEnd = new Date(selectedDate)
                 selectedDateEnd.setHours(23, 59, 59, 999)
-                
+
                 allCalls.forEach((call: any) => {
                     if (call.scheduledAt) {
                         const callDate = new Date(call.scheduledAt)
@@ -523,14 +562,14 @@ function CalendarScheduleWidget() {
                     }
                 })
             }
-            
+
             // Sort by displayDate/time
             allItems.sort((a: any, b: any) => {
                 const dateA = new Date(a.displayDate).getTime()
                 const dateB = new Date(b.displayDate).getTime()
                 return dateA - dateB
             })
-            
+
             setTasks(allItems)
         } catch (error) {
             console.error('Error fetching tasks and calls:', error)
@@ -545,13 +584,13 @@ function CalendarScheduleWidget() {
 
         try {
             setIsDeleting(true)
-            
+
             // Determine if this is a call or task
             const isCall = selectedTask.type === 'call'
-            const apiEndpoint = isCall 
+            const apiEndpoint = isCall
                 ? `/api/calls/${selectedTask.id}`
                 : `/api/tasks/${selectedTask.id}`
-            
+
             const response = await fetch(apiEndpoint, {
                 method: 'DELETE',
             })
@@ -643,24 +682,24 @@ function CalendarScheduleWidget() {
         const startingDayOfWeek = firstDay.getDay()
 
         const dates: (Date | null)[] = []
-        
+
         // Add empty cells for days before the first day of the month
         for (let i = 0; i < startingDayOfWeek; i++) {
             dates.push(null)
         }
-        
+
         // Add all days of the current month
         for (let day = 1; day <= daysInMonth; day++) {
             dates.push(new Date(year, month, day))
         }
-        
+
         // Fill remaining cells to always have 6 rows (42 cells = 6 rows × 7 days)
         const totalCells = 42
         const currentCells = dates.length
         for (let i = currentCells; i < totalCells; i++) {
             dates.push(null)
         }
-        
+
         return dates
     }
 
@@ -709,7 +748,7 @@ function CalendarScheduleWidget() {
                         }
                         const isSelected = date.toDateString() === selectedDate.toDateString()
                         const isToday = date.toDateString() === new Date().toDateString()
-                        
+
                         return (
                             <button
                                 key={idx}
@@ -728,167 +767,178 @@ function CalendarScheduleWidget() {
                 </div>
             </div>
 
-            {/* Tasks Sidebar - slides out smoothly */}
-            <aside
-                className={cn(
-                    "absolute right-0 top-0 w-[380px] bg-card border border-border rounded-lg shadow-xl transition-all duration-500 ease-in-out z-50 overflow-hidden",
-                    tasksSidebarOpen 
-                        ? "translate-x-full opacity-100 pointer-events-auto" 
-                        : "translate-x-0 opacity-0 pointer-events-none"
-                )}
-                style={{ 
-                    height: calendarHeight > 0 ? `${calendarHeight}px` : 'auto',
-                    transform: tasksSidebarOpen ? 'translateX(calc(100% + 0.5rem))' : 'translateX(0)'
-                }}
-            >
-                <div className="flex h-full flex-col">
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-3 border-b">
-                        <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-semibold truncate">Meetings for {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</h3>
-                            <p className="text-xs text-muted-foreground">
-                                {tasks.length} {tasks.length === 1 ? 'meeting' : 'meetings'}
-                            </p>
+            {/* Tasks Sidebar - slides out smoothly - rendered via portal */}
+            {typeof document !== 'undefined' && createPortal(
+                <aside
+                    className={cn(
+                        "fixed w-[380px] bg-card border border-border rounded-lg shadow-xl transition-all duration-500 ease-in-out overflow-hidden",
+                        tasksSidebarOpen
+                            ? "translate-x-full opacity-100 pointer-events-auto"
+                            : "translate-x-0 opacity-0 pointer-events-none"
+                    )}
+                    style={{
+                        height: calendarHeight > 0 ? `${calendarHeight}px` : 'auto',
+                        top: `${sidebarPosition.top}px`,
+                        right: `${sidebarPosition.right}px`,
+                        transform: tasksSidebarOpen ? 'translateX(calc(100% + 0.5rem))' : 'translateX(0)',
+                        backdropFilter: 'none',
+                        WebkitBackdropFilter: 'none',
+                        filter: 'none',
+                        isolation: 'isolate',
+                        zIndex: 99999,
+                        position: 'fixed'
+                    }}
+                >
+                    <div className="flex h-full flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-3 border-b">
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-semibold truncate">Meetings for {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</h3>
+                                <p className="text-xs text-muted-foreground">
+                                    {tasks.length} {tasks.length === 1 ? 'meeting' : 'meetings'}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setScheduleMeetingDialogOpen(true)}
+                                    className="h-7 w-7 flex-shrink-0"
+                                    title="Schedule Meeting"
+                                >
+                                    <Plus className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setTasksSidebarOpen(false)}
+                                    className="h-7 w-7 flex-shrink-0"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setScheduleMeetingDialogOpen(true)}
-                                className="h-7 w-7 flex-shrink-0"
-                                title="Schedule Meeting"
-                            >
-                                <Plus className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setTasksSidebarOpen(false)}
-                                className="h-7 w-7 flex-shrink-0"
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
 
-                    {/* Tasks List */}
-                    <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                        {loadingTasks ? (
-                            <div className="text-center text-xs text-muted-foreground py-4">
-                                Loading...
-                            </div>
-                        ) : tasks.length === 0 ? (
-                            <div className="text-center text-xs text-muted-foreground py-4">
-                                No meetings
-                            </div>
-                        ) : (
-                            tasks.map((task) => {
-                                const taskTime = task.dueDate ? formatTime(task.dueDate) : ''
-                                const duration = formatDuration(task.estimatedHours)
-                                const creatorName = formatCreatorName((task as any).createdBy || task.assignee)
-                                
-                                return (
-                                    <div
-                                        key={task.id}
-                                        className="p-3 border border-border rounded-lg hover:bg-accent/50 transition-colors space-y-2"
-                                    >
-                                        {/* Meeting Name */}
-                                        <div className="text-sm font-semibold text-foreground">
-                                            {task.title}
-                                        </div>
-                                        
-                                        {/* Time and Duration */}
-                                        <div className="flex items-center gap-2 text-xs">
-                                            {taskTime && (
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="h-3 w-3 text-muted-foreground" />
-                                                    <span className="font-medium">{taskTime}</span>
-                                                </div>
-                                            )}
-                                            {duration && (
-                                                <div className="flex items-center gap-1 text-muted-foreground">
-                                                    <span>({duration})</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        
-                                        {/* Set up by */}
-                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                            <span>Set up by:</span>
-                                            <span className="font-medium">{creatorName}</span>
-                                        </div>
-                                        
-                                        {/* Action Icons */}
-                                        <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/50">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7"
-                                                title="Agenda"
-                                                onClick={() => handleAgendaClick(task)}
-                                            >
-                                                <ClipboardList className="h-3.5 w-3.5" />
-                                            </Button>
-                                            {/* Only show Chat and Upload for tasks, not calls */}
-                                            {task.type !== 'call' && (
-                                                <>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-7 w-7"
-                                                        title="Chat"
-                                                        onClick={() => handleChatClick(task)}
-                                                    >
-                                                        <MessageCircle className="h-3.5 w-3.5" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-7 w-7"
-                                                        title="Upload Documents"
-                                                        onClick={() => handleUploadClick(task)}
-                                                    >
-                                                        <Upload className="h-3.5 w-3.5" />
-                                                    </Button>
-                                                </>
-                                            )}
-                                            {/* Show Start Call button - use call participants if it's a call */}
-                                            {task.type === 'call' && task.call?.participants ? (
-                                                <StartCallButton
-                                                    participantIds={task.call.participants
-                                                        .filter((p: any) => p.userId !== user?.id)
-                                                        .map((p: any) => p.userId)}
-                                                    title={task.title}
+                        {/* Tasks List */}
+                        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                            {loadingTasks ? (
+                                <div className="text-center text-xs text-muted-foreground py-4">
+                                    Loading...
+                                </div>
+                            ) : tasks.length === 0 ? (
+                                <div className="text-center text-xs text-muted-foreground py-4">
+                                    No meetings
+                                </div>
+                            ) : (
+                                tasks.map((task) => {
+                                    const taskTime = task.dueDate ? formatTime(task.dueDate) : ''
+                                    const duration = formatDuration(task.estimatedHours)
+                                    const creatorName = formatCreatorName((task as any).createdBy || task.assignee)
+
+                                    return (
+                                        <div
+                                            key={task.id}
+                                            className="p-3 border border-border rounded-lg hover:bg-accent/50 transition-colors space-y-2"
+                                        >
+                                            {/* Meeting Name */}
+                                            <div className="text-sm font-semibold text-foreground">
+                                                {task.title}
+                                            </div>
+
+                                            {/* Time and Duration */}
+                                            <div className="flex items-center gap-2 text-xs">
+                                                {taskTime && (
+                                                    <div className="flex items-center gap-1">
+                                                        <Clock className="h-3 w-3 text-muted-foreground" />
+                                                        <span className="font-medium">{taskTime}</span>
+                                                    </div>
+                                                )}
+                                                {duration && (
+                                                    <div className="flex items-center gap-1 text-muted-foreground">
+                                                        <span>({duration})</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Set up by */}
+                                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                <span>Set up by:</span>
+                                                <span className="font-medium">{creatorName}</span>
+                                            </div>
+
+                                            {/* Action Icons */}
+                                            <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/50">
+                                                <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-7 w-7"
-                                                />
-                                            ) : (
-                                                <StartCallButton
-                                                    participantIds={task.assigneeId ? [task.assigneeId] : []}
-                                                    title={task.title}
+                                                    title="Agenda"
+                                                    onClick={() => handleAgendaClick(task)}
+                                                >
+                                                    <ClipboardList className="h-3.5 w-3.5" />
+                                                </Button>
+                                                {/* Only show Chat and Upload for tasks, not calls */}
+                                                {task.type !== 'call' && (
+                                                    <>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-7 w-7"
+                                                            title="Chat"
+                                                            onClick={() => handleChatClick(task)}
+                                                        >
+                                                            <MessageCircle className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-7 w-7"
+                                                            title="Upload Documents"
+                                                            onClick={() => handleUploadClick(task)}
+                                                        >
+                                                            <Upload className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </>
+                                                )}
+                                                {/* Show Start Call button - use call participants if it's a call */}
+                                                {task.type === 'call' && task.call?.participants ? (
+                                                    <StartCallButton
+                                                        participantIds={task.call.participants
+                                                            .filter((p: any) => p.userId !== user?.id)
+                                                            .map((p: any) => p.userId)}
+                                                        title={task.title}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7"
+                                                    />
+                                                ) : (
+                                                    <StartCallButton
+                                                        participantIds={task.assigneeId ? [task.assigneeId] : []}
+                                                        title={task.title}
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7"
+                                                    />
+                                                )}
+                                                <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-7 w-7"
-                                                />
-                                            )}
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                title="Delete"
-                                                onClick={() => handleDeleteClick(task)}
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
+                                                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    title="Delete"
+                                                    onClick={() => handleDeleteClick(task)}
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                )
-                            })
-                        )}
+                                    )
+                                })
+                            )}
+                        </div>
                     </div>
-                </div>
-            </aside>
+                </aside>,
+                document.body
+            )}
 
             {/* Hidden file input for uploads */}
             <input
@@ -1090,11 +1140,11 @@ function CalendarScheduleWidget() {
 }
 
 // Schedule Meeting Form Component
-function ScheduleMeetingForm({ 
-    selectedDate, 
-    onSuccess, 
-    onCancel 
-}: { 
+function ScheduleMeetingForm({
+    selectedDate,
+    onSuccess,
+    onCancel
+}: {
     selectedDate: Date
     onSuccess: () => void
     onCancel: () => void
@@ -1120,7 +1170,7 @@ function ScheduleMeetingForm({
         try {
             // Combine date and time
             const dateTime = new Date(`${formData.dueDate}T${formData.dueTime}`)
-            
+
             const response = await fetch('/api/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1281,13 +1331,13 @@ export function Sidebar() {
         // User is not authenticated, don't render sidebar
         return null
     }
-    
+
     // If user is undefined (still loading), show sidebar with loading state
     // This ensures sidebar appears as soon as user loads
     if (!user) {
         // Return minimal sidebar structure while loading
         return (
-            <aside 
+            <aside
                 className={cn(
                     "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card/95 backdrop-blur-xl transition-all duration-300 shadow-sm",
                     "md:translate-x-0",
@@ -1301,11 +1351,11 @@ export function Sidebar() {
             </aside>
         )
     }
-    
+
     // Use opacity transition for smooth appearance - ensure full opacity when mounted
     // Prevent flickering with will-change and transform
-    const sidebarStyle = !isMounted 
-        ? { opacity: 0, willChange: 'opacity' } 
+    const sidebarStyle = !isMounted
+        ? { opacity: 0, willChange: 'opacity' }
         : { opacity: 1, transition: 'opacity 0.1s ease-in', willChange: 'auto' }
 
     // Be robust if user.role isn't hydrated yet or not properly set
@@ -1320,10 +1370,10 @@ export function Sidebar() {
     // For invited users, check UserTenantAccess record instead of User.allowedSections
     const [allowedSections, setAllowedSections] = useState<string[] | null>(null)
     const [isInvitedUser, setIsInvitedUser] = useState(false)
-    
+
     useEffect(() => {
         if (!user) return
-        
+
         // Fetch allowedSections from UserTenantAccess (for invited users)
         const fetchAllowedSections = async () => {
             try {
@@ -1336,19 +1386,19 @@ export function Sidebar() {
                         allowedSections: data.activeTenantAccess?.allowedSections,
                         tenantsCount: data.tenants?.length || 0,
                     })
-                    
+
                     // Check if current tenant has UserTenantAccess record with invitationId
                     // This means the user was invited to this tenant (even if it's their primary tenant)
                     if (data.activeTenantAccess && data.activeTenantAccess.invitationId) {
                         setIsInvitedUser(true)
                         console.log('[Sidebar] User is invited user, invitationId:', data.activeTenantAccess.invitationId)
-                        
+
                         if (data.activeTenantAccess.allowedSections) {
                             try {
                                 const parsed = typeof data.activeTenantAccess.allowedSections === 'string'
                                     ? JSON.parse(data.activeTenantAccess.allowedSections)
                                     : data.activeTenantAccess.allowedSections
-                                
+
                                 // Handle both formats: array of strings or object with sections array
                                 if (Array.isArray(parsed)) {
                                     if (parsed.length === 0) {
@@ -1395,14 +1445,14 @@ export function Sidebar() {
             } catch (e) {
                 console.warn('[Sidebar] Failed to fetch UserTenantAccess:', e)
             }
-            
+
             // Fallback to User.allowedSections if not found in UserTenantAccess
             if ((user as any).allowedSections) {
                 try {
-                    const parsed = typeof (user as any).allowedSections === 'string' 
-                        ? JSON.parse((user as any).allowedSections) 
+                    const parsed = typeof (user as any).allowedSections === 'string'
+                        ? JSON.parse((user as any).allowedSections)
                         : (user as any).allowedSections
-                    
+
                     // Handle both formats: array of strings or object with sections array
                     if (Array.isArray(parsed)) {
                         setAllowedSections(parsed)
@@ -1418,7 +1468,7 @@ export function Sidebar() {
                 setAllowedSections(null) // Not an invited user, full access
             }
         }
-        
+
         fetchAllowedSections()
     }, [user])
 
@@ -1435,7 +1485,7 @@ export function Sidebar() {
     }
 
     // Determine effective allowedSections (handle invited users with null)
-    const effectiveAllowedSections = isInvitedUser && allowedSections === null 
+    const effectiveAllowedSections = isInvitedUser && allowedSections === null
         ? [] // Invited user with null = no access
         : allowedSections // Otherwise use the actual value
 
@@ -1449,13 +1499,13 @@ export function Sidebar() {
     const filteredItems = navigationItems.filter((item) => {
         // Super user sees everything
         if (isSuperUser) return true
-        
+
         // If allowedSections is null, user has full access (first-time signup or self-joined user)
         // Show all sections regardless of role
         if (effectiveAllowedSections === null) {
             return true
         }
-        
+
         // If user has allowedSections set (not null), check if this section is allowed
         // If allowedSections is empty array, user has no access
         if (effectiveAllowedSections.length === 0) {
@@ -1466,24 +1516,24 @@ export function Sidebar() {
             }
             return allowed
         }
-        
+
         // Check if this section is in the allowed list
         // Handle both formats: "Finance" and "Finance:Dashboard"
         const isAllowed = effectiveAllowedSections.some((section: string) => {
-          // Direct match (e.g., "Finance" === "Finance")
-          if (section === item.title) return true
-          // Format match (e.g., "Finance:Dashboard" starts with "Finance:")
-          if (section.includes(':') && section.split(':')[0] === item.title) return true
-          return false
+            // Direct match (e.g., "Finance" === "Finance")
+            if (section === item.title) return true
+            // Format match (e.g., "Finance:Dashboard" starts with "Finance:")
+            if (section.includes(':') && section.split(':')[0] === item.title) return true
+            return false
         })
-        
+
         const result = isAllowed || item.title === 'wrkboard' || item.title === 'Collaborate'
         if (!result) {
             console.log('[Sidebar] Filtering out:', item.title, '(not in allowedSections:', effectiveAllowedSections, ')')
         }
         return result
     })
-    
+
     console.log('[Sidebar] Filtered items:', filteredItems.map(item => item.title))
 
     // Toggle program expansion
@@ -1521,7 +1571,7 @@ export function Sidebar() {
             )}
 
             {/* Sidebar */}
-            <aside 
+            <aside
                 className={cn(
                     "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card backdrop-blur-xl transition-all duration-300 shadow-sm",
                     // Mobile: slide in from left, Desktop: always visible
@@ -1558,259 +1608,22 @@ export function Sidebar() {
                             let isActive = false
                             if (item.href === "/finance-dashboard") {
                                 // Finance should be active on /finance-dashboard and all its sub-pages, plus /workflows/finance/ pages
-                                isActive = pathname === "/finance-dashboard" || 
-                                          pathname.startsWith("/finance-dashboard/") ||
-                                          pathname.startsWith("/workflows/finance/")
+                                isActive = pathname === "/finance-dashboard" ||
+                                    pathname.startsWith("/finance-dashboard/") ||
+                                    pathname.startsWith("/workflows/finance/")
                             } else if (item.href === "/product-management") {
                                 // Projects should be active on /product-management and all its sub-pages
                                 const productManagementSubPages = ["/roadmap", "/projects", "/releases", "/sprints", "/backlog", "/dependencies", "/teams"]
-                                isActive = pathname === "/product-management" || 
-                                          pathname.startsWith("/product-management/") ||
-                                          productManagementSubPages.some(subPage => 
-                                              pathname === subPage || pathname.startsWith(subPage + "/")
-                                          )
+                                isActive = pathname === "/product-management" ||
+                                    pathname.startsWith("/product-management/") ||
+                                    productManagementSubPages.some(subPage =>
+                                        pathname === subPage || pathname.startsWith(subPage + "/")
+                                    )
                             } else {
                                 // For all other sections, check if pathname matches or starts with the href
                                 isActive = pathname === item.href || pathname.startsWith(item.href + "/")
                             }
 
-                            // Handle Programs & Projects with children - REMOVED
-                            if (false && item.children && item.title === "Programs & Projects" && !sidebarCollapsed) {
-                                const displayTitle = `Programs & ${getTerm('projects')}`
-                                return (
-                                    <div key={item.href}>
-                                        {/* Separator line between tabs */}
-                                        {index > 0 && (
-                                            <div className="my-1.5 border-t border-border/50"></div>
-                                        )}
-                                        <div
-                                            className={cn(
-                                                "flex items-center justify-between py-2 px-3 text-xs font-medium transition-all cursor-pointer rounded-md -mx-1",
-                                                pathname.includes(item.href) || pathname.includes("/roadmap") || pathname.includes("/programs/") || pathname.includes("/projects/")
-                                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                                    : "text-foreground hover:bg-accent/50/70"
-                                            )}
-                                            onClick={() => setExpandedProgramsProjects(!expandedProgramsProjects)}
-                                        >
-                                            <div className="flex items-center gap-2.5">
-                                                <Icon className="h-3.5 w-3.5" />
-                                                <span>{displayTitle}</span>
-                                            </div>
-                                            <ChevronDown
-                                                className={cn(
-                                                    "h-3.5 w-3.5 transition-transform flex-shrink-0",
-                                                    expandedProgramsProjects && "rotate-180"
-                                                )}
-                                            />
-                                        </div>
-
-                                        {/* Programs & Projects children */}
-                                        {expandedProgramsProjects && (
-                                            <div className="space-y-1">
-                                                {/* Static children - render Programs first, then Projects, then Roadmap */}
-                                                {item.children
-                                                    ?.filter((child) => isSuperUser || child.roles.includes(effectiveRole))
-                                                    .map((child) => {
-                                                        const ChildIcon = child.icon
-                                                        const isChildActive =
-                                                            pathname === child.href || pathname.startsWith(child.href + "/")
-
-                                                        // Special handling for Programs - make it expandable
-                                                        if (child.title === "Programs") {
-                                                            return (
-                                                                <div key={child.href}>
-                                                                    <div
-                                                                        className={cn(
-                                                                            "flex items-center justify-between py-1.5 px-3 text-xs font-medium transition-all cursor-pointer rounded-md ml-2",
-                                                                            isChildActive
-                                                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50/50"
-                                                                        )}
-                                                                        onClick={() => setExpandedProgramsSection(!expandedProgramsSection)}
-                                                                    >
-                                                                        <div className="flex items-center gap-2">
-                                                                            <ChildIcon className="h-3.5 w-3.5" />
-                                                                            {child.title}
-                                                                        </div>
-                                                                        <ChevronDown
-                                                                            className={cn(
-                                                                                "h-3 w-3 transition-transform flex-shrink-0",
-                                                                                expandedProgramsSection && "rotate-180"
-                                                                            )}
-                                                                        />
-                                                                    </div>
-
-                                                                    {/* Programs dropdown */}
-                                                                    {expandedProgramsSection && programs.length > 0 && (
-                                                                        <div className="space-y-1 ml-4">
-                                                                            {programs.map((program) => {
-                                                                                const isProgramActive = pathname.includes(`/programs/${program.id}`)
-                                                                                return (
-                                                                                    <Link
-                                                                                        key={program.id}
-                                                                                        href={`/programs/${program.id}`}
-                                                                                        onClick={handleLinkClick}
-                                                                                        className={cn(
-                                                                                            "flex items-center gap-2 py-2 text-sm font-medium transition-all tracking-tight -mx-2 px-10",
-                                                                                            isProgramActive
-                                                                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                                                                        )}
-                                                                                    >
-                                                                                        <Briefcase className="h-3 w-3" />
-                                                                                        <span className="truncate">{program.name}</span>
-                                                                                    </Link>
-                                                                                )
-                                                                            })}
-                                                                        </div>
-                                                                    )}
-
-                                                                    {expandedProgramsSection && programs.length === 0 && (
-                                                                        <div className="px-10 py-2 text-xs text-muted-foreground italic">
-                                                                            No programs yet
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )
-                                                        }
-
-                                                        // Don't render Roadmap yet, we'll render it after Projects
-                                                        if (child.title === "Roadmap") {
-                                                            return null
-                                                        }
-
-                                                        // Regular static children
-                                                        const childTitle = child.title === "Project Dashboard"
-                                                            ? `${getTerm('project')} Pinboard`
-                                                            : child.title
-                                                        return (
-                                                            <Link
-                                                                key={child.href}
-                                                                href={child.href}
-                                                                onClick={handleLinkClick}
-                                                                className={cn(
-                                                                    "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
-                                                                    isChildActive
-                                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                                                )}
-                                                            >
-                                                                <ChildIcon className="h-3.5 w-3.5" />
-                                                                {childTitle}
-                                                            </Link>
-                                                        )
-                                                    })}
-
-                                                {/* Projects - always visible, links to main projects page */}
-                                                <Link
-                                                    href="/projects"
-                                                    onClick={handleLinkClick}
-                                                    className={cn(
-                                                        "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
-                                                        pathname === "/projects"
-                                                            ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                                            : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                                    )}
-                                                >
-                                                    <FolderKanban className="h-3.5 w-3.5" />
-                                                    <span>{getTerm('projects')}</span>
-                                                </Link>
-
-                                                {/* Roadmap - appears last */}
-                                                {item.children
-                                                    ?.filter((child) => (isSuperUser || child.roles.includes(effectiveRole)) && child.title === "Roadmap")
-                                                    .map((child) => {
-                                                        const ChildIcon = child.icon
-                                                        const isChildActive =
-                                                            pathname === child.href || pathname.startsWith(child.href + "/")
-
-                                                        return (
-                                                            <Link
-                                                                key={child.href}
-                                                                href={child.href}
-                                                                onClick={handleLinkClick}
-                                                                className={cn(
-                                                                    "flex items-center gap-2.5 py-1.5 px-3 text-xs font-medium transition-all rounded-md ml-2",
-                                                                    isChildActive
-                                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                                                )}
-                                                            >
-                                                                <ChildIcon className="h-3.5 w-3.5" />
-                                                                {child.title}
-                                                            </Link>
-                                                        )
-                                                    })}
-
-                                                {/* Dynamic Programs with nested Projects */}
-                                                {programs.length > 0 && (
-                                                    <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
-                                                        <div className="px-10 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                                            Programs
-                                                        </div>
-                                                        {programs.map((program) => {
-                                                            const programProjects = getProjectsForProgram(program.id)
-                                                            const isExpanded = expandedPrograms[program.id]
-                                                            const isProgramActive = pathname.includes(`/programs/${program.id}`)
-
-                                                            return (
-                                                                <div key={program.id} className="space-y-1">
-                                                                    <div
-                                                                        className={cn(
-                                                                            "flex items-center justify-between py-2.5 text-sm font-medium transition-all cursor-pointer tracking-tight -mx-2 px-10",
-                                                                            isProgramActive && !pathname.includes('/projects/')
-                                                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                                                        )}
-                                                                        onClick={() => toggleProgram(program.id)}
-                                                                    >
-                                                                        <div className="flex items-center gap-2 flex-1">
-                                                                            <Briefcase className="h-3.5 w-3.5" />
-                                                                            <span className="truncate">{program.name}</span>
-                                                                        </div>
-                                                                        <ChevronDown
-                                                                            className={cn(
-                                                                                "h-3.5 w-3.5 transition-transform flex-shrink-0",
-                                                                                isExpanded && "rotate-180",
-                                                                                programProjects.length === 0 && "opacity-30"
-                                                                            )}
-                                                                        />
-                                                                    </div>
-
-                                                                    {/* Projects under program */}
-                                                                    {isExpanded && programProjects.length > 0 && (
-                                                                        <div className="ml-6 space-y-1 border-l-2 border-border pl-2">
-                                                                            {programProjects.map((project) => {
-                                                                                const isProjectActive = pathname.includes(`/projects/${project.id}`)
-                                                                                return (
-                                                                                    <Link
-                                                                                        key={project.id}
-                                                                                        href={`/projects/${project.id}`}
-                                                                                        onClick={handleLinkClick}
-                                                                                        className={cn(
-                                                                                            "flex items-center gap-2 py-2 text-xs font-medium transition-all tracking-tight -mx-2 px-8",
-                                                                                            isProjectActive
-                                                                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-l-4 border-purple-400"
-                                                                                                : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                                                                                        )}
-                                                                                    >
-                                                                                        <FolderKanban className="h-3 w-3" />
-                                                                                        <span className="truncate">{project.name}</span>
-                                                                                    </Link>
-                                                                                )
-                                                                            })}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )
-                                                        })}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            }
 
                             // Handle Communication with children
                             if (item.children && item.title === "Communication" && !sidebarCollapsed) {
