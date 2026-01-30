@@ -1331,10 +1331,31 @@ export default function PMDashboardLandingPage() {
 
   const renderWidget = (widget: Widget) => {
     switch (widget.type) {
-              <CardTitle className="text-base truncate">My Tasks</CardTitle>
-              <CardDescription className="text-xs truncate">Tasks assigned to you</CardDescription>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
+      case 'stats':
+        return (
+          <Card className="h-full">
+            <CardHeader className="px-6 pt-6 pb-4">
+              <CardTitle className="text-base">Stats</CardTitle>
+            </CardHeader>
+            <CardContent className="px-6 pt-0 pb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {stats.map((s) => (
+                  <div
+                    key={s.label}
+                    className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg"
+                  >
+                    <div className="text-2xl font-bold">{s.value}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )
+      default:
+        return null
+    }
+  }
               <Tabs value={taskViewMode} onValueChange={(v: any) => setTaskViewMode(v)} className="w-auto">
                 <TabsList className="h-8 p-1">
                   <TabsTrigger value="gantt" className="text-xs px-3 py-1">
