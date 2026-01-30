@@ -1547,9 +1547,289 @@ export default function OperationsDashboardPage() {
 
       // Inventory Metrics
       case 'metric-totalInventory':
-            <div className="h-full">
-              {(() => {
-                const tasksByDate: { [key: string]: any[] } = {}
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Inventory</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalInventory}</div>
+              <p className="text-xs text-muted-foreground">Inventory items</p>
+            </CardContent>
+          </Card>
+        )
+
+      case 'metric-lowStock':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.lowStock}</div>
+              <p className="text-xs text-muted-foreground">Items below threshold</p>
+            </CardContent>
+          </Card>
+        )
+
+      // Charts
+      case 'chart-resources':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Resources Trends</CardTitle>
+                <Link href="/operations-dashboard/resources">
+                  <Button variant="ghost" size="sm">
+                    View All <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={resourcesData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="total" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )
+
+      case 'chart-performance':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader>
+              <CardTitle>Performance Metrics</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={performanceData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="quality" stroke="#8884d8" />
+                  <Line type="monotone" dataKey="efficiency" stroke="#82ca9d" />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )
+
+      case 'chart-compliance':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader>
+              <CardTitle>Compliance Trends</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={complianceData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="rate" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )
+
+      case 'chart-inventory':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader>
+              <CardTitle>Inventory Levels</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={inventoryData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="total" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+                  <Area type="monotone" dataKey="lowStock" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )
+
+      // Widgets
+      case 'quick-actions':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" className="w-full">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Task
+                </Button>
+                <Button variant="outline" size="sm" className="w-full">
+                  <FileText className="mr-2 h-4 w-4" />
+                  New Report
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )
+
+      case 'recent-activities':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activities</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {recentActivities.slice(0, 5).map((activity, idx) => (
+                  <div key={idx} className="text-sm">
+                    {activity}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )
+
+      case 'myTasks':
+        return <MyTasksWidget />
+
+      case 'metrics':
+        return null // Metrics are handled separately in the grid
+
+      case 'usefulLinks':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Useful Links</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Link href="/operations-dashboard/resources" className="text-sm text-blue-600 hover:underline">
+                  Resources
+                </Link>
+                <Link href="/operations-dashboard/performance" className="text-sm text-blue-600 hover:underline">
+                  Performance
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )
+
+      case 'mindMap':
+        return null // Mind map handled separately
+
+      case 'canvas':
+        return null // Canvas handled separately
+
+      default:
+        return null
+    }
+  }
+
+  // Task view mode handlers
+  const taskViewModeHandlers = {
+    list: () => (
+      <div className="space-y-3">
+        {filteredTasks.length > 0 ? (
+          filteredTasks.map((task: any) => {
+            const isTimerActive = activeTimer?.taskId === task.id
+            const timerDisplay = isTimerActive && timerSeconds[task.id]
+              ? formatDuration(timerSeconds[task.id])
+              : '0s'
+
+            return (
+              <div
+                key={task.id}
+                className="flex items-start gap-3 p-2 border rounded-lg hover:bg-accent transition-colors"
+              >
+                <div
+                  className="flex-1 space-y-1 cursor-pointer"
+                  onClick={() => {
+                    setSelectedTaskId(task.id)
+                    setTaskDetailDialogOpen(true)
+                  }}
+                >
+                  <p className="text-sm font-medium">{task.title}</p>
+                  {task.project && (
+                    <p className="text-xs text-muted-foreground">
+                      {task.project.name}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      {task.status}
+                    </Badge>
+                    <Badge variant={task.priority === 'HIGH' || task.priority === 'CRITICAL' ? 'destructive' : task.priority === 'MEDIUM' ? 'secondary' : 'default'} className="text-[10px] px-1.5 py-0">
+                      {task.priority}
+                    </Badge>
+                    {task.dueDate && (
+                      <span className="text-xs text-muted-foreground">
+                        Due: {new Date(task.dueDate).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {task.source === 'task' && (
+                  <div className="flex flex-col gap-1 items-end">
+                    {isTimerActive ? (
+                      <>
+                        <Badge variant="secondary" className="text-xs animate-pulse">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {timerDisplay}
+                        </Badge>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={stopTimer}
+                        >
+                          <Pause className="h-3 w-3 mr-1" />
+                          Stop
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => startTimer(task.id)}
+                      >
+                        <Play className="h-3 w-3 mr-1" />
+                        Start
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })
+        ) : (
+          <div className="text-center py-8 text-sm text-muted-foreground">
+            No tasks found
+          </div>
+        )}
+      </div>
+    ),
+    calendar: () => (
+      <div className="h-full">
+        {(() => {
+          const tasksByDate: { [key: string]: any[] } = {}
 
                 filteredTasks.forEach(task => {
                   if (task.dueDate) {

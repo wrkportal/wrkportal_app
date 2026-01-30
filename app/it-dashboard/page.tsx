@@ -637,17 +637,42 @@ export default function ITDashboardPage() {
   // renderMyTasksWidget removed - now using centralized MyTasksWidget component
 
   const renderWidget = (widgetId: string) => {
-        )}
-        style={isFullscreen ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, margin: 0, borderRadius: 0 } : undefined}
-      >
-        <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-base truncate">My Tasks</CardTitle>
-              <CardDescription className="text-xs truncate">Tasks assigned to you</CardDescription>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <Tabs value={taskViewMode} onValueChange={(v: any) => setTaskViewMode(v)} className="w-auto">
+    switch (widgetId) {
+      // Ticket Metrics
+      case 'metric-openTickets':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
+              <Ticket className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.openTickets}</div>
+              <p className="text-xs text-muted-foreground">Requiring attention</p>
+            </CardContent>
+          </Card>
+        )
+
+      case 'metric-resolvedToday':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Resolved Today</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.resolvedToday}</div>
+              <p className="text-xs text-muted-foreground">Today's resolutions</p>
+            </CardContent>
+          </Card>
+        )
+
+      default:
+        return null
+    }
+  }
+
+  // Timer functions and other helpers are defined below
                 <TabsList className="h-8 p-1">
                   <TabsTrigger value="gantt" className="text-xs px-3 py-1">
                     <Activity className="h-3 w-3 md:h-4 md:w-4 mr-1" />

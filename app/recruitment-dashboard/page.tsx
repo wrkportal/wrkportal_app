@@ -1435,12 +1435,14 @@ function RecruitmentDashboardPageInner() {
   const renderWidget = (id: string) => {
     switch (id) {
       case 'metric-totalCandidates':
-        className={cn(
-          "h-full flex flex-col overflow-hidden",
-          isFullscreen && "fixed inset-0 z-[9999] m-0 rounded-none"
-        )}
-        style={isFullscreen ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, margin: 0, borderRadius: 0 } : undefined}
-      >
+        return (
+          <Card
+            className={cn(
+              "h-full flex flex-col overflow-hidden",
+              isFullscreen && "fixed inset-0 z-[9999] m-0 rounded-none"
+            )}
+            style={isFullscreen ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, margin: 0, borderRadius: 0 } : undefined}
+          >
         <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
