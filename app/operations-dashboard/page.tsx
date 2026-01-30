@@ -2026,7 +2026,31 @@ export default function OperationsDashboardPage() {
                 )
               })()}
             </div>
-          ) : taskViewMode === 'kanban' ? (
+          )
+        )
+      }
+    }
+  }
+
+  // Use taskViewModeHandlers
+  const renderTaskViewContent = () => {
+    if (taskViewMode === 'calendar') {
+      return taskViewModeHandlers.calendar()
+    } else if (taskViewMode === 'kanban') {
+      return taskViewModeHandlers.kanban ? taskViewModeHandlers.kanban() : null
+    } else if (taskViewMode === 'list') {
+      return taskViewModeHandlers.list()
+    } else {
+      return taskViewModeHandlers.gantt ? taskViewModeHandlers.gantt() : null
+    }
+  }
+
+  // Use taskViewModeHandlers or direct ternary
+  const renderTaskView = () => {
+    if (taskViewMode === 'calendar') {
+      return taskViewModeHandlers.calendar()
+    } else if (taskViewMode === 'kanban') {
+      return (
             <div className="h-full overflow-auto bg-gradient-to-br from-background to-muted/20">
               <div className="flex gap-4 min-w-[1000px] pb-6 px-1">
                 {[

@@ -672,11 +672,58 @@ export default function ITDashboardPage() {
     }
   }
 
-  // Timer functions and other helpers are defined below
-                <TabsList className="h-8 p-1">
-                  <TabsTrigger value="gantt" className="text-xs px-3 py-1">
-                    <Activity className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    <span className="hidden lg:inline">Gantt</span>
+  // Timer functions
+  const showTimerNotesDialog = (taskId: string, taskTitle: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setPendingTimerTask({ id: taskId, title: taskTitle })
+    setTimerNotesDialogOpen(true)
+  }
+
+  const startTimer = async (notes: string) => {
+    if (!pendingTimerTask) return
+
+    try {
+      const response = await fetch('/api/time-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: pendingTimerTask.id,
+          notes: notes || null
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setActiveTimer(data.timeLog)
+        setPendingTimerTask(null)
+      }
+    } catch (error) {
+      console.error('Error starting timer:', error)
+    }
+  }
+
+  const stopTimer = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (!activeTimer) return
+
+    try {
+      const response = await fetch('/api/time-tracking', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timeLogId: activeTimer.id })
+      })
+
+      if (response.ok) {
+        setActiveTimer(null)
+        setTimerSeconds({})
+      }
+    } catch (error) {
+      console.error('Error stopping timer:', error)
+    }
+  }
+
+  const getStatusDotColor = (status: string) => {
                   </TabsTrigger>
                   <TabsTrigger value="kanban" className="text-xs px-3 py-1">
                     <LayoutGrid className="h-3 w-3 md:h-4 md:w-4 mr-1" />
