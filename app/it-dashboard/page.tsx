@@ -81,6 +81,9 @@ import { TimeTrackingDialog } from '@/components/dialogs/time-tracking-dialog'
 import { TimerNotesDialog } from '@/components/dialogs/timer-notes-dialog'
 import { AdvancedMindMapWidget } from '@/components/widgets/AdvancedMindMapWidget'
 import { AdvancedCanvasWidget } from '@/components/widgets/AdvancedCanvasWidget'
+import { MyTasksWidget } from '@/components/widgets/MyTasksWidget'
+import { QuickActionsWidget } from '@/components/widgets/QuickActionsWidget'
+import { UsefulLinksWidget } from '@/components/widgets/UsefulLinksWidget'
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -631,16 +634,9 @@ export default function ITDashboardPage() {
   }, [])
 
   // Render myTasks widget - Full implementation from sales-dashboard
-  const renderMyTasksWidget = (skipFullscreenStyles = false) => {
-    const filteredTasks = getFilteredTasks()
-    const isFullscreen = !skipFullscreenStyles && fullscreenWidget === 'myTasks'
+  // renderMyTasksWidget removed - now using centralized MyTasksWidget component
 
-    return (
-      <Card
-        ref={(el) => { widgetRefs.current['myTasks'] = el }}
-        className={cn(
-          "h-full flex flex-col overflow-hidden",
-          isFullscreen && "fixed inset-0 z-[9999] m-0 rounded-none"
+  const renderWidget = (widgetId: string) => {
         )}
         style={isFullscreen ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, margin: 0, borderRadius: 0 } : undefined}
       >
@@ -3135,7 +3131,16 @@ export default function ITDashboardPage() {
         )
 
       case 'myTasks':
-        return renderMyTasksWidget(true)
+        return (
+          <MyTasksWidget
+            tasks={userTasks.filter(task => task.assigneeId === user?.id)}
+            widgetId="myTasks"
+            fullscreen={fullscreenWidget === 'myTasks'}
+            onToggleFullscreen={toggleFullscreen}
+            dashboardType="it"
+            basePath="/it-dashboard"
+          />
+        )
 
       case 'quickActions':
         return (
@@ -3311,7 +3316,16 @@ export default function ITDashboardPage() {
       )}
 
       {/* Fullscreen Widgets */}
-      {fullscreenWidget === 'myTasks' && renderMyTasksWidget()}
+      {fullscreenWidget === 'myTasks' && (
+        <MyTasksWidget
+          tasks={userTasks.filter(task => task.assigneeId === user?.id)}
+          widgetId="myTasks"
+          fullscreen={true}
+          onToggleFullscreen={toggleFullscreen}
+          dashboardType="it"
+          basePath="/it-dashboard"
+        />
+      )}
 
       {/* Task Dialog */}
       <TaskDialog

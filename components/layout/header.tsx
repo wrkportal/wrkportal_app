@@ -19,7 +19,6 @@ import { useAuthStore } from "@/stores/authStore"
 import { useUIStore } from "@/stores/uiStore"
 import { Bell, Menu, Settings, LogOut, User, UserPlus, Moon, Sun, Brain } from "lucide-react"
 import { getInitials } from "@/lib/utils"
-import { HelpDialog } from "@/components/help/help-dialog"
 import { SearchBar } from "@/components/layout/search-bar"
 import {
     Tooltip,
@@ -200,8 +199,6 @@ export function Header() {
                             </Tooltip>
                         </TooltipProvider>
                     )}
-                    
-                    <HelpDialog />
                     
                     {/* AI Assistant Button */}
                     <TooltipProvider>

@@ -263,7 +263,7 @@ export function SearchBar() {
                     <div className="border-r border-border">
                         {isMounted ? (
                             <Select value={filter || 'all'} defaultValue="all" onValueChange={(value) => handleFilterChange(value as SearchFilter)}>
-                                <SelectTrigger className="h-9 w-[115px] text-xs border-0 bg-transparent rounded-l-md rounded-r-none focus:ring-0 focus:ring-offset-0 shadow-none">
+                                <SelectTrigger className="h-8 w-[115px] text-xs border-0 bg-transparent rounded-l-md rounded-r-none focus:ring-0 focus:ring-offset-0 shadow-none">
                                     <SelectValue placeholder="All" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -277,7 +277,7 @@ export function SearchBar() {
                                 </SelectContent>
                             </Select>
                         ) : (
-                            <div className="h-9 w-[115px] flex items-center justify-between px-3 text-xs text-muted-foreground border-0 bg-transparent rounded-l-md rounded-r-none">
+                            <div className="h-8 w-[115px] flex items-center justify-between px-3 text-xs text-muted-foreground border-0 bg-transparent rounded-l-md rounded-r-none">
                                 All
                             </div>
                         )}
@@ -297,7 +297,7 @@ export function SearchBar() {
                                 }
                             }}
                             className={cn(
-                                "pl-9 pr-10 h-9 text-sm border-0 rounded-l-none rounded-r-md focus-visible:ring-0 focus-visible:ring-offset-0",
+                                "pl-9 pr-10 h-8 text-sm border-0 rounded-l-none rounded-r-md focus-visible:ring-0 focus-visible:ring-offset-0",
                                 showResults && results.length > 0 && "rounded-b-none"
                             )}
                         />

@@ -78,6 +78,9 @@ import { TimerNotesDialog } from '@/components/dialogs/timer-notes-dialog'
 import { AdvancedMindMapWidget } from '@/components/widgets/AdvancedMindMapWidget'
 import { AdvancedCanvasWidget } from '@/components/widgets/AdvancedCanvasWidget'
 import { WidgetGalleryDialog } from '@/components/common/widget-gallery-dialog'
+import { MyTasksWidget } from '@/components/widgets/MyTasksWidget'
+import { QuickActionsWidget } from '@/components/widgets/QuickActionsWidget'
+import { UsefulLinksWidget } from '@/components/widgets/UsefulLinksWidget'
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -1373,119 +1376,76 @@ export default function OperationsDashboardPage() {
     }
   }
 
-  // Render myTasks widget - Full implementation from sales-dashboard
-  const renderMyTasksWidget = (skipFullscreenStyles = false) => {
-    const filteredTasks = getFilteredTasks()
-    const isFullscreen = !skipFullscreenStyles && fullscreenWidget === 'myTasks'
+  // renderMyTasksWidget removed - now using centralized MyTasksWidget component
 
-    return (
-      <Card
-        ref={(el) => { widgetRefs.current['myTasks'] = el }}
-        className={cn(
-          "h-full flex flex-col overflow-hidden",
-          isFullscreen && "fixed inset-0 z-[9999] m-0 rounded-none"
-        )}
-        style={isFullscreen ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, margin: 0, borderRadius: 0 } : undefined}
-      >
-        <CardHeader className="pb-3 sticky top-0 z-10 bg-card border-b">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-base truncate">My Tasks</CardTitle>
-              <CardDescription className="text-xs truncate">Tasks assigned to you</CardDescription>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <Tabs value={taskViewMode} onValueChange={(v: any) => setTaskViewMode(v)} className="w-auto">
-                <TabsList className="h-8 p-1">
-                  <TabsTrigger value="gantt" className="text-xs px-3 py-1">
-                    <Activity className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    <span className="hidden lg:inline">Gantt</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="kanban" className="text-xs px-3 py-1">
-                    <LayoutGrid className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    <span className="hidden lg:inline">Kanban</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="list" className="text-xs px-3 py-1">
-                    <List className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    <span className="hidden lg:inline">List</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="calendar" className="text-xs px-3 py-1">
-                    <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    <span className="hidden lg:inline">Calendar</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-              <Button
-                variant={showFilters ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="text-xs"
-                title="Toggle Filters"
-              >
-                <Filter className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden lg:inline ml-1">Filters</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTaskDialogOpen(true)}
-                className="text-xs"
-                title="Add New Task"
-              >
-                <Plus className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden lg:inline ml-1">Add Task</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleFullscreen('myTasks')}
-                title={fullscreenWidget === 'myTasks' ? "Exit Fullscreen" : "Enter Fullscreen"}
-                className="h-8 w-8 p-0"
-              >
-                {fullscreenWidget === 'myTasks' ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
-              </Button>
-            </div>
-          </div>
-
-          {/* Filters Panel */}
-          {showFilters && (
-            <div className="mt-4 p-3 bg-muted/50 rounded-lg space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Filters</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setStatusFilter('ALL')
-                    setPriorityFilter('ALL')
-                    setDueDateFilter('ALL')
-                    setShowFilters(false)
-                  }}
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Clear
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Status</label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="h-9 text-xs w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">All</SelectItem>
-                      <SelectItem value="TODO">To Do</SelectItem>
-                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                      <SelectItem value="IN_REVIEW">In Review</SelectItem>
-                      <SelectItem value="BLOCKED">Blocked</SelectItem>
-                      <SelectItem value="DONE">Done</SelectItem>
-                    </SelectContent>
-                  </Select>
+  const renderWidget = (widgetId: string) => {
+    switch (widgetId) {
+      // Resource Metrics
+      case 'metric-totalResources':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Resources</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="px-6 pt-0 pb-6">
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-xl border border-border bg-background p-3">
+                  <div className="text-muted-foreground">Total Resources</div>
+                  <div className="text-sm font-semibold mt-1">{stats.totalResources}</div>
                 </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Priority</label>
-                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="h-9 text-xs w-full">
+                <div className="rounded-xl border border-border bg-background p-3">
+                  <div className="text-muted-foreground">Capacity Utilization</div>
+                  <div className="text-sm font-semibold mt-1">{stats.capacityUtilization}%</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+
+      case 'metric-activeProjects':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.activeProjects}</div>
+              <p className="text-xs text-muted-foreground">Currently active</p>
+            </CardContent>
+          </Card>
+        )
+
+      case 'metric-attritionRate':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Capacity Utilization</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.capacityUtilization}%</div>
+              <p className="text-xs text-muted-foreground">Average utilization</p>
+            </CardContent>
+          </Card>
+        )
+
+      case 'metric-capacityUtilization':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Capacity Utilization</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.capacityUtilization}%</div>
+              <p className="text-xs text-muted-foreground">Average utilization</p>
+            </CardContent>
+          </Card>
+        )
+
+      case 'metric-attendanceRate':
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -2708,42 +2668,6 @@ export default function OperationsDashboardPage() {
                 </div>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const renderWidget = (widgetId: string) => {
-    switch (widgetId) {
-      // Resource Metrics
-      case 'metric-totalResources':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Resources</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalResources}</div>
-              <p className="text-xs text-muted-foreground">Total employees</p>
-            </CardContent>
-          </Card>
-        )
-
-      case 'metric-capacityUtilization':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Capacity Utilization</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.capacityUtilization}%</div>
-              <p className="text-xs text-muted-foreground">Average utilization</p>
-            </CardContent>
-          </Card>
-        )
 
       case 'metric-attendanceRate':
         return (
@@ -3134,7 +3058,16 @@ export default function OperationsDashboardPage() {
         )
 
       case 'myTasks':
-        return renderMyTasksWidget()
+        return (
+          <MyTasksWidget
+            tasks={userTasks.filter(task => task.assigneeId === user?.id)}
+            widgetId="myTasks"
+            fullscreen={fullscreenWidget === 'myTasks'}
+            onToggleFullscreen={toggleFullscreen}
+            dashboardType="operations"
+            basePath="/operations-dashboard"
+          />
+        )
 
       case 'metrics':
         return (
@@ -3451,7 +3384,16 @@ export default function OperationsDashboardPage() {
       )}
 
       {/* Fullscreen Widget */}
-      {fullscreenWidget === 'myTasks' && renderMyTasksWidget()}
+      {fullscreenWidget === 'myTasks' && (
+        <MyTasksWidget
+          tasks={userTasks.filter(task => task.assigneeId === user?.id)}
+          widgetId="myTasks"
+          fullscreen={true}
+          onToggleFullscreen={toggleFullscreen}
+          dashboardType="operations"
+          basePath="/operations-dashboard"
+        />
+      )}
 
       {/* Task Dialog */}
       <TaskDialog

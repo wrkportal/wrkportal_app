@@ -37,6 +37,9 @@ import { AdvancedFormsWidget } from '@/components/widgets/AdvancedFormsWidget'
 import { AdvancedMindMapWidget } from '@/components/widgets/AdvancedMindMapWidget'
 import { AdvancedCanvasWidget } from '@/components/widgets/AdvancedCanvasWidget'
 import { GanttChartWidget } from '@/components/widgets/GanttChartWidget'
+import { MyTasksWidget } from '@/components/widgets/MyTasksWidget'
+import { QuickActionsWidget } from '@/components/widgets/QuickActionsWidget'
+import { UsefulLinksWidget } from '@/components/widgets/UsefulLinksWidget'
 import { Responsive, WidthProvider, Layout, Layouts } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
@@ -1324,13 +1327,11 @@ export default function PMDashboardLandingPage() {
     }
   }
 
-  const renderMyTasksWidget = (skipFullscreenStyles = false) => {
-    const filteredTasks = getFilteredTasks()
-    const isFullscreen = !skipFullscreenStyles && fullscreenWidget === 'myTasks'
+  // renderMyTasksWidget removed - now using centralized MyTasksWidget component
 
-    return (
-      <Card
-        ref={(el) => { widgetRefs.current['myTasks'] = el }}
+  const renderWidget = (widget: Widget) => {
+    switch (widget.type) {
+      case 'stats':
         className={cn(
           "h-full flex flex-col overflow-hidden",
           isFullscreen && "fixed inset-0 z-[9999] m-0 rounded-none"
@@ -4016,7 +4017,16 @@ export default function PMDashboardLandingPage() {
 
       case 'myTasks':
       case 'my-tasks':
-        return renderMyTasksWidget()
+        return (
+          <MyTasksWidget
+            tasks={userTasks.filter(task => task.assigneeId === user?.id)}
+            widgetId="myTasks"
+            fullscreen={fullscreenWidget === 'myTasks'}
+            onToggleFullscreen={toggleFullscreen}
+            dashboardType="product-management"
+            basePath="/product-management"
+          />
+        )
 
       case 'assignedToOthers':
         return (
@@ -4478,7 +4488,16 @@ export default function PMDashboardLandingPage() {
       </main>
 
       {/* Fullscreen Widget */}
-      {fullscreenWidget === 'myTasks' && renderMyTasksWidget()}
+      {fullscreenWidget === 'myTasks' && (
+        <MyTasksWidget
+          tasks={userTasks.filter(task => task.assigneeId === user?.id)}
+          widgetId="myTasks"
+          fullscreen={true}
+          onToggleFullscreen={toggleFullscreen}
+          dashboardType="product-management"
+          basePath="/product-management"
+        />
+      )}
 
       {/* Task Dialog */}
       <TaskDialog

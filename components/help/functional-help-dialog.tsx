@@ -970,7 +970,8 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
               <p className="text-sm md:text-xs lg:text-xs text-muted-foreground break-words">{content.workflow.description}</p>
             </div>
 
-            <ScrollArea className="flex-1 pr-4 overflow-x-hidden max-w-full min-h-0">
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <ScrollArea className="h-full pr-4 overflow-x-hidden max-w-full">
               <div className="space-y-4 max-w-full min-w-0">
                 {content.workflow.steps.map((step) => (
                   <Card key={step.step} className="overflow-hidden max-w-full min-w-0">
@@ -1013,6 +1014,7 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
                 ))}
               </div>
             </ScrollArea>
+            </div>
           </TabsContent>
 
           <TabsContent value="faqs" className="space-y-4 mt-4 max-w-full overflow-hidden flex-1 flex flex-col min-h-0">
@@ -1028,7 +1030,8 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
               </Button>
             </div>
 
-            <ScrollArea className="flex-1 overflow-x-hidden max-w-full min-h-0">
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <ScrollArea className="h-full overflow-x-hidden max-w-full">
               <div className="space-y-4 max-w-full min-w-0">
                 {filteredFAQs.length === 0 ? (
                   <Card className="max-w-full min-w-0">
@@ -1055,6 +1058,7 @@ export function FunctionalHelpDialog({ open, onOpenChange, area }: FunctionalHel
                 )}
               </div>
             </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

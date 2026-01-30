@@ -41,6 +41,9 @@ const TimeTrackingDialog = lazy(() => import('@/components/dialogs/time-tracking
 const TimerNotesDialog = lazy(() => import('@/components/dialogs/timer-notes-dialog').then(m => ({ default: m.TimerNotesDialog })))
 const AdvancedMindMapWidget = lazy(() => import('@/components/widgets/AdvancedMindMapWidget').then(m => ({ default: m.AdvancedMindMapWidget })))
 const AdvancedCanvasWidget = lazy(() => import('@/components/widgets/AdvancedCanvasWidget').then(m => ({ default: m.AdvancedCanvasWidget })))
+import { MyTasksWidget } from '@/components/widgets/MyTasksWidget'
+import { QuickActionsWidget } from '@/components/widgets/QuickActionsWidget'
+import { UsefulLinksWidget } from '@/components/widgets/UsefulLinksWidget'
 
 // Load CSS for react-grid-layout (dynamically)
 if (typeof window !== 'undefined') {
@@ -1427,13 +1430,11 @@ function RecruitmentDashboardPageInner() {
   }
 
   // Render myTasks widget - Full implementation from sales-dashboard
-  const renderMyTasksWidget = (skipFullscreenStyles = false) => {
-    const filteredTasks = getFilteredTasks()
-    const isFullscreen = !skipFullscreenStyles && fullscreenWidget === 'myTasks'
+  // renderMyTasksWidget removed - now using centralized MyTasksWidget component
 
-    return (
-      <Card
-        ref={(el) => { widgetRefs.current['myTasks'] = el }}
+  const renderWidget = (id: string) => {
+    switch (id) {
+      case 'metric-totalCandidates':
         className={cn(
           "h-full flex flex-col overflow-hidden",
           isFullscreen && "fixed inset-0 z-[9999] m-0 rounded-none"
@@ -3236,7 +3237,16 @@ function RecruitmentDashboardPageInner() {
         )
 
       case 'myTasks':
-        return renderMyTasksWidget()
+        return (
+          <MyTasksWidget
+            tasks={userTasks.filter(task => task.assigneeId === user?.id)}
+            widgetId="myTasks"
+            fullscreen={fullscreenWidget === 'myTasks'}
+            onToggleFullscreen={toggleFullscreen}
+            dashboardType="recruitment"
+            basePath="/recruitment-dashboard"
+          />
+        )
 
       case 'metrics':
         return (
@@ -3586,7 +3596,16 @@ function RecruitmentDashboardPageInner() {
       )}
 
       {/* Fullscreen Widget */}
-      {fullscreenWidget === 'myTasks' && renderMyTasksWidget()}
+      {fullscreenWidget === 'myTasks' && (
+        <MyTasksWidget
+          tasks={userTasks.filter(task => task.assigneeId === user?.id)}
+          widgetId="myTasks"
+          fullscreen={true}
+          onToggleFullscreen={toggleFullscreen}
+          dashboardType="recruitment"
+          basePath="/recruitment-dashboard"
+        />
+      )}
 
       {/* Task Dialog */}
       <Suspense fallback={null}>
