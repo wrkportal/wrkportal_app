@@ -1446,163 +1446,107 @@ export default function OperationsDashboardPage() {
         )
 
       case 'metric-attendanceRate':
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">All</SelectItem>
-                      <SelectItem value="CRITICAL">Critical</SelectItem>
-                      <SelectItem value="HIGH">High</SelectItem>
-                      <SelectItem value="MEDIUM">Medium</SelectItem>
-                      <SelectItem value="LOW">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="sm:col-span-2 md:col-span-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">Due Date</label>
-                  <Select value={dueDateFilter} onValueChange={setDueDateFilter}>
-                    <SelectTrigger className="h-9 text-xs w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">All</SelectItem>
-                      <SelectItem value="OVERDUE">Overdue</SelectItem>
-                      <SelectItem value="TODAY">Today</SelectItem>
-                      <SelectItem value="THIS_WEEK">This Week</SelectItem>
-                      <SelectItem value="THIS_MONTH">This Month</SelectItem>
-                      <SelectItem value="NO_DUE_DATE">No Due Date</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Showing {filteredTasks.length} of {userTasks.filter(task => task.assigneeId === user?.id).length} tasks
-              </div>
-            </div>
-          )}
-        </CardHeader>
-        <CardContent className="flex-1 flex flex-col overflow-hidden pt-4">
-          {taskViewMode === 'list' ? (
-            <div className="space-y-3">
-              {filteredTasks.length > 0 ? (
-                filteredTasks.map((task: any) => {
-                  const isTimerActive = activeTimer?.taskId === task.id
-                  const timerDisplay = isTimerActive && timerSeconds[task.id]
-                    ? formatDuration(timerSeconds[task.id])
-                    : '0s'
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.attendanceRate}%</div>
+              <p className="text-xs text-muted-foreground">Current attendance</p>
+            </CardContent>
+          </Card>
+        )
 
-                  return (
-                    <div
-                      key={task.id}
-                      className="flex items-start gap-3 p-2 border rounded-lg hover:bg-accent transition-colors"
-                    >
-                      <div
-                        className="flex-1 space-y-1 cursor-pointer"
-                        onClick={() => {
-                          setSelectedTaskId(task.id)
-                          setTaskDetailDialogOpen(true)
-                        }}
-                      >
-                        <p className="text-sm font-medium">{task.title}</p>
-                        {task.project && (
-                          <p className="text-xs text-muted-foreground">
-                            {task.project.name}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {task.status}
-                          </Badge>
-                          <Badge variant={task.priority === 'HIGH' || task.priority === 'CRITICAL' ? 'destructive' : task.priority === 'MEDIUM' ? 'secondary' : 'default'} className="text-[10px] px-1.5 py-0">
-                            {task.priority}
-                          </Badge>
-                          {task.dueDate && (
-                            <span className="text-xs text-muted-foreground">
-                              Due: {new Date(task.dueDate).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+      // Performance Metrics
+      case 'metric-avgTAT':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Avg TAT</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.avgTAT}h</div>
+              <p className="text-xs text-muted-foreground">Turnaround time</p>
+            </CardContent>
+          </Card>
+        )
 
-                      {task.source === 'task' && (
-                        <div className="flex flex-col gap-1 items-end">
-                          {isTimerActive ? (
-                            <>
-                              <Badge variant="secondary" className="text-xs animate-pulse">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {timerDisplay}
-                              </Badge>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                className="h-7 px-2"
-                                onClick={stopTimer}
-                              >
-                                <Pause className="h-3 w-3 mr-1" />
-                                Stop
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 px-2"
-                              onClick={(e) => showTimerNotesDialog(task.id, task.title, e)}
-                              disabled={!!activeTimer}
-                            >
-                              <Play className="h-3 w-3 mr-1" />
-                              Start
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setTimeTrackingTaskId(task.id)
-                              setTimeTrackingDialogOpen(true)
-                            }}
-                          >
-                            <History className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })
-              ) : userTasks.filter(task => task.assigneeId === user?.id).length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                  <CheckCircle2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                  <p className="text-sm text-muted-foreground mb-2">No tasks yet</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTaskDialogOpen(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Create Your First Task
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                  <Filter className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                  <p className="text-sm text-muted-foreground mb-2">No tasks match your filters</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setStatusFilter('ALL')
-                      setPriorityFilter('ALL')
-                      setDueDateFilter('ALL')
-                      setShowFilters(false)
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : taskViewMode === 'calendar' ? (
+      case 'metric-backlog':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Backlog</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.backlog}</div>
+              <p className="text-xs text-muted-foreground">Pending items</p>
+            </CardContent>
+          </Card>
+        )
+
+      case 'metric-qualityScore':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Quality Score</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.qualityScore}%</div>
+              <p className="text-xs text-muted-foreground">Overall quality</p>
+            </CardContent>
+          </Card>
+        )
+
+      case 'metric-errorRate':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.errorRate}%</div>
+              <p className="text-xs text-muted-foreground">Target: 0.5%</p>
+            </CardContent>
+          </Card>
+        )
+
+      // Compliance Metrics
+      case 'metric-complianceRate':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Compliance Rate</CardTitle>
+              <Shield className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.complianceRate}%</div>
+              <p className="text-xs text-muted-foreground">Training compliance</p>
+            </CardContent>
+          </Card>
+        )
+
+      case 'metric-openIssues':
+        return (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Open Issues</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.openIssues}</div>
+              <p className="text-xs text-muted-foreground">Requiring attention</p>
+            </CardContent>
+          </Card>
+        )
+
+      // Inventory Metrics
+      case 'metric-totalInventory':
             <div className="h-full">
               {(() => {
                 const tasksByDate: { [key: string]: any[] } = {}
@@ -2646,143 +2590,6 @@ export default function OperationsDashboardPage() {
                                               }}
                                               title={task.title}
                                             >
-                                              <span className="truncate">{task.title}</span>
-                                            </div>
-                                          )
-                                        })()}
-                                      </div>
-                                    )
-                                  })
-                                )}
-                              </>
-                            )}
-                          </div>
-                        ))}
-
-                        {isAddingGanttGroup && (
-                          <div className="h-10 border-b" style={{ minWidth: '800px' }} />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-      case 'metric-attendanceRate':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.attendanceRate}%</div>
-              <p className="text-xs text-muted-foreground">Current attendance</p>
-            </CardContent>
-          </Card>
-        )
-
-      case 'metric-attritionRate':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Attrition Rate</CardTitle>
-              <TrendingDown className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.attritionRate}%</div>
-              <p className="text-xs text-muted-foreground">Monthly attrition</p>
-            </CardContent>
-          </Card>
-        )
-
-      // Performance Metrics
-      case 'metric-avgTAT':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg TAT</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.avgTAT}h</div>
-              <p className="text-xs text-muted-foreground">Turnaround time</p>
-            </CardContent>
-          </Card>
-        )
-
-      case 'metric-backlog':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Backlog</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.backlog}</div>
-              <p className="text-xs text-muted-foreground">Pending items</p>
-            </CardContent>
-          </Card>
-        )
-
-      case 'metric-qualityScore':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Quality Score</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.qualityScore}%</div>
-              <p className="text-xs text-muted-foreground">Overall quality</p>
-            </CardContent>
-          </Card>
-        )
-
-      case 'metric-errorRate':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.errorRate}%</div>
-              <p className="text-xs text-muted-foreground">Target: 0.5%</p>
-            </CardContent>
-          </Card>
-        )
-
-      // Compliance Metrics
-      case 'metric-complianceRate':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Compliance Rate</CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.complianceRate}%</div>
-              <p className="text-xs text-muted-foreground">Training compliance</p>
-            </CardContent>
-          </Card>
-        )
-
-      case 'metric-openIssues':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Open Issues</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.openIssues}</div>
-              <p className="text-xs text-muted-foreground">Requiring attention</p>
-            </CardContent>
-          </Card>
-        )
-
       // Inventory Metrics
       case 'metric-totalInventory':
         return (
