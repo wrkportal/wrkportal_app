@@ -22,6 +22,14 @@ import { Button } from '@/components/ui/button'
 
 const AI_TOOLS = [
   {
+    id: 'pdf-metrics',
+    title: 'PDF Metrics Analyzer',
+    description: 'Upload PDFs and extract metrics with AI-driven checks',
+    icon: FileText,
+    href: '/ai-tools/pdf-metrics',
+    features: ['PDF parsing', 'Metric summaries', 'Custom conditions'],
+  },
+  {
     id: 'automations',
     title: 'Automations',
     description: 'Create powerful no-code automations and workflows',
