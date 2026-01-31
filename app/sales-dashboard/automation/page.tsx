@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useMemo } from 'react'
 import { SalesPageLayout } from '@/components/sales/sales-page-layout'
 import { Loader2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -43,6 +43,158 @@ interface AutomationRule {
   }
 }
 
+type AutomationCategoryId =
+  | 'wrkboard'
+  | 'finance'
+  | 'sales'
+  | 'operations'
+  | 'developer'
+  | 'it-services'
+  | 'customer-service'
+  | 'projects'
+  | 'recruitment'
+  | 'collaborate'
+
+const AUTOMATION_CATEGORIES: { id: AutomationCategoryId; label: string }[] = [
+  { id: 'wrkboard', label: 'wrkboard' },
+  { id: 'finance', label: 'Finance' },
+  { id: 'sales', label: 'Sales' },
+  { id: 'operations', label: 'Operations' },
+  { id: 'developer', label: 'Developer' },
+  { id: 'it-services', label: 'IT Services' },
+  { id: 'customer-service', label: 'Customer Service' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'recruitment', label: 'Recruitment' },
+  { id: 'collaborate', label: 'Collaborate' },
+]
+
+const CATEGORY_LABEL_TO_ID = new Map<string, AutomationCategoryId>([
+  ['wrkboard', 'wrkboard'],
+  ['Finance', 'finance'],
+  ['Sales', 'sales'],
+  ['Operations', 'operations'],
+  ['Developer', 'developer'],
+  ['IT Services', 'it-services'],
+  ['Customer Service', 'customer-service'],
+  ['Projects', 'projects'],
+  ['Recruitment', 'recruitment'],
+  ['Collaborate', 'collaborate'],
+])
+
+const TRIGGERS_BY_CATEGORY: Record<AutomationCategoryId, { value: string; label: string }[]> = {
+  'wrkboard': [
+    { value: 'TASK_CREATED', label: 'Task Created' },
+    { value: 'TASK_OVERDUE', label: 'Task Overdue' },
+    { value: 'TASK_STATUS_CHANGED', label: 'Task Status Changed' },
+  ],
+  finance: [
+    { value: 'INVOICE_CREATED', label: 'Invoice Created' },
+    { value: 'INVOICE_OVERDUE', label: 'Invoice Overdue' },
+    { value: 'PAYMENT_RECEIVED', label: 'Payment Received' },
+    { value: 'BUDGET_THRESHOLD_REACHED', label: 'Budget Threshold Reached' },
+    { value: 'EXPENSE_SUBMITTED', label: 'Expense Submitted' },
+  ],
+  sales: [
+    { value: 'LEAD_CREATED', label: 'Lead Created' },
+    { value: 'LEAD_STATUS_CHANGED', label: 'Lead Status Changed' },
+    { value: 'LEAD_SCORED', label: 'Lead Scored' },
+    { value: 'OPPORTUNITY_CREATED', label: 'Opportunity Created' },
+    { value: 'OPPORTUNITY_STAGE_CHANGED', label: 'Opportunity Stage Changed' },
+    { value: 'QUOTE_SENT', label: 'Quote Sent' },
+    { value: 'ORDER_CREATED', label: 'Order Created' },
+  ],
+  operations: [
+    { value: 'WORK_ORDER_CREATED', label: 'Work Order Created' },
+    { value: 'MAINTENANCE_DUE', label: 'Maintenance Due' },
+    { value: 'INVENTORY_LOW', label: 'Inventory Low' },
+  ],
+  developer: [
+    { value: 'PR_CREATED', label: 'Pull Request Created' },
+    { value: 'BUILD_FAILED', label: 'Build Failed' },
+    { value: 'DEPLOYMENT_COMPLETED', label: 'Deployment Completed' },
+  ],
+  'it-services': [
+    { value: 'TICKET_CREATED', label: 'Ticket Created' },
+    { value: 'TICKET_STATUS_CHANGED', label: 'Ticket Status Changed' },
+    { value: 'SLA_BREACH', label: 'SLA Breach' },
+  ],
+  'customer-service': [
+    { value: 'CASE_CREATED', label: 'Case Created' },
+    { value: 'CSAT_LOW', label: 'Low CSAT Score' },
+    { value: 'CASE_ESCALATED', label: 'Case Escalated' },
+  ],
+  projects: [
+    { value: 'PROJECT_CREATED', label: 'Project Created' },
+    { value: 'MILESTONE_REACHED', label: 'Milestone Reached' },
+    { value: 'SPRINT_STARTED', label: 'Sprint Started' },
+    { value: 'RELEASE_CREATED', label: 'Release Created' },
+  ],
+  recruitment: [
+    { value: 'CANDIDATE_APPLIED', label: 'Candidate Applied' },
+    { value: 'INTERVIEW_SCHEDULED', label: 'Interview Scheduled' },
+    { value: 'OFFER_SENT', label: 'Offer Sent' },
+  ],
+  collaborate: [
+    { value: 'MENTION_RECEIVED', label: 'Mention Received' },
+    { value: 'COMMENT_ADDED', label: 'Comment Added' },
+  ],
+}
+
+const ACTIONS_BY_TRIGGER: Record<string, { value: string; label: string }[]> = {
+  LEAD_CREATED: [
+    { value: 'ASSIGN_LEAD', label: 'Assign Lead' },
+    { value: 'SEND_EMAIL', label: 'Send Email' },
+    { value: 'CREATE_TASK', label: 'Create Task' },
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+    { value: 'UPDATE_FIELD', label: 'Update Field' },
+  ],
+  LEAD_STATUS_CHANGED: [
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+    { value: 'CREATE_TASK', label: 'Create Task' },
+    { value: 'UPDATE_FIELD', label: 'Update Field' },
+  ],
+  LEAD_SCORED: [
+    { value: 'ASSIGN_LEAD', label: 'Assign Lead' },
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+  ],
+  OPPORTUNITY_CREATED: [
+    { value: 'CREATE_TASK', label: 'Create Task' },
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+  ],
+  OPPORTUNITY_STAGE_CHANGED: [
+    { value: 'CHANGE_STAGE', label: 'Change Stage' },
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+  ],
+  QUOTE_SENT: [
+    { value: 'SEND_EMAIL', label: 'Send Email' },
+    { value: 'CREATE_ACTIVITY', label: 'Create Activity' },
+  ],
+  ORDER_CREATED: [
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+    { value: 'CREATE_TASK', label: 'Create Task' },
+  ],
+  INVOICE_OVERDUE: [
+    { value: 'SEND_EMAIL', label: 'Send Email' },
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+  ],
+  PAYMENT_RECEIVED: [
+    { value: 'UPDATE_FIELD', label: 'Update Field' },
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+  ],
+  EXPENSE_SUBMITTED: [
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+    { value: 'CREATE_TASK', label: 'Create Task' },
+  ],
+  TICKET_CREATED: [
+    { value: 'ASSIGN_TICKET', label: 'Assign Ticket' },
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+  ],
+  TASK_CREATED: [
+    { value: 'NOTIFY_USER', label: 'Notify User' },
+    { value: 'CREATE_ACTIVITY', label: 'Create Activity' },
+  ],
+}
+
 function AutomationPageInner() {
   const [rules, setRules] = useState<AutomationRule[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,11 +205,41 @@ function AutomationPageInner() {
   const [showTemplates, setShowTemplates] = useState(false)
   const [formName, setFormName] = useState('')
   const [formDescription, setFormDescription] = useState('')
+  const [formCategory, setFormCategory] = useState<AutomationCategoryId | null>(null)
   const [formTrigger, setFormTrigger] = useState<string | null>(null)
   const [formAction, setFormAction] = useState<string | null>(null)
+  const [allowedSections, setAllowedSections] = useState<string[] | null>(null)
 
   useEffect(() => {
     fetchRules()
+  }, [])
+
+  useEffect(() => {
+    const fetchAllowedSections = async () => {
+      try {
+        const response = await fetch('/api/user/tenants')
+        if (response.ok) {
+          const data = await response.json()
+          const rawSections = data.activeTenantAccess?.allowedSections
+          if (!rawSections) {
+            setAllowedSections(null)
+            return
+          }
+          const parsed = typeof rawSections === 'string' ? JSON.parse(rawSections) : rawSections
+          if (Array.isArray(parsed)) {
+            setAllowedSections(parsed.length === 0 ? null : parsed)
+          } else if (parsed && Array.isArray(parsed.sections)) {
+            setAllowedSections(parsed.sections.length === 0 ? null : parsed.sections)
+          } else {
+            setAllowedSections(null)
+          }
+        }
+      } catch (error) {
+        console.warn('Error fetching allowed sections:', error)
+        setAllowedSections(null)
+      }
+    }
+    fetchAllowedSections()
   }, [])
 
   useEffect(() => {
@@ -65,16 +247,56 @@ function AutomationPageInner() {
       if (editingRule) {
         setFormName(editingRule.name)
         setFormDescription(editingRule.description || '')
+        setFormCategory(null)
         setFormTrigger(editingRule.triggerType || null)
         setFormAction(editingRule.actionType || null)
       } else {
         setFormName('')
         setFormDescription('')
+        setFormCategory(null)
         setFormTrigger(null)
         setFormAction(null)
       }
     }
   }, [dialogOpen, editingRule])
+
+  const availableCategories = useMemo(() => {
+    if (allowedSections === null) return AUTOMATION_CATEGORIES
+    const allowedCategoryIds = new Set<AutomationCategoryId>()
+    allowedSections.forEach((section) => {
+      const prefix = section.split(':')[0]
+      const categoryId = CATEGORY_LABEL_TO_ID.get(prefix)
+      if (categoryId) {
+        allowedCategoryIds.add(categoryId)
+      }
+    })
+    return AUTOMATION_CATEGORIES.filter((category) => allowedCategoryIds.has(category.id))
+  }, [allowedSections])
+
+  useEffect(() => {
+    if (!formCategory && availableCategories.length > 0) {
+      setFormCategory(availableCategories[0].id)
+    }
+  }, [availableCategories, formCategory])
+
+  const triggerOptions = useMemo(() => {
+    if (!formCategory) return []
+    return TRIGGERS_BY_CATEGORY[formCategory] || []
+  }, [formCategory])
+
+  const actionOptions = useMemo(() => {
+    if (!formTrigger) return []
+    return ACTIONS_BY_TRIGGER[formTrigger] || [
+      { value: 'NOTIFY_USER', label: 'Notify User' },
+      { value: 'CREATE_TASK', label: 'Create Task' },
+    ]
+  }, [formTrigger])
+
+  useEffect(() => {
+    if (formAction && !actionOptions.some((option) => option.value === formAction)) {
+      setFormAction(null)
+    }
+  }, [actionOptions, formAction])
 
   const fetchRules = async () => {
     try {
@@ -209,6 +431,21 @@ function AutomationPageInner() {
                       onChange={(e) => setFormDescription(e.target.value)}
                     />
                   </div>
+                  <div>
+                    <Label>Category</Label>
+                    <Select value={formCategory || undefined} onValueChange={(value) => setFormCategory(value as AutomationCategoryId)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Trigger</Label>
@@ -217,10 +454,11 @@ function AutomationPageInner() {
                           <SelectValue placeholder="Select trigger" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="LEAD_CREATED">Lead Created</SelectItem>
-                          <SelectItem value="LEAD_STATUS_CHANGED">Lead Status Changed</SelectItem>
-                          <SelectItem value="OPPORTUNITY_CREATED">Opportunity Created</SelectItem>
-                          <SelectItem value="QUOTE_SENT">Quote Sent</SelectItem>
+                          {triggerOptions.map((trigger) => (
+                            <SelectItem key={trigger.value} value={trigger.value}>
+                              {trigger.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -231,10 +469,11 @@ function AutomationPageInner() {
                           <SelectValue placeholder="Select action" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="ASSIGN_LEAD">Assign Lead</SelectItem>
-                          <SelectItem value="SEND_EMAIL">Send Email</SelectItem>
-                          <SelectItem value="CREATE_TASK">Create Task</SelectItem>
-                          <SelectItem value="NOTIFY_USER">Notify User</SelectItem>
+                          {actionOptions.map((action) => (
+                            <SelectItem key={action.value} value={action.value}>
+                              {action.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
