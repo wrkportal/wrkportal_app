@@ -21,6 +21,10 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
+    if (!(globalThis as any).DOMMatrix) {
+      const { DOMMatrix } = await import("dommatrix")
+      ;(globalThis as any).DOMMatrix = DOMMatrix
+    }
     const pdfParse = (await import("pdf-parse")).default
     const parsed = await pdfParse(buffer)
     const text = parsed.text?.slice(0, 200000) || ""

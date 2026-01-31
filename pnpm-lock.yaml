@@ -152,6 +152,9 @@ importers:
       date-fns:
         specifier: ^3.3.0
         version: 3.6.0
+      dommatrix:
+        specifier: ^1.0.3
+        version: 1.0.3
       framer-motion:
         specifier: ^11.0.0
         version: 11.18.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -3532,6 +3535,10 @@ packages:
   domhandler@5.0.3:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
+
+  dommatrix@1.0.3:
+    resolution: {integrity: sha512-l32Xp/TLgWb8ReqbVJAFIvXmY7go4nTxxlWiAFyhoQw9RKEOHBZNnyGvJWqDVSPmq3Y9HlM4npqF/T6VMOXhww==}
+    deprecated: dommatrix is no longer maintained. Please use @thednp/dommatrix.
 
   dompurify@3.3.1:
     resolution: {integrity: sha512-qkdCKzLNtrgPFP1Vo+98FRzJnBRGe4ffyCea9IwHB1fyxPOeNTHpLKYGd4Uk9xvNoH0ZoOjwZxNptyMwqrId1Q==}
@@ -10312,6 +10319,8 @@ snapshots:
   domhandler@5.0.3:
     dependencies:
       domelementtype: 2.3.0
+
+  dommatrix@1.0.3: {}
 
   dompurify@3.3.1:
     optionalDependencies:
