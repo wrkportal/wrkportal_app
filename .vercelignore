@@ -69,8 +69,8 @@ electron/
 e2e/
 playwright.config.ts
 
-# Scripts (not needed in production)
-scripts/
+# Scripts (allow required build helpers)
+!scripts/prisma-generate.js
 
 # Large markdown files
 *.md
