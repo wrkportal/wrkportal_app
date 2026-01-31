@@ -26,7 +26,6 @@ export async function GET(
             id: true,
             name: true,
             totalAmount: true,
-            spentAmount: true,
             categories: {
               select: {
                 id: true,

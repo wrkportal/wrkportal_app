@@ -104,7 +104,8 @@ export function CallInterface({ callId, open, onClose, onCallEnd }: CallInterfac
 
   const currentParticipant = call?.participants.find((p) => p.userId === user?.id)
   const isMuted = currentParticipant?.isMuted ?? false
-  const isVideoOn = currentParticipant?.isVideoOn ?? (localStream?.getVideoTracks().length > 0 && localStream.getVideoTracks()[0].enabled)
+  const videoTracks = localStream?.getVideoTracks() ?? []
+  const isVideoOn = currentParticipant?.isVideoOn ?? (videoTracks.length > 0 && videoTracks[0]?.enabled)
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -156,99 +157,99 @@ export function CallInterface({ callId, open, onClose, onCallEnd }: CallInterfac
             "flex-1 relative bg-black rounded-lg overflow-hidden transition-all",
             (showChat || showParticipants) && "flex-[2]"
           )}>
-          {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-red-900/20 z-50">
-              <div className="text-center text-white p-4">
-                <p className="font-semibold">Error</p>
-                <p className="text-sm">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {isConnecting && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-40">
-              <div className="text-center text-white">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                <p>Connecting...</p>
-              </div>
-            </div>
-          )}
-
-          {/* Screen Share Display */}
-          {isActive && isScreenSharing && screenStream && (
-            <div className="absolute inset-0 p-4 z-10">
-              <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
-                <video
-                  ref={screenVideoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-contain"
-                />
-                <div className="absolute bottom-4 left-4 bg-black/60 text-white px-3 py-1 rounded text-sm flex items-center gap-2">
-                  <Monitor className="h-4 w-4" />
-                  <span>Screen Sharing</span>
+            {error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-red-900/20 z-50">
+                <div className="text-center text-white p-4">
+                  <p className="font-semibold">Error</p>
+                  <p className="text-sm">{error}</p>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Remote Video Streams Grid */}
-          {isActive && (
-            <div className={cn(
-              "grid grid-cols-1 md:grid-cols-2 gap-4 p-4 h-full",
-              isScreenSharing && "opacity-30"
-            )}>
-              {call?.participants
-                .filter((p) => p.userId !== user?.id)
-                .map((participant) => (
-                  <div
-                    key={participant.id}
-                    className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video"
-                  >
-                    <video
-                      ref={(el) => {
-                        if (el) {
-                          remoteVideoRefs.current.set(participant.userId, el)
-                        } else {
-                          remoteVideoRefs.current.delete(participant.userId)
-                        }
-                      }}
-                      autoPlay
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
-                    {!participant.isVideoOn && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                        <Avatar className="h-24 w-24">
-                          <AvatarImage src={participant.avatar} />
-                          <AvatarFallback>
-                            {participant.name
-                              .split(' ')
-                              .map((n) => n[0])
-                              .join('')
-                              .toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+            {isConnecting && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-40">
+                <div className="text-center text-white">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                  <p>Connecting...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Screen Share Display */}
+            {isActive && isScreenSharing && screenStream && (
+              <div className="absolute inset-0 p-4 z-10">
+                <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
+                  <video
+                    ref={screenVideoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                  <div className="absolute bottom-4 left-4 bg-black/60 text-white px-3 py-1 rounded text-sm flex items-center gap-2">
+                    <Monitor className="h-4 w-4" />
+                    <span>Screen Sharing</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Remote Video Streams Grid */}
+            {isActive && (
+              <div className={cn(
+                "grid grid-cols-1 md:grid-cols-2 gap-4 p-4 h-full",
+                isScreenSharing && "opacity-30"
+              )}>
+                {call?.participants
+                  .filter((p) => p.userId !== user?.id)
+                  .map((participant) => (
+                    <div
+                      key={participant.id}
+                      className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video"
+                    >
+                      <video
+                        ref={(el) => {
+                          if (el) {
+                            remoteVideoRefs.current.set(participant.userId, el)
+                          } else {
+                            remoteVideoRefs.current.delete(participant.userId)
+                          }
+                        }}
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                      {!participant.isVideoOn && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                          <Avatar className="h-24 w-24">
+                            <AvatarImage src={participant.avatar} />
+                            <AvatarFallback>
+                              {participant.name
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      )}
+                      <div className="absolute bottom-2 left-2 bg-black/60 text-white px-3 py-1 rounded text-sm flex items-center gap-2">
+                        {participant.isMuted && <MicOff className="h-3 w-3" />}
+                        <span>{participant.name}</span>
                       </div>
-                    )}
-                    <div className="absolute bottom-2 left-2 bg-black/60 text-white px-3 py-1 rounded text-sm flex items-center gap-2">
-                      {participant.isMuted && <MicOff className="h-3 w-3" />}
-                      <span>{participant.name}</span>
+                    </div>
+                  ))}
+
+                {/* Show placeholder if no remote participants yet */}
+                {call && call.participants.filter((p: any) => p.userId !== user?.id).length === 0 && (
+                  <div className="col-span-full flex items-center justify-center text-white/50">
+                    <div className="text-center">
+                      <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>Waiting for participants to join...</p>
                     </div>
                   </div>
-                ))}
-
-              {/* Show placeholder if no remote participants yet */}
-              {call && call.participants.filter((p: any) => p.userId !== user?.id).length === 0 && (
-                <div className="col-span-full flex items-center justify-center text-white/50">
-                  <div className="text-center">
-                    <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>Waiting for participants to join...</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
           </div>
 
           {/* Sidebar: Chat or Participants */}

@@ -69,7 +69,7 @@ export async function GET(
           description: ticket.description || '',
           priority: ticket.priority || 'MEDIUM',
           status: ticket.status,
-          category: ticket.category || '',
+          category: ticket.tags?.[0] || '',
           requester: ticket.createdBy?.name || 'Unknown',
           requesterId: ticket.createdById,
           assignee: ticket.assignee?.name || null,
@@ -111,7 +111,21 @@ export async function PUT(
         if (data.description !== undefined) updateData.description = data.description
         if (data.priority) updateData.priority = data.priority
         if (data.status) updateData.status = data.status
-        if (data.category !== undefined) updateData.category = data.category
+        // Note: category is stored in tags[0] since Task model doesn't have category field
+        if (data.category !== undefined) {
+          const ticket = await prisma.task.findFirst({
+            where: { id, tenantId: userInfo.tenantId },
+            select: { tags: true },
+          })
+          const existingTags = ticket?.tags || []
+          if (data.category) {
+            // Set category as first tag, remove duplicates
+            updateData.tags = [data.category, ...existingTags.filter(t => t !== data.category)]
+          } else {
+            // Remove first tag if category is cleared
+            updateData.tags = existingTags.slice(1)
+          }
+        }
         if (data.assigneeId !== undefined) {
           updateData.assigneeId = data.assigneeId === null ? null : data.assigneeId
         }
@@ -146,7 +160,7 @@ export async function PUT(
           description: ticket.description || '',
           priority: ticket.priority || 'MEDIUM',
           status: ticket.status,
-          category: ticket.category || '',
+          category: ticket.tags?.[0] || '',
           requester: ticket.createdBy?.name || 'Unknown',
           requesterId: ticket.createdById,
           assignee: ticket.assignee?.name || null,

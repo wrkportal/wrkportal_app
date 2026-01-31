@@ -4,10 +4,10 @@
   "description": "Enterprise-level Project Management SaaS Application",
   "author": "Your Company",
   "private": true,
-  "main": "electron/main.js",
   "engines": {
     "node": ">=18.0.0"
   },
+  "packageManager": "pnpm@10.11.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -24,11 +24,8 @@
     "db:delete-users-except": "tsx scripts/delete-users-except.ts",
     "db:delete-all-users": "tsx scripts/delete-all-users.ts",
     "db:migrate-sections": "tsx scripts/run-migration.ts",
-    "postinstall": "prisma generate --schema=prisma/schema.prisma",
-    "vercel-build": "prisma generate --schema=prisma/schema.prisma && next build",
-    "electron:dev": "electron .",
-    "electron:build": "cross-env ELECTRON_BUILD=true next build || (echo Build completed with warnings, continuing with electron-builder... && electron-builder)",
-    "desktop": "next build && electron ."
+    "postinstall": "node scripts/prisma-generate.js",
+    "vercel-build": "prisma generate --schema=prisma/schema.prisma && next build"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.58",
@@ -79,7 +76,6 @@
     "csv-parse": "^5.5.6",
     "d3": "^7.9.0",
     "date-fns": "^3.3.0",
-    "electron-store": "^8.1.0",
     "framer-motion": "^11.0.0",
     "geist": "^1.5.1",
     "googleapis": "^169.0.0",
@@ -136,8 +132,6 @@
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.0",
-    "electron": "^28.3.3",
-    "electron-builder": "^24.13.3",
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.2.33",
     "postcss": "^8.4.0",

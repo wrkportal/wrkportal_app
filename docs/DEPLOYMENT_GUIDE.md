@@ -18,10 +18,9 @@
 - ✅ File Uploads (Vercel Blob)
 - ✅ Cron Jobs (configured in `vercel.json`)
 - ✅ Webhook Endpoints (GitHub, Jenkins)
-- ✅ Electron Support (Desktop app)
 
 ### Build Configuration
-- **Build Command**: `prisma generate && prisma db push && next build`
+- **Build Command**: `pnpm run vercel-build`
 - **Start Command**: `next start`
 - **Output**: `standalone` mode (for production)
 - **Prisma**: Auto-generates on build

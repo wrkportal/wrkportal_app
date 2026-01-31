@@ -1,12 +1,14 @@
 import { MetadataRoute } from 'next'
+import { getAllBlogPosts } from '@/lib/blog/posts'
 
-export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://www.managerbook.in'
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+    const baseUrl = 'https://www.wrkportal.com'
     
     // Define your main pages (only include pages that actually exist)
     const routes = [
         { path: '', priority: 1 },          // Homepage
         { path: '/landing', priority: 0.9 }, // Landing page
+        { path: '/blog', priority: 0.8 },   // Blog listing page
         { path: '/login', priority: 0.7 },   // Login page
         { path: '/signup', priority: 0.7 },  // Signup page
         { path: '/privacy', priority: 0.6 }, // Privacy policy
@@ -20,6 +22,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
         priority: route.priority,
     }))
 
-    return routes
+    // Add blog posts to sitemap
+    try {
+        const posts = await getAllBlogPosts()
+        const blogRoutes = posts.map((post) => ({
+            url: `${baseUrl}/blog/${post.slug}`,
+            lastModified: new Date(post.updatedAt || post.publishedAt),
+            changeFrequency: 'monthly' as const,
+            priority: 0.7,
+        }))
+        
+        return [...routes, ...blogRoutes]
+    } catch (error) {
+        console.error('Error fetching blog posts for sitemap:', error)
+        return routes
+    }
 }
 

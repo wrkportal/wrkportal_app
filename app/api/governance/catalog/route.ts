@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
-import { DataClassification, DataSensitivity } from '@prisma/client'
+import { DataClassification, DataSensitivity, Prisma } from '@prisma/client'
 
 const createCatalogEntrySchema = z.object({
   resourceType: z.string(),
@@ -115,9 +115,9 @@ export async function POST(request: NextRequest) {
                 ownerId: data.ownerId || null,
                 classification: data.classification || null,
                 sensitivity: data.sensitivity || null,
-                businessGlossary: data.businessGlossary || null,
-                technicalMetadata: data.technicalMetadata || null,
-                customFields: data.customFields || null,
+                businessGlossary: data.businessGlossary ?? Prisma.JsonNull,
+                technicalMetadata: data.technicalMetadata ?? Prisma.JsonNull,
+                customFields: data.customFields ?? Prisma.JsonNull,
                 isPublished: data.isPublished,
               },
             })
@@ -133,9 +133,9 @@ export async function POST(request: NextRequest) {
                 ownerId: data.ownerId || null,
                 classification: data.classification || null,
                 sensitivity: data.sensitivity || null,
-                businessGlossary: data.businessGlossary || null,
-                technicalMetadata: data.technicalMetadata || null,
-                customFields: data.customFields || null,
+                businessGlossary: data.businessGlossary ?? Prisma.JsonNull,
+                technicalMetadata: data.technicalMetadata ?? Prisma.JsonNull,
+                customFields: data.customFields ?? Prisma.JsonNull,
                 isPublished: data.isPublished,
               },
             })

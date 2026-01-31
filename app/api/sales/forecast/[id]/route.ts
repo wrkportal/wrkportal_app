@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export async function PATCH(
   request: NextRequest,
@@ -31,9 +32,9 @@ export async function PATCH(
     if (unitPrice !== undefined && volume !== undefined) {
       const price = parseFloat(unitPrice || 0)
       const vol = parseFloat(volume || 0)
-      revenue = price * vol
+      revenue = new Prisma.Decimal(price * vol)
     } else if (forecastedAmount !== undefined) {
-      revenue = parseFloat(forecastedAmount)
+      revenue = new Prisma.Decimal(parseFloat(forecastedAmount))
     }
 
     const updatedForecast = await prisma.salesForecast.update({
@@ -41,8 +42,8 @@ export async function PATCH(
       data: {
         period: period || forecast.period,
         forecastType: forecastType || forecast.forecastType,
-        unitPrice: unitPrice !== undefined ? (unitPrice ? parseFloat(unitPrice) : null) : forecast.unitPrice,
-        volume: volume !== undefined ? (volume ? parseFloat(volume) : null) : forecast.volume,
+        unitPrice: unitPrice !== undefined ? (unitPrice ? new Prisma.Decimal(parseFloat(unitPrice)) : null) : forecast.unitPrice,
+        volume: volume !== undefined ? (volume ? new Prisma.Decimal(parseFloat(volume)) : null) : forecast.volume,
         forecastedAmount: revenue,
         revenue,
         quota: revenue,

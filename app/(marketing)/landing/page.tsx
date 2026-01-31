@@ -661,6 +661,9 @@ export default function LandingPage() {
                             <a href="#pricing" className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
                                 Pricing
                             </a>
+                            <Link href="/blog" className="text-sm font-medium text-gray-700 hover:text-purple-600 transition-colors">
+                                Blog
+                            </Link>
                         </div>
                         <div className="flex items-center gap-3">
                             <Button variant="ghost" onClick={() => {

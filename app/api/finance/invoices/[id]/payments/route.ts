@@ -118,17 +118,22 @@ export async function POST(
       },
     })
 
-    // Update invoice status
+    // Update invoice payment status
+    let newPaymentStatus = invoice.paymentStatus
     let newStatus = invoice.status
     if (newTotalPaid >= invoiceTotal) {
+      newPaymentStatus = 'PAID'
       newStatus = 'PAID'
     } else if (newTotalPaid > 0) {
-      newStatus = 'PARTIALLY_PAID'
+      newPaymentStatus = 'PARTIAL'
     }
 
     await prisma.invoice.update({
       where: { id: params.id },
-      data: { status: newStatus },
+      data: { 
+        paymentStatus: newPaymentStatus,
+        status: newStatus,
+      },
     })
 
     return NextResponse.json({ payment }, { status: 201 })

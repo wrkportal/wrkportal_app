@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const hoursLogged = Math.round(timesheets._sum.hours || 0)
+    const hoursLogged = Math.round(Number(timesheets._sum.hours || 0))
 
     return NextResponse.json({
       activeProjects,

@@ -202,6 +202,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    if (!fullOrder) {
+      return NextResponse.json(
+        { error: 'Failed to retrieve created order' },
+        { status: 500 }
+      )
+    }
+
     // Automatically capture activity for order creation
     await AutoActivityCapture.capture({
       tenantId: session.user.tenantId!,

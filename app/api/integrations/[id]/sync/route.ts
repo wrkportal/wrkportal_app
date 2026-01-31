@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck } from '@/lib/permissions/permission-middleware'
 import { createSyncJob, executeSyncJob, getSyncJobHistory, getSyncLogs, SyncConfiguration } from '@/lib/integrations/sync-framework'
-import { SyncType } from '@prisma/client'
+import { SyncType, Prisma } from '@prisma/client'
 
 const createSyncJobSchema = z.object({
   syncType: z.nativeEnum(SyncType),
@@ -115,7 +115,8 @@ export async function GET(
 
         const jobs = await getSyncJobHistory(params.id, limit)
 
-        let syncLogs = []
+        type SyncLog = Prisma.IntegrationSyncLogGetPayload<{}>
+        let syncLogs: SyncLog[] = []
         if (logs) {
           syncLogs = await getSyncLogs(params.id, undefined, undefined, 100)
         }

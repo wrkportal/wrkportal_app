@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     // Get user with tenant information to check permissions
     // Try minimal query first, then fall back to session data if columns don't exist
     let user: any = null
-    let tenantType: WorkspaceType = 'ORGANIZATION' // Default fallback
+    let tenantType: WorkspaceType = WorkspaceType.ORGANIZATION // Default fallback
     let userRole: UserRole = session.user.role as UserRole
     let groupRole: GroupRole | undefined = undefined
     
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       })
       
       if (user) {
-        tenantType = (user.tenant?.type as WorkspaceType) || 'ORGANIZATION'
+        tenantType = (user.tenant?.type as WorkspaceType) || WorkspaceType.ORGANIZATION
         userRole = user.role as UserRole
         groupRole = user.groupRole as GroupRole | undefined
       }
@@ -108,10 +108,10 @@ export async function POST(req: NextRequest) {
                 where: { id: user.tenantId },
                 select: { type: true },
               })
-              tenantType = (tenant?.type as WorkspaceType) || 'ORGANIZATION'
+              tenantType = (tenant?.type as WorkspaceType) || WorkspaceType.ORGANIZATION
             } catch (tenantError: any) {
               console.warn('Could not fetch tenant type, using default')
-              tenantType = 'ORGANIZATION'
+              tenantType = WorkspaceType.ORGANIZATION
             }
           }
         } catch (minimalError: any) {
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
             role: session.user.role,
           }
           userRole = session.user.role as UserRole
-          tenantType = 'ORGANIZATION' // Default fallback
+          tenantType = WorkspaceType.ORGANIZATION // Default fallback
         }
       } else if (error.code === 'P2021' || error.message?.includes('does not exist')) {
         // Table doesn't exist at all

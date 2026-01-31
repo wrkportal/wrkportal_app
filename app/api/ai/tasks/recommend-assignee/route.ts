@@ -63,11 +63,20 @@ export async function POST(request: NextRequest) {
         lastName: true
         email: true
         role: true
-        skills: true
+        tenantId: true
+        timezone: true
+        locale: true
+        status: true
+        createdAt: true
+        skills: {
+          include: {
+            skill: true
+          }
+        }
       }
     }>
 
-    const users: UserWithSkills[] = await prisma.user.findMany({
+    const usersData: UserWithSkills[] = await prisma.user.findMany({
       where: {
         tenantId: session.user.tenantId,
         status: 'ACTIVE',
@@ -78,13 +87,42 @@ export async function POST(request: NextRequest) {
         lastName: true,
         email: true,
         role: true,
-        skills: true,
+        tenantId: true,
+        timezone: true,
+        locale: true,
+        status: true,
+        createdAt: true,
+        skills: {
+          include: {
+            skill: true,
+          },
+        },
       },
     })
 
+    // Map to User[] format with proper Skill structure
+    const users = usersData.map((user) => ({
+      id: user.id,
+      tenantId: user.tenantId,
+      email: user.email,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      role: user.role as any,
+      skills: user.skills.map((us) => ({
+        id: us.skill.id,
+        name: us.skill.name,
+        level: us.level as any,
+        category: us.skill.category || '',
+      })),
+      timezone: user.timezone,
+      locale: user.locale,
+      status: user.status as any,
+      createdAt: user.createdAt,
+    }))
+
     // Calculate actual workload from tasks assigned to each user
     const userWorkloads = await Promise.all(
-      users.map(async (user: UserWithSkills) => {
+      users.map(async (user) => {
         const activeTasks = await prisma.task.count({
           where: {
             assigneeId: user.id,
@@ -116,7 +154,7 @@ export async function POST(request: NextRequest) {
         status: task.status as any,
         priority: task.priority as any,
         reporterId: task.createdById,
-        estimatedHours: task.estimatedHours || 0,
+        estimatedHours: task.estimatedHours ? Number(task.estimatedHours) : undefined,
         tags: task.tags || [],
         checklist: [],
         dependencies: [],

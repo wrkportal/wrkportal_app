@@ -248,9 +248,16 @@ export async function GET(request: NextRequest) {
     })
 
     // Get expense breakdown by category
-    let expenseCategories
+    type ExpenseCategoryGroupBy = {
+      costType: string | null
+      _sum: {
+        amount: number | null
+      }
+    }
+
+    let expenseCategories: ExpenseCategoryGroupBy[]
     try {
-      expenseCategories = await prisma.costActual.groupBy({
+      const result = await prisma.costActual.groupBy({
         by: ['costType'],
         where: {
           project: {
@@ -266,6 +273,7 @@ export async function GET(request: NextRequest) {
           amount: true,
         },
       })
+      expenseCategories = result as ExpenseCategoryGroupBy[]
     } catch (queryError: any) {
       if (queryError.code === 'P2001' || 
           queryError.code === 'P2021' || 
@@ -278,14 +286,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    type ExpenseCategoryGroupBy = {
-      costType: string | null
-      _sum: {
-        amount: number | null
-      }
-    }
-
-    const expensesBreakdown = expenseCategories.map((cat: ExpenseCategoryGroupBy) => {
+    const expensesBreakdown = expenseCategories.map((cat) => {
       const amount = Number(cat._sum.amount || 0)
       const trend = 'Stable' // Could be calculated by comparing with previous period
       

@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
           status: 'COMPLETED',
           completedDate: registrationDate ? new Date(registrationDate) : new Date(),
           leadId: existingLead.id,
-          assignedToId: existingLead.assignedToId || null,
+          assignedToId: existingLead.assignedToId || existingLead.ownerId,
           createdById: existingLead.ownerId,
         },
       })
@@ -160,8 +160,8 @@ export async function POST(request: NextRequest) {
         status: 'COMPLETED',
         completedDate: registrationDate ? new Date(registrationDate) : new Date(),
         leadId: lead.id,
-        assignedToId: assignedToId || null,
-        createdById: assignedToId || users[0]?.id || '',
+        assignedToId: assignedToId || users[0]?.id || lead.ownerId,
+        createdById: assignedToId || users[0]?.id || lead.ownerId,
       },
     })
 

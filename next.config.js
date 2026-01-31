@@ -35,8 +35,7 @@ const nextConfig = {
     buildActivity: false,
     buildActivityPosition: 'bottom-right',
   },
-  // For Electron: only use standalone output in production builds
-  // This creates a self-contained server that can run in Electron
+  // Use standalone output in production builds
   // In development, this can cause chunk loading issues
   ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
   webpack: (config, { isServer }) => {

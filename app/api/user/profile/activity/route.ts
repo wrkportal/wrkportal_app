@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { formatDistanceToNow } from 'date-fns'
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -106,12 +107,12 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    recentTimesheets.forEach((timesheet: { id: string; hours: number; date: Date; project: { name: string } }) => {
+    recentTimesheets.forEach((timesheet: { id: string; hours: Prisma.Decimal; date: Date; project: { name: string } }) => {
       activities.push({
         id: `timesheet-${timesheet.id}`,
         action: 'Logged timesheet',
         entityType: 'timesheet',
-        entityName: `${timesheet.hours}h on ${timesheet.project.name}`,
+        entityName: `${Number(timesheet.hours)}h on ${timesheet.project.name}`,
         timestamp: formatDistanceToNow(timesheet.date, { addSuffix: true }),
         sortDate: timesheet.date,
       })

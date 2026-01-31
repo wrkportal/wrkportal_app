@@ -88,20 +88,25 @@ async function exportExcel(
       })
 
       // Budget summary sheet
-      const budgetData = budgets.map((b: BudgetWithIncludes) => ({
-        'Budget Name': b.name,
-        'Project': b.project?.name || b.program?.name || 'N/A',
-        'Code': b.project?.code || b.program?.code || 'N/A',
-        'Type': b.type,
-        'Status': b.status,
-        'Total Amount': Number(b.totalAmount),
-        'Spent Amount': Number(b.spentAmount),
-        'Remaining': Number(b.totalAmount) - Number(b.spentAmount),
-        'Start Date': b.startDate.toISOString().split('T')[0],
-        'End Date': b.endDate.toISOString().split('T')[0],
-        'Currency': b.currency,
-        'Created': b.createdAt.toISOString().split('T')[0],
-      }))
+      const budgetData = budgets.map((b: BudgetWithIncludes) => {
+        // Calculate spent amount from categories
+        const spentAmount = b.categories.reduce((sum, cat) => sum + Number(cat.spentAmount || 0), 0)
+        const totalAmount = Number(b.totalAmount)
+        return {
+          'Budget Name': b.name,
+          'Project': b.project?.name || b.program?.name || 'N/A',
+          'Code': b.project?.code || b.program?.code || 'N/A',
+          'Type': b.projectId ? 'Project' : b.programId ? 'Program' : (b as any).portfolioId ? 'Portfolio' : 'Standalone',
+          'Status': b.status,
+          'Total Amount': totalAmount,
+          'Spent Amount': spentAmount,
+          'Remaining': totalAmount - spentAmount,
+          'Start Date': b.startDate.toISOString().split('T')[0],
+          'End Date': b.endDate.toISOString().split('T')[0],
+          'Currency': b.currency,
+          'Created': b.createdAt.toISOString().split('T')[0],
+        }
+      })
 
       const ws1 = XLSX.utils.json_to_sheet(budgetData)
       XLSX.utils.book_append_sheet(workbook, ws1, 'Budgets')
@@ -205,6 +210,11 @@ async function exportExcel(
               title: true
             }
           }
+          category: {
+            select: {
+              name: true
+            }
+          }
         }
       }>
 
@@ -214,6 +224,7 @@ async function exportExcel(
           budget: { select: { name: true } },
           project: { select: { name: true, code: true } },
           task: { select: { title: true } },
+          category: { select: { name: true } },
         },
       })
 
@@ -223,10 +234,10 @@ async function exportExcel(
         'Project': c.project?.name || 'N/A',
         'Task': c.task?.title || 'N/A',
         'Description': c.description,
-        'Category': c.category,
+        'Category': c.category?.name || 'N/A',
         'Amount': Number(c.amount),
         'Currency': c.currency,
-        'Status': c.status,
+        'Status': c.approvedAt ? 'Approved' : 'Pending',
         'Approved': c.approvedAt ? 'Yes' : 'No',
       }))
 
@@ -273,10 +284,10 @@ async function exportExcel(
           'Issue Date': inv.invoiceDate.toISOString().split('T')[0],
           'Due Date': inv.dueDate.toISOString().split('T')[0],
           'Subtotal': Number(inv.subtotal),
-          'Tax': Number(inv.tax),
-          'Total': Number(inv.total),
+          'Tax': Number(inv.taxAmount),
+          'Total': Number(inv.totalAmount),
           'Paid': paid,
-          'Balance': Number(inv.total) - paid,
+          'Balance': Number(inv.totalAmount) - paid,
           'Status': inv.status,
           'Currency': inv.currency,
         }
@@ -415,13 +426,17 @@ async function exportPDF(
           budgets.forEach((b: BudgetWithIncludesPDF, idx: number) => {
             if (idx > 0) doc.addPage()
 
+            // Calculate spent amount from categories
+            const spentAmount = b.categories.reduce((sum, cat) => sum + Number(cat.spentAmount || 0), 0)
+            const totalAmount = Number(b.totalAmount)
+
             doc.fontSize(14).font('Helvetica-Bold').text(b.name)
             doc.font('Helvetica').fontSize(10)
             doc.text(`Project: ${b.project?.name || b.program?.name || 'N/A'}`)
-            doc.text(`Type: ${b.type} | Status: ${b.status}`)
-            doc.text(`Total: ${b.currency} ${Number(b.totalAmount).toLocaleString()}`)
-            doc.text(`Spent: ${b.currency} ${Number(b.spentAmount).toLocaleString()}`)
-            doc.text(`Remaining: ${b.currency} ${(Number(b.totalAmount) - Number(b.spentAmount)).toLocaleString()}`)
+            doc.text(`Type: ${b.projectId ? 'Project' : b.programId ? 'Program' : (b as any).portfolioId ? 'Portfolio' : 'Standalone'} | Status: ${b.status}`)
+            doc.text(`Total: ${b.currency} ${totalAmount.toLocaleString()}`)
+            doc.text(`Spent: ${b.currency} ${spentAmount.toLocaleString()}`)
+            doc.text(`Remaining: ${b.currency} ${(totalAmount - spentAmount).toLocaleString()}`)
             doc.moveDown()
 
             if (b.categories.length > 0) {
@@ -485,10 +500,10 @@ async function exportPDF(
             type PaymentPDF = InvoiceWithIncludesPDF['payments'][0]
             const paid = inv.payments.reduce((sum: number, p: PaymentPDF) => sum + Number(p.amount), 0)
             doc.text(`Subtotal: ${inv.currency} ${Number(inv.subtotal).toLocaleString()}`)
-            doc.text(`Tax: ${inv.currency} ${Number(inv.tax).toLocaleString()}`)
-            doc.text(`Total: ${inv.currency} ${Number(inv.total).toLocaleString()}`)
+            doc.text(`Tax: ${inv.currency} ${Number(inv.taxAmount).toLocaleString()}`)
+            doc.text(`Total: ${inv.currency} ${Number(inv.totalAmount).toLocaleString()}`)
             doc.text(`Paid: ${inv.currency} ${paid.toLocaleString()}`)
-            doc.text(`Balance: ${inv.currency} ${(Number(inv.total) - paid).toLocaleString()}`)
+            doc.text(`Balance: ${inv.currency} ${(Number(inv.totalAmount) - paid).toLocaleString()}`)
           })
 
           break

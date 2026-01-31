@@ -2,10 +2,13 @@
  * Query Builder
  * 
  * Builds SQL queries from DataFlow formulas and executes them
+ * Note: Offline desktop execution has been removed.
  */
 
 import { DataFlowParser } from './formula-parser'
-import { desktopAPI } from './desktop-api'
+const executeQuery = async (_query: string, _params: any[] = []): Promise<any[]> => {
+  throw new Error('Offline desktop query execution has been removed. Use reporting-engine APIs instead.')
+}
 
 export interface QueryOptions {
   table: string
@@ -83,7 +86,7 @@ export class QueryBuilder {
     console.log('📊 Executing query:', query)
     
     // Execute query (works offline with local DuckDB)
-    const result = await desktopAPI.query(query)
+    const result = await executeQuery(query)
     
     return result
   }
@@ -116,7 +119,7 @@ export class QueryBuilder {
     
     console.log('📊 Executing multi-formula query:', query)
     
-    return await desktopAPI.query(query)
+    return await executeQuery(query)
   }
   
   /**

@@ -67,7 +67,6 @@
     "e2e",
     "playwright.config.ts",
     "jest.config.js",
-    "jest.setup.js",
-    "electron"
+    "jest.setup.js"
   ]
 }

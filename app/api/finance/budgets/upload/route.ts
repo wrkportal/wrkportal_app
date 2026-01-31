@@ -283,9 +283,9 @@ export async function POST(request: NextRequest) {
                       level: 3,
                     })),
                   },
-                })),
+                })) as any,
               },
-            })),
+            })) as any,
           },
         },
         include: {
@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
             include: {
               subCategories: {
                 include: {
-                  subSubCategories: true,
+                  subCategories: true,
                 },
               },
             },

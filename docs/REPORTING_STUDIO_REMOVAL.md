@@ -62,24 +62,18 @@ Reporting Studio and all related code, files, and references have been removed f
     - `marketplace`
     - `grid-editor`
 
-### Desktop API
-- ✅ **`lib/desktop-api.ts`**
-  - Updated all methods to throw errors in web mode (since reporting-studio endpoints are removed)
-  - Methods now only work in Electron mode
-  - Added clear error messages indicating Reporting Studio has been removed
 
 ## Impact Assessment
 
 ### Breaking Changes
 1. **AI Data Query Widget**: No longer functional (shows unavailable message)
-2. **Desktop API Web Mode**: Query, file loading, schema, and report methods will throw errors in web mode
+2. **Query Builder Library**: Offline query execution is no longer available without Reporting Studio
 3. **Navigation**: Reporting Studio menu item removed from sidebar
 
 ### Preserved Functionality
 - ✅ All other dashboard pages remain functional
 - ✅ All other navigation items remain functional
-- ✅ Desktop API Electron mode still works (if Electron app uses it)
-- ✅ Query Builder library (`lib/query-builder.ts`) still exists but will fail in web mode
+- ✅ Query Builder library (`lib/query-builder.ts`) still exists but requires server-side APIs to execute queries
 
 ## Remaining References (Documentation Only)
 
@@ -102,15 +96,15 @@ To verify removal:
 5. ✅ No references in navigation
 6. ✅ No references in layout routing
 7. ✅ Feature flags removed
-8. ✅ Desktop API updated
+8. ✅ Desktop API removed
 
 ## Notes
 
-- The `lib/query-builder.ts` file still uses `desktopAPI` but will fail in web mode since Reporting Studio endpoints are removed
+- The `lib/query-builder.ts` file no longer uses desktop APIs
 - If you need query functionality in the future, you'll need to either:
   1. Restore Reporting Studio
   2. Create new API endpoints for queries
-  3. Use Electron-only mode for queries
+  3. Build new server-side APIs for query execution
 
 ---
 

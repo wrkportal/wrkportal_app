@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { withPermissionCheck, getUserForPermissionCheck } from '@/lib/permissions/permission-middleware'
-import { UserRole } from '@prisma/client'
+import { UserRole, Prisma } from '@prisma/client'
 
 const createPermissionSchema = z.object({
   orgUnitId: z.string().optional().nullable(),
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
             role: data.role || null,
             resource: data.resource,
             actions: data.actions,
-            conditions: data.conditions || null,
+            conditions: data.conditions ?? Prisma.JsonNull,
             inheritance: data.inheritance,
             expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
             createdById: userInfo.userId,

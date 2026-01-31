@@ -51,12 +51,17 @@ export async function GET(request: NextRequest) {
     // Try to find default layout for specific role, then fall back to general default
     let defaultLayout
     try {
+      // Ensure role is either a valid UserRole enum or use user.role
+      const targetRole: UserRole | null = role && Object.values(UserRole).includes(role as UserRole)
+        ? (role as UserRole)
+        : user.role
+
       defaultLayout = await prisma.defaultLayout.findFirst({
       where: {
         tenantId: user.tenantId,
         pageKey,
         OR: [
-          { targetRole: role || user.role },
+          { targetRole: targetRole },
           { targetRole: null },
         ],
       },

@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
           name: project.name,
           description: project.description || '',
           status: project.status,
-          priority: project.ragStatus === 'RED' ? 'HIGH' : project.ragStatus === 'YELLOW' ? 'MEDIUM' : 'LOW',
+          priority: project.ragStatus === 'RED' ? 'HIGH' : project.ragStatus === 'AMBER' ? 'MEDIUM' : 'LOW',
           startDate: project.startDate.toISOString().split('T')[0],
           endDate: project.endDate.toISOString().split('T')[0],
           progress: project.progress || 0,

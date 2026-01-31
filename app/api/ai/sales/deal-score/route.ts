@@ -88,7 +88,10 @@ export async function POST(request: NextRequest) {
       expectedCloseDate: opportunity.expectedCloseDate?.toISOString() || null,
       status: opportunity.status,
       daysInPipeline,
-      account: opportunity.account,
+      account: opportunity.account ? {
+        type: String(opportunity.account.type),
+        industry: opportunity.account.industry || '',
+      } : null,
       activities: {
         count: opportunity.activities.length,
         lastActivityDate: lastActivity?.createdAt.toISOString() || null,

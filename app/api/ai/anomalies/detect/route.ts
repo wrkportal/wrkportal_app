@@ -14,7 +14,6 @@ type TaskWithSelectedFields = Prisma.TaskGetPayload<{
     createdAt: true
     status: true
     dueDate: true
-    storyPoints: true
   }
 }>
 
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest) {
     const startDate = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000)
 
     // Fetch real task data from database
-    const tasks = (await prisma.task.findMany({
+    const tasks = await prisma.task.findMany({
       where: {
         projectId,
         tenantId: session.user.tenantId,
@@ -64,9 +63,8 @@ export async function POST(request: NextRequest) {
         createdAt: true,
         status: true,
         dueDate: true,
-        storyPoints: true,
       },
-    })) as TaskWithSelectedFields[]
+    })
 
     // Aggregate daily task creation
     const dailyTaskCreationMap = new Map<string, number>()
@@ -112,7 +110,7 @@ export async function POST(request: NextRequest) {
       hours: 0, // Placeholder until timesheet tracking is implemented
     }))
 
-    // Calculate team velocity (story points per week)
+    // Calculate team velocity (completed tasks per week)
     const weeks = Math.floor(periodDays / 7)
     const teamVelocity = Array.from({ length: weeks }, (_, i) => {
       const weekStart = new Date(startDate.getTime() + i * 7 * 24 * 60 * 60 * 1000)
@@ -122,7 +120,7 @@ export async function POST(request: NextRequest) {
         t.createdAt >= weekStart && 
         t.createdAt < weekEnd
       )
-      const points = weekTasks.reduce((sum: number, t: TaskWithSelectedFields) => sum + (t.storyPoints || 0), 0)
+      const points = weekTasks.length
       return {
         week: `W${i + 1}`,
         points,
