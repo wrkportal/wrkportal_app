@@ -129,6 +129,9 @@ interface DashboardStats {
   lowStockItems: number
   outOfStockItems: number
   itemsInTransit: number
+
+  // Projects
+  activeProjects: number
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#6366f1']
@@ -165,6 +168,7 @@ const defaultLayouts: Layouts = {
 }
 
 export default function OperationsDashboardPage() {
+  const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const [stats, setStats] = useState<DashboardStats>({
     totalResources: 0,
@@ -189,6 +193,7 @@ export default function OperationsDashboardPage() {
     lowStockItems: 0,
     outOfStockItems: 0,
     itemsInTransit: 0,
+    activeProjects: 0,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -369,20 +374,20 @@ export default function OperationsDashboardPage() {
               localStorage.setItem('operations-widgets', JSON.stringify(firstLoginWidgets))
               return
             }
-            
+
             // Use saved widgets as-is if they match default widget IDs, otherwise merge
             const savedWidgetIds = new Set(parsed.map(w => w.id))
             const defaultWidgetIds = new Set(defaultWidgets.map(w => w.id))
-            
+
             // If saved widgets have all default IDs, use them directly (they're already saved)
-            if (savedWidgetIds.size === defaultWidgetIds.size && 
-                Array.from(savedWidgetIds).every(id => defaultWidgetIds.has(id))) {
+            if (savedWidgetIds.size === defaultWidgetIds.size &&
+              Array.from(savedWidgetIds).every(id => defaultWidgetIds.has(id))) {
               // All saved widget IDs match defaults, use saved preferences directly
               setWidgets(parsed)
               setWidgetsLoaded(true)
               return
             }
-            
+
             // Otherwise, merge saved with defaults
             const mergedWidgets = defaultWidgets.map(defaultWidget => {
               const savedWidget = parsed.find(w => w.id === defaultWidget.id)
@@ -439,7 +444,7 @@ export default function OperationsDashboardPage() {
           console.error('Error loading layouts from localStorage:', error)
         }
       }
-      
+
       // Load useful links
       try {
         const savedLinks = localStorage.getItem('operations-useful-links')
@@ -496,34 +501,54 @@ export default function OperationsDashboardPage() {
       if (!response.ok) {
         // Try to get error message from response
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`
-        let errorData: any = {}
-        
+        let errorData: any = null
+
         try {
+          // Read response body once
           const contentType = response.headers.get('content-type')
-          if (contentType && contentType.includes('application/json')) {
-            const text = await response.text()
-            if (text) {
-              errorData = JSON.parse(text)
-              errorMessage = errorData.error || errorData.message || errorData.reason || errorMessage
-            }
-          } else {
-            // Try to get text response
-            const text = await response.text()
-            if (text) {
-              errorMessage = text || errorMessage
+          const text = await response.text()
+          
+          if (text && text.trim()) {
+            if (contentType && contentType.includes('application/json')) {
+              try {
+                const parsed = JSON.parse(text)
+                // Only use parsed data if it has meaningful content
+                if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+                  errorData = parsed
+                  errorMessage = errorData.error || errorData.message || errorData.reason || errorMessage
+                } else if (typeof parsed === 'string' && parsed.trim()) {
+                  errorMessage = parsed || errorMessage
+                }
+              } catch (jsonError) {
+                // If JSON parsing fails, use the text as error message
+                if (text.trim()) {
+                  errorMessage = text || errorMessage
+                }
+              }
+            } else {
+              // Use text as error message for non-JSON responses
+              if (text.trim()) {
+                errorMessage = text || errorMessage
+              }
             }
           }
         } catch (parseError) {
           console.warn('Could not parse error response:', parseError)
         }
-        
-        console.error('Dashboard stats API error:', {
+
+        // Build error log object - only include errorData if it exists and has content
+        const errorLog: any = {
           status: response.status,
           statusText: response.statusText,
           error: errorMessage,
-          errorData,
-        })
+        }
         
+        if (errorData && typeof errorData === 'object' && Object.keys(errorData).length > 0) {
+          errorLog.errorData = errorData
+        }
+        
+        console.error('Dashboard stats API error:', errorLog)
+
         // Set user-friendly error message only if user has visible widgets
         // For first-time users (no widgets), don't show permission errors
         // We'll check this in the render function instead, after widgets are loaded
@@ -544,12 +569,12 @@ export default function OperationsDashboardPage() {
         } else {
           setError(`Unable to load dashboard statistics. ${errorMessage}`)
         }
-        
+
         // Don't throw - use default values instead for graceful degradation
         console.warn('Using default stats values due to API error')
         return
       }
-      
+
       // Clear any previous errors on success
       setError(null)
       const data = await response.json()
@@ -577,6 +602,7 @@ export default function OperationsDashboardPage() {
         lowStockItems: data.lowStockItems || 0,
         outOfStockItems: data.outOfStockItems || 0,
         itemsInTransit: data.itemsInTransit || 0,
+        activeProjects: data.activeProjects || 0,
       })
 
       // Fetch trends data
@@ -628,7 +654,7 @@ export default function OperationsDashboardPage() {
       console.error('Error fetching dashboard data:', error)
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
       setError(`Failed to load dashboard data: ${errorMessage}`)
-      
+
       // Set default/empty values on error to prevent UI breakage
       setStats({
         totalResources: 0,
@@ -653,6 +679,7 @@ export default function OperationsDashboardPage() {
         lowStockItems: 0,
         outOfStockItems: 0,
         itemsInTransit: 0,
+        activeProjects: 0,
       })
       setResourcesData([])
       setPerformanceData([])
@@ -682,7 +709,7 @@ export default function OperationsDashboardPage() {
       }
     }
   }
-  
+
   // Also save layouts via useEffect as backup (but onLayoutChange is primary)
   useEffect(() => {
     if (!isInitialMount && typeof window !== 'undefined') {
@@ -1015,7 +1042,7 @@ export default function OperationsDashboardPage() {
     setGanttGroups(prevGroups => {
       const taskIdsInGroup = new Set<string>()
       const taskToGroupMap = new Map<string, string>() // Map taskId to groupId
-      
+
       // Build maps of existing tasks
       prevGroups.forEach(group => {
         group.tasks.forEach((task: any) => {
@@ -1031,7 +1058,7 @@ export default function OperationsDashboardPage() {
         if (parentId) {
           const parentGroupId = taskToGroupMap.get(parentId)
           if (parentGroupId) return parentGroupId
-          
+
           // Parent might be in a group - search for it
           for (const group of prevGroups) {
             if (group.tasks.some((t: any) => t.id === parentId)) {
@@ -1062,7 +1089,7 @@ export default function OperationsDashboardPage() {
         const newTasksForThisGroup = userTasks.filter((t: any) => {
           // Skip if task already in any group
           if (taskIdsInGroup.has(t.id)) return false
-          
+
           // Check if this task belongs to this group
           const targetGroupId = findGroupForTask(t)
           return targetGroupId === group.id
@@ -1122,7 +1149,7 @@ export default function OperationsDashboardPage() {
 
   const getTimelineDates = () => {
     const dates: Date[] = []
-    const start = new Date(ganttTimelineStart)
+    const start = new Date(ganttTimelineStart || new Date())
     start.setDate(start.getDate() - 7)
 
     if (ganttViewMode === 'days') {
@@ -1273,7 +1300,7 @@ export default function OperationsDashboardPage() {
     if (task?.id && taskColors[task.id]) {
       return { backgroundColor: taskColors[task.id] }
     }
-    
+
     // Fall back to status-based colors
     switch (status) {
       case 'DONE': return 'bg-green-500'
@@ -1568,7 +1595,7 @@ export default function OperationsDashboardPage() {
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.lowStock}</div>
+              <div className="text-2xl font-bold">{stats.lowStockItems}</div>
               <p className="text-xs text-muted-foreground">Items below threshold</p>
             </CardContent>
           </Card>
@@ -1706,7 +1733,16 @@ export default function OperationsDashboardPage() {
         )
 
       case 'myTasks':
-        return <MyTasksWidget />
+        return (
+          <MyTasksWidget
+            tasks={userTasks.filter(task => task.assigneeId === user?.id)}
+            widgetId="myTasks"
+            fullscreen={fullscreenWidget === 'myTasks'}
+            onToggleFullscreen={toggleFullscreen}
+            dashboardType="operations"
+            basePath="/operations-dashboard"
+          />
+        )
 
       case 'metrics':
         return null // Metrics are handled separately in the grid
@@ -1743,292 +1779,350 @@ export default function OperationsDashboardPage() {
 
   // Task view mode handlers
   const taskViewModeHandlers = {
-    list: () => (
-      <div className="space-y-3">
-        {filteredTasks.length > 0 ? (
-          filteredTasks.map((task: any) => {
-            const isTimerActive = activeTimer?.taskId === task.id
-            const timerDisplay = isTimerActive && timerSeconds[task.id]
-              ? formatDuration(timerSeconds[task.id])
-              : '0s'
+    list: () => {
+      const filteredTasks = getFilteredTasks()
+      return (
+        <div className="space-y-3">
+          {filteredTasks.length > 0 ? (
+            filteredTasks.map((task: any) => {
+              const isTimerActive = activeTimer?.taskId === task.id
+              const timerDisplay = isTimerActive && timerSeconds[task.id]
+                ? formatDuration(timerSeconds[task.id])
+                : '0s'
 
-            return (
-              <div
-                key={task.id}
-                className="flex items-start gap-3 p-2 border rounded-lg hover:bg-accent transition-colors"
-              >
+              return (
                 <div
-                  className="flex-1 space-y-1 cursor-pointer"
-                  onClick={() => {
-                    setSelectedTaskId(task.id)
-                    setTaskDetailDialogOpen(true)
-                  }}
+                  key={task.id}
+                  className="flex items-start gap-3 p-2 border rounded-lg hover:bg-accent transition-colors"
                 >
-                  <p className="text-sm font-medium">{task.title}</p>
-                  {task.project && (
-                    <p className="text-xs text-muted-foreground">
-                      {task.project.name}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                      {task.status}
-                    </Badge>
-                    <Badge variant={task.priority === 'HIGH' || task.priority === 'CRITICAL' ? 'destructive' : task.priority === 'MEDIUM' ? 'secondary' : 'default'} className="text-[10px] px-1.5 py-0">
-                      {task.priority}
-                    </Badge>
-                    {task.dueDate && (
-                      <span className="text-xs text-muted-foreground">
-                        Due: {new Date(task.dueDate).toLocaleDateString()}
-                      </span>
+                  <div
+                    className="flex-1 space-y-1 cursor-pointer"
+                    onClick={() => {
+                      setSelectedTaskId(task.id)
+                      setTaskDetailDialogOpen(true)
+                    }}
+                  >
+                    <p className="text-sm font-medium">{task.title}</p>
+                    {task.project && (
+                      <p className="text-xs text-muted-foreground">
+                        {task.project.name}
+                      </p>
                     )}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        {task.status}
+                      </Badge>
+                      <Badge variant={task.priority === 'HIGH' || task.priority === 'CRITICAL' ? 'destructive' : task.priority === 'MEDIUM' ? 'secondary' : 'default'} className="text-[10px] px-1.5 py-0">
+                        {task.priority}
+                      </Badge>
+                      {task.dueDate && (
+                        <span className="text-xs text-muted-foreground">
+                          Due: {new Date(task.dueDate).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {task.source === 'task' && (
-                  <div className="flex flex-col gap-1 items-end">
-                    {isTimerActive ? (
-                      <>
-                        <Badge variant="secondary" className="text-xs animate-pulse">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {timerDisplay}
-                        </Badge>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="h-7 px-2"
-                          onClick={stopTimer}
-                        >
-                          <Pause className="h-3 w-3 mr-1" />
-                          Stop
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2"
-                        onClick={() => startTimer(task.id)}
-                      >
-                        <Play className="h-3 w-3 mr-1" />
-                        Start
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })
-        ) : (
-          <div className="text-center py-8 text-sm text-muted-foreground">
-            No tasks found
-          </div>
-        )}
-      </div>
-    ),
-    calendar: () => (
-      <div className="h-full">
-        {(() => {
-          const tasksByDate: { [key: string]: any[] } = {}
-
-                filteredTasks.forEach(task => {
-                  if (task.dueDate) {
-                    try {
-                      const dueDate = new Date(task.dueDate)
-                      if (!isNaN(dueDate.getTime())) {
-                        const dateKey = dueDate.toISOString().split('T')[0]
-                        if (!tasksByDate[dateKey]) {
-                          tasksByDate[dateKey] = []
-                        }
-                        tasksByDate[dateKey].push(task)
-                      }
-                    } catch (error) {
-                      console.error('Error parsing due date for task:', task.id, task.dueDate, error)
-                    }
-                  }
-                })
-
-                if (!calendarDate) {
-                  return <div className="p-4 text-center text-muted-foreground">Loading calendar...</div>
-                }
-
-                const currentMonth = calendarDate.getMonth()
-                const currentYear = calendarDate.getFullYear()
-                const firstDay = new Date(currentYear, currentMonth, 1)
-                const lastDay = new Date(currentYear, currentMonth + 1, 0)
-                const daysInMonth = lastDay.getDate()
-                const startingDayOfWeek = firstDay.getDay()
-
-                const calendarDays = []
-                const now = new Date()
-                const today = now.getDate()
-                const isCurrentMonth = now.getMonth() === currentMonth && now.getFullYear() === currentYear
-
-                for (let i = 0; i < startingDayOfWeek; i++) {
-                  calendarDays.push(null)
-                }
-
-                for (let day = 1; day <= daysInMonth; day++) {
-                  calendarDays.push(day)
-                }
-
-                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                  'July', 'August', 'September', 'October', 'November', 'December']
-                const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
-                const goToPreviousMonth = () => {
-                  setCalendarDate(new Date(currentYear, currentMonth - 1, 1))
-                }
-
-                const goToNextMonth = () => {
-                  setCalendarDate(new Date(currentYear, currentMonth + 1, 1))
-                }
-
-                const goToToday = () => {
-                  setCalendarDate(new Date())
-                }
-
-                return (
-                  <div className="flex flex-col h-full">
-                    <div className="mb-3 pb-2 border-b flex items-center justify-between">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={goToPreviousMonth}
-                        className="h-7 px-2"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold">
-                          {monthNames[currentMonth]} {currentYear}
-                        </h3>
+                  {task.source === 'task' && (
+                    <div className="flex flex-col gap-1 items-end">
+                      {isTimerActive ? (
+                        <>
+                          <Badge variant="secondary" className="text-xs animate-pulse">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {timerDisplay}
+                          </Badge>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-7 px-2"
+                            onClick={stopTimer}
+                          >
+                            <Pause className="h-3 w-3 mr-1" />
+                            Stop
+                          </Button>
+                        </>
+                      ) : (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={goToToday}
-                          className="h-6 px-2 text-xs"
+                          className="h-7 px-2"
+                          onClick={() => startTimer(task.id)}
                         >
-                          Today
+                          <Play className="h-3 w-3 mr-1" />
+                          Start
                         </Button>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={goToNextMonth}
-                        className="h-7 px-2"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+                      )}
                     </div>
+                  )}
+                </div>
+              )
+            })
+          ) : (
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              No tasks found
+            </div>
+          )}
+        </div>
+      )
+    },
+    calendar: () => {
+      const filteredTasks = getFilteredTasks()
+      return (
+        <div className="h-full">
+          {(() => {
+            const tasksByDate: { [key: string]: any[] } = {}
 
-                    <div className="grid grid-cols-7 gap-1 mb-2">
-                      {dayNames.map(day => (
-                        <div key={day} className="text-center text-xs font-semibold text-muted-foreground py-1">
+            filteredTasks.forEach(task => {
+              if (task.dueDate) {
+                try {
+                  const dueDate = new Date(task.dueDate)
+                  if (!isNaN(dueDate.getTime())) {
+                    const dateKey = dueDate.toISOString().split('T')[0]
+                    if (!tasksByDate[dateKey]) {
+                      tasksByDate[dateKey] = []
+                    }
+                    tasksByDate[dateKey].push(task)
+                  }
+                } catch (error) {
+                  console.error('Error parsing due date for task:', task.id, task.dueDate, error)
+                }
+              }
+            })
+
+            if (!calendarDate) {
+              return <div className="p-4 text-center text-muted-foreground">Loading calendar...</div>
+            }
+
+            const currentMonth = calendarDate.getMonth()
+            const currentYear = calendarDate.getFullYear()
+            const firstDay = new Date(currentYear, currentMonth, 1)
+            const lastDay = new Date(currentYear, currentMonth + 1, 0)
+            const daysInMonth = lastDay.getDate()
+            const startingDayOfWeek = firstDay.getDay()
+
+            const calendarDays = []
+            const now = new Date()
+            const today = now.getDate()
+            const isCurrentMonth = now.getMonth() === currentMonth && now.getFullYear() === currentYear
+
+            for (let i = 0; i < startingDayOfWeek; i++) {
+              calendarDays.push(null)
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+              calendarDays.push(day)
+            }
+
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+              'July', 'August', 'September', 'October', 'November', 'December']
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+            const goToPreviousMonth = () => {
+              setCalendarDate(new Date(currentYear, currentMonth - 1, 1))
+            }
+
+            const goToNextMonth = () => {
+              setCalendarDate(new Date(currentYear, currentMonth + 1, 1))
+            }
+
+            const goToToday = () => {
+              setCalendarDate(new Date())
+            }
+
+            return (
+              <div className="flex flex-col h-full">
+                <div className="mb-3 pb-2 border-b flex items-center justify-between">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={goToPreviousMonth}
+                    className="h-7 px-2"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold">
+                      {monthNames[currentMonth]} {currentYear}
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToToday}
+                      className="h-6 px-2 text-xs"
+                    >
+                      Today
+                    </Button>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={goToNextMonth}
+                    className="h-7 px-2"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {dayNames.map(day => (
+                    <div key={day} className="text-center text-xs font-semibold text-muted-foreground py-1">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-1 flex-1 overflow-auto">
+                  {calendarDays.map((day, index) => {
+                    if (day === null) {
+                      return <div key={`empty-${index}`} className="bg-muted/20 rounded-lg" />
+                    }
+
+                    const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                    const tasksForDay = tasksByDate[dateKey] || []
+                    const isTodayDate = isCurrentMonth && day === today
+                    const isPast = new Date(dateKey) < new Date(now.toISOString().split('T')[0])
+
+                    return (
+                      <div
+                        key={day}
+                        className={cn(
+                          "border rounded-lg p-2 min-h-[80px] flex flex-col",
+                          isTodayDate && "border-primary bg-primary/5 border-2",
+                          isPast && tasksForDay.length > 0 && "bg-destructive/5",
+                          !isTodayDate && !isPast && "hover:bg-accent"
+                        )}
+                      >
+                        <div className={cn(
+                          "text-sm font-semibold mb-1",
+                          isTodayDate && "text-primary",
+                          isPast && "text-muted-foreground"
+                        )}>
                           {day}
                         </div>
-                      ))}
-                    </div>
 
-                    <div className="grid grid-cols-7 gap-1 flex-1 overflow-auto">
-                      {calendarDays.map((day, index) => {
-                        if (day === null) {
-                          return <div key={`empty-${index}`} className="bg-muted/20 rounded-lg" />
-                        }
-
-                        const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                        const tasksForDay = tasksByDate[dateKey] || []
-                        const isTodayDate = isCurrentMonth && day === today
-                        const isPast = new Date(dateKey) < new Date(now.toISOString().split('T')[0])
-
-                        return (
-                          <div
-                            key={day}
-                            className={cn(
-                              "border rounded-lg p-2 min-h-[80px] flex flex-col",
-                              isTodayDate && "border-primary bg-primary/5 border-2",
-                              isPast && tasksForDay.length > 0 && "bg-destructive/5",
-                              !isTodayDate && !isPast && "hover:bg-accent"
-                            )}
-                          >
-                            <div className={cn(
-                              "text-sm font-semibold mb-1",
-                              isTodayDate && "text-primary",
-                              isPast && "text-muted-foreground"
-                            )}>
-                              {day}
-                            </div>
-
-                            <div className="space-y-1 flex-1 overflow-y-auto">
-                              {tasksForDay.map(task => (
-                                <div
-                                  key={task.id}
-                                  className={cn(
-                                    "text-[10px] px-1.5 py-1 rounded cursor-pointer truncate",
-                                    task.priority === 'CRITICAL' && "bg-red-500 text-white",
-                                    task.priority === 'HIGH' && "bg-orange-500 text-white",
-                                    task.priority === 'MEDIUM' && "bg-yellow-500 text-white",
-                                    task.priority === 'LOW' && "bg-blue-500 text-white",
-                                    "hover:opacity-80 transition-opacity"
-                                  )}
-                                  onClick={() => {
-                                    setSelectedTaskId(task.id)
-                                    setTaskDetailDialogOpen(true)
-                                  }}
-                                  title={task.title}
-                                >
-                                  {task.title}
-                                </div>
-                              ))}
-                            </div>
-
-                            {tasksForDay.length > 0 && (
-                              <div className="text-[10px] text-muted-foreground text-center mt-1">
-                                {tasksForDay.length} task{tasksForDay.length !== 1 ? 's' : ''}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {filteredTasks.some(t => !t.dueDate) && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="text-xs font-semibold text-muted-foreground mb-2">
-                          No Due Date ({filteredTasks.filter(t => !t.dueDate).length})
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {filteredTasks.filter(t => !t.dueDate).map(task => (
+                        <div className="space-y-1 flex-1 overflow-y-auto">
+                          {tasksForDay.map(task => (
                             <div
                               key={task.id}
                               className={cn(
-                                "text-[10px] px-2 py-1 rounded cursor-pointer",
+                                "text-[10px] px-1.5 py-1 rounded cursor-pointer truncate",
                                 task.priority === 'CRITICAL' && "bg-red-500 text-white",
                                 task.priority === 'HIGH' && "bg-orange-500 text-white",
                                 task.priority === 'MEDIUM' && "bg-yellow-500 text-white",
                                 task.priority === 'LOW' && "bg-blue-500 text-white",
-                                "hover:opacity-80"
+                                "hover:opacity-80 transition-opacity"
                               )}
                               onClick={() => {
                                 setSelectedTaskId(task.id)
                                 setTaskDetailDialogOpen(true)
                               }}
+                              title={task.title}
                             >
                               {task.title}
                             </div>
                           ))}
                         </div>
+
+                        {tasksForDay.length > 0 && (
+                          <div className="text-[10px] text-muted-foreground text-center mt-1">
+                            {tasksForDay.length} task{tasksForDay.length !== 1 ? 's' : ''}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    )
+                  })}
+                </div>
+
+                {filteredTasks.some(t => !t.dueDate) && (
+                  <div className="mt-3 pt-3 border-t">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2">
+                      No Due Date ({filteredTasks.filter(t => !t.dueDate).length})
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {filteredTasks.filter(t => !t.dueDate).map(task => (
+                        <div
+                          key={task.id}
+                          className={cn(
+                            "text-[10px] px-2 py-1 rounded cursor-pointer",
+                            task.priority === 'CRITICAL' && "bg-red-500 text-white",
+                            task.priority === 'HIGH' && "bg-orange-500 text-white",
+                            task.priority === 'MEDIUM' && "bg-yellow-500 text-white",
+                            task.priority === 'LOW' && "bg-blue-500 text-white",
+                            "hover:opacity-80"
+                          )}
+                          onClick={() => {
+                            setSelectedTaskId(task.id)
+                            setTaskDetailDialogOpen(true)
+                          }}
+                        >
+                          {task.title}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                )
-              })()}
-            </div>
-          )
-      }
-    }
+                )}
+              </div>
+            )
+          })()}
+        </div>
+      )
+    },
+    kanban: () => {
+      const filteredTasks = getFilteredTasks()
+      return (
+        <div className="h-full overflow-auto bg-gradient-to-br from-background to-muted/20">
+          <div className="flex gap-4 min-w-[1000px] pb-6 px-1">
+            {[
+              {
+                id: 'TODO',
+                name: 'To Do',
+                icon: '📋',
+                dragOverClasses: 'border-blue-400 shadow-lg shadow-blue-500/20 bg-blue-50/50',
+                dragOverBadgeClasses: 'bg-blue-100 text-blue-700 border-blue-300',
+                dragOverContentClasses: 'bg-blue-50/30 border-2 border-blue-300 border-dashed',
+                dragOverEmptyClasses: 'border-blue-400 bg-blue-50/50 text-blue-700'
+              },
+              {
+                id: 'IN_PROGRESS',
+                name: 'In Progress',
+                icon: '⚡',
+                dragOverClasses: 'border-amber-400 shadow-lg shadow-amber-500/20 bg-amber-50/50',
+                dragOverBadgeClasses: 'bg-amber-100 text-amber-700 border-amber-300',
+                dragOverContentClasses: 'bg-amber-50/30 border-2 border-amber-300 border-dashed',
+                dragOverEmptyClasses: 'border-amber-400 bg-amber-50/50 text-amber-700'
+              },
+              {
+                id: 'IN_REVIEW',
+                name: 'In Review',
+                icon: '📋',
+                dragOverClasses: 'border-purple-400 shadow-lg shadow-purple-500/20 bg-purple-50/50',
+                dragOverBadgeClasses: 'bg-purple-100 text-purple-700 border-purple-300',
+                dragOverContentClasses: 'bg-purple-50/30 border-2 border-purple-300 border-dashed',
+                dragOverEmptyClasses: 'border-purple-400 bg-purple-50/50 text-purple-700'
+              },
+              {
+                id: 'DONE',
+                name: 'Done',
+                icon: '✅',
+                dragOverClasses: 'border-green-400 shadow-lg shadow-green-500/20 bg-green-50/50',
+                dragOverBadgeClasses: 'bg-green-100 text-green-700 border-green-300',
+                dragOverContentClasses: 'bg-green-50/30 border-2 border-green-300 border-dashed',
+                dragOverEmptyClasses: 'border-green-400 bg-green-50/50 text-green-700'
+              },
+            ].map((column) => {
+              const columnTasks = filteredTasks.filter((task: any) => {
+                const taskStatus = task.status || 'TODO'
+                return taskStatus === column.id
+              })
+              return <div key={column.id}>Kanban Column</div>
+            })}
+          </div>
+        </div>
+      )
+    },
+    gantt: () => null,
   }
 
   // Use taskViewModeHandlers
@@ -2049,1288 +2143,218 @@ export default function OperationsDashboardPage() {
     if (taskViewMode === 'calendar') {
       return taskViewModeHandlers.calendar()
     } else if (taskViewMode === 'kanban') {
+      const filteredTasks = getFilteredTasks()
       return (
-            <div className="h-full overflow-auto bg-gradient-to-br from-background to-muted/20">
-              <div className="flex gap-4 min-w-[1000px] pb-6 px-1">
-                {[
-                  {
-                    id: 'TODO',
-                    name: 'To Do',
-                    icon: '📋',
-                    dragOverClasses: 'border-blue-400 shadow-lg shadow-blue-500/20 bg-blue-50/50',
-                    dragOverBadgeClasses: 'bg-blue-100 text-blue-700 border-blue-300',
-                    dragOverContentClasses: 'bg-blue-50/30 border-2 border-blue-300 border-dashed',
-                    dragOverEmptyClasses: 'border-blue-400 bg-blue-50/50 text-blue-700'
-                  },
-                  {
-                    id: 'IN_PROGRESS',
-                    name: 'In Progress',
-                    icon: '⚡',
-                    dragOverClasses: 'border-amber-400 shadow-lg shadow-amber-500/20 bg-amber-50/50',
-                    dragOverBadgeClasses: 'bg-amber-100 text-amber-700 border-amber-300',
-                    dragOverContentClasses: 'bg-amber-50/30 border-2 border-amber-300 border-dashed',
-                    dragOverEmptyClasses: 'border-amber-400 bg-amber-50/50 text-amber-700'
-                  },
-                  {
-                    id: 'IN_REVIEW',
-                    name: 'In Review',
-                    icon: '📋',
-                    dragOverClasses: 'border-purple-400 shadow-lg shadow-purple-500/20 bg-purple-50/50',
-                    dragOverBadgeClasses: 'bg-purple-100 text-purple-700 border-purple-300',
-                    dragOverContentClasses: 'bg-purple-50/30 border-2 border-purple-300 border-dashed',
-                    dragOverEmptyClasses: 'border-purple-400 bg-purple-50/50 text-purple-700'
-                  },
-                  {
-                    id: 'DONE',
-                    name: 'Done',
-                    icon: '✅',
-                    dragOverClasses: 'border-green-400 shadow-lg shadow-green-500/20 bg-green-50/50',
-                    dragOverBadgeClasses: 'bg-green-100 text-green-700 border-green-300',
-                    dragOverContentClasses: 'bg-green-50/30 border-2 border-green-300 border-dashed',
-                    dragOverEmptyClasses: 'border-green-400 bg-green-50/50 text-green-700'
-                  },
-                ].map((column) => {
-                  const columnTasks = filteredTasks.filter((task: any) => {
-                    const taskStatus = task.status || 'TODO'
-                    return taskStatus === column.id
-                  })
+        <div className="h-full overflow-auto bg-gradient-to-br from-background to-muted/20">
+          <div className="flex gap-4 min-w-[1000px] pb-6 px-1">
+            {[
+              {
+                id: 'TODO',
+                name: 'To Do',
+                icon: '📋',
+                dragOverClasses: 'border-blue-400 shadow-lg shadow-blue-500/20 bg-blue-50/50',
+                dragOverBadgeClasses: 'bg-blue-100 text-blue-700 border-blue-300',
+                dragOverContentClasses: 'bg-blue-50/30 border-2 border-blue-300 border-dashed',
+                dragOverEmptyClasses: 'border-blue-400 bg-blue-50/50 text-blue-700'
+              },
+              {
+                id: 'IN_PROGRESS',
+                name: 'In Progress',
+                icon: '⚡',
+                dragOverClasses: 'border-amber-400 shadow-lg shadow-amber-500/20 bg-amber-50/50',
+                dragOverBadgeClasses: 'bg-amber-100 text-amber-700 border-amber-300',
+                dragOverContentClasses: 'bg-amber-50/30 border-2 border-amber-300 border-dashed',
+                dragOverEmptyClasses: 'border-amber-400 bg-amber-50/50 text-amber-700'
+              },
+              {
+                id: 'IN_REVIEW',
+                name: 'In Review',
+                icon: '📋',
+                dragOverClasses: 'border-purple-400 shadow-lg shadow-purple-500/20 bg-purple-50/50',
+                dragOverBadgeClasses: 'bg-purple-100 text-purple-700 border-purple-300',
+                dragOverContentClasses: 'bg-purple-50/30 border-2 border-purple-300 border-dashed',
+                dragOverEmptyClasses: 'border-purple-400 bg-purple-50/50 text-purple-700'
+              },
+              {
+                id: 'DONE',
+                name: 'Done',
+                icon: '✅',
+                dragOverClasses: 'border-green-400 shadow-lg shadow-green-500/20 bg-green-50/50',
+                dragOverBadgeClasses: 'bg-green-100 text-green-700 border-green-300',
+                dragOverContentClasses: 'bg-green-50/30 border-2 border-green-300 border-dashed',
+                dragOverEmptyClasses: 'border-green-400 bg-green-50/50 text-green-700'
+              },
+            ].map((column) => {
+              const columnTasks = filteredTasks.filter((task: any) => {
+                const taskStatus = task.status || 'TODO'
+                return taskStatus === column.id
+              })
 
-                  const isDragOver = dragOverColumnId === column.id
+              const isDragOver = dragOverColumnId === column.id
 
-                  return (
-                    <div
-                      key={column.id}
-                      data-column-id={column.id}
-                      className="flex flex-col flex-1 min-w-[280px] max-w-[320px]"
-                    >
-                      <div className="mb-4">
+              return (
+                <div
+                  key={column.id}
+                  data-column-id={column.id}
+                  className="flex flex-col flex-1 min-w-[280px] max-w-[320px]"
+                >
+                  <div className="mb-4">
+                    <div className={cn(
+                      "relative flex items-center justify-between px-5 py-4 rounded-xl border",
+                      "bg-gradient-to-br from-card to-card/80 backdrop-blur-sm",
+                      "shadow-sm",
+                      draggingTaskId ? "transition-none" : "transition-all duration-200",
+                      isDragOver
+                        ? column.dragOverClasses
+                        : "border-border/60 hover:border-border hover:shadow-md"
+                    )}>
+                      <div className={cn(
+                        "absolute left-0 top-0 bottom-0 w-1 rounded-l-xl",
+                        column.id === 'TODO' && "bg-gradient-to-b from-blue-500 to-blue-400",
+                        column.id === 'IN_PROGRESS' && "bg-gradient-to-b from-amber-500 to-amber-400",
+                        column.id === 'IN_REVIEW' && "bg-gradient-to-b from-purple-500 to-purple-400",
+                        column.id === 'DONE' && "bg-gradient-to-b from-green-500 to-green-400"
+                      )} />
+
+                      <div className="flex items-center gap-3 pl-1">
                         <div className={cn(
-                          "relative flex items-center justify-between px-5 py-4 rounded-xl border",
-                          "bg-gradient-to-br from-card to-card/80 backdrop-blur-sm",
-                          "shadow-sm",
-                          draggingTaskId ? "transition-none" : "transition-all duration-200",
-                          isDragOver
-                            ? column.dragOverClasses
-                            : "border-border/60 hover:border-border hover:shadow-md"
+                          "flex items-center justify-center w-9 h-9 rounded-lg",
+                          "bg-background/60 backdrop-blur-sm",
+                          column.id === 'TODO' && "bg-blue-50 dark:bg-blue-950/30",
+                          column.id === 'IN_PROGRESS' && "bg-amber-50 dark:bg-amber-950/30",
+                          column.id === 'IN_REVIEW' && "bg-purple-50 dark:bg-purple-950/30",
+                          column.id === 'DONE' && "bg-green-50 dark:bg-green-950/30"
                         )}>
-                          <div className={cn(
-                            "absolute left-0 top-0 bottom-0 w-1 rounded-l-xl",
-                            column.id === 'TODO' && "bg-gradient-to-b from-blue-500 to-blue-400",
-                            column.id === 'IN_PROGRESS' && "bg-gradient-to-b from-amber-500 to-amber-400",
-                            column.id === 'IN_REVIEW' && "bg-gradient-to-b from-purple-500 to-purple-400",
-                            column.id === 'DONE' && "bg-gradient-to-b from-green-500 to-green-400"
-                          )} />
-
-                          <div className="flex items-center gap-3 pl-1">
-                            <div className={cn(
-                              "flex items-center justify-center w-9 h-9 rounded-lg",
-                              "bg-background/60 backdrop-blur-sm",
-                              column.id === 'TODO' && "bg-blue-50 dark:bg-blue-950/30",
-                              column.id === 'IN_PROGRESS' && "bg-amber-50 dark:bg-amber-950/30",
-                              column.id === 'IN_REVIEW' && "bg-purple-50 dark:bg-purple-950/30",
-                              column.id === 'DONE' && "bg-green-50 dark:bg-green-950/30"
-                            )}>
-                              <span className="text-xl leading-none">{column.icon}</span>
-                            </div>
-                            <div className="flex flex-col">
-                              <h3 className="font-semibold text-sm text-foreground leading-tight">
-                                {column.name}
-                              </h3>
-                              <span className="text-[10px] text-muted-foreground/70 font-medium uppercase tracking-wider mt-0.5">
-                                {column.id.replace('_', ' ')}
-                              </span>
-                            </div>
-                          </div>
-
-                          <Badge
-                            variant="secondary"
-                            className={cn(
-                              "text-xs font-semibold min-w-[28px] h-7 px-2.5 justify-center",
-                              "rounded-full shadow-sm",
-                              draggingTaskId ? "transition-none" : "transition-all duration-200",
-                              isDragOver && column.dragOverBadgeClasses,
-                              !isDragOver && column.id === 'TODO' && "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800",
-                              !isDragOver && column.id === 'IN_PROGRESS' && "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
-                              !isDragOver && column.id === 'IN_REVIEW' && "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800",
-                              !isDragOver && column.id === 'DONE' && "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800"
-                            )}
-                          >
-                            {columnTasks.length}
-                          </Badge>
+                          <span className="text-xl leading-none">{column.icon}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <h3 className="font-semibold text-sm text-foreground leading-tight">
+                            {column.name}
+                          </h3>
+                          <span className="text-[10px] text-muted-foreground/70 font-medium uppercase tracking-wider mt-0.5">
+                            {column.id.replace('_', ' ')}
+                          </span>
                         </div>
                       </div>
 
-                      <div
-                        data-drop-zone={column.id}
-                        data-column-id={column.id}
+                      <Badge
+                        variant="secondary"
                         className={cn(
-                          "flex-1 rounded-lg min-h-[500px]",
-                          draggingTaskId ? "transition-none" : "transition-all duration-150",
-                          isDragOver && column.dragOverContentClasses
+                          "text-xs font-semibold min-w-[28px] h-7 px-2.5 justify-center",
+                          "rounded-full shadow-sm",
+                          draggingTaskId ? "transition-none" : "transition-all duration-200",
+                          isDragOver && column.dragOverBadgeClasses,
+                          !isDragOver && column.id === 'TODO' && "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800",
+                          !isDragOver && column.id === 'IN_PROGRESS' && "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
+                          !isDragOver && column.id === 'IN_REVIEW' && "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800",
+                          !isDragOver && column.id === 'DONE' && "bg-green-100 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800"
                         )}
                       >
-                        <div className="p-2 space-y-2.5">
-                          {columnTasks.map((task: any) => {
-                            const taskIsDragging = draggingTaskId === task.id
-                            const isDraggable = task.source === 'task'
-
-                            return (
-                              <div
-                                key={task.id}
-                                onPointerDown={isDraggable ? (e) => onPointerDown(e, task.id) : undefined}
-                                className={cn(
-                                  "group bg-card border rounded-xl p-4 shadow-sm",
-                                  !taskIsDragging && "transition-all duration-200 ease-out",
-                                  !taskIsDragging && "hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5",
-                                  taskIsDragging && "border-primary/50 shadow-lg cursor-grabbing",
-                                  !taskIsDragging && isDraggable && "cursor-grab active:cursor-grabbing",
-                                  !isDraggable && "cursor-pointer opacity-90"
-                                )}
-                                style={isDraggable ? {
-                                  userSelect: 'none',
-                                  WebkitUserSelect: 'none',
-                                  touchAction: 'none',
-                                  WebkitTouchCallout: 'none',
-                                  cursor: 'grab'
-                                } as React.CSSProperties : undefined}
-                                onClick={(e) => {
-                                  if (taskIsDragging || dragRef.current?.taskId === task.id) {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    return
-                                  }
-                                  setSelectedTaskId(task.id)
-                                  setTaskDetailDialogOpen(true)
-                                }}
-                              >
-                                <div className="flex items-start justify-between gap-3 mb-3">
-                                  <p className="text-sm font-medium flex-1 leading-snug text-foreground group-hover:text-primary transition-colors">
-                                    {task.title}
-                                  </p>
-                                  {isDraggable && (
-                                    <GripVertical className="h-4 w-4 text-muted-foreground/40 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <Badge
-                                    variant={
-                                      task.priority === 'HIGH' || task.priority === 'CRITICAL'
-                                        ? 'destructive'
-                                        : task.priority === 'MEDIUM'
-                                          ? 'secondary'
-                                          : 'default'
-                                    }
-                                    className="text-[10px] px-2 py-0.5 font-medium"
-                                  >
-                                    {task.priority}
-                                  </Badge>
-                                  {task.dueDate && (
-                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      {new Date(task.dueDate).toLocaleDateString()}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          })}
-                          {columnTasks.length === 0 && (
-                            <div className={cn(
-                              "text-center text-muted-foreground/60 text-sm py-16 rounded-xl border-2 border-dashed",
-                              draggingTaskId ? "transition-none" : "transition-all duration-150",
-                              isDragOver
-                                ? column.dragOverEmptyClasses
-                                : "border-border/30 hover:border-border/50"
-                            )}>
-                              <div className="flex flex-col items-center gap-2">
-                                <span className="text-2xl opacity-50">{column.icon}</span>
-                                <span className="font-medium">{isDragOver ? 'Drop task here' : 'No tasks'}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="h-full flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between p-3 border-b bg-muted/30 sticky top-0 z-10">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => setIsAddingGanttGroup(true)}
-                    className="text-xs"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add group
-                  </Button>
-                  <Tabs value={ganttViewMode} onValueChange={(v: any) => setGanttViewMode(v)} className="w-auto">
-                    <TabsList className="h-8 p-1">
-                      <TabsTrigger value="days" className="text-xs px-3 py-1">Days</TabsTrigger>
-                      <TabsTrigger value="weeks" className="text-xs px-3 py-1">Weeks</TabsTrigger>
-                      <TabsTrigger value="months" className="text-xs px-3 py-1">Months</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => setTaskViewMode('list')}
-                    title="Close Gantt view"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-auto">
-                <div className="flex min-w-[1200px]">
-                  <div className="w-[400px] border-r bg-background sticky left-0 z-20">
-                    <div className="border-b bg-muted/50 p-2 grid grid-cols-3 gap-2 text-xs font-semibold">
-                      <div>Task</div>
-                      <div>Contributor</div>
-                      <div>Status</div>
-                    </div>
-                    <div className="divide-y">
-                      {ganttGroups.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-muted-foreground">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setIsAddingGanttGroup(true)}
-                            className="mt-2"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add Group
-                          </Button>
-                        </div>
-                      ) : (
-                        ganttGroups.map((group) => (
-                          <div key={group.id}>
-                            <div className="flex items-center justify-between p-2 bg-muted/30 hover:bg-muted/50">
-                              <div className="flex items-center gap-2 flex-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0"
-                                  onClick={() => toggleGroupExpanded(group.id)}
-                                >
-                                  {group.expanded ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4" />
-                                  )}
-                                </Button>
-                                <span className="font-semibold text-sm">{group.name}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 px-2 text-xs"
-                                  onClick={() => addTaskToGanttGroup(group.id)}
-                                >
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  Add task
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  onClick={() => deleteGanttGroup(group.id)}
-                                  title="Delete group"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-
-                            {group.expanded && (
-                              <div>
-                                {group.tasks.filter((task: any) => !task.parentTaskId && !task.parentId).length === 0 ? (
-                                  <div className="p-4 text-center text-xs text-muted-foreground">
-                                    No tasks in this group
-                                  </div>
-                                ) : (
-                                  group.tasks
-                                    .filter((task: any) => !task.parentTaskId && !task.parentId)
-                                    .map((task: any) => {
-                                      const taskStatus = task.status || 'TODO'
-                                      const startDate = task.startDate ? new Date(task.startDate) : task.dueDate ? new Date(task.dueDate) : new Date()
-                                      const endDate = task.dueDate ? new Date(task.dueDate) : addDays(startDate, 1)
-
-                                      return (
-                                        <div key={task.id}>
-                                          {(() => {
-                                            const subtasks = group.tasks.filter((t: any) =>
-                                              (t.parentTaskId === task.id || t.parentId === task.id) && t.id !== task.id
-                                            )
-                                            const hasSubtasks = subtasks.length > 0
-                                            const isExpanded = expandedSubtasks.has(task.id)
-
-                                            return (
-                                              <>
-                                                <div
-                                                  onClick={(e) => {
-                                                    // Don't open dialog if clicking buttons
-                                                    const target = e.target as HTMLElement
-                                                    if (target.closest('button')) {
-                                                      return
-                                                    }
-                                                    setSelectedTaskId(task.id)
-                                                    setTaskDetailDialogOpen(true)
-                                                  }}
-                                                  className="grid grid-cols-3 gap-2 p-2 hover:bg-accent/50 text-xs border-b cursor-pointer transition-colors"
-                                                >
-                                                  <div className="flex items-center gap-1">
-                                                    {hasSubtasks && (
-                                                      <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-4 w-4 p-0"
-                                                        onClick={(e) => {
-                                                          e.stopPropagation()
-                                                          setExpandedSubtasks(prev => {
-                                                            const next = new Set(prev)
-                                                            if (next.has(task.id)) {
-                                                              next.delete(task.id)
-                                                            } else {
-                                                              next.add(task.id)
-                                                            }
-                                                            return next
-                                                          })
-                                                        }}
-                                                      >
-                                                        {isExpanded ? (
-                                                          <ChevronDown className="h-3 w-3" />
-                                                        ) : (
-                                                          <ChevronRight className="h-3 w-3" />
-                                                        )}
-                                                      </Button>
-                                                    )}
-                                                    <span className="font-medium">
-                                                      {task.title || 'Untitled Task'}
-                                                    </span>
-                                                  </div>
-                                                  <div className="flex items-center">
-                                                    {task.assignee ? (
-                                                      <span>{task.assignee.firstName || task.assignee.name || 'Unassigned'}</span>
-                                                    ) : (
-                                                      <span className="text-muted-foreground">Unassigned</span>
-                                                    )}
-                                                  </div>
-                                                  <div className="flex items-center justify-between gap-1">
-                                                    <div className="flex items-center gap-2">
-                                                      <div className={`h-2 w-2 rounded-full ${getStatusDotColor(taskStatus)}`} />
-                                                      <span>{formatStatusText(taskStatus)}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                      <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
-                                                        onClick={(e) => {
-                                                          e.stopPropagation()
-                                                          setAddingTaskToGroup(group.id)
-                                                          setSelectedTaskId(task.id)
-                                                          setTaskDialogOpen(true)
-                                                        }}
-                                                        title="Add subtask"
-                                                      >
-                                                        <Plus className="h-3 w-3" />
-                                                      </Button>
-                                                      <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-5 w-5 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                        onClick={(e) => {
-                                                          e.stopPropagation()
-                                                          deleteGanttTask(group.id, task.id)
-                                                        }}
-                                                        title="Delete task"
-                                                      >
-                                                        <Trash2 className="h-3 w-3" />
-                                                      </Button>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                                {isExpanded && hasSubtasks && (
-                                                  <div className="pl-4 border-l-2 border-muted ml-2">
-                                                    {subtasks.map((subtask: any) => {
-                                                      const subtaskStatus = subtask.status || 'TODO'
-
-                                                      return (
-                                                        <div key={subtask.id}>
-                                                          <div 
-                                                            onClick={(e) => {
-                                                              // Don't open dialog if clicking buttons
-                                                              if ((e.target as HTMLElement).closest('button')) {
-                                                                return
-                                                              }
-                                                              setSelectedTaskId(subtask.id)
-                                                              setTaskDetailDialogOpen(true)
-                                                            }}
-                                                            className="grid grid-cols-3 gap-2 p-2 hover:bg-accent/50 text-xs border-b bg-muted/30 cursor-pointer transition-colors"
-                                                          >
-                                                            <div className="flex items-center font-medium text-[11px]">
-                                                              {subtask.title || 'Untitled Subtask'}
-                                                            </div>
-                                                            <div className="flex items-center text-[11px]">
-                                                              {subtask.assignee ? (
-                                                                <span>{subtask.assignee.firstName || subtask.assignee.name || 'Unassigned'}</span>
-                                                              ) : (
-                                                                <span className="text-muted-foreground">Unassigned</span>
-                                                              )}
-                                                            </div>
-                                                            <div className="flex items-center justify-between gap-1 text-[11px]">
-                                                              <div className="flex items-center gap-2">
-                                                                <div className={`h-2 w-2 rounded-full ${getStatusDotColor(subtaskStatus)}`} />
-                                                                <span>{formatStatusText(subtaskStatus)}</span>
-                                                              </div>
-                                                              <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-4 w-4 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                                onClick={(e) => {
-                                                                  e.stopPropagation()
-                                                                  deleteGanttTask(group.id, subtask.id)
-                                                                }}
-                                                                title="Delete subtask"
-                                                              >
-                                                                <Trash2 className="h-2.5 w-2.5" />
-                                                              </Button>
-                                                            </div>
-                                                          </div>
-                                                        </div>
-                                                      )
-                                                    })}
-                                                  </div>
-                                                )}
-                                              </>
-                                            )
-                                          })()}
-                                        </div>
-                                      )
-                                    })
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      )}
-
-                      {isAddingGanttGroup && (
-                        <div className="p-2 border-b">
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={newGanttGroupName}
-                              onChange={(e) => setNewGanttGroupName(e.target.value)}
-                              placeholder="Group name"
-                              className="h-8 text-xs"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  addGanttGroup()
-                                } else if (e.key === 'Escape') {
-                                  setIsAddingGanttGroup(false)
-                                  setNewGanttGroupName('')
-                                }
-                              }}
-                              autoFocus
-                            />
-                            <Button size="sm" onClick={addGanttGroup} className="h-8">
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setIsAddingGanttGroup(false)
-                                setNewGanttGroupName('')
-                              }}
-                              className="h-8"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
+                        {columnTasks.length}
+                      </Badge>
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-x-auto">
-                    <div className="border-b bg-muted/50 sticky top-0 z-10">
-                      {ganttViewMode === 'days' ? (
-                        <div className="relative">
-                          <div className="border-b relative" style={{ minWidth: `${getTimelineDates().length * getDateWidth()}px`, minHeight: '20px' }}>
-                            {getTimelineDates().map((date, idx) => {
-                              const dateWidth = getDateWidth()
-                              const showMonth = idx === 0 || date.getDate() === 1
-                              const monthName = format(date, 'MMM')
-                              if (!showMonth) return null
-                              let monthSpan = 1
-                              for (let i = idx + 1; i < getTimelineDates().length; i++) {
-                                if (getTimelineDates()[i].getDate() === 1) break
-                                monthSpan++
-                              }
-                              return (
-                                <div
-                                  key={`month-${idx}`}
-                                  className="text-[10px] font-semibold text-muted-foreground p-1 border-r absolute"
-                                  style={{
-                                    left: `${idx * dateWidth}px`,
-                                    minWidth: `${dateWidth * monthSpan}px`,
-                                    width: `${dateWidth * monthSpan}px`,
-                                    top: 0
-                                  }}
-                                >
-                                  {monthName}
-                                </div>
-                              )
-                            })}
-                          </div>
-                          <div className="flex" style={{ minWidth: `${getTimelineDates().length * getDateWidth()}px` }}>
-                            {getTimelineDates().map((date, idx) => {
-                              const dateWidth = getDateWidth()
-                              const isTodayDate = isToday(date)
-                              const dayNum = format(date, 'dd')
-                              const dayName = format(date, 'EEE')
-                              const dayOfWeek = date.getDay()
-                              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-                              return (
-                                <div
-                                  key={`day-${idx}`}
-                                  className={cn(
-                                    "border-r text-center p-1 text-[10px]",
-                                    isTodayDate && "bg-primary text-primary-foreground font-semibold",
-                                    isWeekend && !isTodayDate && "bg-muted/70"
-                                  )}
-                                  style={{ minWidth: `${dateWidth}px`, width: `${dateWidth}px` }}
-                                >
-                                  <div>{dayName}</div>
-                                  <div>{dayNum}</div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      ) : ganttViewMode === 'weeks' ? (
-                        <div className="relative">
-                          <div className="border-b relative" style={{ minWidth: `${getTimelineDates().length * getDateWidth()}px`, minHeight: '20px' }}>
-                            {getTimelineDates().map((date, idx) => {
-                              const dateWidth = getDateWidth()
-                              const showMonth = idx === 0 || date.getDate() <= 7
-                              const monthName = format(date, 'MMM')
-                              if (!showMonth) return null
-                              let monthSpan = 1
-                              for (let i = idx + 1; i < getTimelineDates().length; i++) {
-                                const nextDate = getTimelineDates()[i]
-                                if (nextDate.getDate() <= 7 && (nextDate.getMonth() !== date.getMonth() || nextDate.getFullYear() !== date.getFullYear())) break
-                                monthSpan++
-                              }
-                              return (
-                                <div
-                                  key={`month-${idx}`}
-                                  className="text-[10px] font-semibold text-muted-foreground p-1 border-r absolute"
-                                  style={{
-                                    left: `${idx * dateWidth}px`,
-                                    minWidth: `${dateWidth * monthSpan}px`,
-                                    width: `${dateWidth * monthSpan}px`,
-                                    top: 0
-                                  }}
-                                >
-                                  {monthName}
-                                </div>
-                              )
-                            })}
-                          </div>
-                          <div className="flex" style={{ minWidth: `${getTimelineDates().length * getDateWidth()}px` }}>
-                            {getTimelineDates().map((date, idx) => {
-                              const dateWidth = getDateWidth()
-                              const isTodayDate = isToday(date) || (date <= new Date() && addDays(date, 7) > new Date())
-                              const weekStart = format(date, 'MMM dd')
-                              const weekEnd = format(addDays(date, 6), 'MMM dd')
-                              return (
-                                <div
-                                  key={`week-${idx}`}
-                                  className={cn(
-                                    "border-r text-center p-1 text-[10px]",
-                                    isTodayDate && "bg-primary text-primary-foreground font-semibold"
-                                  )}
-                                  style={{ minWidth: `${dateWidth}px`, width: `${dateWidth}px` }}
-                                >
-                                  <div className="font-semibold">{weekStart}</div>
-                                  <div className="text-[9px]">{weekEnd}</div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex" style={{ minWidth: `${getTimelineDates().length * getDateWidth()}px` }}>
-                          {getTimelineDates().map((date, idx) => {
-                            const dateWidth = getDateWidth()
-                            const isTodayDate = date.getMonth() === new Date().getMonth() && date.getFullYear() === new Date().getFullYear()
-                            const year = format(date, 'yyyy')
-                            const monthFull = format(date, 'MMMM')
-                            return (
-                              <div
-                                key={idx}
-                                className={cn(
-                                  "border-r text-center p-2 text-[11px] font-semibold",
-                                  isTodayDate && "bg-primary text-primary-foreground"
-                                )}
-                                style={{ minWidth: `${dateWidth}px`, width: `${dateWidth}px` }}
-                              >
-                                <div>{monthFull}</div>
-                                <div className="text-[9px] opacity-80">{year}</div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </div>
+                  <div
+                    data-drop-zone={column.id}
+                    data-column-id={column.id}
+                    className={cn(
+                      "flex-1 rounded-lg min-h-[500px]",
+                      draggingTaskId ? "transition-none" : "transition-all duration-150",
+                      isDragOver && column.dragOverContentClasses
+                    )}
+                  >
+                    <div className="p-2 space-y-2.5">
+                      {columnTasks.map((task: any) => {
+                        const taskIsDragging = draggingTaskId === task.id
+                        const isDraggable = task.source === 'task'
 
-                    <div className="relative h-full">
-                      {ganttViewMode === 'days' && getTimelineDates().map((date, idx) => {
-                        const dateWidth = getDateWidth()
-                        const dayOfWeek = date.getDay()
-                        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-                        if (!isWeekend) return null
                         return (
                           <div
-                            key={`weekend-${idx}`}
-                            className="absolute top-0 bottom-0 bg-muted/40 z-0"
-                            style={{
-                              left: `${idx * dateWidth}px`,
-                              width: `${dateWidth}px`
+                            key={task.id}
+                            onPointerDown={isDraggable ? (e) => onPointerDown(e, task.id) : undefined}
+                            className={cn(
+                              "group bg-card border rounded-xl p-4 shadow-sm",
+                              !taskIsDragging && "transition-all duration-200 ease-out",
+                              !taskIsDragging && "hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5",
+                              taskIsDragging && "border-primary/50 shadow-lg cursor-grabbing",
+                              !taskIsDragging && isDraggable && "cursor-grab active:cursor-grabbing",
+                              !isDraggable && "cursor-pointer opacity-90"
+                            )}
+                            style={isDraggable ? {
+                              userSelect: 'none',
+                              WebkitUserSelect: 'none',
+                              touchAction: 'none',
+                              WebkitTouchCallout: 'none',
+                              cursor: 'grab'
+                            } as React.CSSProperties : undefined}
+                            onClick={(e) => {
+                              if (taskIsDragging || dragRef.current?.taskId === task.id) {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                return
+                              }
+                              setSelectedTaskId(task.id)
+                              setTaskDetailDialogOpen(true)
                             }}
-                          />
+                          >
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <p className="text-sm font-medium flex-1 leading-snug text-foreground group-hover:text-primary transition-colors">
+                                {task.title}
+                              </p>
+                              {isDraggable && (
+                                <GripVertical className="h-4 w-4 text-muted-foreground/40 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge
+                                variant={
+                                  task.priority === 'HIGH' || task.priority === 'CRITICAL'
+                                    ? 'destructive'
+                                    : task.priority === 'MEDIUM'
+                                      ? 'secondary'
+                                      : 'default'
+                                }
+                                className="text-[10px] px-2 py-0.5 font-medium"
+                              >
+                                {task.priority}
+                              </Badge>
+                              {task.dueDate && (
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {new Date(task.dueDate).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         )
                       })}
-                      {(() => {
-                        const todayPos = getTodayPosition()
-                        const timelineDates = getTimelineDates()
-                        const dateWidth = getDateWidth()
-                        if (todayPos >= 0 && todayPos < timelineDates.length * dateWidth) {
-                          return (
-                            <div
-                              className="absolute top-0 bottom-0 w-0.5 bg-primary z-30"
-                              style={{ left: `${todayPos}px` }}
-                            >
-                              <div className="absolute -top-3 -left-2 bg-primary text-primary-foreground text-[10px] px-1 rounded">
-                                Today
-                              </div>
-                            </div>
-                          )
-                        }
-                        return null
-                      })()}
-
-                      <svg
-                        className="absolute top-0 left-0 w-full h-full z-20"
-                        style={{ overflow: 'visible' }}
-                      >
-                        <defs>
-                          <marker
-                            id="arrowhead"
-                            markerWidth="6"
-                            markerHeight="6"
-                            refX="5"
-                            refY="2.5"
-                            orient="auto"
-                          >
-                            <polygon points="0 0, 6 2.5, 0 5" fill="#3b82f6" />
-                          </marker>
-                        </defs>
-                        {getDependencyConnectors().map((connector, idx) => {
-                          const { fromX, fromY, toX, toY, fromTask, toTask } = connector
-                          const dx = toX - fromX
-                          const dy = toY - fromY
-                          const midX = fromX + Math.abs(dx) * 0.5
-                          const pathData = `M ${fromX} ${fromY} L ${midX} ${fromY} L ${midX} ${toY} L ${toX - 4} ${toY}`
-                          const isHovered = hoveredConnector === idx
-                          const labelX = connectorMousePos ? connectorMousePos.x + 15 : midX + 15
-                          const labelY = connectorMousePos ? connectorMousePos.y - 25 : (fromY + toY) / 2 - 25
-
-                          return (
-                            <g key={idx}>
-                              <path
-                                d={pathData}
-                                stroke="transparent"
-                                strokeWidth="20"
-                                fill="none"
-                                className="cursor-pointer"
-                                onMouseEnter={() => setHoveredConnector(idx)}
-                                onMouseLeave={() => {
-                                  setHoveredConnector(null)
-                                  setConnectorMousePos(null)
-                                }}
-                                onMouseMove={(e) => {
-                                  if (isHovered) {
-                                    const svg = e.currentTarget.ownerSVGElement
-                                    if (svg) {
-                                      const pt = svg.createSVGPoint()
-                                      pt.x = e.clientX
-                                      pt.y = e.clientY
-                                      const svgPt = pt.matrixTransform(svg.getScreenCTM()?.inverse())
-                                      setConnectorMousePos({ x: svgPt.x, y: svgPt.y })
-                                    }
-                                  }
-                                }}
-                              />
-                              <path
-                                d={pathData}
-                                stroke="#3b82f6"
-                                strokeWidth="1.5"
-                                fill="none"
-                                markerEnd="url(#arrowhead)"
-                                opacity={isHovered ? "1" : "0.7"}
-                                className="pointer-events-none transition-opacity"
-                              />
-                              {isHovered && connectorMousePos && (
-                                <g className="pointer-events-none">
-                                  <rect
-                                    x={labelX - 85}
-                                    y={labelY - 22}
-                                    width="170"
-                                    height="44"
-                                    fill="white"
-                                    stroke="#3b82f6"
-                                    strokeWidth="1.5"
-                                    rx="6"
-                                    className="drop-shadow-lg"
-                                  />
-                                  <text
-                                    x={labelX}
-                                    y={labelY - 8}
-                                    textAnchor="middle"
-                                    fontSize="11"
-                                    fill="#1e40af"
-                                    fontWeight="600"
-                                  >
-                                    {fromTask.title?.substring(0, 20) || 'Task'}
-                                  </text>
-                                  <text
-                                    x={labelX}
-                                    y={labelY + 4}
-                                    textAnchor="middle"
-                                    fontSize="9"
-                                    fill="#64748b"
-                                    fontWeight="500"
-                                  >
-                                    depends on
-                                  </text>
-                                  <text
-                                    x={labelX}
-                                    y={labelY + 16}
-                                    textAnchor="middle"
-                                    fontSize="11"
-                                    fill="#1e40af"
-                                    fontWeight="600"
-                                  >
-                                    {toTask.title?.substring(0, 20) || 'Task'}
-                                  </text>
-                                </g>
-                              )}
-                            </g>
-                          )
-                        })}
-                      </svg>
-
-                      <div className="divide-y">
-                        {ganttGroups.map((group) => (
-                          <div key={group.id}>
-                            {!group.expanded && (
-                              <div className="h-10 border-b" style={{ minWidth: `${getTimelineDates().length * getDateWidth()}px` }} />
-                            )}
-
-                            {group.expanded && (
-                              <>
-                                {group.tasks.length === 0 ? (
-                                  <div className="h-10 border-b" style={{ minWidth: `${getTimelineDates().length * getDateWidth()}px` }} />
-                                ) : (
-                                  group.tasks.map((task: any) => {
-                                    const taskStatus = task.status || 'TODO'
-                                    const startDate = task.startDate ? new Date(task.startDate) : task.dueDate ? new Date(task.dueDate) : new Date()
-                                    const endDate = task.dueDate ? new Date(task.dueDate) : addDays(startDate, 1)
-                                    const position = getTaskPosition(startDate, endDate)
-                                    const timelineDates = getTimelineDates()
-                                    const dateWidth = getDateWidth()
-                                    const maxPosition = timelineDates.length * dateWidth
-
-                                    return (
-                                      <div
-                                        key={task.id}
-                                        className="relative h-10 border-b"
-                                        style={{ minWidth: `${maxPosition}px` }}
-                                      >
-                                        {position.left >= 0 && position.left < maxPosition && (() => {
-                                          const statusColorResult = getStatusColor(taskStatus, task)
-                                          const customColor = typeof statusColorResult === 'object' ? statusColorResult.backgroundColor : null
-                                          const bgClass = typeof statusColorResult === 'string' ? statusColorResult : ''
-                                          
-                                          return (
-                                            <div
-                                              className={cn(
-                                                "absolute top-1 h-6 rounded flex items-center px-2 text-[10px] text-white font-medium cursor-pointer hover:opacity-90 transition-opacity",
-                                                !customColor && bgClass
-                                              )}
-                                              style={{
-                                                left: `${position.left}px`,
-                                                width: `${position.width}px`,
-                                                minWidth: '60px',
-                                                ...(customColor ? { backgroundColor: customColor } : {})
-                                              }}
-                                              onClick={() => {
-                                                setSelectedTaskId(task.id)
-                                                setTaskDetailDialogOpen(true)
-                                              }}
-                                              title={task.title}
-                                            >
-      // Inventory Metrics
-      case 'metric-totalInventory':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Inventory</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalInventory}</div>
-              <p className="text-xs text-muted-foreground">Inventory items</p>
-            </CardContent>
-          </Card>
-        )
-
-      case 'metric-lowStock':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.lowStockItems}</div>
-              <p className="text-xs text-muted-foreground">Requires reorder</p>
-            </CardContent>
-          </Card>
-        )
-
-      // Charts
-      case 'chart-resources':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Resources Trends</CardTitle>
-                <Link href="/operations-dashboard/resources">
-                  <Button variant="ghost" size="sm">
-                    View All <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={resourcesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Area type="monotone" dataKey="Capacity" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} name="Capacity %" />
-                  <Area type="monotone" dataKey="Attendance" stackId="2" stroke="#10b981" fill="#10b981" fillOpacity={0.6} name="Attendance %" />
-                  <Line type="monotone" dataKey="Attrition" stroke="#ef4444" strokeWidth={2} name="Attrition %" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )
-
-      case 'chart-performance':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Performance Metrics</CardTitle>
-                <Link href="/operations-dashboard/performance">
-                  <Button variant="ghost" size="sm">
-                    View All <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="TAT" stroke="#3b82f6" strokeWidth={2} name="TAT (hours)" />
-                  <Line yAxisId="left" type="monotone" dataKey="Backlog" stroke="#f59e0b" strokeWidth={2} name="Backlog" />
-                  <Line yAxisId="right" type="monotone" dataKey="Quality" stroke="#10b981" strokeWidth={2} name="Quality %" />
-                  <Line yAxisId="right" type="monotone" dataKey="Errors" stroke="#ef4444" strokeWidth={2} name="Error Rate %" />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )
-
-      case 'chart-compliance':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Compliance Status</CardTitle>
-                <Link href="/operations-dashboard/compliance">
-                  <Button variant="ghost" size="sm">
-                    View All <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={complianceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="Completed" fill="#10b981" name="Completed" />
-                  <Bar dataKey="Pending" fill="#f59e0b" name="Pending" />
-                  <Bar dataKey="Overdue" fill="#ef4444" name="Overdue" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )
-
-      case 'chart-inventory':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Inventory by Category</CardTitle>
-                <Link href="/operations-dashboard/inventory">
-                  <Button variant="ghost" size="sm">
-                    View All <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={inventoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percentage }) => `${name} ${percentage}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {inventoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )
-
-      // Quick Actions
-      case 'quick-actions':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common operations and tasks</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <div className="grid grid-cols-2 gap-3">
-                <Link href="/operations-dashboard/resources?tab=capacity">
-                  <Button variant="outline" className="w-full justify-start h-auto py-3">
-                    <Users className="mr-2 h-4 w-4" />
-                    <div className="text-left">
-                      <div className="font-medium">Capacity</div>
-                      <div className="text-xs text-muted-foreground">Manage resources</div>
-                    </div>
-                  </Button>
-                </Link>
-                <Link href="/operations-dashboard/resources?tab=attendance">
-                  <Button variant="outline" className="w-full justify-start h-auto py-3">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <div className="text-left">
-                      <div className="font-medium">Attendance</div>
-                      <div className="text-xs text-muted-foreground">Track attendance</div>
-                    </div>
-                  </Button>
-                </Link>
-                <Link href="/operations-dashboard/performance?tab=kpis">
-                  <Button variant="outline" className="w-full justify-start h-auto py-3">
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    <div className="text-left">
-                      <div className="font-medium">KPIs</div>
-                      <div className="text-xs text-muted-foreground">View metrics</div>
-                    </div>
-                  </Button>
-                </Link>
-                <Link href="/operations-dashboard/compliance?tab=incidents">
-                  <Button variant="outline" className="w-full justify-start h-auto py-3">
-                    <AlertTriangle className="mr-2 h-4 w-4" />
-                    <div className="text-left">
-                      <div className="font-medium">Incidents</div>
-                      <div className="text-xs text-muted-foreground">Report incident</div>
-                    </div>
-                  </Button>
-                </Link>
-                <Link href="/operations-dashboard/inventory?tab=distribution">
-                  <Button variant="outline" className="w-full justify-start h-auto py-3">
-                    <Package className="mr-2 h-4 w-4" />
-                    <div className="text-left">
-                      <div className="font-medium">Distribute</div>
-                      <div className="text-xs text-muted-foreground">Move inventory</div>
-                    </div>
-                  </Button>
-                </Link>
-                <Link href="/operations-dashboard/resources?tab=trainings">
-                  <Button variant="outline" className="w-full justify-start h-auto py-3">
-                    <GraduationCap className="mr-2 h-4 w-4" />
-                    <div className="text-left">
-                      <div className="font-medium">Trainings</div>
-                      <div className="text-xs text-muted-foreground">Assign training</div>
-                    </div>
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        )
-
-      // Recent Activities
-      case 'recent-activities':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <CardTitle>Recent Activities</CardTitle>
-              <CardDescription>Latest operations updates</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              {recentActivities.length === 0 ? (
-                <div className="text-center py-8 text-sm text-muted-foreground">
-                  No recent activities
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className={`p-2 rounded-full ${activity.type === 'DISTRIBUTION' ? 'bg-blue-100 dark:bg-blue-900/30' :
-                          activity.type === 'TRAINING' ? 'bg-purple-100 dark:bg-purple-900/30' :
-                            activity.type === 'INCIDENT' ? 'bg-red-100 dark:bg-red-900/30' :
-                              activity.type === 'PERFORMANCE' ? 'bg-green-100 dark:bg-green-900/30' :
-                                'bg-orange-100 dark:bg-orange-900/30'
-                        }`}>
-                        {activity.type === 'DISTRIBUTION' ? <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" /> :
-                          activity.type === 'TRAINING' ? <GraduationCap className="h-4 w-4 text-purple-600 dark:text-purple-400" /> :
-                            activity.type === 'INCIDENT' ? <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" /> :
-                              activity.type === 'PERFORMANCE' ? <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" /> :
-                                <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{activity.description}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant={activity.status === 'COMPLETED' || activity.status === 'SUCCESS' ? 'default' : activity.status === 'WARNING' ? 'secondary' : 'destructive'} className="text-xs">
-                            {activity.status}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">{activity.time}</span>
+                      {columnTasks.length === 0 && (
+                        <div className={cn(
+                          "text-center text-muted-foreground/60 text-sm py-16 rounded-xl border-2 border-dashed",
+                          draggingTaskId ? "transition-none" : "transition-all duration-150",
+                          isDragOver
+                            ? column.dragOverEmptyClasses
+                            : "border-border/30 hover:border-border/50"
+                        )}>
+                          <div className="flex flex-col items-center gap-2">
+                            <span className="text-2xl opacity-50">{column.icon}</span>
+                            <span className="font-medium">{isDragOver ? 'Drop task here' : 'No tasks'}</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )
-
-      case 'myTasks':
-        return (
-          <MyTasksWidget
-            tasks={userTasks.filter(task => task.assigneeId === user?.id)}
-            widgetId="myTasks"
-            fullscreen={fullscreenWidget === 'myTasks'}
-            onToggleFullscreen={toggleFullscreen}
-            dashboardType="operations"
-            basePath="/operations-dashboard"
-          />
-        )
-
-      case 'metrics':
-        return (
-          <Card className="h-full">
-            <CardHeader className="px-6 pt-6 pb-4">
-              <CardTitle className="text-base">Key Operational Metrics</CardTitle>
-            </CardHeader>
-            <CardContent className="px-6 pt-0 pb-6">
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Total Resources</div>
-                  <div className="text-sm font-semibold mt-1">{stats.totalResources}</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Capacity Utilization</div>
-                  <div className="text-sm font-semibold mt-1">{stats.capacityUtilization}%</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Attendance Rate</div>
-                  <div className="text-sm font-semibold mt-1">{stats.attendanceRate}%</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Attrition Rate</div>
-                  <div className="text-sm font-semibold mt-1">{stats.attritionRate}%</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Avg TAT</div>
-                  <div className="text-sm font-semibold mt-1">{stats.avgTAT}h</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Backlog</div>
-                  <div className="text-sm font-semibold mt-1">{stats.backlog}</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Quality Score</div>
-                  <div className="text-sm font-semibold mt-1">{stats.qualityScore}%</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Error Rate</div>
-                  <div className="text-sm font-semibold mt-1">{stats.errorRate}%</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Compliance Rate</div>
-                  <div className="text-sm font-semibold mt-1">{stats.complianceRate}%</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Open Issues</div>
-                  <div className="text-sm font-semibold mt-1">{stats.openIssues}</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Total Inventory</div>
-                  <div className="text-sm font-semibold mt-1">{stats.totalInventory}</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background p-3">
-                  <div className="text-muted-foreground">Low Stock Items</div>
-                  <div className="text-sm font-semibold mt-1">{stats.lowStockItems}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )
-
-      case 'usefulLinks':
-        return (
-          <Card className="h-full">
-            <CardHeader className="px-6 pt-6 pb-4">
-              <CardTitle className="text-base">Useful Links</CardTitle>
-              <CardDescription className="text-xs">Quick access to frequently visited resources</CardDescription>
-            </CardHeader>
-            <CardContent className="px-6 pt-0 pb-6">
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Link title"
-                    value={newLinkTitle}
-                    onChange={(e) => setNewLinkTitle(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Input
-                    placeholder="URL"
-                    value={newLinkUrl}
-                    onChange={(e) => setNewLinkUrl(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (newLinkTitle && newLinkUrl) {
-                        const newLink = {
-                          id: Date.now().toString(),
-                          title: newLinkTitle,
-                          url: newLinkUrl.startsWith('http') ? newLinkUrl : `https://${newLinkUrl}`,
-                        }
-                        const updated = [...usefulLinks, newLink]
-                        setUsefulLinks(updated)
-                        localStorage.setItem('operations-useful-links', JSON.stringify(updated))
-                        setNewLinkTitle('')
-                        setNewLinkUrl('')
-                      }
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                {usefulLinks.length > 0 ? (
-                  <div className="space-y-2">
-                    {usefulLinks.map((link) => (
-                      <div key={link.id} className="flex items-center justify-between p-2 border rounded-lg hover:bg-accent group">
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 flex-1 text-sm"
-                        >
-                          <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                          <span className="truncate">{link.title}</span>
-                        </a>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                          onClick={() => {
-                            const updated = usefulLinks.filter(l => l.id !== link.id)
-                            setUsefulLinks(updated)
-                            localStorage.setItem('operations-useful-links', JSON.stringify(updated))
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-32 text-center py-8">
-                    <LinkIcon className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                    <p className="text-sm text-muted-foreground">No links saved yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">Add your frequently visited links above</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )
-
-      case 'mindMap':
-        return <AdvancedMindMapWidget />
-
-      case 'canvas':
-        return <AdvancedCanvasWidget />
-
-      default:
-        return null
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )
+    } else if (taskViewMode === 'list') {
+      return taskViewModeHandlers.list()
+    } else {
+      return taskViewModeHandlers.gantt ? taskViewModeHandlers.gantt() : null
     }
   }
 
@@ -3360,7 +2384,7 @@ export default function OperationsDashboardPage() {
 
   const currentHour = new Date().getHours()
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening'
-  
+
   // Check if there are any visible widgets
   const hasVisibleWidgets = widgets.some(w => w.visible)
 
@@ -3430,7 +2454,7 @@ export default function OperationsDashboardPage() {
                 Welcome to Your Operations Dashboard
               </p>
             </div>
-            
+
             {/* Error Message - Only show if user has visible widgets (not a first-time user) */}
             {error && hasVisibleWidgets && (
               <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -3465,30 +2489,30 @@ export default function OperationsDashboardPage() {
           ) : (
             /* Desktop: Draggable Grid Layout */
             <div className="operations-dashboard-grid w-full">
-          <ResponsiveGridLayout
-            className="layout"
-            layouts={layouts}
-            onLayoutChange={onLayoutChange}
-            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-            cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-            rowHeight={80}
-            draggableHandle=".drag-handle"
-            isDraggable={true}
-            isResizable={true}
-          >
-              {widgetIds.map((widgetId) => (
-                <div key={widgetId} className="relative group">
-                  {/* Drag Handle - appears on hover */}
-                  <div className="drag-handle absolute top-2 right-2 z-20 cursor-move bg-blue-500/90 backdrop-blur-sm rounded p-1.5 hover:bg-blue-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
-                    <GripVertical className="h-3.5 w-3.5 text-white" />
+              <ResponsiveGridLayout
+                className="layout"
+                layouts={layouts}
+                onLayoutChange={onLayoutChange}
+                breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+                cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+                rowHeight={80}
+                draggableHandle=".drag-handle"
+                isDraggable={true}
+                isResizable={true}
+              >
+                {widgetIds.map((widgetId) => (
+                  <div key={widgetId} className="relative group">
+                    {/* Drag Handle - appears on hover */}
+                    <div className="drag-handle absolute top-2 right-2 z-20 cursor-move bg-blue-500/90 backdrop-blur-sm rounded p-1.5 hover:bg-blue-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
+                      <GripVertical className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <div className="h-full overflow-auto">
+                      {renderWidget(widgetId)}
+                    </div>
                   </div>
-                  <div className="h-full overflow-auto">
-                    {renderWidget(widgetId)}
-                  </div>
-                </div>
-              ))}
-            </ResponsiveGridLayout>
-          </div>
+                ))}
+              </ResponsiveGridLayout>
+            </div>
           )}
         </>
       )}
@@ -3528,18 +2552,18 @@ export default function OperationsDashboardPage() {
             if (response.ok) {
               const result = await response.json()
               const newTask = result.task || result
-              
+
               // If adding to a specific group, manually add it to that group
               if (addingTaskToGroup && newTask?.id) {
-                setGanttGroups(prevGroups => 
-                  prevGroups.map(group => 
+                setGanttGroups(prevGroups =>
+                  prevGroups.map(group =>
                     group.id === addingTaskToGroup
                       ? { ...group, tasks: [...group.tasks, { ...newTask, parentTaskId: null, parentId: null }] }
                       : group
                   )
                 )
               }
-              
+
               // Refresh tasks to ensure everything is in sync
               await fetchUserTasks()
               setTaskDialogOpen(false)

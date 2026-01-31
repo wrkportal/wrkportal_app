@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react'
+import { useState, useEffect, useCallback, useRef, createContext, useContext, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toPng } from 'html-to-image'
 import { Card, CardContent } from '@/components/ui/card'
@@ -182,6 +182,7 @@ export function SectionDashboardPage({ functionalArea }: SectionDashboardPagePro
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const layoutSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isUserLayoutChangeRef = useRef(false) // Flag to prevent useEffect from overwriting user changes
 
@@ -292,6 +293,15 @@ export function SectionDashboardPage({ functionalArea }: SectionDashboardPagePro
     }
   }, [selectedDashboard])
 
+  // Handler for page changes with transition
+  const handlePageChange = useCallback((pageId: string) => {
+    if (pageId === currentPageId) return // Don't change if already on this page
+    
+    startTransition(() => {
+      setCurrentPageId(pageId)
+    })
+  }, [currentPageId, startTransition])
+
   // Filter visualizations and text widgets by current page when page changes
   useEffect(() => {
     if (!currentPageId || !currentDashboard || pages.length === 0) return
@@ -359,8 +369,11 @@ export function SectionDashboardPage({ functionalArea }: SectionDashboardPagePro
       })
     })
 
-    setLayouts(gridLayouts)
-  }, [currentPageId, visualizations, textWidgets, currentDashboard, pages])
+    // Use startTransition to keep UI responsive during layout updates
+    startTransition(() => {
+      setLayouts(gridLayouts)
+    })
+  }, [currentPageId, visualizations, textWidgets, currentDashboard, pages, startTransition])
 
 
   useEffect(() => {
@@ -1591,12 +1604,13 @@ export function SectionDashboardPage({ functionalArea }: SectionDashboardPagePro
                         return (
                           <div
                             key={page.id}
-                            onClick={() => setCurrentPageId(page.id)}
+                            onClick={() => handlePageChange(page.id)}
                             className={cn(
                               "rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg bg-background overflow-hidden relative",
                               currentPageId === page.id
                                 ? "border-primary shadow-md ring-2 ring-primary ring-offset-2"
-                                : "border-border hover:border-primary/50"
+                                : "border-border hover:border-primary/50",
+                              isPending && currentPageId === page.id && "opacity-50"
                             )}
                           >
                             {/* Slide Number Badge - PPT Style */}
@@ -2029,6 +2043,15 @@ export function SectionDashboardPage({ functionalArea }: SectionDashboardPagePro
                       position: 'relative'
                     }}
                   >
+                    {/* Loading overlay during page transitions */}
+                    {isPending && (
+                      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                          <p className="text-sm text-muted-foreground">Loading page...</p>
+                        </div>
+                      </div>
+                    )}
                     <ExportContext.Provider value={{ exporting: isExporting }}>
                       <ResponsiveGridLayout
                         compactType={null}

@@ -18,14 +18,20 @@ interface Widget {
 interface RecruitmentNavBarProps {
   widgets?: Widget[]
   toggleWidget?: (widgetId: string) => void
+  widgetGalleryOpen?: boolean
+  setWidgetGalleryOpen?: (open: boolean) => void
 }
 
-export function RecruitmentNavBar({ widgets, toggleWidget }: RecruitmentNavBarProps = {}) {
+export function RecruitmentNavBar({ widgets, toggleWidget, widgetGalleryOpen: externalWidgetGalleryOpen, setWidgetGalleryOpen: setExternalWidgetGalleryOpen }: RecruitmentNavBarProps = {}) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const currentTab = searchParams?.get('tab')
-  const [widgetGalleryOpen, setWidgetGalleryOpen] = useState(false)
+  const [internalWidgetGalleryOpen, setInternalWidgetGalleryOpen] = useState(false)
   const [helpDialogOpen, setHelpDialogOpen] = useState(false)
+  
+  // Use external state if provided, otherwise use internal state
+  const widgetGalleryOpen = externalWidgetGalleryOpen !== undefined ? externalWidgetGalleryOpen : internalWidgetGalleryOpen
+  const setWidgetGalleryOpen = setExternalWidgetGalleryOpen || setInternalWidgetGalleryOpen
 
   const navItems = [
     { label: "Dashboard", href: "/recruitment-dashboard/dashboard", icon: LayoutGrid },

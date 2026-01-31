@@ -15,14 +15,21 @@ interface RecruitmentPageLayoutProps {
   description?: string
   widgets?: Widget[]
   toggleWidget?: (widgetId: string) => void
+  widgetGalleryOpen?: boolean
+  setWidgetGalleryOpen?: (open: boolean) => void
 }
 
-export function RecruitmentPageLayout({ children, title, description, widgets, toggleWidget }: RecruitmentPageLayoutProps) {
+export function RecruitmentPageLayout({ children, title, description, widgets, toggleWidget, widgetGalleryOpen, setWidgetGalleryOpen }: RecruitmentPageLayoutProps) {
   return (
     <div className="min-h-screen bg-background text-foreground flex w-full">
       <main className="flex-1 flex flex-col w-full m-0 p-0">
         {/* Navigation Bar with Title and Tabs */}
-        <RecruitmentNavBar widgets={widgets} toggleWidget={toggleWidget} />
+        <RecruitmentNavBar 
+          widgets={widgets} 
+          toggleWidget={toggleWidget}
+          widgetGalleryOpen={widgetGalleryOpen}
+          setWidgetGalleryOpen={setWidgetGalleryOpen}
+        />
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-4 lg:px-8 py-4 lg:py-6">
