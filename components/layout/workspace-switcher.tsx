@@ -34,8 +34,12 @@ export function WorkspaceSwitcher() {
   const [activeTenantId, setActiveTenantId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [switching, setSwitching] = useState(false)
+  const [cachedTenantName, setCachedTenantName] = useState<string | null>(null)
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCachedTenantName(localStorage.getItem('lastTenantName'))
+    }
     fetchTenants()
   }, [])
 
@@ -53,7 +57,15 @@ export function WorkspaceSwitcher() {
         
         if (data.tenants && data.tenants.length > 0) {
           setTenants(data.tenants)
-          setActiveTenantId(data.activeTenantId || session?.user?.tenantId || null)
+          const nextActiveTenantId = data.activeTenantId || session?.user?.tenantId || null
+          setActiveTenantId(nextActiveTenantId)
+          const activeTenantName =
+            data.tenants.find((tenant: Tenant) => tenant.id === nextActiveTenantId)?.name ||
+            data.tenants[0]?.name
+          if (activeTenantName && typeof window !== 'undefined') {
+            localStorage.setItem('lastTenantName', activeTenantName)
+            setCachedTenantName(activeTenantName)
+          }
         } else {
           console.warn('[WorkspaceSwitcher] No tenants returned from API')
           setTenants([])
@@ -106,12 +118,13 @@ export function WorkspaceSwitcher() {
   }
 
   const activeTenant = tenants.find((t) => t.id === activeTenantId) || tenants[0]
+  const displayTenantName = activeTenant?.name || cachedTenantName || 'Workspace'
 
   if (loading) {
     return (
-      <Button variant="ghost" size="sm" disabled>
-        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        Loading...
+      <Button variant="ghost" size="sm" disabled className="gap-2">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="truncate max-w-[150px] text-xs">{displayTenantName}</span>
       </Button>
     )
   }
@@ -126,7 +139,7 @@ export function WorkspaceSwitcher() {
     return (
       <div className="flex items-center gap-2 px-3 py-2">
         <Building2 className="h-3 w-3 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">{activeTenant?.name || 'Workspace'}</span>
+        <span className="text-xs text-muted-foreground">{displayTenantName}</span>
       </div>
     )
   }
@@ -152,7 +165,7 @@ export function WorkspaceSwitcher() {
             <Building2 className="h-4 w-4" />
           )}
           <span className="truncate max-w-[150px] text-xs">
-            {activeTenant?.name || 'Select Workspace'}
+            {displayTenantName || 'Select Workspace'}
           </span>
         </Button>
       </DropdownMenuTrigger>
