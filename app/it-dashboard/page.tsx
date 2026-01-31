@@ -636,42 +636,6 @@ export default function ITDashboardPage() {
   // Render myTasks widget - Full implementation from sales-dashboard
   // renderMyTasksWidget removed - now using centralized MyTasksWidget component
 
-  const renderWidget = (widgetId: string) => {
-    switch (widgetId) {
-      // Ticket Metrics
-      case 'metric-openTickets':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
-              <Ticket className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.openTickets}</div>
-              <p className="text-xs text-muted-foreground">Requiring attention</p>
-            </CardContent>
-          </Card>
-        )
-
-      case 'metric-resolvedToday':
-        return (
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Resolved Today</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.resolvedToday}</div>
-              <p className="text-xs text-muted-foreground">Today's resolutions</p>
-            </CardContent>
-          </Card>
-        )
-
-      default:
-        return null
-    }
-  }
-
   // Timer functions
   const showTimerNotesDialog = (taskId: string, taskTitle: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -1457,6 +1421,7 @@ export default function ITDashboardPage() {
   }
 
   // Widget visibility check is now handled by isWidgetVisible function
+  const renderWidget = (widgetId: string) => {
     switch (widgetId) {
       // Ticket Metrics
       case 'metric-openTickets':
