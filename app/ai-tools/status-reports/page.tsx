@@ -1,29 +1,57 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileText, Download, Copy, Check, Loader2, Sparkles } from "lucide-react"
+
+interface ProjectOption {
+  id: string
+  name: string
+}
 
 export default function StatusReportsPage() {
   const [formData, setFormData] = useState({
-    projectName: "",
+    projectId: "",
     reportingPeriod: "",
-    accomplishments: "",
-    challenges: "",
-    upcomingWork: "",
-    teamMembers: "",
   })
   const [report, setReport] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [projects, setProjects] = useState<ProjectOption[]>([])
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true)
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const response = await fetch("/api/projects")
+        if (response.ok) {
+          const data = await response.json()
+          const options = (data.projects || []).map((project: any) => ({
+            id: project.id,
+            name: project.name,
+          }))
+          setProjects(options)
+          if (options.length > 0 && !formData.projectId) {
+            setFormData((prev) => ({ ...prev, projectId: options[0].id }))
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load projects:", err)
+      } finally {
+        setIsLoadingProjects(false)
+      }
+    }
+
+    loadProjects()
+  }, [formData.projectId])
 
   const handleGenerate = async () => {
-    if (!formData.projectName) {
-      alert("Please provide project name")
+    if (!formData.projectId) {
+      alert("Please select a project")
       return
     }
 
@@ -33,7 +61,10 @@ export default function StatusReportsPage() {
       const response = await fetch("/api/ai/reports/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          projectId: formData.projectId,
+          reportingPeriod: formData.reportingPeriod,
+        }),
       })
 
       if (!response.ok) throw new Error("Failed to generate report")
@@ -59,7 +90,8 @@ export default function StatusReportsPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `${formData.projectName.replace(/\s+/g, "_")}_Status_Report.txt`
+    const projectName = projects.find((project) => project.id === formData.projectId)?.name || "Project"
+    a.download = `${projectName.replace(/\s+/g, "_")}_Status_Report.txt`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -90,68 +122,33 @@ export default function StatusReportsPage() {
           </h2>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="projectName">Project Name *</Label>
-                <Input
-                  id="projectName"
-                  value={formData.projectName}
-                  onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-                  placeholder="e.g., Q4 Marketing Campaign"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="reportingPeriod">Reporting Period</Label>
-                <Input
-                  id="reportingPeriod"
-                  value={formData.reportingPeriod}
-                  onChange={(e) => setFormData({ ...formData, reportingPeriod: e.target.value })}
-                  placeholder="e.g., October 1-31, 2025"
-                />
-              </div>
+            <div>
+              <Label htmlFor="projectId">Project *</Label>
+              <Select
+                value={formData.projectId}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, projectId: value }))}
+                disabled={isLoadingProjects}
+              >
+                <SelectTrigger id="projectId">
+                  <SelectValue placeholder={isLoadingProjects ? "Loading projects..." : "Select project"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
-              <Label htmlFor="accomplishments">Key Accomplishments</Label>
-              <Textarea
-                id="accomplishments"
-                value={formData.accomplishments}
-                onChange={(e) => setFormData({ ...formData, accomplishments: e.target.value })}
-                placeholder="What was completed this period? (e.g., Launched landing page, Completed user testing, Hit 1000 signups)"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="challenges">Challenges & Blockers</Label>
-              <Textarea
-                id="challenges"
-                value={formData.challenges}
-                onChange={(e) => setFormData({ ...formData, challenges: e.target.value })}
-                placeholder="Any issues or obstacles? (e.g., Budget approval delayed, Resource constraints)"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="upcomingWork">Upcoming Work</Label>
-              <Textarea
-                id="upcomingWork"
-                value={formData.upcomingWork}
-                onChange={(e) => setFormData({ ...formData, upcomingWork: e.target.value })}
-                placeholder="What's planned for next period? (e.g., Email campaign launch, A/B testing)"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="teamMembers">Team Members (Optional)</Label>
+              <Label htmlFor="reportingPeriod">Reporting Period (Optional)</Label>
               <Input
-                id="teamMembers"
-                value={formData.teamMembers}
-                onChange={(e) => setFormData({ ...formData, teamMembers: e.target.value })}
-                placeholder="e.g., John (PM), Sarah (Designer), Mike (Dev)"
+                id="reportingPeriod"
+                value={formData.reportingPeriod}
+                onChange={(e) => setFormData({ ...formData, reportingPeriod: e.target.value })}
+                placeholder="e.g., October 1-31, 2025"
               />
             </div>
 
