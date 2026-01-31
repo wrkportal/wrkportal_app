@@ -1282,13 +1282,6 @@ export function Sidebar() {
     const [expandedProjectsSection, setExpandedProjectsSection] = useState(false)
     const [programs, setPrograms] = useState<any[]>([])
     const [projects, setProjects] = useState<any[]>([])
-    const [isMounted, setIsMounted] = useState(false)
-
-    // Hydration check
-    useEffect(() => {
-        setIsMounted(true)
-    }, [])
-
     // Fetch programs and projects
     useEffect(() => {
         const fetchData = async () => {
@@ -1317,13 +1310,6 @@ export function Sidebar() {
         }
     }, [user, isMounted])
 
-    // Ensure sidebar is open when user is logged in
-    useEffect(() => {
-        if (user && !sidebarOpen) {
-            setSidebarOpen(true)
-        }
-    }, [user, sidebarOpen, setSidebarOpen])
-
     // Always render sidebar if user exists
     // Only hide if user is explicitly null (not authenticated)
     // Allow rendering if user is undefined (still loading) to prevent layout shift
@@ -1335,28 +1321,20 @@ export function Sidebar() {
     // If user is undefined (still loading), show sidebar with loading state
     // This ensures sidebar appears as soon as user loads
     if (!user) {
-        // Return minimal sidebar structure while loading
+        // Render a stable shell to avoid flicker while auth hydrates
         return (
             <aside
                 className={cn(
-                    "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card/95 backdrop-blur-xl transition-all duration-300 shadow-sm",
+                    "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card/95 backdrop-blur-xl shadow-sm",
                     "md:translate-x-0",
                     sidebarOpen ? "translate-x-0" : "-translate-x-full",
                     sidebarCollapsed ? "w-14" : "w-56"
                 )}
             >
-                <div className="flex h-full flex-col items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
+                <div className="h-full" />
             </aside>
         )
     }
-
-    // Use opacity transition for smooth appearance - ensure full opacity when mounted
-    // Prevent flickering with will-change and transform
-    const sidebarStyle = !isMounted
-        ? { opacity: 0, willChange: 'opacity' }
-        : { opacity: 1, transition: 'opacity 0.1s ease-in', willChange: 'auto' }
 
     // Be robust if user.role isn't hydrated yet or not properly set
     const effectiveRole = (user.role && Object.values(UserRole).includes(user.role as UserRole))
@@ -1577,11 +1555,8 @@ export function Sidebar() {
                     // Mobile: slide in from left, Desktop: always visible
                     "md:translate-x-0",
                     sidebarOpen ? "translate-x-0" : "-translate-x-full",
-                    sidebarCollapsed ? "w-14" : "w-56",
-                    // Ensure sidebar is always visible when mounted and user exists
-                    isMounted ? "opacity-100" : "opacity-0"
+                    sidebarCollapsed ? "w-14" : "w-56"
                 )}
-                style={sidebarStyle}
                 suppressHydrationWarning
             >
                 <div className="flex h-full flex-col px-2 py-4" style={{ willChange: 'contents' }}>

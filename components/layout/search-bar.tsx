@@ -50,16 +50,10 @@ export function SearchBar() {
     const [filter, setFilter] = useState<SearchFilter>('all')
     const [isListening, setIsListening] = useState(false)
     const [hasSpeechRecognition, setHasSpeechRecognition] = useState(false)
-    const [isMounted, setIsMounted] = useState(false)
     const recognitionRef = useRef<any>(null)
     const searchInputRef = useRef<HTMLInputElement>(null)
     const resultsRef = useRef<HTMLDivElement>(null)
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
-
-    // Ensure component is mounted for client-side rendering
-    useEffect(() => {
-        setIsMounted(true)
-    }, [])
 
     // Check if speech recognition is available
     useEffect(() => {
@@ -261,26 +255,20 @@ export function SearchBar() {
                 <div className="relative flex items-center border border-input rounded-md bg-background">
                     {/* Filter Selector - Inside on left */}
                     <div className="border-r border-border">
-                        {isMounted ? (
-                            <Select value={filter || 'all'} defaultValue="all" onValueChange={(value) => handleFilterChange(value as SearchFilter)}>
-                                <SelectTrigger className="h-8 w-[115px] text-xs border-0 bg-transparent rounded-l-md rounded-r-none focus:ring-0 focus:ring-offset-0 shadow-none">
-                                    <SelectValue placeholder="All" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All</SelectItem>
-                                    <SelectItem value="user">People</SelectItem>
-                                    <SelectItem value="project">Projects</SelectItem>
-                                    <SelectItem value="task">Tasks</SelectItem>
-                                    <SelectItem value="document">Documents</SelectItem>
-                                    <SelectItem value="program">Programs</SelectItem>
-                                    <SelectItem value="portfolio">Portfolios</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        ) : (
-                            <div className="h-8 w-[115px] flex items-center justify-between px-3 text-xs text-muted-foreground border-0 bg-transparent rounded-l-md rounded-r-none">
-                                All
-                            </div>
-                        )}
+                        <Select value={filter || 'all'} defaultValue="all" onValueChange={(value) => handleFilterChange(value as SearchFilter)}>
+                            <SelectTrigger className="h-8 w-[115px] text-xs border-0 bg-transparent rounded-l-md rounded-r-none focus:ring-0 focus:ring-offset-0 shadow-none">
+                                <SelectValue placeholder="All" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="user">People</SelectItem>
+                                <SelectItem value="project">Projects</SelectItem>
+                                <SelectItem value="task">Tasks</SelectItem>
+                                <SelectItem value="document">Documents</SelectItem>
+                                <SelectItem value="program">Programs</SelectItem>
+                                <SelectItem value="portfolio">Portfolios</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     
                     {/* Search Input */}
@@ -288,7 +276,7 @@ export function SearchBar() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                         <Input
                             ref={searchInputRef}
-                            placeholder={isMounted && filter ? `Search ${getFilterLabel(filter).toLowerCase()}...` : "Search all..."}
+                            placeholder={filter ? `Search ${getFilterLabel(filter).toLowerCase()}...` : "Search all..."}
                             value={searchQuery}
                             onChange={(e) => handleInputChange(e.target.value)}
                             onFocus={() => {
