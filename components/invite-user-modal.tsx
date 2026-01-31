@@ -425,11 +425,11 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
 
             {/* Function Selection */}
             <div className="space-y-2">
-              <Label>Functions & Sections (Optional - leave empty for full access)</Label>
+              <Label className="text-sm">Functions & Sections (Optional - leave empty for full access)</Label>
               <div className="text-xs text-muted-foreground mb-2">
                 Select functions and specific sections within each function. Expand to see sub-sections. If no sections are selected, the user will have full access.
               </div>
-              <div className="border rounded-md max-h-64 overflow-y-auto p-2 space-y-1">
+              <div className="border rounded-md max-h-64 overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                 {AVAILABLE_FUNCTIONS.map((func) => {
                   const isSelected = !!formData.selectedFunctions[func.id]
                   const selectedSections = formData.selectedFunctions[func.id]?.sections || []
@@ -458,7 +458,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                                 return newSet
                               })
                             }}
-                            className="flex items-center space-x-1 text-sm font-medium hover:text-primary"
+                            className="flex items-center space-x-1 text-xs font-medium hover:text-primary"
                           >
                             {isExpanded ? (
                               <ChevronDown className="h-4 w-4" />
@@ -468,7 +468,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                             <span>{func.label}</span>
                           </button>
                           {isSelected && (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-[10px]">
                               {selectedSections.length}/{func.sections.length} sections
                             </Badge>
                           )}
@@ -479,7 +479,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-6 px-2 text-xs"
+                              className="h-6 px-2 text-[10px]"
                               onClick={() => selectAllSections(func.id)}
                               disabled={allSectionsSelected}
                             >
@@ -489,7 +489,7 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-6 px-2 text-xs"
+                              className="h-6 px-2 text-[10px]"
                               onClick={() => clearAllSections(func.id)}
                               disabled={selectedSections.length === 0}
                             >
@@ -499,11 +499,11 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
                         )}
                       </div>
                       {isExpanded && (
-                        <div className="mt-2 ml-6 space-y-1">
+                        <div className="mt-2 ml-6 grid grid-cols-1 sm:grid-cols-2 gap-1">
                           {func.sections.map((section) => (
                             <label
                               key={section.id}
-                              className="flex items-center space-x-2 p-1 rounded hover:bg-muted cursor-pointer text-sm"
+                              className="flex items-center space-x-2 p-1 rounded hover:bg-muted cursor-pointer text-xs"
                             >
                               <Checkbox
                                 checked={selectedSections.includes(section.id)}
@@ -526,81 +526,80 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
               )}
             </div>
 
-            {/* Access Level */}
-            <div className="space-y-2">
-              <Label htmlFor="accessLevel">Default Access Level</Label>
-              <Select
-                value={formData.accessLevel}
-                onValueChange={(value: AccessLevel) => setFormData(prev => ({ ...prev, accessLevel: value }))}
-                disabled={loading || success}
-              >
-                <SelectTrigger id="accessLevel">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="read">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      <span>Read Only</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="read-write">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      <span>Read & Write</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="full">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      <span>Full Access</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Access Controls */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="accessLevel" className="text-sm">Default Access Level</Label>
+                <Select
+                  value={formData.accessLevel}
+                  onValueChange={(value: AccessLevel) => setFormData(prev => ({ ...prev, accessLevel: value }))}
+                  disabled={loading || success}
+                >
+                  <SelectTrigger id="accessLevel" className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="read">
+                      <div className="flex items-center gap-2 text-xs">
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>Read Only</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="read-write">
+                      <div className="flex items-center gap-2 text-xs">
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>Read & Write</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="full">
+                      <div className="flex items-center gap-2 text-xs">
+                        <Shield className="h-3.5 w-3.5" />
+                        <span>Full Access</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Data Scope */}
-            <div className="space-y-2">
-              <Label htmlFor="dataScope">Data Scope</Label>
-              <Select
-                value={formData.dataScope}
-                onValueChange={(value: DataScope) => setFormData(prev => ({ ...prev, dataScope: value }))}
-                disabled={loading || success}
-              >
-                <SelectTrigger id="dataScope">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Data</SelectItem>
-                  <SelectItem value="department">Department Only</SelectItem>
-                  <SelectItem value="project">Project Only</SelectItem>
-                  <SelectItem value="custom">Custom Scope</SelectItem>
-                </SelectContent>
-              </Select>
-              {formData.dataScope !== 'all' && (
+              <div className="space-y-2">
+                <Label htmlFor="dataScope" className="text-sm">Data Scope</Label>
+                <Select
+                  value={formData.dataScope}
+                  onValueChange={(value: DataScope) => setFormData(prev => ({ ...prev, dataScope: value }))}
+                  disabled={loading || success}
+                >
+                  <SelectTrigger id="dataScope" className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Data</SelectItem>
+                    <SelectItem value="department">Department Only</SelectItem>
+                    <SelectItem value="project">Project Only</SelectItem>
+                    <SelectItem value="custom">Custom Scope</SelectItem>
+                  </SelectContent>
+                </Select>
+                {formData.dataScope !== 'all' && (
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder={formData.dataScope === 'department' ? 'Department name' : formData.dataScope === 'project' ? 'Project ID' : 'Custom scope'}
+                    value={formData.dataScopeValue || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dataScopeValue: e.target.value }))}
+                    disabled={loading || success}
+                  />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="accessExpiresAt" className="text-sm">Access Expires</Label>
                 <Input
-                  placeholder={formData.dataScope === 'department' ? 'Department name' : formData.dataScope === 'project' ? 'Project ID' : 'Custom scope'}
-                  value={formData.dataScopeValue || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dataScopeValue: e.target.value }))}
+                  id="accessExpiresAt"
+                  type="datetime-local"
+                  className="h-8 text-xs"
+                  value={formData.accessExpiresAt || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, accessExpiresAt: e.target.value }))}
                   disabled={loading || success}
                 />
-              )}
-            </div>
-
-            {/* Access Expiration */}
-            <div className="space-y-2">
-              <Label htmlFor="accessExpiresAt">Access Expires (Optional)</Label>
-              <Input
-                id="accessExpiresAt"
-                type="datetime-local"
-                value={formData.accessExpiresAt || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, accessExpiresAt: e.target.value }))}
-                disabled={loading || success}
-              />
-              <p className="text-xs text-muted-foreground">
-                Set a date when access should automatically expire. Leave empty for permanent access.
-              </p>
+              </div>
             </div>
 
             {/* Security Options */}
@@ -633,18 +632,6 @@ export function InviteUserModal({ open, onOpenChange }: InviteUserModalProps) {
               </div>
             </div>
 
-            {/* Info Box */}
-            <div className="rounded-md bg-muted p-3 text-sm">
-              <p className="text-muted-foreground">
-                💡 The invited user will receive an email with a link to join your{' '}
-                {workspaceType === WorkspaceType.ORGANIZATION ? 'organization' : 'group'}. 
-                The invitation will expire in 7 days.
-                <br />
-                <span className="block mt-1 text-amber-600">
-                  ⚠️ If you select functions and sections, access is limited to those areas. If no sections are selected, the user will have full access to all functions.
-                </span>
-              </p>
-            </div>
           </div>
 
           <DialogFooter>
