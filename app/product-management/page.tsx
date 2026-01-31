@@ -1356,57 +1356,8 @@ export default function PMDashboardLandingPage() {
         return null
     }
   }
-              <Tabs value={taskViewMode} onValueChange={(v: any) => setTaskViewMode(v)} className="w-auto">
-                <TabsList className="h-8 p-1">
-                  <TabsTrigger value="gantt" className="text-xs px-3 py-1">
-                    <Activity className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    <span className="hidden lg:inline">Gantt</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="kanban" className="text-xs px-3 py-1">
-                    <LayoutGrid className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    <span className="hidden lg:inline">Kanban</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="list" className="text-xs px-3 py-1">
-                    <List className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    <span className="hidden lg:inline">List</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="calendar" className="text-xs px-3 py-1">
-                    <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                    <span className="hidden lg:inline">Calendar</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-              <Button
-                variant={showFilters ? "secondary" : "outline"}
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="text-xs"
-                title="Toggle Filters"
-              >
-                <Filter className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden lg:inline ml-1">Filters</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTaskDialogOpen(true)}
-                className="text-xs"
-                title="Add New Task"
-              >
-                <Plus className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden lg:inline ml-1">Add Task</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleFullscreen('myTasks')}
-                title={fullscreenWidget === 'myTasks' ? "Exit Fullscreen" : "Enter Fullscreen"}
-                className="h-8 w-8 p-0"
-              >
-                {fullscreenWidget === 'myTasks' ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
-              </Button>
-            </div>
-          </div>
+
+  // Widget visibility check is now handled by isWidgetVisible function
 
           {/* Filters Panel */}
           {showFilters && (

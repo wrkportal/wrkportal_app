@@ -733,57 +733,6 @@ export default function ITDashboardPage() {
     }
   }
 
-  // Timer functions
-  const showTimerNotesDialog = (taskId: string, taskTitle: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setPendingTimerTask({ id: taskId, title: taskTitle })
-    setTimerNotesDialogOpen(true)
-  }
-
-  const startTimer = async (notes: string) => {
-    if (!pendingTimerTask) return
-
-    try {
-      const response = await fetch('/api/time-tracking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId: pendingTimerTask.id,
-          notes: notes || null
-        })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setActiveTimer(data.timeLog)
-        setPendingTimerTask(null)
-      }
-    } catch (error) {
-      console.error('Error starting timer:', error)
-    }
-  }
-
-  const stopTimer = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-
-    if (!activeTimer) return
-
-    try {
-      const response = await fetch('/api/time-tracking', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timeLogId: activeTimer.id })
-      })
-
-      if (response.ok) {
-        setActiveTimer(null)
-        setTimerSeconds({})
-      }
-    } catch (error) {
-      console.error('Error stopping timer:', error)
-    }
-  }
-
   // Fetch user's tasks
   useEffect(() => {
     if (user?.id) {
@@ -1507,68 +1456,7 @@ export default function ITDashboardPage() {
     }
   }
 
-  const getStatusDotColor = (status: string) => {
-    switch (status) {
-      case 'DONE': return 'bg-green-500'
-      case 'IN_REVIEW': return 'bg-yellow-500'
-      case 'IN_PROGRESS': return 'bg-blue-500'
-      case 'TODO': return 'bg-gray-400'
-      default: return 'bg-gray-400'
-    }
-  }
-
-  // Timer functions
-  const showTimerNotesDialog = (taskId: string, taskTitle: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setPendingTimerTask({ id: taskId, title: taskTitle })
-    setTimerNotesDialogOpen(true)
-  }
-
-  const startTimer = async (notes: string) => {
-    if (!pendingTimerTask) return
-
-    try {
-      const response = await fetch('/api/time-tracking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId: pendingTimerTask.id,
-          notes: notes || null
-        })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setActiveTimer(data.timeLog)
-        setPendingTimerTask(null)
-      }
-    } catch (error) {
-      console.error('Error starting timer:', error)
-    }
-  }
-
-  const stopTimer = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-
-    if (!activeTimer) return
-
-    try {
-      const response = await fetch('/api/time-tracking', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timeLogId: activeTimer.id })
-      })
-
-      if (response.ok) {
-        setActiveTimer(null)
-        setTimerSeconds({})
-      }
-    } catch (error) {
-      console.error('Error stopping timer:', error)
-    }
-  }
-
-  const renderWidget = (widgetId: string) => {
+  // Widget visibility check is now handled by isWidgetVisible function
     switch (widgetId) {
       // Ticket Metrics
       case 'metric-openTickets':
