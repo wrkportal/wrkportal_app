@@ -1305,10 +1305,10 @@ export function Sidebar() {
             }
         }
 
-        if (user && isMounted) {
+        if (user) {
             fetchData()
         }
-    }, [user, isMounted])
+    }, [user])
 
     // Always render sidebar if user exists
     // Only hide if user is explicitly null (not authenticated)
