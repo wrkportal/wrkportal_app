@@ -107,6 +107,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.13.13
         version: 3.13.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@thednp/dommatrix':
+        specifier: ^3.0.2
+        version: 3.0.2
       '@types/d3':
         specifier: ^7.4.3
         version: 7.4.3
@@ -2325,6 +2328,10 @@ packages:
         optional: true
       '@types/react-dom':
         optional: true
+
+  '@thednp/dommatrix@3.0.2':
+    resolution: {integrity: sha512-OO4TkIFA1SGuJoiVLgxwEZhGuDBeUxiYYLxnLwBjrL1ktnPHLPtqpjbFDAM0HkruI4/vGvhX7DLxxKDuraEz4A==}
+    engines: {node: '>=20', pnpm: '>=8.6.0'}
 
   '@tootallnate/once@2.0.0':
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
@@ -9010,6 +9017,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 18.3.26
       '@types/react-dom': 18.3.7(@types/react@18.3.26)
+
+  '@thednp/dommatrix@3.0.2': {}
 
   '@tootallnate/once@2.0.0':
     optional: true

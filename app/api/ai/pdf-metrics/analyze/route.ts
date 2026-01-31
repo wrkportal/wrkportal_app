@@ -22,8 +22,9 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer())
     if (!(globalThis as any).DOMMatrix) {
-      const { DOMMatrix } = await import("dommatrix")
+      const { DOMMatrix, DOMMatrixReadOnly } = await import("@thednp/dommatrix")
       ;(globalThis as any).DOMMatrix = DOMMatrix
+      ;(globalThis as any).DOMMatrixReadOnly = DOMMatrixReadOnly
     }
     const pdfParse = (await import("pdf-parse")).default
     const parsed = await pdfParse(buffer)
