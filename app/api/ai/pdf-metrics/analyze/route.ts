@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { extractStructuredData } from "@/lib/ai/ai-service"
 
+export const runtime = "nodejs"
+
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 
 export async function POST(request: NextRequest) {
@@ -70,8 +72,11 @@ Return concise, factual results.`
     )
 
     return NextResponse.json({ result })
-  } catch (error) {
+  } catch (error: any) {
     console.error("PDF metrics analysis error:", error)
-    return NextResponse.json({ error: "Failed to analyze PDF" }, { status: 500 })
+    return NextResponse.json(
+      { error: error?.message || "Failed to analyze PDF" },
+      { status: 500 }
+    )
   }
 }
