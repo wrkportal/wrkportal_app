@@ -51,10 +51,30 @@ function AutomationPageInner() {
   const [showWorkflowBuilder, setShowWorkflowBuilder] = useState(false)
   const [showExecutionHistory, setShowExecutionHistory] = useState<string | null>(null)
   const [showTemplates, setShowTemplates] = useState(false)
+  const [formName, setFormName] = useState('')
+  const [formDescription, setFormDescription] = useState('')
+  const [formTrigger, setFormTrigger] = useState<string | null>(null)
+  const [formAction, setFormAction] = useState<string | null>(null)
 
   useEffect(() => {
     fetchRules()
   }, [])
+
+  useEffect(() => {
+    if (dialogOpen) {
+      if (editingRule) {
+        setFormName(editingRule.name)
+        setFormDescription(editingRule.description || '')
+        setFormTrigger(editingRule.triggerType || null)
+        setFormAction(editingRule.actionType || null)
+      } else {
+        setFormName('')
+        setFormDescription('')
+        setFormTrigger(null)
+        setFormAction(null)
+      }
+    }
+  }, [dialogOpen, editingRule])
 
   const fetchRules = async () => {
     try {
@@ -175,16 +195,24 @@ function AutomationPageInner() {
                 <div className="space-y-4">
                   <div>
                     <Label>Rule Name</Label>
-                    <Input placeholder="e.g., Auto-assign high-scoring leads" />
+                    <Input
+                      placeholder="e.g., Auto-assign high-scoring leads"
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                    />
                   </div>
                   <div>
                     <Label>Description</Label>
-                    <Textarea placeholder="Describe what this rule does..." />
+                    <Textarea
+                      placeholder="Describe what this rule does..."
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Trigger</Label>
-                      <Select>
+                      <Select value={formTrigger || undefined} onValueChange={setFormTrigger}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select trigger" />
                         </SelectTrigger>
@@ -198,7 +226,7 @@ function AutomationPageInner() {
                     </div>
                     <div>
                       <Label>Action</Label>
-                      <Select>
+                      <Select value={formAction || undefined} onValueChange={setFormAction}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select action" />
                         </SelectTrigger>
