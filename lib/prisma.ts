@@ -56,7 +56,20 @@ function getPrismaClient() {
   return globalForPrisma.prisma
 }
 
-export const prisma = getPrismaClient()
+const missingDatabaseUrlError = new Error('DATABASE_URL environment variable is not set')
+
+export const prisma =
+  process.env.DATABASE_URL
+    ? getPrismaClient()
+    // Defer the error until a DB call is attempted (avoids build-time crash).
+    : (new Proxy(
+        {},
+        {
+          get() {
+            throw missingDatabaseUrlError
+          },
+        }
+      ) as PrismaClient)
 
 // Handle connection errors gracefully with retry logic
 if (process.env.NODE_ENV !== 'production') {
