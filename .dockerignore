@@ -13,5 +13,7 @@ coverage/
 uploads/
 .vscode/
 .idea/
+.claude/
+.vercel/
 playwright-report/
 test-results/

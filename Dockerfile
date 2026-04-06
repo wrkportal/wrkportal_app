@@ -17,11 +17,13 @@ RUN corepack enable pnpm && pnpm install --frozen-lockfile
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+RUN corepack enable pnpm
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Generate Prisma client
-RUN ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma
+RUN npx prisma generate --schema=prisma/schema.prisma
 
 # Build Next.js (standalone output)
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -50,11 +52,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy Prisma schema and migration files
 COPY --from=builder /app/prisma ./prisma
 
-# Copy Prisma CLI and engine for running migrations at startup
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+# Install prisma CLI in an isolated directory so it doesn't conflict with standalone's @prisma/client
+RUN mkdir -p /app/prisma-cli && cd /app/prisma-cli && \
+    npm init -y > /dev/null 2>&1 && \
+    npm install prisma@6.9.0 > /dev/null 2>&1
 
 # Copy entrypoint script
 COPY --chown=nextjs:nodejs entrypoint.sh ./entrypoint.sh
