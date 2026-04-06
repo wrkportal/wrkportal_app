@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { chatWithAssistant } from '@/lib/ai/services/ai-assistant'
 import { canUseAI } from '@/lib/utils/tier-utils'
+import { checkQueryGuardrails, sanitizeAIResponse } from '@/lib/ai/guardrails'
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,6 +60,19 @@ export async function POST(request: NextRequest) {
         { error: 'Messages array is required' },
         { status: 400 }
       )
+    }
+
+    // Check guardrails — block off-topic queries before they reach the LLM
+    const lastMessage = messages[messages.length - 1]
+    if (lastMessage?.role === 'user' && lastMessage?.content) {
+      const guardrailCheck = checkQueryGuardrails(lastMessage.content)
+      if (!guardrailCheck.allowed) {
+        return NextResponse.json({
+          response: guardrailCheck.suggestion,
+          blocked: true,
+          reason: guardrailCheck.reason,
+        })
+      }
     }
 
     // Get tier-based AI model (Professional: GPT-3.5-turbo, Business: GPT-4 Turbo)

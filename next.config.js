@@ -1,45 +1,32 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Note: swcMinify is no longer needed in Next.js 16 (SWC is default)
+  // Standalone output for Docker/ECS deployment
+  output: 'standalone',
   typescript: {
-    // Disable type checking during production builds for faster builds
     ignoreBuildErrors: true,
   },
   eslint: {
-    // Disable ESLint during builds for faster deployment
     ignoreDuringBuilds: true,
   },
-  // Enable SWC minification (already default, but explicit for clarity)
-  swcMinify: true,
-  // Optimize production builds
   compress: true,
-  // Enable experimental features for faster builds
   experimental: {
-    // Optimize package imports
     optimizePackageImports: ['lucide-react', '@radix-ui/react-dropdown-menu', '@radix-ui/react-dialog'],
   },
   images: {
     remotePatterns: [
       {
-        protocol: 'http',
-        hostname: 'localhost',
+        protocol: 'https',
+        hostname: '*.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.cloudfront.net',
       },
     ],
   },
-  // Add empty turbopack config to silence the warning
-  // The webpack config below will be used when running with --webpack flag
   turbopack: {},
-  // Disable dev indicator overlay (optional - remove if you want to see it)
-  devIndicators: {
-    buildActivity: false,
-    buildActivityPosition: 'bottom-right',
-  },
-  // Use standalone output in production builds
-  // In development, this can cause chunk loading issues
-  ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
   webpack: (config, { isServer }) => {
-    // Optimize bundle splitting for better performance
     if (!isServer) {
       config.optimization = {
         ...config.optimization,
@@ -51,21 +38,18 @@ const nextConfig = {
               ...config.optimization.splitChunks?.cacheGroups?.default,
               minChunks: 1,
             },
-            // Separate vendor chunks for better caching
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name: 'vendors',
               priority: 10,
               reuseExistingChunk: true,
             },
-            // Separate recharts (large library)
             recharts: {
               test: /[\\/]node_modules[\\/]recharts[\\/]/,
               name: 'recharts',
               priority: 20,
               reuseExistingChunk: true,
             },
-            // Separate react-grid-layout
             reactGridLayout: {
               test: /[\\/]node_modules[\\/]react-grid-layout[\\/]/,
               name: 'react-grid-layout',
@@ -76,10 +60,7 @@ const nextConfig = {
         },
       }
     }
-    
-    // Make optional native dependencies external - don't bundle them
-    // DuckDB is now handled via dynamic import, but we still externalize it for safety
-    // This allows the code to use dynamic imports without failing the build
+
     if (isServer) {
       config.externals = config.externals || []
       if (typeof config.externals === 'function') {
@@ -100,20 +81,9 @@ const nextConfig = {
           }
           callback()
         })
-      } else {
-        // Handle case where externals is an object or other type
-        config.externals = [
-          ...(Array.isArray(config.externals) ? config.externals : []),
-          ({ request }, callback) => {
-            if (request === 'mongodb' || request === 'duckdb') {
-              return callback(null, `commonjs ${request}`)
-            }
-            callback()
-          },
-        ]
       }
     }
-    
+
     return config
   },
 }

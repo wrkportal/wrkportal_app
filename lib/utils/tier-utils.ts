@@ -1,8 +1,8 @@
 /**
  * Tier Utilities
- * 
+ *
  * Utility functions for checking user tiers and tier-based feature access.
- * Supports tier-based infrastructure routing and feature gating.
+ * All infrastructure runs on AWS.
  */
 
 import { prisma } from '@/lib/prisma'
@@ -15,19 +15,12 @@ export interface TierLimits {
   automationsPerMonth: number | null // null = unlimited
   storageGB: number | null // null = unlimited
   maxUsers: number | null // null = unlimited
-  infrastructure: 'neon' | 'aws-aurora' // Phase 1: Neon, Phase 2: AWS Aurora
 }
 
 /**
  * Get tier limits for a given tier
- * Phase 1: Uses Neon.tech (via INFRASTRUCTURE_MODE=neon)
- * Phase 2: Migrates to AWS Aurora (via INFRASTRUCTURE_MODE=aws)
  */
 export function getTierLimits(tier: UserTier): TierLimits {
-  // Determine infrastructure based on environment variable
-  const infrastructureMode = process.env.INFRASTRUCTURE_MODE || 'neon'
-  const infrastructure: 'neon' | 'aws-aurora' = infrastructureMode === 'aws' ? 'aws-aurora' : 'neon'
-  
   switch (tier) {
     case 'free':
       return {
@@ -36,7 +29,6 @@ export function getTierLimits(tier: UserTier): TierLimits {
         automationsPerMonth: 10,
         storageGB: 1,
         maxUsers: 10,
-        infrastructure,
       }
     case 'starter':
       return {
@@ -45,7 +37,6 @@ export function getTierLimits(tier: UserTier): TierLimits {
         automationsPerMonth: 100,
         storageGB: 20,
         maxUsers: 10,
-        infrastructure,
       }
     case 'professional':
       return {
@@ -54,28 +45,24 @@ export function getTierLimits(tier: UserTier): TierLimits {
         automationsPerMonth: 250,
         storageGB: 50,
         maxUsers: 50,
-        infrastructure,
       }
     case 'business':
       return {
         aiEnabled: true,
         aiQueriesPerMonth: 500,
-        automationsPerMonth: null, // unlimited
+        automationsPerMonth: null,
         storageGB: 250,
-        maxUsers: null, // unlimited
-        infrastructure,
+        maxUsers: null,
       }
     case 'enterprise':
       return {
         aiEnabled: true,
-        aiQueriesPerMonth: null, // unlimited
-        automationsPerMonth: null, // unlimited
-        storageGB: null, // unlimited
-        maxUsers: null, // unlimited
-        infrastructure,
+        aiQueriesPerMonth: null,
+        automationsPerMonth: null,
+        storageGB: null,
+        maxUsers: null,
       }
     default:
-      // Default to free tier
       return getTierLimits('free')
   }
 }
@@ -90,40 +77,24 @@ export async function getUserTier(userId: string): Promise<UserTier> {
       select: { tenantId: true },
     })
 
-    if (!user) {
-      return 'free'
-    }
+    if (!user) return 'free'
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: user.tenantId },
       select: { plan: true },
     })
 
-    if (!tenant) {
-      return 'free'
-    }
+    if (!tenant) return 'free'
 
-    // Normalize plan string to UserTier
     const plan = tenant.plan?.toLowerCase() || 'free'
     const validTiers: UserTier[] = ['free', 'starter', 'professional', 'business', 'enterprise']
-    
-    if (validTiers.includes(plan as UserTier)) {
-      return plan as UserTier
-    }
 
-    // Fallback: try to match common plan names
-    if (plan.includes('pro') || plan.includes('professional')) {
-      return 'professional'
-    }
-    if (plan.includes('business') || plan.includes('bus')) {
-      return 'business'
-    }
-    if (plan.includes('enterprise') || plan.includes('ent')) {
-      return 'enterprise'
-    }
-    if (plan.includes('starter') || plan.includes('start')) {
-      return 'starter'
-    }
+    if (validTiers.includes(plan as UserTier)) return plan as UserTier
+
+    if (plan.includes('pro') || plan.includes('professional')) return 'professional'
+    if (plan.includes('business') || plan.includes('bus')) return 'business'
+    if (plan.includes('enterprise') || plan.includes('ent')) return 'enterprise'
+    if (plan.includes('starter') || plan.includes('start')) return 'starter'
 
     return 'free'
   } catch (error) {
@@ -150,7 +121,6 @@ export async function canUseAI(userId: string): Promise<boolean> {
 
 /**
  * Get current month's AI query count for a tenant
- * Tracks AI queries via ActivityFeed with resourceType='AI' and action='EXECUTE'
  */
 export async function getCurrentMonthAIQueryCount(tenantId: string): Promise<number> {
   try {
@@ -158,23 +128,18 @@ export async function getCurrentMonthAIQueryCount(tenantId: string): Promise<num
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
 
-    // Count ActivityFeed entries with resourceType='AI' and action='EXECUTE' for this month
     const count = await prisma.activityFeed.count({
       where: {
         tenantId,
         resourceType: 'AI',
-        action: 'EXECUTE', // Using EXECUTE action for AI queries
-        createdAt: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
+        action: 'EXECUTE',
+        createdAt: { gte: startOfMonth, lte: endOfMonth },
       },
     })
 
     return count
   } catch (error) {
     console.error('Error getting AI query count:', error)
-    // If tracking fails, return 0 (will allow queries, but tracking should be fixed)
     return 0
   }
 }
@@ -182,26 +147,26 @@ export async function getCurrentMonthAIQueryCount(tenantId: string): Promise<num
 /**
  * Log an AI query to ActivityFeed for tracking
  */
-export async function logAIQuery(tenantId: string, userId: string, queryType: string = 'CHAT', metadata?: Record<string, any>) {
+export async function logAIQuery(
+  tenantId: string,
+  userId: string,
+  queryType: string = 'CHAT',
+  metadata?: Record<string, any>
+) {
   try {
     const { createActivityFeed } = await import('@/lib/collaboration/activity-feed')
-    
+
     await createActivityFeed({
       tenantId,
       userId,
       resourceType: 'AI',
-      resourceId: null, // AI queries don't have a specific resource ID
+      resourceId: null,
       action: 'EXECUTE',
       description: `AI ${queryType} query executed`,
-      metadata: {
-        queryType,
-        timestamp: new Date().toISOString(),
-        ...metadata,
-      },
+      metadata: { queryType, timestamp: new Date().toISOString(), ...metadata },
       mentions: [],
     })
   } catch (error) {
-    // Log error but don't throw - tracking should not break main functionality
     console.error('Error logging AI query:', error)
   }
 }
@@ -211,51 +176,30 @@ export async function logAIQuery(tenantId: string, userId: string, queryType: st
  */
 export async function canExecuteAIQuery(userId: string, currentMonthCount?: number): Promise<boolean> {
   const limits = await getUserTierLimits(userId)
-  
-  if (!limits.aiEnabled) {
-    return false
-  }
 
-  if (limits.aiQueriesPerMonth === null) {
-    return true // unlimited
-  }
+  if (!limits.aiEnabled) return false
+  if (limits.aiQueriesPerMonth === null) return true
 
-  // If currentMonthCount is not provided, get it from database
   let count = currentMonthCount
   if (count === undefined) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { tenantId: true },
     })
-    if (user) {
-      count = await getCurrentMonthAIQueryCount(user.tenantId)
-    } else {
-      count = 0
-    }
+    count = user ? await getCurrentMonthAIQueryCount(user.tenantId) : 0
   }
 
-  // Check against limit
   return count < limits.aiQueriesPerMonth
 }
 
 /**
- * Get AI query limit information for user (count, limit, remaining)
+ * Get AI query limit information for user
  */
-export async function getAIQueryLimitInfo(userId: string): Promise<{
-  currentCount: number
-  limit: number | null
-  remaining: number | null
-  canExecute: boolean
-}> {
+export async function getAIQueryLimitInfo(userId: string) {
   const limits = await getUserTierLimits(userId)
-  
+
   if (!limits.aiEnabled) {
-    return {
-      currentCount: 0,
-      limit: null,
-      remaining: null,
-      canExecute: false,
-    }
+    return { currentCount: 0, limit: null, remaining: null, canExecute: false }
   }
 
   const user = await prisma.user.findUnique({
@@ -265,16 +209,10 @@ export async function getAIQueryLimitInfo(userId: string): Promise<{
 
   const currentCount = user ? await getCurrentMonthAIQueryCount(user.tenantId) : 0
   const canExecute = await canExecuteAIQuery(userId, currentCount)
-  const remaining = limits.aiQueriesPerMonth === null 
-    ? null 
-    : Math.max(0, limits.aiQueriesPerMonth - currentCount)
+  const remaining =
+    limits.aiQueriesPerMonth === null ? null : Math.max(0, limits.aiQueriesPerMonth - currentCount)
 
-  return {
-    currentCount,
-    limit: limits.aiQueriesPerMonth,
-    remaining,
-    canExecute,
-  }
+  return { currentCount, limit: limits.aiQueriesPerMonth, remaining, canExecute }
 }
 
 /**
@@ -286,18 +224,12 @@ export async function getCurrentMonthAutomationCount(tenantId: string): Promise<
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
 
-    // Count automation rules created this month
-    const count = await prisma.salesAutomationRule.count({
+    return await prisma.salesAutomationRule.count({
       where: {
         tenantId,
-        createdAt: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
+        createdAt: { gte: startOfMonth, lte: endOfMonth },
       },
     })
-
-    return count
   } catch (error) {
     console.error('Error getting automation count:', error)
     return 0
@@ -309,66 +241,37 @@ export async function getCurrentMonthAutomationCount(tenantId: string): Promise<
  */
 export async function canCreateAutomation(userId: string, currentMonthCount?: number): Promise<boolean> {
   const limits = await getUserTierLimits(userId)
+  if (limits.automationsPerMonth === null) return true
 
-  if (limits.automationsPerMonth === null) {
-    return true // unlimited
-  }
-
-  // If currentMonthCount is not provided, get it from database
   let count = currentMonthCount
   if (count === undefined) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { tenantId: true },
     })
-    if (user) {
-      count = await getCurrentMonthAutomationCount(user.tenantId)
-    } else {
-      count = 0
-    }
+    count = user ? await getCurrentMonthAutomationCount(user.tenantId) : 0
   }
 
-  // Check against limit
   return count < limits.automationsPerMonth
 }
 
 /**
- * Get automation limit information for user (count, limit, remaining)
+ * Get automation limit info for a user
  */
-export async function getAutomationLimitInfo(userId: string): Promise<{
-  currentCount: number
-  limit: number | null
-  remaining: number | null
-  canCreate: boolean
-}> {
+export async function getAutomationLimitInfo(userId: string) {
   const limits = await getUserTierLimits(userId)
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { tenantId: true },
   })
-
   const currentCount = user ? await getCurrentMonthAutomationCount(user.tenantId) : 0
-  const canCreate = await canCreateAutomation(userId, currentCount)
-  const remaining = limits.automationsPerMonth === null 
-    ? null 
-    : Math.max(0, limits.automationsPerMonth - currentCount)
-
+  const maxAllowed = limits.automationsPerMonth
   return {
     currentCount,
-    limit: limits.automationsPerMonth,
-    remaining,
-    canCreate,
+    maxAllowed,
+    remaining: maxAllowed === null ? null : Math.max(0, maxAllowed - currentCount),
+    canCreate: maxAllowed === null ? true : currentCount < maxAllowed,
   }
-}
-
-/**
- * Get the infrastructure provider for a user's tier
- * Phase 1: Returns 'neon' (current setup)
- * Phase 2: Returns 'aws-aurora' (when INFRASTRUCTURE_MODE=aws)
- */
-export async function getUserInfrastructure(userId: string): Promise<'neon' | 'aws-aurora'> {
-  const limits = await getUserTierLimits(userId)
-  return limits.infrastructure
 }
 
 /**
@@ -377,7 +280,5 @@ export async function getUserInfrastructure(userId: string): Promise<'neon' | 'a
 export async function hasMinimumTier(userId: string, minimumTier: UserTier): Promise<boolean> {
   const tier = await getUserTier(userId)
   const tierOrder: UserTier[] = ['free', 'starter', 'professional', 'business', 'enterprise']
-  const userTierIndex = tierOrder.indexOf(tier)
-  const minimumTierIndex = tierOrder.indexOf(minimumTier)
-  return userTierIndex >= minimumTierIndex
+  return tierOrder.indexOf(tier) >= tierOrder.indexOf(minimumTier)
 }

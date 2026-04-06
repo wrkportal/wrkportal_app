@@ -25,8 +25,7 @@ export function middleware(request: NextRequest) {
   // Apply rate limiting for API routes (but exclude session checks and debug endpoint)
   if (
     pathname.startsWith('/api/') && 
-    !pathname.startsWith('/api/auth/session') &&
-    !pathname.startsWith('/api/auth/debug')
+    !pathname.startsWith('/api/auth/session')
   ) {
     const identifier = getRateLimitIdentifier(request, { useIP: true })
     
@@ -65,11 +64,10 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * - api routes (handled separately)
      * - _next/static (static files)
      * - _next/image (image optimization)
      * - favicon.ico, robots.txt (public files)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt).*)',
   ],
 }

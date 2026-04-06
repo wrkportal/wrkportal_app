@@ -4,7 +4,7 @@ import type { Transporter } from 'nodemailer'
 // Email configuration with performance optimizations
 function createEmailConfig() {
   return {
-    host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'email-smtp.us-east-1.amazonaws.com',
     port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587'),
     secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
     auth: {

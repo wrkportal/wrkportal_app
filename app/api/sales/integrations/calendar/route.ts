@@ -3,7 +3,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { google } from 'googleapis'
 import { Client } from '@microsoft/microsoft-graph-client'
-import 'isomorphic-fetch'
+// Node 20+ has native fetch - no polyfill needed
 
 /**
  * Calendar Sync Integration

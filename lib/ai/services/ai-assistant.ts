@@ -4,8 +4,6 @@
 
 import { generateFunctionCall, generateChatCompletion, ChatTool } from '../ai-service'
 import { PROMPTS } from '../prompts'
-import { convertOpenAIMessage, convertOpenAITools } from '../compat'
-import type OpenAI from 'openai'
 import type { ChatMessage } from '../types'
 
 // Define available functions for the AI assistant (using ChatTool type for compatibility)
@@ -502,25 +500,18 @@ export const ASSISTANT_FUNCTIONS: ChatTool[] = [
  * Keep the system message and the most recent exchanges
  */
 function trimConversationHistory(
-  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  messages: ChatMessage[],
   maxMessages: number = 10
 ): ChatMessage[] {
-  const toChatMessage = (message: OpenAI.Chat.ChatCompletionMessageParam): ChatMessage => ({
-    role: message.role === 'developer' ? 'system' : (message.role === 'function' ? 'tool' : message.role),
-    content: typeof message.content === 'string' ? message.content : '',
-    name: 'name' in message ? message.name : undefined,
-    tool_call_id: 'tool_call_id' in message ? message.tool_call_id : undefined,
-  })
-
   // Always keep system message
-  const systemMessage = messages[0]?.role === 'system' ? toChatMessage(messages[0]) : null
-  const conversationMessages = (systemMessage ? messages.slice(1) : messages).map(toChatMessage)
-  
+  const systemMessage = messages[0]?.role === 'system' ? messages[0] : null
+  const conversationMessages = systemMessage ? messages.slice(1) : [...messages]
+
   // If we're under the limit, return as is
   if (conversationMessages.length <= maxMessages) {
     return systemMessage ? [systemMessage, ...conversationMessages] : conversationMessages
   }
-  
+
   // Keep only the most recent messages
   const recentMessages = conversationMessages.slice(-maxMessages)
   return systemMessage ? [systemMessage, ...recentMessages] : recentMessages
@@ -530,7 +521,7 @@ function trimConversationHistory(
  * Process a chat message with the AI assistant
  */
 export async function chatWithAssistant(
-  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  messages: ChatMessage[],
   availableFunctions?: Record<string, Function>,
   options?: {
     model?: string

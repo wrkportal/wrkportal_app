@@ -5,9 +5,8 @@
  */
 
 import { generateChatCompletion, ChatTool } from '@/lib/ai/ai-service'
-import { convertOpenAIMessages } from '@/lib/ai/compat'
+import type { ChatMessage } from '@/lib/ai/types'
 import { prisma } from '@/lib/prisma'
-import OpenAI from 'openai'
 
 const SALES_ASSISTANT_SYSTEM_PROMPT = `You are a helpful Sales AI Assistant specialized in helping sales professionals manage their pipeline, leads, opportunities, and accounts. You have access to real-time sales data and can help with:
 
@@ -198,14 +197,14 @@ export const SALES_FUNCTIONS: ChatTool[] = [
  * Chat with Sales AI Assistant
  */
 export async function chatWithSalesAssistant(
-  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  messages: ChatMessage[],
   userId: string,
   tenantId: string,
   availableFunctions?: Record<string, Function>
 ): Promise<{ message: string; functionCalls?: any[] }> {
   try {
     // Add system message if not present
-    const messagesWithSystem: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    const messagesWithSystem: ChatMessage[] = [
       {
         role: 'system',
         content: SALES_ASSISTANT_SYSTEM_PROMPT,
@@ -224,7 +223,7 @@ export async function chatWithSalesAssistant(
     // Handle function calls
     if (responseMessage?.tool_calls && responseMessage.tool_calls.length > 0) {
       const functionCalls: any[] = []
-      const functionResults: OpenAI.Chat.ChatCompletionMessageParam[] = []
+      const functionResults: ChatMessage[] = []
 
       for (const toolCall of responseMessage.tool_calls) {
         const functionName = toolCall.function.name

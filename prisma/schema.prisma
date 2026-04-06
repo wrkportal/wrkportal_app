@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -43,6 +44,8 @@ model User {
   workflowSettings               Json?
   assistantName                  String?
   voiceSampleUrl                 String?
+  mfaEnabled                     Boolean                            @default(false)
+  mfaSecret                      String?
   allowedSections                String?                            // JSON array of allowed section names, null = full access
   accessAuditLogs                AccessAuditLog[]                   @relation("AccessAuditLogs")
   accounts                       Account[]

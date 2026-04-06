@@ -6,6 +6,7 @@ import { useUIStore } from '@/stores/uiStore'
 import { useAuthStore, fetchAuthenticatedUser } from '@/stores/authStore'
 import { Header } from './header'
 import { Sidebar } from './sidebar'
+import { CommandPalette } from '@/components/common/command-palette'
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -16,37 +17,51 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
 
     // Fetch user on mount if not already loaded
     useEffect(() => {
+        if (!isHydrated) return
+
+        // If user is already in store (from page.tsx or persisted), skip fetch
+        if (user) {
+            setIsLoadingUser(false)
+            return
+        }
+
+        // Only fetch if not on an auth page (no need to fetch user for login/signup)
+        const isPublicPath =
+            pathname === '/' ||
+            pathname?.startsWith('/login') ||
+            pathname?.startsWith('/signup') ||
+            pathname?.startsWith('/forgot-password') ||
+            pathname?.startsWith('/verify-email') ||
+            pathname?.startsWith('/reset-password') ||
+            pathname?.startsWith('/landing') ||
+            pathname?.startsWith('/terms') ||
+            pathname?.startsWith('/privacy') ||
+            pathname?.startsWith('/security')
+
+        if (isPublicPath) {
+            setIsLoadingUser(false)
+            return
+        }
+
+        let cancelled = false
         const loadUser = async () => {
-            if (!isHydrated) {
-                return
-            }
-
-            // If user is already in store, we're done
-            if (user) {
-                setIsLoadingUser(false)
-                return
-            }
-
-            // Try to fetch user
             try {
                 const fetchedUser = await fetchAuthenticatedUser(true)
-                if (fetchedUser) {
+                if (!cancelled && fetchedUser) {
                     setUser(fetchedUser)
                 }
-                // If fetchedUser is null, that's OK - user is just not logged in
-                // Don't treat this as an error
             } catch (error: any) {
-                // Only log actual errors, not 401 responses
                 if (error?.status !== 401) {
                     console.error('Error loading user:', error)
                 }
             } finally {
-                setIsLoadingUser(false)
+                if (!cancelled) setIsLoadingUser(false)
             }
         }
 
         loadUser()
-    }, [isHydrated, user, setUser])
+        return () => { cancelled = true }
+    }, [isHydrated, user, setUser, pathname])
 
     // Check if current page is an auth page or public marketing page
     const isAuthPage =
@@ -114,6 +129,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex min-h-screen flex-col">
                 <Header />
                 <Sidebar />
+                <CommandPalette />
 
                 <main
                     className={`transition-all duration-300 pt-0 ${
@@ -133,6 +149,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex min-h-screen flex-col">
             <Header />
+            <CommandPalette />
 
             <div className="flex flex-1">
                 <Sidebar />

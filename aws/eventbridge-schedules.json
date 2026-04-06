@@ -1,0 +1,45 @@
+{
+  "description": "EventBridge Scheduler rules for wrkportal cron jobs. Create these via AWS Console or CLI.",
+  "schedules": [
+    {
+      "name": "wrkportal-integration-sync",
+      "description": "Daily integration sync — syncs all connected third-party services",
+      "schedule": "cron(0 0 * * ? *)",
+      "target": {
+        "type": "HTTP",
+        "url": "https://app.wrkportal.com/api/cron/integration-sync",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer ${CRON_SECRET}",
+          "Content-Type": "application/json"
+        }
+      },
+      "retryPolicy": {
+        "maximumRetryAttempts": 2,
+        "maximumEventAgeInSeconds": 3600
+      }
+    },
+    {
+      "name": "wrkportal-follow-up-automation",
+      "description": "Daily sales follow-up automation — processes due follow-ups",
+      "schedule": "cron(0 0 * * ? *)",
+      "target": {
+        "type": "HTTP",
+        "url": "https://app.wrkportal.com/api/cron/follow-up-automation",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer ${CRON_SECRET}",
+          "Content-Type": "application/json"
+        }
+      },
+      "retryPolicy": {
+        "maximumRetryAttempts": 2,
+        "maximumEventAgeInSeconds": 3600
+      }
+    }
+  ],
+  "cli_commands": {
+    "create_integration_sync": "aws scheduler create-schedule --name wrkportal-integration-sync --schedule-expression 'cron(0 0 * * ? *)' --target '{\"Arn\":\"arn:aws:scheduler:::aws-sdk:apigatewaymanagementapi:postToConnection\",\"RoleArn\":\"arn:aws:iam::584342047241:role/wrkportal-eventbridge-role\"}' --flexible-time-window '{\"Mode\":\"OFF\"}'",
+    "note": "For HTTP targets, use API Gateway or Lambda as intermediary, or use EventBridge API Destinations for direct HTTP calls."
+  }
+}

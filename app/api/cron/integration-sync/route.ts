@@ -1,14 +1,12 @@
 /**
  * Cron Job API Endpoint for Scheduled Integration Syncs
- * 
- * This endpoint is called by Vercel Cron Jobs or external cron services
- * to trigger automatic integration syncing
+ *
+ * Triggered by AWS EventBridge Scheduler via HTTP target.
+ * Secured with CRON_SECRET bearer token.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { processScheduledSyncs } from '@/lib/integrations/scheduled-sync'
-
-export const maxDuration = 300 // 5 minutes for Vercel
 
 export async function GET(request: NextRequest) {
   try {

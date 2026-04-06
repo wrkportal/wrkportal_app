@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import * as XLSX from 'xlsx'
-import PDFDocument from 'pdfkit'
+import { PDFDocument, rgb } from 'pdf-lib'
 import { Prisma } from '@prisma/client'
 
 // GET /api/finance/export?type=BUDGET&format=excel&id=xxx
@@ -355,168 +355,192 @@ async function exportExcel(
   })
 }
 
+// Helper to draw text lines with pdf-lib (which doesn't auto-wrap)
+function drawTextLines(page: any, lines: string[], x: number, startY: number, fontSize: number, color: any, lineHeight: number = 1.4) {
+  let y = startY
+  for (const line of lines) {
+    page.drawText(line, { x, y, size: fontSize, color })
+    y -= fontSize * lineHeight
+  }
+  return y
+}
+
 async function exportPDF(
   type: string,
   id: string | null,
   projectId: string | null,
   tenantId: string
 ) {
-  return new Promise<NextResponse>(async (resolve, reject) => {
-    try {
-      const chunks: Buffer[] = []
-      const doc = new PDFDocument({ margin: 50 })
+  const pdfDoc = await PDFDocument.create()
+  const pageWidth = 612 // Letter width in points
+  const pageHeight = 792 // Letter height in points
+  const margin = 50
 
-      doc.on('data', (chunk) => chunks.push(chunk))
-      doc.on('end', () => {
-        const buffer = Buffer.concat(chunks)
-        const filename = `finance-${type.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`
+  // Header page
+  let page = pdfDoc.addPage([pageWidth, pageHeight])
+  let yPos = pageHeight - margin
 
-        resolve(
-          new NextResponse(buffer, {
-            headers: {
-              'Content-Type': 'application/pdf',
-              'Content-Disposition': `attachment; filename="${filename}"`,
-            },
-          })
-        )
+  page.drawText('Finance Report', { x: margin, y: yPos, size: 20, color: rgb(0, 0, 0) })
+  yPos -= 30
+  page.drawText(`Type: ${type}`, { x: margin, y: yPos, size: 12, color: rgb(0.3, 0.3, 0.3) })
+  yPos -= 20
+  page.drawText(`Generated: ${new Date().toLocaleString()}`, { x: margin, y: yPos, size: 12, color: rgb(0.3, 0.3, 0.3) })
+  yPos -= 40
+
+  switch (type) {
+    case 'BUDGET': {
+      const where: any = { tenantId }
+      if (id) where.id = id
+      if (projectId) where.projectId = projectId
+
+      type BudgetWithIncludesPDF = Prisma.BudgetGetPayload<{
+        include: {
+          project: {
+            select: {
+              name: true
+              code: true
+            }
+          }
+          program: {
+            select: {
+              name: true
+              code: true
+            }
+          }
+          categories: true
+        }
+      }>
+
+      const budgets: BudgetWithIncludesPDF[] = await prisma.budget.findMany({
+        where,
+        include: {
+          project: { select: { name: true, code: true } },
+          program: { select: { name: true, code: true } },
+          categories: true,
+        },
       })
-      doc.on('error', reject)
 
-      // Header
-      doc.fontSize(20).text('Finance Report', { align: 'center' })
-      doc.fontSize(12).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' })
-      doc.moveDown(2)
+      page.drawText('Budget Report', { x: margin, y: yPos, size: 16, color: rgb(0, 0, 0) })
+      yPos -= 30
 
-      switch (type) {
-        case 'BUDGET': {
-          const where: any = { tenantId }
-          if (id) where.id = id
-          if (projectId) where.projectId = projectId
-
-          type BudgetWithIncludesPDF = Prisma.BudgetGetPayload<{
-            include: {
-              project: {
-                select: {
-                  name: true
-                  code: true
-                }
-              }
-              program: {
-                select: {
-                  name: true
-                  code: true
-                }
-              }
-              categories: true
-            }
-          }>
-
-          const budgets: BudgetWithIncludesPDF[] = await prisma.budget.findMany({
-            where,
-            include: {
-              project: { select: { name: true, code: true } },
-              program: { select: { name: true, code: true } },
-              categories: true,
-            },
-          })
-
-          doc.fontSize(16).text('Budget Report', { underline: true })
-          doc.moveDown()
-
-          budgets.forEach((b: BudgetWithIncludesPDF, idx: number) => {
-            if (idx > 0) doc.addPage()
-
-            // Calculate spent amount from categories
-            const spentAmount = b.categories.reduce((sum, cat) => sum + Number(cat.spentAmount || 0), 0)
-            const totalAmount = Number(b.totalAmount)
-
-            doc.fontSize(14).font('Helvetica-Bold').text(b.name)
-            doc.font('Helvetica').fontSize(10)
-            doc.text(`Project: ${b.project?.name || b.program?.name || 'N/A'}`)
-            doc.text(`Type: ${b.projectId ? 'Project' : b.programId ? 'Program' : (b as any).portfolioId ? 'Portfolio' : 'Standalone'} | Status: ${b.status}`)
-            doc.text(`Total: ${b.currency} ${totalAmount.toLocaleString()}`)
-            doc.text(`Spent: ${b.currency} ${spentAmount.toLocaleString()}`)
-            doc.text(`Remaining: ${b.currency} ${(totalAmount - spentAmount).toLocaleString()}`)
-            doc.moveDown()
-
-            if (b.categories.length > 0) {
-              type BudgetCategoryPDF = BudgetWithIncludesPDF['categories'][0]
-              doc.font('Helvetica-Bold').text('Categories:')
-              doc.font('Helvetica')
-              b.categories.forEach((cat: BudgetCategoryPDF) => {
-                doc.text(
-                  `  • ${cat.name}: ${b.currency} ${Number(cat.allocatedAmount).toLocaleString()} (${Number(cat.percentage)}%)`,
-                  { indent: 20 }
-                )
-              })
-            }
-          })
-
-          break
+      budgets.forEach((b: BudgetWithIncludesPDF, idx: number) => {
+        if (yPos < 150) {
+          page = pdfDoc.addPage([pageWidth, pageHeight])
+          yPos = pageHeight - margin
         }
 
-        case 'INVOICE': {
-          const where: any = { tenantId }
-          if (id) where.id = id
-          if (projectId) where.projectId = projectId
+        const spentAmount = b.categories.reduce((sum, cat) => sum + Number(cat.spentAmount || 0), 0)
+        const totalAmount = Number(b.totalAmount)
 
-          type InvoiceWithIncludesPDF = Prisma.InvoiceGetPayload<{
-            include: {
-              project: {
-                select: {
-                  name: true
-                  code: true
-                }
-              }
-              lineItems: true
-              payments: true
+        page.drawText(b.name, { x: margin, y: yPos, size: 14, color: rgb(0, 0, 0) })
+        yPos -= 20
+        page.drawText(`Project: ${b.project?.name || b.program?.name || 'N/A'}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Type: ${b.projectId ? 'Project' : b.programId ? 'Program' : (b as any).portfolioId ? 'Portfolio' : 'Standalone'} | Status: ${b.status}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Total: ${b.currency} ${totalAmount.toLocaleString()}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Spent: ${b.currency} ${spentAmount.toLocaleString()}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Remaining: ${b.currency} ${(totalAmount - spentAmount).toLocaleString()}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 20
+
+        if (b.categories.length > 0) {
+          page.drawText('Categories:', { x: margin, y: yPos, size: 10, color: rgb(0, 0, 0) })
+          yPos -= 15
+          type BudgetCategoryPDF = BudgetWithIncludesPDF['categories'][0]
+          b.categories.forEach((cat: BudgetCategoryPDF) => {
+            if (yPos < 50) {
+              page = pdfDoc.addPage([pageWidth, pageHeight])
+              yPos = pageHeight - margin
             }
-          }>
-
-          const invoices: InvoiceWithIncludesPDF[] = await prisma.invoice.findMany({
-            where,
-            include: {
-              project: { select: { name: true, code: true } },
-              lineItems: true,
-              payments: true,
-            },
+            page.drawText(`  - ${cat.name}: ${b.currency} ${Number(cat.allocatedAmount).toLocaleString()} (${Number(cat.percentage)}%)`, { x: margin + 20, y: yPos, size: 9, color: rgb(0.3, 0.3, 0.3) })
+            yPos -= 13
           })
-
-          doc.fontSize(16).text('Invoice Report', { underline: true })
-          doc.moveDown()
-
-          invoices.forEach((inv: InvoiceWithIncludesPDF, idx: number) => {
-            if (idx > 0) doc.addPage()
-
-            doc.fontSize(14).font('Helvetica-Bold').text(`Invoice #${inv.invoiceNumber}`)
-            doc.font('Helvetica').fontSize(10)
-            doc.text(`Client: ${inv.clientName}`)
-            doc.text(`Project: ${inv.project?.name || 'N/A'}`)
-            doc.text(`Issue Date: ${inv.invoiceDate.toISOString().split('T')[0]}`)
-            doc.text(`Due Date: ${inv.dueDate.toISOString().split('T')[0]}`)
-            doc.text(`Status: ${inv.status}`)
-            doc.moveDown()
-
-            type PaymentPDF = InvoiceWithIncludesPDF['payments'][0]
-            const paid = inv.payments.reduce((sum: number, p: PaymentPDF) => sum + Number(p.amount), 0)
-            doc.text(`Subtotal: ${inv.currency} ${Number(inv.subtotal).toLocaleString()}`)
-            doc.text(`Tax: ${inv.currency} ${Number(inv.taxAmount).toLocaleString()}`)
-            doc.text(`Total: ${inv.currency} ${Number(inv.totalAmount).toLocaleString()}`)
-            doc.text(`Paid: ${inv.currency} ${paid.toLocaleString()}`)
-            doc.text(`Balance: ${inv.currency} ${(Number(inv.totalAmount) - paid).toLocaleString()}`)
-          })
-
-          break
         }
+        yPos -= 20
+      })
 
-        default:
-          doc.text(`PDF export for ${type} is not yet implemented.`)
-      }
-
-      doc.end()
-    } catch (error) {
-      reject(error)
+      break
     }
+
+    case 'INVOICE': {
+      const where: any = { tenantId }
+      if (id) where.id = id
+      if (projectId) where.projectId = projectId
+
+      type InvoiceWithIncludesPDF = Prisma.InvoiceGetPayload<{
+        include: {
+          project: {
+            select: {
+              name: true
+              code: true
+            }
+          }
+          lineItems: true
+          payments: true
+        }
+      }>
+
+      const invoices: InvoiceWithIncludesPDF[] = await prisma.invoice.findMany({
+        where,
+        include: {
+          project: { select: { name: true, code: true } },
+          lineItems: true,
+          payments: true,
+        },
+      })
+
+      page.drawText('Invoice Report', { x: margin, y: yPos, size: 16, color: rgb(0, 0, 0) })
+      yPos -= 30
+
+      invoices.forEach((inv: InvoiceWithIncludesPDF, idx: number) => {
+        if (yPos < 200) {
+          page = pdfDoc.addPage([pageWidth, pageHeight])
+          yPos = pageHeight - margin
+        }
+
+        type PaymentPDF = InvoiceWithIncludesPDF['payments'][0]
+        const paid = inv.payments.reduce((sum: number, p: PaymentPDF) => sum + Number(p.amount), 0)
+
+        page.drawText(`Invoice #${inv.invoiceNumber}`, { x: margin, y: yPos, size: 14, color: rgb(0, 0, 0) })
+        yPos -= 20
+        page.drawText(`Client: ${inv.clientName}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Project: ${inv.project?.name || 'N/A'}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Issue Date: ${inv.invoiceDate.toISOString().split('T')[0]}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Due Date: ${inv.dueDate.toISOString().split('T')[0]}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Status: ${inv.status}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 20
+        page.drawText(`Subtotal: ${inv.currency} ${Number(inv.subtotal).toLocaleString()}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Tax: ${inv.currency} ${Number(inv.taxAmount).toLocaleString()}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Total: ${inv.currency} ${Number(inv.totalAmount).toLocaleString()}`, { x: margin, y: yPos, size: 11, color: rgb(0, 0, 0) })
+        yPos -= 15
+        page.drawText(`Paid: ${inv.currency} ${paid.toLocaleString()}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 15
+        page.drawText(`Balance: ${inv.currency} ${(Number(inv.totalAmount) - paid).toLocaleString()}`, { x: margin, y: yPos, size: 10, color: rgb(0.2, 0.2, 0.2) })
+        yPos -= 30
+      })
+
+      break
+    }
+
+    default:
+      page.drawText(`PDF export for ${type} is available in Excel format.`, { x: margin, y: yPos, size: 12, color: rgb(0.5, 0.5, 0.5) })
+  }
+
+  const pdfBytes = await pdfDoc.save()
+  const filename = `finance-${type.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`
+
+  return new NextResponse(Buffer.from(pdfBytes), {
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    },
   })
 }
-

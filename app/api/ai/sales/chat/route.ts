@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { chatWithSalesAssistant, createSalesFunctionImplementations } from '@/lib/ai/services/sales/sales-assistant'
+import { checkQueryGuardrails } from '@/lib/ai/guardrails'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,6 +23,19 @@ export async function POST(request: NextRequest) {
         { error: 'Messages array is required' },
         { status: 400 }
       )
+    }
+
+    // Check guardrails — block off-topic queries
+    const lastMessage = messages[messages.length - 1]
+    if (lastMessage?.role === 'user' && lastMessage?.content) {
+      const guardrailCheck = checkQueryGuardrails(lastMessage.content)
+      if (!guardrailCheck.allowed) {
+        return NextResponse.json({
+          response: guardrailCheck.suggestion,
+          blocked: true,
+          reason: guardrailCheck.reason,
+        })
+      }
     }
 
     // Create function implementations with user context

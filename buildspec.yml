@@ -1,0 +1,31 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_ACCOUNT_ID: "584342047241"
+    AWS_REGION: "us-east-1"
+    ECR_REPOSITORY: "wrkportal-production"
+    ECS_CLUSTER: "auditails-production-cluster"
+    ECS_SERVICE: "wrkportal-production"
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - IMAGE_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY
+      - IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+  build:
+    commands:
+      - echo Building Docker image...
+      - docker build -t $IMAGE_URI:$IMAGE_TAG -t $IMAGE_URI:latest .
+
+  post_build:
+    commands:
+      - echo Pushing Docker image to ECR...
+      - docker push $IMAGE_URI:$IMAGE_TAG
+      - docker push $IMAGE_URI:latest
+      - echo Deploying to ECS...
+      - aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment --region $AWS_REGION
+      - echo Deployment triggered successfully.

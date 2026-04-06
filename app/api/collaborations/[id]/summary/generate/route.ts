@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { generateChatCompletion } from '@/lib/ai/openai-service'
+import { generateChatCompletion } from '@/lib/ai/ai-service'
 
 // POST /api/collaborations/[id]/summary/generate - Generate AI summary
 export async function POST(
@@ -191,19 +191,19 @@ Create a comprehensive, detailed summary that shows you've actually read and und
     // Generate summary using AI
     let summary = ''
     try {
-      const completion = await generateChatCompletion([
-        {
-          role: 'system',
-          content: 'You are a helpful assistant that creates clear, concise summaries of collaboration discussions and meetings.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ], {
-        temperature: 0.7,
-        maxTokens: 1000
-      })
+      const completion = await generateChatCompletion(
+        [
+          {
+            role: 'system' as const,
+            content: 'You are a helpful assistant that creates clear, concise summaries of collaboration discussions and meetings.'
+          },
+          {
+            role: 'user' as const,
+            content: prompt
+          }
+        ],
+        { temperature: 0.7, maxTokens: 1000 }
+      )
 
       summary = completion.choices[0]?.message?.content || 'Unable to generate summary at this time.'
     } catch (aiError: any) {

@@ -11,44 +11,41 @@ export default function HomePage() {
     useEffect(() => {
         const checkUserAndRedirect = async () => {
             if (!isHydrated) {
-                return // Wait for store to hydrate
+                return
             }
 
-            // Quick authentication check with 1 second timeout
+            // If user is already in store from a previous session, redirect immediately
+            if (user) {
+                router.replace('/wrkboard')
+                return
+            }
+
+            // Fetch with a generous timeout (10s) to handle Aurora cold starts
             try {
                 const authenticatedUser = await Promise.race([
                     fetchAuthenticatedUser(true),
-                    new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000))
+                    new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000))
                 ])
-
-                if (!router) {
-                    console.error('[HomePage] Router not available')
-                    return
-                }
 
                 if (authenticatedUser) {
                     setUser(authenticatedUser)
                     router.replace('/wrkboard')
                 } else {
-                    // No user found, redirect to landing immediately
                     router.replace('/landing')
                 }
             } catch (error) {
-                // On any error, redirect to landing immediately
-                if (router) {
-                    router.replace('/landing')
-                }
+                router.replace('/landing')
             }
         }
 
         checkUserAndRedirect()
-    }, [isHydrated, router, setUser])
+    }, [isHydrated, user, router, setUser])
 
-    // Show minimal loading or redirect immediately
     return (
         <div className="flex h-screen items-center justify-center">
-            <div className="text-center">
-                <p className="text-muted-foreground">Loading...</p>
+            <div className="flex flex-col items-center gap-3">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                <p className="text-sm text-muted-foreground">Loading...</p>
             </div>
         </div>
     )

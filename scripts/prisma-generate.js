@@ -1,6 +1,7 @@
 const { execSync } = require('child_process')
 
-if (process.env.VERCEL || process.env.SKIP_PRISMA_GENERATE === '1') {
+// Skip during Docker build if prisma client is already generated
+if (process.env.SKIP_PRISMA_GENERATE === '1') {
   process.exit(0)
 }
 

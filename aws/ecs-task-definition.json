@@ -1,0 +1,62 @@
+{
+  "family": "wrkportal-production",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "taskRoleArn": "arn:aws:iam::584342047241:role/wrkportal-production-ecs-task",
+  "executionRoleArn": "arn:aws:iam::584342047241:role/wrkportal-production-ecs-task-execution",
+  "containerDefinitions": [
+    {
+      "name": "wrkportal",
+      "image": "584342047241.dkr.ecr.us-east-1.amazonaws.com/wrkportal-production:latest",
+      "cpu": 0,
+      "portMappings": [
+        { "containerPort": 3000, "hostPort": 3000, "protocol": "tcp" }
+      ],
+      "essential": true,
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "3000" },
+        { "name": "HOSTNAME", "value": "0.0.0.0" },
+        { "name": "AWS_REGION", "value": "us-east-1" },
+        { "name": "AI_PROVIDER", "value": "aws-bedrock" },
+        { "name": "NEXTAUTH_URL", "value": "https://www.wrkportal.com" },
+        { "name": "SMTP_HOST", "value": "email-smtp.us-east-1.amazonaws.com" },
+        { "name": "SMTP_PORT", "value": "587" },
+        { "name": "EMAIL_FROM", "value": "noreply@wrkportal.com" },
+        { "name": "S3_BUCKET_NAME", "value": "wrkportal-production-files" }
+      ],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/db/connection-string" },
+        { "name": "NEXTAUTH_SECRET", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/auth/nextauth-secret" },
+        { "name": "GOOGLE_CLIENT_ID", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/auth/google-client-id" },
+        { "name": "GOOGLE_CLIENT_SECRET", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/auth/google-client-secret" },
+        { "name": "REDIS_URL", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/cache/redis-url" },
+        { "name": "SMTP_USER", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/email/smtp-user" },
+        { "name": "SMTP_PASS", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/email/smtp-pass" },
+        { "name": "ENCRYPTION_MASTER_KEY", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/security/encryption-master-key" },
+        { "name": "INTEGRATION_ENCRYPTION_KEY", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/security/integration-encryption-key" },
+        { "name": "REPORTING_STUDIO_ENCRYPTION_KEY", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/security/reporting-encryption-key" },
+        { "name": "STRIPE_SECRET_KEY", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/stripe/secret-key" },
+        { "name": "STRIPE_WEBHOOK_SECRET", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/stripe/webhook-secret" },
+        { "name": "CRON_SECRET", "valueFrom": "arn:aws:ssm:us-east-1:584342047241:parameter/wrkportal/production/cron/secret" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/wrkportal-production",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "wrkportal"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}
