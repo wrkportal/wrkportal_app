@@ -21,7 +21,8 @@ export async function GET() {
   const dbResult = db.status === 'fulfilled' ? db.value : { healthy: false, latencyMs: 0, error: 'Check failed' }
   const cacheResult = cache.status === 'fulfilled' ? cache.value : { healthy: false, latencyMs: 0, error: 'Check failed' }
 
-  const healthy = dbResult.healthy && cacheResult.healthy
+  // ALB liveness only requires the DB. Cache is reported but its failure degrades, not kills.
+  const healthy = dbResult.healthy
   const status = healthy ? 200 : 503
 
   return NextResponse.json(
