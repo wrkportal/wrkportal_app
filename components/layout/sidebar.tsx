@@ -1310,42 +1310,10 @@ export function Sidebar() {
         }
     }, [user])
 
-    // Always render sidebar if user exists
-    // Only hide if user is explicitly null (not authenticated)
-    // Allow rendering if user is undefined (still loading) to prevent layout shift
-    if (user === null) {
-        // User is not authenticated, don't render sidebar
-        return null
-    }
-
-    // If user is undefined (still loading), show sidebar with loading state
-    // This ensures sidebar appears as soon as user loads
-    if (!user) {
-        // Render a stable shell to avoid flicker while auth hydrates
-        return (
-            <aside
-                className={cn(
-                    "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card/95 backdrop-blur-xl shadow-sm",
-                    "md:translate-x-0",
-                    sidebarOpen ? "translate-x-0" : "-translate-x-full",
-                    sidebarCollapsed ? "w-14" : "w-56"
-                )}
-            >
-                <div className="h-full" />
-            </aside>
-        )
-    }
-
-    // Be robust if user.role isn't hydrated yet or not properly set
-    const effectiveRole = (user.role && Object.values(UserRole).includes(user.role as UserRole))
-        ? (user.role as UserRole)
-        : UserRole.TEAM_MEMBER
-
-    // Special case: sandeep200680@gmail.com sees all pages
-    const isSuperUser = user?.email === 'sandeep200680@gmail.com' || user?.email?.includes('sandeep200680@gmail')
-
-    // Parse allowed sections from user (stored as JSON string or null)
-    // For invited users, check UserTenantAccess record instead of User.allowedSections
+    // Hooks must be called unconditionally (React Rules of Hooks) — keep them
+    // ABOVE the early returns below. Previously declared after the returns,
+    // which threw "Rendered more hooks than during the previous render" when
+    // user transitioned from undefined (loading) → defined.
     const [allowedSections, setAllowedSections] = useState<string[] | null>(null)
     const [isInvitedUser, setIsInvitedUser] = useState(false)
 
@@ -1449,6 +1417,40 @@ export function Sidebar() {
 
         fetchAllowedSections()
     }, [user])
+
+    // Always render sidebar if user exists
+    // Only hide if user is explicitly null (not authenticated)
+    // Allow rendering if user is undefined (still loading) to prevent layout shift
+    if (user === null) {
+        // User is not authenticated, don't render sidebar
+        return null
+    }
+
+    // If user is undefined (still loading), show sidebar with loading state
+    // This ensures sidebar appears as soon as user loads
+    if (!user) {
+        // Render a stable shell to avoid flicker while auth hydrates
+        return (
+            <aside
+                className={cn(
+                    "fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] border-r bg-card/95 backdrop-blur-xl shadow-sm",
+                    "md:translate-x-0",
+                    sidebarOpen ? "translate-x-0" : "-translate-x-full",
+                    sidebarCollapsed ? "w-14" : "w-56"
+                )}
+            >
+                <div className="h-full" />
+            </aside>
+        )
+    }
+
+    // Be robust if user.role isn't hydrated yet or not properly set
+    const effectiveRole = (user.role && Object.values(UserRole).includes(user.role as UserRole))
+        ? (user.role as UserRole)
+        : UserRole.TEAM_MEMBER
+
+    // Special case: sandeep200680@gmail.com sees all pages
+    const isSuperUser = user?.email === 'sandeep200680@gmail.com' || user?.email?.includes('sandeep200680@gmail')
 
     // Map section titles to hrefs for permission checking
     const sectionMap: Record<string, string> = {
